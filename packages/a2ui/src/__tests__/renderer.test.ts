@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { procesar, procesarVarios } from "../procesar";
 import { escribir, leer, resolver } from "../bindings";
-import { arbol, componentesVisibles } from "../arbol";
+import { arbol, componentesVisibles, nombresVisibles } from "../arbol";
 import { validarMensaje } from "../validar";
 import { emitirAccion } from "../acciones";
 import { estadoVacio, propsDe, VERSION_A2UI, type MensajeA2UI } from "../tipos";
@@ -263,5 +263,22 @@ describe("componentesVisibles", () => {
   it("sin superficie pintada, no hay nada visible", () => {
     const { estado } = procesar(estadoVacio(), crear);
     expect(componentesVisibles(estado.get("principal")!)).toEqual([]);
+    expect(nombresVisibles(estado.get("principal")!)).toEqual([]);
+  });
+
+  it("nombresVisibles no repite un componente que sale dos veces", () => {
+    const dosVeces: MensajeA2UI = {
+      version: VERSION_A2UI,
+      updateComponents: {
+        surfaceId: "principal",
+        components: [
+          { id: "root", component: "Column", children: ["a", "b"] },
+          { id: "a", component: "Text", texto: "uno" },
+          { id: "b", component: "Text", texto: "dos" },
+        ],
+      },
+    };
+    const { estado } = procesarVarios(estadoVacio(), [crear, dosVeces]);
+    expect(nombresVisibles(estado.get("principal")!)).toEqual(["Column", "Text"]);
   });
 });

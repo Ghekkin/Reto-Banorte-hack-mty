@@ -62,63 +62,36 @@ export function arbol(superficie: EstadoSuperficie, avisar?: (m: string) => void
 }
 
 /**
- * Los componentes que la persona **ve de verdad**: los alcanzables desde la raiz.
- *
- * `procesar` hace upsert por id y nunca poda (es fiel a la spec: `updateComponents`
- * "can be sent multiple times to update the component tree"), asi que
- * `superficie.componentes` es la acumulacion historica de la conversacion. Quien
- * necesite saber que hay en pantalla —el cliente, para contarselo al agente— tiene que
- * preguntar por lo alcanzable, no por el Map completo. Issue #3.
- *
- * Un componente repetido por una plantilla aparece UNA vez: al agente le interesa que
- * hay en pantalla, no cuantas filas tiene la lista.
- */
-export function componentesVisibles(superficie: EstadoSuperficie): Componente[] {
-  const raiz = arbol(superficie);
-  if (!raiz) return [];
-  const vistos = new Set<string>();
-  const visibles: Componente[] = [];
-  const pendientes: Nodo[] = [raiz];
-  while (pendientes.length > 0) {
-    const nodo = pendientes.shift()!;
-    if (!vistos.has(nodo.componente.id)) {
-      vistos.add(nodo.componente.id);
-      visibles.push(nodo.componente);
-    }
-    pendientes.push(...nodo.hijos);
-  }
-  return visibles;
-}
-
-/**
  * Los componentes que de verdad estan en pantalla: los alcanzables desde la raiz.
  *
- * Hace falta porque `updateComponents` **fusiona por id** (asi lo define la spec), asi
- * que `superficie.componentes` es la acumulacion de toda la conversacion, no la pantalla
- * de ahora. Quien le cuenta al agente que esta viendo la persona tiene que preguntar
- * aqui, no al Map (issue #3).
+ * Hace falta porque `updateComponents` **fusiona por id** (asi lo define la spec), asi que
+ * `superficie.componentes` es la acumulacion de toda la conversacion, no la pantalla de
+ * ahora. Quien le cuenta al agente que esta viendo la persona pregunta aqui, no al Map
+ * (issue #3).
  *
- * Recorre la estructura, no los datos: el componente de una plantilla cuenta como
- * visible aunque su lista venga vacia todavia. Es lo que el agente necesita saber.
+ * Recorre la ESTRUCTURA, no los datos resueltos: el componente de una plantilla cuenta
+ * como visible aunque su lista venga vacia todavia, que es lo que el agente necesita
+ * saber. Y en anchura, para que la lista salga en el orden en que se lee la pantalla: la
+ * raiz primero y sus hijos en el orden en que los declaro.
  */
 export function componentesVisibles(superficie: EstadoSuperficie): Componente[] {
   if (!superficie.raiz) return [];
   const vistos = new Set<string>();
-  const salida: Componente[] = [];
+  const visibles: Componente[] = [];
+  const pendientes = [superficie.raiz];
 
-  const pila = [superficie.raiz];
-  while (pila.length > 0) {
-    const id = pila.pop()!;
+  while (pendientes.length > 0) {
+    const id = pendientes.shift()!;
     if (vistos.has(id)) continue;
     vistos.add(id);
     const componente = superficie.componentes.get(id);
     if (!componente) continue;
-    salida.push(componente);
-    pila.push(...hijosFijos(componente));
+    visibles.push(componente);
+    pendientes.push(...hijosFijos(componente));
     const plantilla = componente.children;
-    if (plantilla && !Array.isArray(plantilla)) pila.push(plantilla.componentId);
+    if (plantilla && !Array.isArray(plantilla)) pendientes.push(plantilla.componentId);
   }
-  return salida;
+  return visibles;
 }
 
 /** Los nombres de lo visible, sin repetir: lo que va en `superficie.componentes` del contrato. */
