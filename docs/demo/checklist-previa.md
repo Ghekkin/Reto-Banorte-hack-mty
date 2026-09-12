@@ -57,3 +57,4 @@ No sustituye a la demo local, pero si la máquina falla, esto salva el pitch.
 | Hora | Quién | Resultado | Notas |
 |---|---|---|---|
 | sáb 08:55 | parlack | **pasa** (5/5 pasos) | Contra producción, modelo real. Tiempos 10.5 / 5.8 / 3.6 / 5.8 / 2.9 s. Dos hallazgos: `reiniciar-estado` no borraba nada (issue #9, ya arreglado el estado a mano) y `ResumenTarjeta` tras aplicar el plan es no determinista. |
+| sáb 12:00 | parlack | **pasa** (5/5) | Contra producción, modelo real, commit `6ed173d`. Tiempos 3.6 / 4.4 / 3.1 / 7.7 / 3.2 s. Ana repetida 3 veces: `SimuladorMeta` las tres. **`estable` marcado.** |
