@@ -99,6 +99,37 @@ no lo arrastre.
 La web habla con el MCP por la red interna de Docker
 (`MCP_URL=http://a7ld8ya2e0g3ye3pjjlz542f:3100/mcp`), no por internet.
 
+### Variables de entorno de las apps (cuidado con la API)
+
+Se ponen por API en `POST /api/v1/applications/<uuid>/envs` con
+`{key, value, is_preview}`. Dos trampas, las dos pagadas ya:
+
+- **`is_build_time` no es un campo permitido**: si va en el cuerpo, la petición falla
+  con `{"message":"Validation failed."}` y **la variable no se crea**. Si mandas la
+  salida a `/dev/null`, el fallo es invisible y te enteras cuando la app se comporta
+  como si no tuviera configuración (el MCP sin `MCP_TOKEN` deja pasar todo, la web
+  emite el `catalogId` de desarrollo).
+- **Cada POST crea DOS registros**: uno de producción (`is_preview: false`) y otro de
+  preview (`is_preview: true`), con uuid distinto. **No son duplicados y no se borran.**
+  Si ves la lista con la clave repetida, mira `is_preview` antes de tocar nada: borrar
+  "el duplicado" a ciegas puede dejarte sólo la de preview, que **no se inyecta al
+  contenedor de producción** — y la app arranca sin configuración, en silencio.
+
+Regla: después de tocar variables por API, `GET` la lista y revisar `is_preview` de cada
+una, no sólo los nombres.
+
+Y un cambio de variables **no llega solo**. Peor: si el commit no cambió, un `deploy`
+tampoco lo aplica — Coolify ve el mismo sha y no recrea el contenedor, así que el
+script ve el `/health` correcto y canta victoria con la configuración vieja dentro.
+Para aplicar variables sin commit nuevo:
+`POST /api/v1/applications/<uuid>/restart`.
+
+Cómo comprobar que de verdad llegaron, sin creerle a nadie:
+
+```bash
+docker exec $(docker ps --format '{{.Names}}' | grep <uuid-de-la-app>) env | grep MCP_TOKEN
+```
+
 ### Acceso al repo privado
 
 Deploy key **de solo lectura** `coolify-maya`, par generado en el VPS:
@@ -148,7 +179,10 @@ https://maya.157.173.204.174.sslip.io/api/health
 https://maya-mcp.157.173.204.174.sslip.io/health
   {"ok":true,"servicio":"maya-mcp","origenDatos":"memoria","tools":["consultar_perfil"]}
 https://maya.157.173.204.174.sslip.io/catalogo/v1.json    → el catálogo, abrible por un juez
-POST …/api/agente                                          → stream JSONL con mensajes A2UI
+POST …/api/agente                                          → stream JSONL con mensajes A2UI,
+                                                              con el catalogId público real
+POST …/mcp sin Authorization                               → 401
+POST …/mcp con el MCP_TOKEN                                → lista las tools
 ```
 
 Los dos certificados son de **Let's Encrypt** (emitidos el 12-sep, vencen el 11-dic),
@@ -168,6 +202,9 @@ además del premio.
       (`GOOGLE_GENERATIVE_AI_API_KEY`): hoy está vacía y el agente publicado responde
       con la pantalla de ejemplo. Se pone en Coolify (app → Environment Variables);
       no hace falta redeploy, Coolify reinicia el contenedor.
-- [ ] Probar `https://maya-mcp.…/mcp` desde un cliente MCP externo con el
-      `MCP_TOKEN` (está en `/opt/reto/.env`).
+- [x] `https://maya-mcp.…/mcp` **pide token**: sin `Authorization` responde 401, con
+      el `MCP_TOKEN` de `/opt/reto/.env` lista las tools. Verificado 2026-09-13 09:55
+      desde fuera del VPS.
+- [ ] Probarlo además desde un cliente MCP de verdad (Claude Desktop o el inspector),
+      no sólo con `curl`.
 - [ ] Decidir si Vultr entra (premio) o si se queda todo en este VPS.

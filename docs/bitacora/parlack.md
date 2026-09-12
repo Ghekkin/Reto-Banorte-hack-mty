@@ -118,3 +118,27 @@ El pipeline quedó en verde, pero encontré dos cosas que habrían mordido de ma
 
 La lección para el checklist: "el workflow está en verde" no era prueba de que lo
 publicado sea lo último. Ahora sí.
+
+### 09:45 — Las variables de entorno nunca se guardaron (y el síntoma engañaba)
+
+Tercer fallo del deploy, el más sucio de los tres: **ninguna variable de entorno se
+había creado en Coolify**. La API rechaza el campo `is_build_time` con
+`Validation failed`, y yo había mandado la respuesta a `/dev/null`, así que los ocho
+POST fallaron en silencio y yo di por hecho que estaban puestas.
+
+El síntoma no apuntaba ahí: el `catalogId` salía con `localhost` (parecía que mi
+arreglo del mock no se había desplegado, pero sí estaba en el commit publicado) y el
+`/mcp` público respondía **406 en vez de 401 sin token** — o sea, `MCP_TOKEN` vacío,
+o sea **el MCP publicado estaba abierto**. Nadie lo habría notado hasta que un juez
+se conectara sin token.
+
+Y al recrearlas me equivoqué otra vez: vi cada clave repetida y las tomé por
+duplicados, cuando en realidad **Coolify crea un par por variable** (producción +
+preview). Borré las de producción y dejé las de preview, que no se inyectan al
+contenedor: el redeploy salió "bien" y las variables seguían sin existir. Se ve en el
+campo `is_preview` del objeto, que no miré la primera vez.
+
+Las tres trampas quedaron escritas en `deploy.md`. Reglas nuevas: después de tocar
+variables por API, leer la lista **con `is_preview`**, no sólo los nombres; comprobar
+con `docker exec … env` que llegaron al contenedor; y nunca mandar a `/dev/null` la
+respuesta de algo que estás afirmando que quedó hecho.

@@ -66,6 +66,12 @@ por API, eso se hace desde el VPS con el token root, nunca desde Actions.
   desplegado y roto.
 - **`MCP_TOKEN`** obligatorio en producción; el `/mcp` sin token responde 401. Es un
   MCP público de datos falsos, pero un juez que vea un endpoint abierto lo anota.
+  **Compruébalo de verdad** (`curl` sin cabecera debe dar 401), no des por hecho que la
+  variable llegó: si no llegó, el servidor deja pasar todo y no se queja.
+- **Cambiar una variable de entorno no basta con redesplegar** si el commit no cambió:
+  Coolify no recrea el contenedor y el script ve el `/health` viejo como bueno. Usa
+  `POST /api/v1/applications/<uuid>/restart` y verifica con
+  `docker exec <contenedor> env`.
 - **El dominio no imita a Banorte.** Nombre del producto.
 
 ## Checklist de cada deploy
