@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: critica
 area: mcp
 encontrado: 2026-09-12 08:50
 github: 9
+resuelto-en: (ver el commit que cierra #9)
 ---
 
 # `pnpm reiniciar-estado` dice que vació la tabla y no borró nada
@@ -51,3 +52,17 @@ de éxito hace que nadie sospeche.
 **Arreglo sugerido:** que el script cargue el `.env` de la raíz igual que sus tres
 hermanos, y que `reiniciarEstado()` falle ruidosamente en vez de callar cuando no hay
 base. El mensaje de salida debería decir cuántas filas borró y contra qué base.
+
+## Cómo quedó (2026-09-12 09:40)
+
+`apps/mcp/scripts/reiniciar-estado.ts` ahora carga el `.env` de la raíz igual que
+`scripts/migrar.mjs`, `restaurar.mjs` y `volcar-fixture.mjs`; **exige `DATABASE_URL`** y
+sale con código 1 si falta; cuenta las filas antes y después del `truncate`, **falla si
+la tabla no quedó vacía**, e imprime cuántas borró y contra qué base (con el usuario y la
+clave enmascarados).
+
+Verificado de tres formas contra la base de producción:
+
+- Con una fila sembrada a mano: `1 fila(s) borrada(s), quedo vacia`, y la tabla en cero.
+- Sin `DATABASE_URL` y sin `.env`: mensaje explícito y `EXIT:1`, sin tocar nada.
+- Con la tabla ya vacía: `0 fila(s) borrada(s)`, que ahora se distingue de "no hice nada".
