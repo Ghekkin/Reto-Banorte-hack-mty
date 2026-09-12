@@ -657,3 +657,12 @@ del deploy). Issue #7, arreglado.
 mínimo para arrancar y de dónde sale cada valor. `scripts/dev.sh` ahora carga el `.env`
 de la raíz y lo exporta: Next buscaba `apps/web/.env` y no lo encontraba, así que el
 agente decía "sin llave" con la llave puesta.
+
+### 08:04 — El favicon de Banorte, tomado del repo de Open Innovation
+
+`apps/web` traía el favicon genérico de create-next-app. Se tomó el logo circular de
+Banorte que usa `Ghekkin/Open-innovation-hack-mty` (`frontend/app/favicon.ico`, que
+en realidad es un PNG de 1043×1043) y entró como `src/app/icon.png` y
+`src/app/apple-icon.png`, que es la convención de Next 16 para PNG; el `.ico` viejo
+se fue. Verificado en la web corriendo: `<link rel="icon">` y `apple-touch-icon`
+responden 200 con `image/png`.
