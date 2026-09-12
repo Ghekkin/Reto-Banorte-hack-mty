@@ -1,0 +1,16 @@
+id,usuario_id,cuenta_id,comercio_id,concepto,monto_centavos,dia_cargo,periodicidad,activa,fecha_inicio,fecha_cancelacion
+sus_ana_netflix,usr_ana,cta_ana_nomina,com_netflix,Netflix Estándar,27900,4,mensual,true,2023-05-04,
+sus_ana_spotify,usr_ana,cta_ana_nomina,com_spotify,Spotify Premium,11500,7,mensual,true,2022-02-07,
+sus_ana_disney,usr_ana,cta_ana_nomina,com_disney,Disney+ Estándar,19900,11,mensual,true,2024-11-11,
+sus_ana_hbo,usr_ana,cta_ana_nomina,com_hbo,HBO Max,14900,14,mensual,true,2025-06-14,
+sus_ana_icloud,usr_ana,cta_ana_nomina,com_icloud,iCloud 200 GB,4900,19,mensual,true,2021-09-19,
+sus_ana_smartfit,usr_ana,cta_ana_nomina,com_smartfit,Smart Fit Black,43900,22,mensual,true,2025-01-22,
+sus_ana_adobe,usr_ana,cta_ana_nomina,com_adobe,Creative Cloud,63900,26,mensual,true,2022-07-26,
+sus_beto_netflix,usr_beto,cta_beto_nomina,com_netflix,Netflix Básico,17900,8,mensual,true,2021-03-08,
+sus_beto_disney,usr_beto,cta_beto_nomina,com_disney,Disney+ con anuncios,13900,16,mensual,true,2024-08-16,
+sus_beto_smartfit,usr_beto,cta_beto_nomina,com_smartfit,Smart Fit Smart,29900,21,mensual,false,2025-02-21,2026-03-21
+sus_carmen_netflix,usr_carmen,cta_carmen_credito,com_netflix,Netflix Premium,35900,5,mensual,true,2020-01-05,
+sus_carmen_spotify,usr_carmen,cta_carmen_credito,com_spotify,Spotify Familiar,20900,9,mensual,true,2021-11-09,
+sus_carmen_adobe,usr_carmen,cta_carmen_credito,com_adobe,Creative Cloud Equipos,149900,12,mensual,true,2019-04-12,
+sus_carmen_icloud,usr_carmen,cta_carmen_credito,com_icloud,iCloud 2 TB,19900,17,mensual,true,2020-06-17,
+sus_carmen_sportsworld,usr_carmen,cta_carmen_credito,com_sportsworld,Sports World Total,128000,24,mensual,true,2023-09-24,

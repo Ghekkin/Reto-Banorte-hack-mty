@@ -1,0 +1,4 @@
+usuario_id,perfil,puntaje_cuestionario,horizonte_meses,tolerancia_perdida_pct,objetivo,experiencia,fecha_perfilamiento,vigente_hasta,ejecutivo
+usr_ana,conservador,28,24,0.05,Formar un fondo de emergencia y juntar el enganche de un depa,ninguna,2026-03-14,2027-03-14,
+usr_beto,conservador,19,12,0.02,Salir de deudas antes de pensar en invertir,ninguna,2026-07-02,2027-07-02,
+usr_carmen,agresivo,76,120,0.25,Crecer patrimonio a 10 años y complementar el retiro,avanzada,2026-01-20,2027-01-20,Lic. Mariana Cárdenas Ovalle

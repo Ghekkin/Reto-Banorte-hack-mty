@@ -1,0 +1,5 @@
+id,usuario_id,categoria_id,monto_limite_centavos,periodo,gastado_actual_centavos,alertar_en_pct,estatus,fecha_creacion
+tope_base_ana_restaurantes,usr_ana,cat_restaurantes,450000,mensual,0,0.8,dentro,2026-06-01
+tope_base_ana_suscripciones,usr_ana,cat_suscripciones,150000,mensual,0,0.9,dentro,2026-07-15
+tope_base_beto_conveniencia,usr_beto,cat_conveniencia,120000,mensual,0,0.8,dentro,2026-08-03
+tope_base_carmen_ropa,usr_carmen,cat_ropa,2500000,mensual,0,0.75,dentro,2026-05-20

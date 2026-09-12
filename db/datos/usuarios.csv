@@ -1,0 +1,4 @@
+id,nombre,fecha_nacimiento,edad,rfc,curp,ocupacion,ingreso_mensual_centavos,ingreso_es_variable,estado_civil,dependientes,ciudad,estado,segmento,cliente_desde,correo,telefono
+usr_ana,Ana Sofía Treviño Cantú,1998-04-17,28,TRCA980417XA1,TRCA980417MNLRNN01,Diseñadora de producto,3200000,false,soltero,0,Monterrey,Nuevo León,nomina,2021-08-02,ana.trevino@ejemplo.mx,+52 81 1000 0001
+usr_beto,Alberto Ramírez Solís,1985-11-03,41,RASA851103XB2,RASA851103HNLMLN02,Supervisor de logística,3450000,false,casado,2,Guadalupe,Nuevo León,nomina,2016-02-15,alberto.ramirez@ejemplo.mx,+52 81 1000 0002
+usr_carmen,Carmen Elizondo Wong,1974-06-28,52,ELWC740628XC3,ELWC740628MNLLNR03,Arquitecta independiente,11500000,true,divorciado,1,San Pedro Garza García,Nuevo León,patrimonial,2009-05-11,carmen.elizondo@ejemplo.mx,+52 81 1000 0003

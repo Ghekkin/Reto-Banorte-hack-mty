@@ -1,0 +1,6 @@
+id,usuario_id,cuenta_origen_id,nombre,monto_objetivo_centavos,monto_actual_centavos,fecha_objetivo,aportacion_sugerida_centavos,frecuencia,apartado_automatico,estatus,fecha_creacion
+meta_base_ana_emergencia,usr_ana,cta_ana_ahorro,Fondo de emergencia,9600000,4815000,2027-06-30,265000,quincenal,false,activa,2026-02-10
+meta_base_ana_enganche,usr_ana,cta_ana_ahorro,Enganche departamento,45000000,2530000,2029-12-31,520000,mensual,false,activa,2026-03-16
+meta_base_beto_liquidar,usr_beto,cta_beto_ahorro,Liquidar la tarjeta,4738600,63200,2028-03-31,263000,mensual,false,pausada,2026-07-02
+meta_base_carmen_retiro,usr_carmen,cta_carmen_ahorro,Complemento de retiro,900000000,287450000,2036-06-28,5200000,mensual,true,activa,2024-01-08
+meta_base_carmen_estudio,usr_carmen,cta_carmen_ahorro,Estudio en el jardín,35000000,35000000,2026-01-31,2900000,mensual,false,cumplida,2025-02-14

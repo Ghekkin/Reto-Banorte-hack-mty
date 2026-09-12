@@ -1,0 +1,17 @@
+id,nombre,clave,tipo,emisora,moneda,plazo_dias,rendimiento_anual_esperado,volatilidad_anual,riesgo,liquidez,monto_minimo_centavos,precio_actual_centavos
+inst_cetes_28,CETES 28 días,CETES28,deuda_gubernamental,Gobierno Federal,MXN,28,0.0925,0.004,1,al_vencimiento,10000,110334
+inst_cetes_91,CETES 91 días,CETES91,deuda_gubernamental,Gobierno Federal,MXN,91,0.096,0.006,1,al_vencimiento,10000,110938
+inst_cetes_182,CETES 182 días,CETES182,deuda_gubernamental,Gobierno Federal,MXN,182,0.0985,0.009,1,al_vencimiento,10000,109417
+inst_bondia,BONDDIA (deuda a un día),BONDDIA,fondo_deuda,Operadora Banorte,MXN,,0.089,0.0025,1,inmediata,100000,269553
+inst_pagare_28,Pagaré 28 días,PAG28,pagare,Banorte,MXN,28,0.075,0.001,1,al_vencimiento,500000,107763
+inst_pagare_180,Pagaré 180 días,PAG180,pagare,Banorte,MXN,180,0.088,0.0015,1,al_vencimiento,1000000,109078
+inst_fondo_corto,Fondo de Deuda Corto Plazo,NTEDIA,fondo_deuda,Operadora Banorte,MXN,,0.091,0.0075,2,24h,100000,205029
+inst_fondo_medio,Fondo de Deuda Mediano Plazo,NTEMED,fondo_deuda,Operadora Banorte,MXN,,0.102,0.029,2,48h,500000,339499
+inst_deuda_corp,Deuda Corporativa AAA,CORPAAA,deuda_corporativa,Emisoras AAA nacionales,MXN,730,0.108,0.035,3,48h,5000000,111584
+inst_fondo_rv_nal,Fondo Renta Variable Nacional,NTERVN,fondo_renta_variable,Operadora Banorte,MXN,,0.135,0.165,4,48h,500000,523263
+inst_fondo_rv_glo,Fondo Renta Variable Global,NTERVG,fondo_renta_variable,Operadora Banorte,MXN,,0.142,0.148,4,48h,500000,533359
+inst_naftrac,ETF IPC (NAFTRAC),NAFTRAC,etf,BlackRock México,MXN,,0.128,0.172,4,inmediata,100000,6663
+inst_etf_global,ETF Global Desarrollado,IVVPESO,etf,BlackRock México,MXN,,0.148,0.156,4,inmediata,100000,155679
+inst_acc_gfnorte,Grupo Financiero Banorte,GFNORTEO,renta_variable,GFNorte,MXN,,0.152,0.238,5,inmediata,100000,17523
+inst_acc_walmex,Wal-Mart de México,WALMEX,renta_variable,Walmex,MXN,,0.118,0.205,5,inmediata,100000,7460
+inst_acc_cemex,Cemex,CEMEXCPO,renta_variable,Cemex,MXN,,0.105,0.312,5,inmediata,100000,1377
