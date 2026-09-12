@@ -14,15 +14,25 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  * `?accion=...` (JSON de una accion A2UI) entra con un boton ya tocado: es como llega
  * quien toco "Aplicar plan" en la portada que armo Maya en Inicio. El agente la ejecuta
  * aqui, donde vive el ciclo de accion. Un JSON que no pase el schema se ignora.
+ *
+ * `?voz=1` entra con la sesion de voz arrancando sola: es el atajo del boton de voz de
+ * Inicio (`docs/como-funciona/premio-elevenlabs.md`).
  */
 export default async function PaginaMaya({
   searchParams,
 }: {
-  searchParams: Promise<{ intencion?: string; accion?: string }>;
+  searchParams: Promise<{ intencion?: string; accion?: string; voz?: string }>;
 }) {
   const [usuario, params] = await Promise.all([usuarioActivo(), searchParams]);
 
-  return <ConsolaMaya usuario={usuario} intencionInicial={params.intencion} accionInicial={accionDeLaUrl(params.accion)} />;
+  return (
+    <ConsolaMaya
+      usuario={usuario}
+      intencionInicial={params.intencion}
+      accionInicial={accionDeLaUrl(params.accion)}
+      vozAuto={params.voz === "1"}
+    />
+  );
 }
 
 function accionDeLaUrl(cruda: string | undefined): AccionEntrante | undefined {

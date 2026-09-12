@@ -5,38 +5,48 @@ import { ArrowUp, Mic } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import type { EstadoVoz } from "@/lib/voz/usar-conversacion-voz";
 
 /**
  * La barra de conversación: input de texto y control de voz.
  *
  * Puede renderizarse en el centro de la pantalla (estado inicial) o anclada al fondo
  * (`sticky bottom`) una vez iniciada la conversación.
+ *
+ * El botón de voz es controlado desde `ConsolaMaya` (`estadoVoz`/`alAlternarVoz`):
+ * esta barra no sabe nada de ElevenLabs, solo pinta el estado que le pasan
+ * (docs/como-funciona/premio-elevenlabs.md).
  */
 export function BarraConversacion({
   sugerencias = [],
   ocupado = false,
   alEnviar,
   enCentro = false,
+  estadoVoz = "inactiva",
+  alAlternarVoz,
 }: {
   sugerencias?: string[];
   ocupado?: boolean;
   alEnviar: (texto: string) => void;
   enCentro?: boolean;
+  /** `undefined` cuando la voz esta apagada (`FEATURE_VOZ`): el boton no se pinta. */
+  estadoVoz?: EstadoVoz;
+  alAlternarVoz?: () => void;
 }) {
   const [texto, setTexto] = useState("");
-  const [escuchando, setEscuchando] = useState(false);
+  const enSesionDeVoz = estadoVoz === "conectando" || estadoVoz === "activa";
+  const placeholder =
+    estadoVoz === "activa"
+      ? "Escuchando... puedes hablar ahora"
+      : estadoVoz === "conectando"
+        ? "Conectando con Maya..."
+        : "¿Qué necesitas resolver hoy?";
 
   function enviar(valor: string) {
     const limpio = valor.trim();
     if (!limpio || ocupado) return;
     setTexto("");
-    setEscuchando(false);
     alEnviar(limpio);
-  }
-
-  function alternarVoz() {
-    if (ocupado) return;
-    setEscuchando((prev) => !prev);
   }
 
   if (enCentro) {
@@ -52,28 +62,30 @@ export function BarraConversacion({
           <Input
             value={texto}
             onChange={(e) => setTexto(e.target.value)}
-            placeholder={escuchando ? "Escuchando... puedes hablar ahora" : "¿Qué necesitas resolver hoy?"}
+            placeholder={placeholder}
             aria-label="Escríbele a Maya"
             className="border-0 shadow-none focus-visible:ring-0 text-xs sm:text-sm md:text-base py-2"
             disabled={ocupado}
             autoFocus
           />
 
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            aria-label={escuchando ? "Detener voz" : "Hablar con Maya"}
-            onClick={alternarVoz}
-            className={`size-9 sm:size-10 shrink-0 rounded-full transition-colors ${
-              escuchando
-                ? "bg-tinte text-primary animate-pulse"
-                : "text-muted-foreground hover:text-primary hover:bg-muted"
-            }`}
-            disabled={ocupado}
-          >
-            <Mic className="size-4 sm:size-4.5" />
-          </Button>
+          {alAlternarVoz && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={enSesionDeVoz ? "Detener voz" : "Hablar con Maya"}
+              onClick={alAlternarVoz}
+              className={`size-9 sm:size-10 shrink-0 rounded-full transition-colors ${
+                enSesionDeVoz
+                  ? "bg-tinte text-primary animate-pulse"
+                  : "text-muted-foreground hover:text-primary hover:bg-muted"
+              }`}
+              disabled={ocupado || estadoVoz === "cerrando"}
+            >
+              <Mic className="size-4 sm:size-4.5" />
+            </Button>
+          )}
 
           <Button
             type="submit"
@@ -117,27 +129,29 @@ export function BarraConversacion({
         <Input
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          placeholder={escuchando ? "Escuchando... puedes hablar ahora" : "¿Qué necesitas resolver hoy?"}
+          placeholder={placeholder}
           aria-label="Escríbele a Maya"
           className="border-0 shadow-none focus-visible:ring-0 text-xs sm:text-sm placeholder:text-xs sm:placeholder:text-sm py-1.5"
           disabled={ocupado}
         />
 
-        <Button
-          type="button"
-          variant="ghost"
-          size="icon"
-          aria-label={escuchando ? "Detener voz" : "Hablar con Maya"}
-          onClick={alternarVoz}
-          className={`size-8 sm:size-9 shrink-0 rounded-full transition-colors ${
-            escuchando
-              ? "bg-tinte text-primary animate-pulse"
-              : "text-muted-foreground hover:text-primary hover:bg-muted"
-          }`}
-          disabled={ocupado}
-        >
-          <Mic className="size-4 sm:size-4.5" />
-        </Button>
+        {alAlternarVoz && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            aria-label={enSesionDeVoz ? "Detener voz" : "Hablar con Maya"}
+            onClick={alAlternarVoz}
+            className={`size-8 sm:size-9 shrink-0 rounded-full transition-colors ${
+              enSesionDeVoz
+                ? "bg-tinte text-primary animate-pulse"
+                : "text-muted-foreground hover:text-primary hover:bg-muted"
+            }`}
+            disabled={ocupado || estadoVoz === "cerrando"}
+          >
+            <Mic className="size-4 sm:size-4.5" />
+          </Button>
+        )}
 
         <Button
           type="submit"

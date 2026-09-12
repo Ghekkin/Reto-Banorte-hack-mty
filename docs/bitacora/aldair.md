@@ -27,6 +27,33 @@
 
 ## 2026-09-12
 
+- **23:41 · hecho** — Terminada la conexión real de la voz (seguía de las 19:21): el
+  usuario ya había llenado `.env` con la cuenta MLH y pidió que el push-to-talk del
+  chat de Maya de verdad corriera nuestro flujo. Cambié el diseño: el agente de voz de
+  ElevenLabs NO improvisa la respuesta — llama una client tool `consultar_maya` que es
+  literalmente `enviarTexto` de `usarAgente`, así que el turno de voz es el MISMO turno
+  que el de texto (misma pantalla, mismos datos), y el texto que Maya dice lo lee
+  ElevenLabs en voz alta. Para eso `enviarTexto`/`enviarAccion` en
+  `apps/web/src/lib/agente/usar-agente.ts` ahora **devuelven** el texto hablable del
+  turno (antes `Promise<void>`), con frase de respaldo si el turno no dijo nada.
+  `usar-conversacion-voz.ts` ganó `clientTools` en `iniciar(herramientas)`.
+  `BarraConversacion` (`apps/web/src/components/maya/barra-conversacion.tsx`) dejó de
+  fingir un `escuchando` local: ahora es controlada (`estadoVoz`/`alAlternarVoz` desde
+  `ConsolaMaya`), y el botón desaparece si `FEATURE_VOZ` está apagado. `?voz=1` en
+  `/maya` arranca la sesión sola (atajo pensado para un botón de Inicio). **Verificado
+  en vivo** con Chrome automatizado y las credenciales MLH reales: reinstalé deps
+  (`three`/`@react-three/fiber` de otra sesión no estaban instaladas), reinicié
+  `pnpm dev` (maté el proceso viejo en :3000, que no traía el `.env` nuevo), y
+  `/api/voz/signed-url` devolvió una `wss://` real de ElevenLabs; el botón hizo el
+  ciclo completo conectando → escuchando → colgado sin errores en consola. Typecheck y
+  `pnpm test` (123 pruebas) en verde. **No verificado**: un turno de voz completo
+  hablado, porque falta configurar la tool `consultar_maya` en la consola de
+  ElevenLabs (documentado en el doc) y no hay micrófono real en el entorno de prueba.
+  **A medias a propósito**: el botón de voz de Inicio, porque `BarraFlotanteMaya`
+  cambió de diseño en paralelo (ahora es texto → `preguntarEnInicio`, sin mic) — lo
+  dejé anotado como decisión pendiente en vez de adivinar sobre trabajo ajeno en
+  vuelo. Doc actualizado con los dos niveles y la config exacta de ElevenLabs:
+  `docs/como-funciona/premio-elevenlabs.md`.
 - **19:21 · toque-ajeno** — El usuario pidió la integración de voz de ElevenLabs (premio
   lateral, dominio `web`/`demo`, no `mcp`). Construida detrás de `FEATURE_VOZ` (skill
   `premio-lateral`): `@elevenlabs/client` como dependencia,

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo } from "@/components/maya/lienzo";
@@ -8,6 +8,8 @@ import { ProgresoMaya } from "@/components/maya/progreso-maya";
 import type { AccionEntrante } from "@/lib/agente/tipos";
 import { usarAgente } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
+import { vozHabilitada } from "@/lib/voz/flag";
+import { usarConversacionVoz, type HerramientasVoz } from "@/lib/voz/usar-conversacion-voz";
 import type { UsuarioDemo } from "@/lib/usuarios";
 
 /** Arranque de la conversación, adaptado a quien pregunta. */
@@ -27,11 +29,14 @@ export function ConsolaMaya({
   usuario,
   intencionInicial,
   accionInicial,
+  vozAuto,
 }: {
   usuario: UsuarioDemo;
   intencionInicial?: string;
   /** Un boton ya tocado en el Inicio que armo Maya: se ejecuta aqui, como cualquier toque. */
   accionInicial?: AccionEntrante;
+  /** `?voz=1`: llega desde el boton de voz de Inicio, arranca la sesion sola. */
+  vozAuto?: boolean;
 }) {
   const agente = usarAgente(usuario.id);
   const { enviarTexto, enviarAccion } = agente;
@@ -53,6 +58,64 @@ export function ConsolaMaya({
     void enviarAccion(accionInicial);
   }, [accionInicial, enviarAccion]);
 
+  /**
+   * El puente de voz (ElevenLabs, premio lateral, docs/como-funciona/premio-elevenlabs.md).
+   *
+   * El agente de voz no improvisa la respuesta financiera: llama la client tool
+   * `consultar_maya` (asi debe llamarse en su consola), que aqui ES `enviarTexto` — el
+   * MISMO turno que si la persona hubiera escrito, con la misma pantalla y los mismos
+   * datos. Lo que `enviarTexto` devuelve es lo que ElevenLabs lee en voz alta.
+   *
+   * `enviarTextoRef` evita una tool congelada en el `historial` del momento en que
+   * empezo la sesion: `enviarTexto` cambia de identidad en cada turno (crece
+   * `historial`), pero la tool que ElevenLabs guardo al conectar es siempre la MISMA
+   * funcion. El ref hace que esa funcion fija siempre llame a la version mas nueva.
+   */
+  const enviarTextoRef = useRef(enviarTexto);
+  enviarTextoRef.current = enviarTexto;
+
+  const herramientasVoz = useMemo<HerramientasVoz>(
+    () => ({
+      consultar_maya: async ({ pregunta }: { pregunta?: string }) => {
+        if (!pregunta || !pregunta.trim()) return "No entendí bien la pregunta, ¿la repites?";
+        return enviarTextoRef.current(pregunta);
+      },
+    }),
+    [],
+  );
+
+  const [avisoVoz, setAvisoVoz] = useState<string>();
+  const { estado: estadoVoz, iniciar: iniciarVoz, detener: detenerVoz } = usarConversacionVoz({
+    onFallback: (motivo) => {
+      console.warn(`[voz] ${motivo}`);
+      setAvisoVoz("No se pudo conectar la voz. Sigue escribiéndole a Maya.");
+    },
+  });
+
+  const alAlternarVoz = useCallback(() => {
+    if (estadoVoz === "activa" || estadoVoz === "conectando") {
+      void detenerVoz();
+      return;
+    }
+    setAvisoVoz(undefined);
+    void iniciarVoz(herramientasVoz);
+  }, [estadoVoz, iniciarVoz, detenerVoz, herramientasVoz]);
+
+  // El atajo de voz de Inicio (`?voz=1`): un solo intento, como intencionInicial. Si el
+  // navegador bloqueo el permiso de microfono por venir de una navegacion (no un click
+  // directo), `onFallback` avisa y la persona toca el boton ella misma.
+  const vozYaIntentada = useRef(false);
+  useEffect(() => {
+    if (!vozAuto || vozYaIntentada.current) return;
+    vozYaIntentada.current = true;
+    window.history.replaceState(null, "", "/maya");
+    void iniciarVoz(herramientasVoz);
+  }, [vozAuto, iniciarVoz, herramientasVoz]);
+
+  // Salir de /maya con el microfono abierto no puede dejar el websocket ni el
+  // microfono prendidos en segundo plano.
+  useEffect(() => () => void detenerVoz(), [detenerVoz]);
+
   const chips = agente.sugerencias.length > 0 ? agente.sugerencias : (CHIPS_INICIALES[usuario.id] ?? []);
   const hayConversacion = agente.hilo.length > 0 || agente.ocupado;
 
@@ -73,11 +136,15 @@ export function ConsolaMaya({
             </p>
           </div>
 
+          {avisoVoz && <p className="mb-2 max-w-xs border-l-2 border-oscuro pl-2 text-left text-xs text-muted-foreground">{avisoVoz}</p>}
+
           <BarraConversacion
             sugerencias={chips}
             ocupado={agente.ocupado}
             alEnviar={enviarTexto}
             enCentro={true}
+            estadoVoz={vozHabilitada() ? estadoVoz : undefined}
+            alAlternarVoz={vozHabilitada() ? alAlternarVoz : undefined}
           />
         </div>
       ) : (
@@ -129,10 +196,14 @@ export function ConsolaMaya({
             </div>
           )}
 
+          {avisoVoz && <p className="mb-1 border-l-2 border-oscuro pl-2 text-xs text-muted-foreground">{avisoVoz}</p>}
+
           <BarraConversacion
             ocupado={agente.ocupado}
             alEnviar={enviarTexto}
             enCentro={false}
+            estadoVoz={vozHabilitada() ? estadoVoz : undefined}
+            alAlternarVoz={vozHabilitada() ? alAlternarVoz : undefined}
           />
         </div>
       )}

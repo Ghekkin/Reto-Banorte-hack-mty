@@ -10,10 +10,14 @@ import { vozHabilitada } from "@/lib/voz/flag";
  * Maya solo tenga que llamar `iniciar()` / `detener()` y leer `estado`, sin
  * saber nada de websockets, `signed_url` ni permisos de microfono.
  *
- * Deliberadamente NO decide que hacer con la transcripcion: `onTranscripcionUsuario`
- * entrega el texto tal cual, y quien conecte el boton lo pasa a `enviarTexto` de
- * `usarAgente` (mismo contrato que si la persona hubiera escrito) — asi la voz
- * es una entrada mas al mismo agente, no un camino aparte.
+ * El puente real hacia nuestro agente es `herramientas` (client tool de ElevenLabs):
+ * el agente conversacional de voz NO improvisa la respuesta financiera — llama la tool
+ * `consultar_maya` (configurada asi en su consola), que aqui es literalmente `enviarTexto`
+ * de `usarAgente`. Eso corre nuestro flujo real (mismo turno, misma pantalla, mismos
+ * datos) y el texto que devuelve es lo que ElevenLabs lee en voz alta: la pantalla y la
+ * voz salen del MISMO turno, no de dos cerebros distintos. `onTranscripcionUsuario` /
+ * `onRespuestaAgente` son solo para subtitular; no manejan el hilo de la conversacion
+ * (eso ya lo hace `enviarTexto` dentro de la tool, exactamente como si fuera texto).
  *
  * Fallback primero (regla del premio lateral): CUALQUIER fallo — flag apagado,
  * sin permiso de microfono, `signed-url` que no contesta en 3 s, el websocket
@@ -34,15 +38,23 @@ const MAPA_ESTADO: Record<Status, EstadoVoz> = {
 };
 
 export type CallbacksVoz = {
-  /** Transcripcion FINAL de lo que dijo la persona. */
+  /** Transcripcion FINAL de lo que dijo la persona (solo para subtitular). */
   onTranscripcionUsuario?: (texto: string) => void;
-  /** Lo que respondio el agente de voz, en texto (el audio ya se reprodujo solo). */
+  /** Lo que dijo el agente de voz, en texto (el audio ya se reprodujo solo). */
   onRespuestaAgente?: (texto: string) => void;
   /** `"speaking"` mientras Maya habla, `"listening"` mientras escucha. Para animar el boton. */
   onModoCambia?: (modo: "speaking" | "listening") => void;
   /** Ver el aviso de "fallback primero" arriba: aqui se decide el respaldo. */
   onFallback?: (motivo: string) => void;
 };
+
+/**
+ * Las client tools que el agente de ElevenLabs puede llamar. El nombre de cada clave
+ * tiene que coincidir EXACTO con el nombre de la tool configurada en su consola
+ * (`elevenlabs.io/app/agents/<id>` → pestaña Tools). Misma forma que
+ * `ClientToolsConfig["clientTools"]` del SDK.
+ */
+export type HerramientasVoz = Record<string, (parametros: any) => Promise<string | number | void> | string | number | void>;
 
 /** Timeout contra `/api/voz/signed-url`, igual que el que la propia ruta le aplica a ElevenLabs. */
 const TIMEOUT_URL_FIRMADA_MS = 3000;
@@ -57,7 +69,7 @@ export function usarConversacionVoz(callbacks: CallbacksVoz = {}) {
   const callbacksRef = useRef(callbacks);
   callbacksRef.current = callbacks;
 
-  const iniciar = useCallback(async () => {
+  const iniciar = useCallback(async (herramientas: HerramientasVoz = {}) => {
     if (!vozHabilitada()) {
       callbacksRef.current.onFallback?.("la voz esta apagada (NEXT_PUBLIC_FEATURE_VOZ)");
       return;
@@ -79,6 +91,7 @@ export function usarConversacionVoz(callbacks: CallbacksVoz = {}) {
       conversacion.current = await Conversation.startSession({
         signedUrl,
         textOnly: false,
+        clientTools: herramientas,
         onStatusChange: ({ status }) => setEstado(MAPA_ESTADO[status]),
         onModeChange: ({ mode }) => callbacksRef.current.onModoCambia?.(mode),
         onMessage: ({ message, source }) => {
@@ -106,8 +119,12 @@ export function usarConversacionVoz(callbacks: CallbacksVoz = {}) {
     if (sesion) await sesion.endSession();
   }, []);
 
-  /** Alternativa de texto DENTRO de la sesion activa (manos libres a medias, ruido, etc). */
-  const enviarTexto = useCallback((texto: string) => {
+  /**
+   * Alternativa de texto DENTRO de la sesion de voz activa (manos libres a medias,
+   * ruido). Nombre distinto a `enviarTexto` de `usarAgente` a proposito: esta manda un
+   * mensaje a ElevenLabs, no corre nuestro flujo — no confundir las dos puertas.
+   */
+  const enviarTextoALaVoz = useCallback((texto: string) => {
     conversacion.current?.sendUserMessage(texto);
   }, []);
 
@@ -115,5 +132,5 @@ export function usarConversacionVoz(callbacks: CallbacksVoz = {}) {
     conversacion.current?.setMicMuted(mudo);
   }, []);
 
-  return { estado, iniciar, detener, enviarTexto, silenciarMicrofono };
+  return { estado, iniciar, detener, enviarTextoALaVoz, silenciarMicrofono };
 }

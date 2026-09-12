@@ -101,10 +101,17 @@ export function usarAgente(usuarioId: string) {
     setTransparencia([]);
   }, []);
 
+  /**
+   * La respuesta hablable del turno: lo que dijo el agente en `texto`, o un fallback si
+   * el turno solo pintó pantalla (o truena) sin decir nada. La usa la voz (ElevenLabs,
+   * `docs/como-funciona/premio-elevenlabs.md`) para que la conversación hablada nunca se
+   * quede en silencio esperando una frase que no existe.
+   */
   const enviar = useCallback(
-    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error">) => {
+    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error">): Promise<string> => {
       setOcupado(true);
       setTransparencia([]);
+      let respuestaHablada = "";
       try {
         const superficie = estado.get(SUPERFICIE);
         const respuesta = await fetch("/api/agente", {
@@ -143,6 +150,7 @@ export function usarAgente(usuarioId: string) {
               setEstado(actual);
               break;
             case "texto":
+              respuestaHablada = respuestaHablada ? `${respuestaHablada} ${linea.valor}` : linea.valor;
               setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: linea.valor }]);
               break;
             case "razon":
@@ -152,6 +160,7 @@ export function usarAgente(usuarioId: string) {
               setSugerencias(linea.valores);
               break;
             case "error":
+              respuestaHablada = respuestaHablada || `Tuve un problema: ${linea.mensaje}`;
               setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: `⚠ ${linea.mensaje}` }]);
               break;
             case "fin": {
@@ -169,6 +178,7 @@ export function usarAgente(usuarioId: string) {
               break;
           }
         }
+        return respuestaHablada || "Ya te deje la pantalla en tu conversacion con Maya.";
       } finally {
         setOcupado(false);
       }
@@ -177,21 +187,21 @@ export function usarAgente(usuarioId: string) {
   );
 
   const enviarTexto = useCallback(
-    async (texto: string) => {
+    async (texto: string): Promise<string> => {
       const mensajes: MensajeHistorial[] = [...historial, { rol: "usuario", texto }];
       setHilo((h) => [...h, { tipo: "mensaje", rol: "usuario", texto }]);
-      await enviar({ mensajes });
+      return enviar({ mensajes });
     },
     [enviar, historial],
   );
 
   /** Un toque en la UI es un turno mas: misma puerta, mismo contrato. */
   const enviarAccion = useCallback(
-    async (accion: Accion) => {
+    async (accion: Accion): Promise<string> => {
       const resumen = `${accion.name} ${JSON.stringify(accion.context)}`;
       const mensajes: MensajeHistorial[] = [...historial, { rol: "accion", texto: resumen }];
       setHilo((h) => [...h, { tipo: "mensaje", rol: "accion", texto: resumen }]);
-      await enviar({ mensajes, accion });
+      return enviar({ mensajes, accion });
     },
     [enviar, historial],
   );

@@ -46,11 +46,15 @@ se escribe en el chat. Y nada nuevo entra después de la hora 30.
 **Nivel 2 — mejora la demo (1–2 h)**
 
 - **ElevenLabs**: el usuario habla y la interfaz aparece. SDK ya conocido.
-  **Estado (2026-09-12): integración construida, detrás de `FEATURE_VOZ` (apagado)** —
-  falta conectar el botón de la pantalla principal y el del chat de Maya, y crear el
-  agente en la consola de ElevenLabs con los créditos de MLH. Detalle en
-  `docs/como-funciona/premio-elevenlabs.md`. Registro para el premio: pendiente,
-  dueño `demo`.
+  **Estado (2026-09-12 17:45): botón de voz del chat de Maya construido y verificado
+  en vivo con la cuenta MLH** — conectar/escuchar/colgar funciona de punta a punta en
+  `/maya`, con `FEATURE_VOZ=1`. Falta configurar la tool `consultar_maya` en la
+  consola de ElevenLabs (sin eso el agente de voz no toca nuestro flujo real) y
+  probar un turno completo con micrófono real. El botón de la pantalla principal
+  quedó pendiente: `Inicio` cambió de diseño en paralelo (`BarraFlotanteMaya` ahora
+  llama `preguntarEnInicio`, un flujo sin voz) y ya no tiene un slot de micrófono
+  obvio. Detalle completo en `docs/como-funciona/premio-elevenlabs.md`. Registro
+  para el premio: pendiente, dueño `demo`.
 
 **Nivel 3 — si va sobrado (1 h)**
 
