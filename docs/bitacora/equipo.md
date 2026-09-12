@@ -18,6 +18,33 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 01:45 · hecho** — **El motor A2UI quedó.** `packages/a2ui` ya valida con los JSON
+  Schema **oficiales** de la spec y pasa sus **76 casos de conformidad** (109 pruebas en el
+  paquete). Era el último pendiente del rol `contrato`. Lo que esto compra, más allá de los
+  puntos de ingeniería: **agregar un componente al catálogo ya no toca ninguna validación**.
+  Detalle en `arquitectura/renderer-a2ui.md` y `algoritmos/validacion-a2ui.md`.
+
+- **sáb 01:45 · decisión** — **`catalogo.json` se publica como un catálogo A2UI de verdad**
+  (misma forma que el catálogo básico de Google: `components`, `$defs.anyComponent`,
+  `unevaluatedProperties: false`). La razón es que `server_to_client.json` referencia el
+  catálogo con una ref **relativa** sin resolver: la spec deja un hueco con forma de
+  catálogo, y quien compila decide qué entra ahí. Metemos el nuestro y el validador oficial
+  valida `Confirmacion`. Es el mismo validador con el que corremos los casos de
+  conformidad, solo cambiando el catálogo. Respuesta corta al jurado: *"no validamos contra
+  nuestra idea del protocolo; cargamos sus schemas y pasamos sus pruebas"*.
+
+- **sáb 01:45 · para `web`** — agregar un componente son 4 pasos y las pruebas del catálogo
+  te dicen cuál falta: Zod + entrada en `CATALOGO`, `registrar(...)`, `pnpm catalogo`, y el
+  `.jsonl` de ejemplo (que tiene que validar de verdad). Lista en
+  `packages/catalogo/README.md`. Y tres props ya no son tu problema: `ancho`, `weight` y
+  `accessibility` las resuelve el renderer para todos los componentes.
+
+- **sáb 01:45 · ojo con el layout** — A2UI exige **una sola raíz**, así que una pantalla de
+  varias tarjetas necesita un contenedor, y un `Column` raíz ocupa **una** celda de la
+  rejilla bento (apila en vertical). Para el efecto bento la forma A2UI-nativa es un `Row`
+  raíz con `weight` por tarjeta, o `Row`s dentro de un `Column`. `weight` ya funciona; si
+  el prompt del agente va a pedir bento, que pida eso.
+
 - **sáb 01:20 · hecho** — **El backend está completo y el agente ya es real.** 9 tools en
   el MCP (7 de lectura, 2 de acción) y el turno del agente con el Vercel AI SDK contra el
   MCP, emitiendo A2UI validado. 63 pruebas en verde sin llave ni red. El ciclo del reto

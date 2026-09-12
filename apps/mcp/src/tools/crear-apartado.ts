@@ -1,6 +1,6 @@
 import { EntradaCrearApartado, SalidaCrearApartado } from "@maya/schemas";
 import { aplicarAccion } from "../datos/index.js";
-import { apartadosCreados, cuentaDe, type ApartadoCreado } from "../dominio/consultas.js";
+import { apartadosCreados, cuentaDe, cuentasDe, type ApartadoCreado } from "../dominio/consultas.js";
 import { hoy, sumarMeses } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -31,6 +31,11 @@ export const crearApartado: DefinicionDeTool = {
       throw new Error("el objetivo tiene que ser mayor que una sola aportacion");
     }
 
+    // La cuenta de origen tiene que ser de la persona: el modelo no puede apartar de la
+    // cuenta de otro ni por error.
+    if (entrada.cuentaOrigenId && !cuentasDe(entrada.usuarioId).some((c) => c.id === entrada.cuentaOrigenId)) {
+      throw new Error(`la cuenta ${entrada.cuentaOrigenId} no es de ${entrada.usuarioId}`);
+    }
     const cuentaOrigen =
       entrada.cuentaOrigenId ??
       cuentaDe(entrada.usuarioId, "ahorro")?.id ??

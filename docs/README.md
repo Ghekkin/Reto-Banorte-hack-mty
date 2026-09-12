@@ -53,7 +53,7 @@ quien.
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
 - [Sistema de diseño](arquitectura/diseno.md) — shadcn/ui + paleta de Banorte, con los tokens
-- [Renderer A2UI propio](arquitectura/renderer-a2ui.md) — plan de `packages/a2ui`: estructura, reducer, bindings, acciones, criterios de aceptación
+- [El motor A2UI propio](arquitectura/renderer-a2ui.md) — `packages/a2ui`: los cuatro mensajes, bindings, árbol, las cuatro validaciones, el catálogo como JSON Schema, y qué no implementamos
 - [Contrato agente ↔ cliente](arquitectura/contrato-agente-cliente.md) — el endpoint, la petición, el stream JSONL, la convención de acciones
 - [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)
@@ -72,6 +72,7 @@ quien.
 - [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
+- [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

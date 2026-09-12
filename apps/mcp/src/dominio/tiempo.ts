@@ -14,11 +14,17 @@ import { tabla } from "../datos/index.js";
  */
 let cacheHoy: string | undefined;
 
+const FECHA_ISO = /^\d{4}-\d{2}-\d{2}$/;
+
 export function hoy(): string {
   if (cacheHoy) return cacheHoy;
   if (config.hoy) {
-    cacheHoy = config.hoy;
-    return cacheHoy;
+    if (FECHA_ISO.test(config.hoy)) {
+      cacheHoy = config.hoy;
+      return cacheHoy;
+    }
+    // Un typo en el .env no puede dejar la demo sin movimientos en silencio.
+    console.warn(`[mcp] MCP_HOY="${config.hoy}" no es AAAA-MM-DD; se ignora`);
   }
   let maxima = "";
   for (const fila of tabla("movimientos")) {
@@ -50,7 +56,8 @@ export function sumarMeses(fechaISO: string, meses: number): string {
   const [anio, mes, dia] = fechaISO.split("-").map(Number) as [number, number, number];
   const total = (anio * 12 + (mes - 1)) + meses;
   const anioDestino = Math.floor(total / 12);
-  const mesDestino = (total % 12) + 1;
+  // `%` en JS conserva el signo: con meses negativos daria un mes negativo.
+  const mesDestino = (((total % 12) + 12) % 12) + 1;
   const ultimo = diasDelMes(anioDestino, mesDestino);
   return `${anioDestino}-${String(mesDestino).padStart(2, "0")}-${String(Math.min(dia, ultimo)).padStart(2, "0")}`;
 }
@@ -64,20 +71,13 @@ export function diasDelMes(anio: number, mes: number): number {
   return new Date(Date.UTC(anio, mes, 0)).getUTCDate();
 }
 
-/** Cuantos meses hay entre dos fechas, redondeando hacia arriba. */
-export function mesesEntre(desdeISO: string, hastaISO: string): number {
-  const [a1, m1] = desdeISO.split("-").map(Number) as [number, number];
-  const [a2, m2] = hastaISO.split("-").map(Number) as [number, number];
-  return (a2 - a1) * 12 + (m2 - m1);
-}
-
-/** `2026-09` -> `septiembre de 2026`. Solo para los mensajes que el agente parafrasea. */
-const MESES = [
-  "enero", "febrero", "marzo", "abril", "mayo", "junio",
-  "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
-];
-
-export function periodoEnPalabras(periodo: string): string {
-  const mes = Number(periodo.slice(5, 7));
-  return `${MESES[mes - 1] ?? periodo} de ${periodo.slice(0, 4)}`;
+/**
+ * El ultimo mes CERRADO respecto a una fecha: si la fecha es el ultimo dia de su mes, ese
+ * mes; si no, el anterior. Es el periodo por defecto de las comparaciones de gasto: un
+ * mes a medias contra meses completos hace que todo parezca bajar.
+ */
+export function ultimoMesCerrado(fechaISO: string): string {
+  const [anio, mes, dia] = fechaISO.split("-").map(Number) as [number, number, number];
+  const periodo = periodoDe(fechaISO);
+  return dia >= diasDelMes(anio, mes) ? periodo : periodoAnterior(periodo);
 }

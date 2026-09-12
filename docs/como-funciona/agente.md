@@ -77,7 +77,7 @@ puede expresar en un schema que los dos proveedores acepten igual; con texto má
 validación de abajo el contrato se cumple exactamente igual y no dependemos de las rarezas
 de cada API. La validación de verdad está en `armarMensajes`.
 
-### Las cuatro validaciones de `armarMensajes`
+### Las cinco validaciones de `armarMensajes`
 
 1. **Estructura A2UI**: `validarMensaje` de `packages/a2ui`, la misma puerta que usa el
    cliente (versión, un solo verbo por mensaje, ids únicos, forma de `children`).
@@ -89,6 +89,14 @@ de cada API. La validación de verdad está en `armarMensajes`.
    (`{ "path": "/…" }`) no se validan por valor —eso lo resuelve el cliente contra el data
    model—, y si al modelo se le olvidó la prop `razon` en un componente, se le pone la del
    turno en vez de rechazar la pantalla entera por una frase.
+5. **Los JSON Schema oficiales de A2UI**, con nuestro catálogo dentro
+   (`crearValidador` de `@maya/a2ui/esquema`). Es el cerco que no tiene opinión nuestra:
+   los mismos schemas de `spec/v0_9_1/` que validan el catálogo básico de Google validan
+   `Confirmacion`. Va al final porque los pasos 3 y 4 dan mejores mensajes para lo suyo
+   (y el 4 completa la `razon`); este atrapa lo que ninguno mira: una prop inventada, una
+   forma mal anidada, un `action.event.name` que el catálogo no declara. Cuando entra un
+   componente nuevo, queda validado sin que nadie escriba una regla.
+   Ver [Validación A2UI](../algoritmos/validacion-a2ui.md).
 
 ### La superficie se rearma completa en cada turno
 

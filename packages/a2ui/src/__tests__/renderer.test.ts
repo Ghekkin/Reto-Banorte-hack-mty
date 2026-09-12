@@ -282,3 +282,126 @@ describe("componentesVisibles", () => {
     expect(nombresVisibles(estado.get("principal")!)).toEqual(["Column", "Text"]);
   });
 });
+
+/* --- Fidelidad a la spec: lo que el renderer tenia a medias (ADR 0008) --- */
+
+import { borrar } from "../bindings";
+import { revisarArbolCompleto } from "../validar";
+import { variablesDelTema } from "../Superficie";
+
+describe("updateDataModel, los dos opcionales de la spec", () => {
+  const conDatos = () => {
+    const { estado } = procesarVarios(estadoVacio(), [
+      crear,
+      {
+        version: VERSION_A2UI,
+        updateDataModel: { surfaceId: "principal", path: "/", value: { tarjeta: { saldoCentavos: 100 }, plazo: 18 } },
+      },
+    ]);
+    return estado;
+  };
+
+  it("sin `value`, borra la llave: 'the key at path is removed'", () => {
+    const { estado } = procesar(conDatos(), {
+      version: VERSION_A2UI,
+      updateDataModel: { surfaceId: "principal", path: "/plazo" },
+    });
+    const modelo = estado.get("principal")!.dataModel;
+    expect("plazo" in modelo).toBe(false);
+    expect(modelo.tarjeta).toEqual({ saldoCentavos: 100 });
+  });
+
+  it("sin `path`, se refiere al modelo entero", () => {
+    const { estado } = procesar(conDatos(), {
+      version: VERSION_A2UI,
+      updateDataModel: { surfaceId: "principal", value: { otro: true } },
+    });
+    expect(estado.get("principal")!.dataModel).toEqual({ otro: true });
+  });
+
+  it("borrar no muta el original y aguanta un camino que no existe", () => {
+    const antes = { a: { b: 1, c: 2 } };
+    expect(borrar(antes, "/a/b")).toEqual({ a: { c: 2 } });
+    expect(antes).toEqual({ a: { b: 1, c: 2 } });
+    expect(borrar(antes, "/no/existe")).toEqual(antes);
+  });
+});
+
+describe("el tema de la superficie", () => {
+  it("se guarda tal como vino en createSurface", () => {
+    const { estado } = procesar(estadoVacio(), {
+      version: VERSION_A2UI,
+      createSurface: { surfaceId: "principal", catalogId: "x", theme: { primaryColor: "#EC0029" } },
+    });
+    expect(estado.get("principal")!.theme).toEqual({ primaryColor: "#EC0029" });
+  });
+
+  it("se traduce a variable CSS solo si el color es un hex de verdad", () => {
+    expect(variablesDelTema({ primaryColor: "#EC0029" })).toEqual({ "--primary": "#EC0029" });
+    expect(variablesDelTema({ primaryColor: "rojo" })).toBeUndefined();
+    expect(variablesDelTema(undefined)).toBeUndefined();
+  });
+});
+
+describe("arbolCompleto: el cerco que se pide cuando llega la pantalla entera", () => {
+  const pantalla = (components: unknown[]): MensajeA2UI =>
+    ({ version: VERSION_A2UI, updateComponents: { surfaceId: "principal", components } }) as MensajeA2UI;
+
+  it("sin la opcion, un updateComponents incremental es legitimo (lo permite la spec)", () => {
+    const r = validarMensaje(pantalla([{ id: "plan", component: "PlanDePago" }]));
+    expect(r.ok).toBe(true);
+  });
+
+  it("con la opcion, exige la raiz root", () => {
+    const r = validarMensaje(pantalla([{ id: "plan", component: "PlanDePago" }]), { arbolCompleto: true });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores.join(" ")).toContain("root");
+  });
+
+  it("con la opcion, rechaza un hijo que no viene en la lista", () => {
+    const r = validarMensaje(pantalla([{ id: "root", component: "Column", children: ["fantasma"] }]), {
+      arbolCompleto: true,
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores.join(" ")).toContain("fantasma");
+  });
+
+  it("revisarArbolCompleto tambien mira la plantilla", () => {
+    const errores = revisarArbolCompleto([
+      { id: "root", component: "Column", children: { componentId: "fila", path: "/lista" } },
+    ]);
+    expect(errores.join(" ")).toContain("fila");
+  });
+});
+
+describe("validarMensaje con validador de schemas", () => {
+  it("delega en el y arrastra sus errores con el lugar donde pasan", () => {
+    const r = validarMensaje(crear, {
+      esquema: () => [{ donde: "/createSurface/catalogId", mensaje: "debe ser una URL" }],
+    });
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores).toEqual(["/createSurface/catalogId debe ser una URL"]);
+  });
+
+  it("no lo llama si la estructura ya viene mal: sus errores solo estorbarian", () => {
+    let llamado = false;
+    const r = validarMensaje({ version: "v0.1", createSurface: { surfaceId: "x", catalogId: "y" } }, {
+      esquema: () => {
+        llamado = true;
+        return [];
+      },
+    });
+    expect(r.ok).toBe(false);
+    expect(llamado).toBe(false);
+  });
+});
+
+describe("updateComponents vacio", () => {
+  it("se rechaza: la spec pide minItems 1", () => {
+    const r = validarMensaje({
+      version: VERSION_A2UI,
+      updateComponents: { surfaceId: "principal", components: [] },
+    });
+    expect(r.ok).toBe(false);
+  });
+});

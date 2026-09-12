@@ -67,6 +67,43 @@ export function escribir(
 }
 
 /**
+ * Borra la llave que `path` apunta y devuelve un objeto NUEVO. Es lo que la spec pide
+ * cuando `updateDataModel` llega SIN `value`: "the key at 'path' is removed".
+ *
+ * Un camino que no existe no es un error: el resultado es el mismo objeto.
+ * `path: "/"` deja el modelo vacio.
+ */
+export function borrar(objeto: Record<string, unknown>, path: string): Record<string, unknown> {
+  const segs = segmentos(path);
+  if (segs.length === 0) return {};
+
+  const copia: Record<string, unknown> = { ...objeto };
+  let actual: Record<string, unknown> | unknown[] = copia;
+  for (let i = 0; i < segs.length - 1; i++) {
+    const seg = segs[i]!;
+    const siguiente: unknown = Array.isArray(actual)
+      ? actual[Number(seg)]
+      : (actual as Record<string, unknown>)[seg];
+    if (siguiente === null || typeof siguiente !== "object") return copia; // no existe: nada que borrar
+    const clon: Record<string, unknown> | unknown[] = Array.isArray(siguiente)
+      ? [...siguiente]
+      : { ...(siguiente as Record<string, unknown>) };
+    if (Array.isArray(actual)) actual[Number(seg)] = clon;
+    else (actual as Record<string, unknown>)[seg] = clon;
+    actual = clon;
+  }
+
+  const ultimo = segs[segs.length - 1]!;
+  if (Array.isArray(actual)) {
+    const i = Number(ultimo);
+    if (Number.isInteger(i)) actual.splice(i, 1);
+  } else {
+    delete (actual as Record<string, unknown>)[ultimo];
+  }
+  return copia;
+}
+
+/**
  * Sustituye cada `{ path }` de las props por su valor. Recorre objetos y arreglos
  * anidados: un `context` de accion se resuelve con la misma funcion.
  */

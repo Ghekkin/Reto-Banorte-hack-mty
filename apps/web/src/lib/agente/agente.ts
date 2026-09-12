@@ -27,6 +27,10 @@ export type OpcionesDeTurno = {
   modelo?: LanguageModel;
   /** Para pruebas: tools ya armadas, sin abrir conexion al MCP. */
   herramientas?: ToolSet;
+  /** La senal de la peticion HTTP: si la persona cierra la pestana, el turno se corta. */
+  senal?: AbortSignal;
+  /** Tope del turno en ms. Default `TIMEOUT_TURNO_MS`; las pruebas lo bajan. */
+  timeoutMs?: number;
 };
 
 /** Dos entregas invalidas y se corta: el contrato permite un reintento, no una barra libre. */
@@ -47,19 +51,40 @@ export async function* correrTurno(
   /** `toolCallId` -> que tool fue y cuando empezo, para medir cada llamada. */
   const enVuelo = new Map<string, { nombre: string; inicio: number }>();
   const usadas: LlamadaRegistrada[] = [];
+  const timeoutMs = opciones.timeoutMs ?? TIMEOUT_TURNO_MS;
   let cliente: Client | undefined;
   let pasos = 0;
+  /** Que corto el turno antes de tiempo, si algo lo corto. Decide que error se reporta. */
+  let corte: "timeout" | "cliente" | "modelo" | undefined;
 
   try {
     let herramientas = opciones.herramientas;
     if (!herramientas) {
-      cliente = await conectarMcp();
-      herramientas = await herramientasDelMcp(cliente, {
-        usuarioId: peticion.usuarioId,
-        idempotencyKey: peticion.accion?.context?.idempotencyKey as string | undefined,
-        alTerminar: (llamada) => usadas.push(llamada),
-      });
+      // El MCP caido es un error de TOOLS, no del modelo: el panel de transparencia y
+      // quien lea el log tienen que saber donde mirar.
+      try {
+        cliente = await conectarMcp();
+        herramientas = await herramientasDelMcp(cliente, {
+          usuarioId: peticion.usuarioId,
+          idempotencyKey: peticion.accion?.context?.idempotencyKey as string | undefined,
+          alTerminar: (llamada) => usadas.push(llamada),
+        });
+      } catch (error) {
+        yield {
+          tipo: "error",
+          codigo: "tool",
+          mensaje: `no pude conectar al MCP en ${config.urlMcp}: ${error instanceof Error ? error.message : String(error)}`,
+        };
+        yield { tipo: "texto", valor: "No alcanzo tus datos en este momento. Intenta de nuevo en un momento." };
+        yield { tipo: "fin", pasos: 0, ms: Date.now() - inicio };
+        return;
+      }
     }
+
+    // Dos razones para cortar: el tope del turno, y que la persona haya cerrado la
+    // pestana. Cualquiera de las dos aborta la llamada al proveedor y las tools en vuelo.
+    const porTiempo = AbortSignal.timeout(timeoutMs);
+    const senal = opciones.senal ? AbortSignal.any([porTiempo, opciones.senal]) : porTiempo;
 
     const pintor = crearPintor();
     const resultado = streamText({
@@ -73,7 +98,7 @@ export async function* correrTurno(
         () => pintor.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
       ],
       providerOptions: opcionesDelProveedor(),
-      abortSignal: AbortSignal.timeout(TIMEOUT_TURNO_MS),
+      abortSignal: senal,
     });
 
     let prosa = "";
@@ -118,11 +143,19 @@ export async function* correrTurno(
           break;
 
         case "error":
+          corte = "modelo";
           yield {
             tipo: "error",
             codigo: "modelo",
             mensaje: parte.error instanceof Error ? parte.error.message : String(parte.error),
           };
+          break;
+
+        // El AI SDK no lanza cuando se dispara el abortSignal: emite esta parte y cierra
+        // el stream. Sin este caso, un timeout se reportaba como "el modelo no entrego
+        // pantalla", que es otra cosa y manda a buscar el problema en el lugar equivocado.
+        case "abort":
+          corte = opciones.senal?.aborted ? "cliente" : "timeout";
           break;
 
         default:
@@ -135,6 +168,14 @@ export async function* correrTurno(
       yield { tipo: "texto", valor: ultima.texto };
       yield { tipo: "razon", valor: ultima.razon };
       if (ultima.sugerencias.length) yield { tipo: "sugerencias", valores: ultima.sugerencias };
+    } else if (corte === "timeout") {
+      yield { tipo: "error", codigo: "timeout", mensaje: `el turno paso de ${timeoutMs / 1000} s y se corto` };
+      yield { tipo: "texto", valor: "Me tarde de mas. Intenta de nuevo." };
+    } else if (corte === "cliente") {
+      // Nadie esta leyendo: no vale la pena inventar una respuesta.
+    } else if (corte === "modelo") {
+      // El error del proveedor ya salio arriba; solo falta que la conversacion no quede muda.
+      yield { tipo: "texto", valor: "Algo falló de mi lado. Intenta de nuevo." };
     } else {
       // Nunca llego una pantalla valida. La conversacion no se queda muda: se contesta
       // con lo que el modelo haya escrito en prosa (contrato agente-cliente, errores).
@@ -156,16 +197,19 @@ export async function* correrTurno(
         pasos,
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
         pintada: pintor.pintada(),
+        corte: corte ?? null,
         ms: Date.now() - inicio,
       }),
     );
   } catch (error) {
+    // Por si algun proveedor SI lanza al abortar (el contrato del SDK es emitir `abort`,
+    // pero esto no cuesta nada y evita reportar un timeout como error del modelo).
     const abortado = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
     yield {
       tipo: "error",
       codigo: abortado ? "timeout" : "modelo",
       mensaje: abortado
-        ? `el turno paso de ${TIMEOUT_TURNO_MS / 1000} s y se corto`
+        ? `el turno paso de ${timeoutMs / 1000} s y se corto`
         : error instanceof Error
           ? error.message
           : String(error),

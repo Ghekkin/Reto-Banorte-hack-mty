@@ -6,6 +6,59 @@
 > están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
 > adelante, hora de Monterrey como manda el repo.
 
+### 01:45 · hecho — El motor A2UI terminado: ajv contra la spec y los 76 casos oficiales
+
+Cerré el último pendiente de `contrato` (`packages/a2ui`), que es dominio ajeno otra vez.
+El tablero decía "falta ajv contra `spec/v0_9_1/json/` y los 8 casos de conformidad" y eso
+es justo lo que faltaba para que el resto del equipo pueda trabajar sin tocar el motor.
+
+**El hallazgo que lo hizo fácil.** `server_to_client.json` referencia los componentes con
+`catalog.json#/$defs/anyComponent`: una ref **relativa y sin resolver**, contra un archivo
+que no existe en la spec. O sea que la especificación deja un hueco con forma de catálogo y
+quien compila los schemas decide qué entra ahí. Registrando el catálogo básico oficial
+corren los 76 casos de conformidad; registrando el nuestro, el mismo validador oficial
+valida `Confirmacion`. Un validador, dos catálogos, cero reglas escritas a mano. Por eso
+`catalogo.json` ahora se genera con la forma de un catálogo A2UI real.
+
+**Lo que costó trabajo de verdad no fue validar, fue el mensaje de error.** El schema es un
+`oneOf` de los cuatro verbos y cada componente es otro `oneOf` sobre los 18 del catálogo:
+un `variant` mal escrito da **81 errores** (lo medí). Para un modelo que tiene que
+corregirse en el paso siguiente, eso es ruido. La salida fue no entrar por arriba: el JSON
+ya dice qué es, así que se valida contra el `$defs` del verbo que trae y contra el schema
+del componente que dice ser. Mismos schemas oficiales, leídos más adentro. Para conformidad
+hay otro validador que sí entra por arriba y no recorta nada.
+
+**Tres cosas que encontré de paso y arreglé:**
+
+- `ancho` no hacía nada. La prop existía en `comunes.ts` y la rejilla bento buscaba
+  `[data-ancho=amplio]`, pero nadie ponía el atributo: ningún componente lo spreadeaba.
+  Lo puse en el renderer (`Superficie.tsx`), que es donde debe estar — si cada autor de
+  componente tiene que acordarse, el séptimo se olvida. Igual con `weight` (flex-grow) y
+  `accessibility` (aria), que estaban en la lista de llaves reservadas y no se usaban.
+- `updateDataModel` **sin** `value` debe borrar la llave según la spec, y nosotros
+  escribíamos `undefined`. Y `path` es opcional. Arreglados los dos, con prueba.
+- El `catalogId` del catálogo publicado salía con `localhost`. Ahora el route lo reescribe
+  con `URL_CATALOGO` al servirlo, y el archivo del repo se genera siempre con la URL de
+  desarrollo para que el CI pueda exigir que no cambie (si el generador leyera la variable
+  de entorno, el diff del CI fallaría según quién lo corra).
+
+**La pieza que le sirve al equipo** son las 12 pruebas nuevas de `packages/catalogo`: si
+alguien agrega un componente y olvida registrarlo, regenerar el catálogo o escribir su
+`.jsonl`, falla ahí con el mensaje de qué falta. El motor ya no es algo que haya que
+entender para trabajar: es algo que te dice qué te falta.
+
+**Choque de sesiones.** Trabajando a la vez en el mismo árbol, la otra sesión y yo
+escribimos `componentesVisibles` las dos. Lo vi al compilar (`Multiple exports with the
+same name`), quité el mío, y la otra sesión acabó reconciliando las dos versiones. Lección:
+con dos sesiones en el mismo checkout, antes de escribir una función nueva conviene
+`grep` del nombre. No basta con `git pull`, porque el trabajo del otro aún no está
+commiteado.
+
+**Lo que NO hice:** el canal de error de vuelta (`VALIDATION_FAILED` de
+`client_to_server.json`) quedó a medias a propósito: `<Superficie alFallar>` lo emite, pero
+nadie lo escucha todavía. Conectarlo al agente le permitiría corregirse en el mismo turno,
+y es la mejor respuesta a "¿y si el modelo se equivoca?". Queda anotado, no empezado.
+
 ### 01:20 · hecho — Backend completo: las 9 tools del MCP y el agente real
 
 Tomé el backend entero de un jalón, que es dominio de los roles `mcp` y `contrato`

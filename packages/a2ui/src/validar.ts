@@ -1,28 +1,53 @@
-import { VERSION_A2UI, type MensajeA2UI } from "./tipos";
+import { hijosFijos, ID_RAIZ, VERSION_A2UI, type Componente, type MensajeA2UI } from "./tipos";
 
 /**
- * Puerta de entrada: ninguna linea que no pase por aqui toca el estado, ni en el
- * cliente ni al salir del agente (contrato agente-cliente).
+ * La puerta. Ninguna linea que no pase por aqui toca el estado, ni en el cliente ni al
+ * salir del agente (contrato agente-cliente).
  *
- * Lo que hay: validacion estructural fiel al formato de la spec (props planas
- * junto a `id` y `component`, `children` como lista o plantilla, raiz `root`).
+ * Son tres cercos, de barato a caro, y el que llama elige hasta donde llega:
  *
- * LO QUE FALTA, del rol `contrato` (ADR 0008, punto 2): cargar con ajv
- * `spec/v0_9_1/json/server_to_client.json` (+ `common_types.json` y el schema de
- * NUESTRO catalogo en el lugar de `catalog.json#/$defs/anyComponent`) y correr los
- * 8 casos de `spec/v0_9_1/test/cases/` como tests. `ajv` ya es dependencia para eso.
- * Hasta entonces, esta funcion es la unica puerta y por eso rechaza de mas, no de menos.
+ *  1. **Estructura** (siempre): el formato de la spec —exactamente una clave de mensaje,
+ *     `version`, props planas, `children` como lista o plantilla—. No necesita nada.
+ *  2. **Catalogo por nombre** (`nombres`): el componente existe en el registro. Es lo que
+ *     el cliente puede comprobar en el navegador sin cargar ajv.
+ *  3. **Schemas oficiales** (`esquema`): cada prop de cada componente contra los JSON
+ *     Schema de `spec/v0_9_1/` con NUESTRO catalogo en el lugar de `anyComponent`. Vive
+ *     en `@maya/a2ui/esquema` porque arrastra ajv; lo usa el agente, en el servidor.
+ *
+ * Y un cerco aparte, para cuando el mensaje trae la pantalla entera (`arbolCompleto`):
+ * que exista la raiz `root` y que ningun componente cite a un hijo que no viene. La spec
+ * permite mandar la pantalla en varios `updateComponents`, asi que esto NO se exige por
+ * defecto: lo pide quien sabe que manda todo junto (el agente, en cada turno).
  */
 
-export type Resultado =
-  | { ok: true; mensaje: MensajeA2UI }
-  | { ok: false; errores: string[] };
+export type Resultado = { ok: true; mensaje: MensajeA2UI } | { ok: false; errores: string[] };
+
+/** Un error del validador de schemas: donde (JSON Pointer) y que. */
+export type ErrorDeEsquema = { donde: string; mensaje: string };
+
+/** La forma de lo que devuelve `crearValidador()` de `@maya/a2ui/esquema`. */
+export type ValidadorDeEsquema = (mensaje: unknown) => ErrorDeEsquema[];
+
+export type OpcionesDeValidacion = {
+  /** Los nombres que el catalogo acepta (`registro.nombres()`). */
+  nombres?: Set<string>;
+  /** El validador contra los schemas oficiales, si quien llama puede pagarlo. */
+  esquema?: ValidadorDeEsquema;
+  /** El `updateComponents` trae la pantalla completa: se exige raiz e hijos existentes. */
+  arbolCompleto?: boolean;
+};
 
 const CLAVES = ["createSurface", "updateComponents", "updateDataModel", "deleteSurface"] as const;
 
-/** Nombres que el catalogo acepta; se lo pasa quien valida (registro.nombres()). */
-export function validarMensaje(entrada: unknown, componentesValidos?: Set<string>): Resultado {
+/**
+ * `validarMensaje(m)` valida estructura. `validarMensaje(m, nombres)` agrega el catalogo
+ * por nombre (forma historica, se mantiene). `validarMensaje(m, { … })` es el control
+ * completo.
+ */
+export function validarMensaje(entrada: unknown, opciones?: Set<string> | OpcionesDeValidacion): Resultado {
+  const { nombres, esquema, arbolCompleto } = normalizar(opciones);
   const errores: string[] = [];
+
   if (typeof entrada !== "object" || entrada === null) {
     return { ok: false, errores: ["el mensaje no es un objeto"] };
   }
@@ -56,6 +81,7 @@ export function validarMensaje(entrada: unknown, componentesValidos?: Set<string
     if (!Array.isArray(lista)) {
       errores.push("updateComponents.components no es un arreglo");
     } else {
+      if (lista.length === 0) errores.push("updateComponents.components viene vacio");
       const ids = new Set<string>();
       for (const [i, c] of lista.entries()) {
         if (typeof c !== "object" || c === null) {
@@ -67,7 +93,7 @@ export function validarMensaje(entrada: unknown, componentesValidos?: Set<string
         else if (ids.has(comp.id)) errores.push(`components[${i}].id duplicado: ${comp.id}`);
         else ids.add(comp.id);
         if (typeof comp.component !== "string") errores.push(`components[${i}].component falta`);
-        else if (componentesValidos && !componentesValidos.has(comp.component)) {
+        else if (nombres && !nombres.has(comp.component)) {
           errores.push(`components[${i}].component "${comp.component}" no esta en el catalogo`);
         }
         if (comp.children !== undefined) {
@@ -87,15 +113,52 @@ export function validarMensaje(entrada: unknown, componentesValidos?: Set<string
         }
       }
       // La spec pide id "root" en UNA de las listas, no en cada mensaje: un
-      // updateComponents incremental es legitimo. Lo resuelve `calcularRaiz`.
+      // updateComponents incremental es legitimo. Por eso `arbolCompleto` es opcional.
+      if (arbolCompleto && errores.length === 0) {
+        errores.push(...revisarArbolCompleto(lista as Componente[]));
+      }
     }
   }
 
-  if (clave === "updateDataModel" && typeof cuerpo.path !== "string") {
-    errores.push("updateDataModel.path falta o no es texto");
+  // `path` y `value` son opcionales en la spec (sin `value` se borra la llave), asi que
+  // aqui solo se comprueba el tipo de lo que si vino.
+  if (clave === "updateDataModel" && cuerpo.path !== undefined && typeof cuerpo.path !== "string") {
+    errores.push("updateDataModel.path no es texto");
   }
 
-  return errores.length === 0
-    ? { ok: true, mensaje: entrada as MensajeA2UI }
-    : { ok: false, errores };
+  // El cerco caro va al final: si la estructura ya esta mal, sus errores solo estorban.
+  if (esquema && errores.length === 0) {
+    errores.push(...esquema(entrada).map((e) => `${e.donde} ${e.mensaje}`));
+  }
+
+  return errores.length === 0 ? { ok: true, mensaje: entrada as MensajeA2UI } : { ok: false, errores };
+}
+
+function normalizar(opciones?: Set<string> | OpcionesDeValidacion): OpcionesDeValidacion {
+  if (!opciones) return {};
+  return opciones instanceof Set ? { nombres: opciones } : opciones;
+}
+
+/**
+ * Una lista de componentes que se supone completa tiene que poder pintarse: con raiz
+ * `root` y sin citar hijos que no existen. Un hijo inexistente no es un error de la
+ * spec, es un hueco invisible en la pantalla; vale mas rechazarlo aqui —donde el agente
+ * lee el error y lo corrige— que descubrirlo en el navegador.
+ */
+export function revisarArbolCompleto(componentes: Componente[]): string[] {
+  const errores: string[] = [];
+  const ids = new Set(componentes.map((c) => c.id));
+  if (!ids.has(ID_RAIZ)) {
+    errores.push(`falta el componente raiz: uno de los componentes tiene que tener id "${ID_RAIZ}"`);
+  }
+  for (const componente of componentes) {
+    for (const hijo of hijosFijos(componente)) {
+      if (!ids.has(hijo)) errores.push(`${componente.id} declara el hijo "${hijo}", que no esta en la lista`);
+    }
+    const plantilla = componente.children;
+    if (plantilla && !Array.isArray(plantilla) && !ids.has(plantilla.componentId)) {
+      errores.push(`${componente.id} usa la plantilla "${plantilla.componentId}", que no esta en la lista`);
+    }
+  }
+  return errores;
 }

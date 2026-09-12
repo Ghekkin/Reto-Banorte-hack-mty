@@ -93,8 +93,8 @@ el campo nuevo es opcional.
 
 - **Todo en TypeScript**: Next.js para el host de la UI generativa, servidor MCP en TS
   con `@modelcontextprotocol/sdk`, schemas compartidos con Zod. ADR 0001.
-- **A2UI real (v0.9.1) con catálogo propio y renderer propio** (`packages/a2ui`, ~200
-  líneas, validado con los JSON Schema oficiales): el agente emite
+- **A2UI real (v0.9.1) con catálogo propio y motor propio** (`packages/a2ui`, ~850
+  líneas, validado con los JSON Schema oficiales y sus 76 casos de conformidad): el agente emite
   `createSurface`/`updateComponents`/`updateDataModel` restringido a nuestro catálogo y
   recibe los `action` de la UI. Sin `@a2ui/react`. ADR 0003 + 0008.
 - **Python solo detrás de una tool, nunca en el contrato tool → UI.** Si hace falta ML
@@ -125,8 +125,8 @@ el campo nuevo es opcional.
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
 | `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | shell listo; **agente real** con el AI SDK (Gemini/Claude), MCP y A2UI validado; sin llave sirve una pantalla de ejemplo |
 | `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, `src/dominio/` (finanzas, consultas, tiempo), estado mutable | **9 de 9 tools** (7 lectura + 2 acción), 31 pruebas |
-| `packages/a2ui/` (`@maya/a2ui`) | Renderer A2UI propio: `validar`, `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008). `spec/` con los schemas oficiales | construido; falta ajv contra `spec/` |
-| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio y `catalogo.json` generado desde los schemas | 1 de 8 componentes; los 7 con su encargo escrito |
+| `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 109 pruebas, incluidos los **76 casos de conformidad** oficiales de `spec/` |
+| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod **como catálogo A2UI de verdad** (el validador oficial valida nuestros componentes) | 1 de 8 componentes; los 7 con su encargo escrito. 12 pruebas cuidan la cadena de cada componente nuevo |
 | `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **9 de 9** |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 

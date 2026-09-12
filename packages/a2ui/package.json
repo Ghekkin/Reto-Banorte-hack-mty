@@ -8,14 +8,17 @@
   "types": "./src/index.ts",
   "exports": {
     ".": "./src/index.ts",
-    "./layout": "./src/layout/index.tsx"
+    "./layout": "./src/layout/index.tsx",
+    "./esquema": "./src/esquema.ts",
+    "./layout/esquemas": "./src/layout/esquemas.ts"
   },
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
-    "ajv": "^8.17.1"
+    "ajv": "^8.17.1",
+    "ajv-formats": "^3.0.1"
   },
   "peerDependencies": {
     "react": "^19"

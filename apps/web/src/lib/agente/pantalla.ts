@@ -1,17 +1,17 @@
 import { z } from "zod";
 import { tool, type Tool } from "ai";
 import {
-  ID_RAIZ,
   NOMBRES_DE_LAYOUT,
   VERSION_A2UI,
   esBinding,
-  hijosFijos,
   propsDe,
   validarMensaje,
   type Componente,
   type MensajeA2UI,
 } from "@maya/a2ui";
+import { crearValidador } from "@maya/a2ui/esquema";
 import { CATALOGO } from "@maya/catalogo";
+import catalogoPublicado from "@maya/catalogo/catalogo.json";
 import { SUPERFICIE, config } from "./config";
 
 /**
@@ -116,6 +116,17 @@ export function crearPintor(): Pintor {
   };
 }
 
+/**
+ * La validacion contra los JSON Schema oficiales de A2UI con NUESTRO catalogo dentro
+ * (`packages/a2ui/src/esquema.ts`). Compilar ajv cuesta unos cientos de ms, asi que se
+ * hace una vez por proceso y no una por turno.
+ */
+let validadorOficial: ReturnType<typeof crearValidador> | undefined;
+function esquemaDelCatalogo(): ReturnType<typeof crearValidador> {
+  validadorOficial ??= crearValidador(catalogoPublicado);
+  return validadorOficial;
+}
+
 /** Los nombres que el agente tiene permitido emitir: el catalogo mas el layout basico. */
 export function nombresPermitidos(): Set<string> {
   return new Set<string>([...NOMBRES_DE_LAYOUT, ...CATALOGO.map((c) => c.nombre)]);
@@ -134,65 +145,67 @@ type Armado = { ok: true; mensajes: MensajeA2UI[]; componentes: number } | { ok:
 export function armarMensajes(entrada: EntradaPintarPantalla): Armado {
   const errores: string[] = [];
 
-  const componentes = parsear<Componente[]>(entrada.componentesJson, "componentesJson", errores);
-  const datos = entrada.datosJson ? parsear<Record<string, unknown>>(entrada.datosJson, "datosJson", errores) : {};
-  if (!componentes || !datos) return { ok: false, errores };
+  const componentes = parsear(entrada.componentesJson, "componentesJson", errores);
+  const datos = entrada.datosJson ? parsear(entrada.datosJson, "datosJson", errores) : {};
+  if (errores.length) return { ok: false, errores };
 
-  if (!Array.isArray(componentes)) return { ok: false, errores: ["componentesJson tiene que ser un arreglo"] };
+  if (!Array.isArray(componentes)) return { ok: false, errores: ["componentesJson tiene que ser un arreglo de componentes"] };
   if (componentes.length === 0) return { ok: false, errores: ["componentesJson viene vacio"] };
+  // El data model es la raiz del JSON Pointer: tiene que ser un objeto. Un arreglo o un
+  // texto ahi dejarian al renderer resolviendo `/plan/plazo` contra algo que no lo tiene.
+  if (!esObjetoPlano(datos)) return { ok: false, errores: ["datosJson tiene que ser un objeto JSON ({ ... })"] };
 
   const mensajes: MensajeA2UI[] = [
     { version: VERSION_A2UI, createSurface: { surfaceId: SUPERFICIE, catalogId: config.urlCatalogo } },
-    { version: VERSION_A2UI, updateComponents: { surfaceId: SUPERFICIE, components: componentes } },
+    { version: VERSION_A2UI, updateComponents: { surfaceId: SUPERFICIE, components: componentes as Componente[] } },
     { version: VERSION_A2UI, updateDataModel: { surfaceId: SUPERFICIE, path: "/", value: datos } },
   ];
 
-  // 1) Estructura y catalogo: la misma puerta que usa el cliente.
+  // 1) y 2) Estructura, catalogo por nombre y arbol completo (raiz `root` e hijos que
+  // existan): la misma puerta que usa el cliente, en su modo "la pantalla viene entera".
   const permitidos = nombresPermitidos();
   for (const mensaje of mensajes) {
-    const resultado = validarMensaje(mensaje, permitidos);
+    const resultado = validarMensaje(mensaje, { nombres: permitidos, arbolCompleto: true });
     if (!resultado.ok) errores.push(...resultado.errores);
   }
 
-  // 2) El arbol tiene que poder pintarse: raiz e hijos que existan.
-  errores.push(...revisarArbol(componentes));
-
-  // 3) Las props de cada componente, contra el schema de su entrada del catalogo.
-  for (const componente of componentes) {
+  // 3) Las props de cada componente, contra el schema de su entrada del catalogo, y la
+  // regla de diseno que ningun schema individual puede ver: un solo heroe por pantalla.
+  for (const componente of componentes as Componente[]) {
     errores.push(...revisarProps(componente, entrada.razon));
+  }
+  const heroes = (componentes as Componente[]).filter((c) => c.heroe === true).map((c) => c.id);
+  if (heroes.length > 1) {
+    errores.push(`solo un componente por pantalla puede llevar heroe: true; lo llevan ${heroes.join(", ")}`);
+  }
+
+  // 4) Y el cerco de verdad: los JSON Schema OFICIALES de A2UI v0.9.1 con nuestro
+  // catalogo en el lugar de `anyComponent`. Va al final porque los pasos 2 y 3 dan
+  // mejores mensajes para lo suyo (y el 3 completa la `razon` que falte); este pilla lo
+  // que ninguno mira: props inventadas, formas mal anidadas, nombres de accion que el
+  // catalogo no declara. Cuando un componente nuevo entra al catalogo, esto lo valida
+  // sin que nadie escriba una regla.
+  if (errores.length === 0) {
+    const validar = esquemaDelCatalogo();
+    for (const mensaje of mensajes) {
+      errores.push(...validar(mensaje).map((e) => `${e.donde} ${e.mensaje}`));
+    }
   }
 
   return errores.length ? { ok: false, errores } : { ok: true, mensajes, componentes: componentes.length };
 }
 
-function parsear<T>(texto: string, campo: string, errores: string[]): T | undefined {
+function parsear(texto: string, campo: string, errores: string[]): unknown {
   try {
-    return JSON.parse(texto) as T;
+    return JSON.parse(texto) as unknown;
   } catch (error) {
     errores.push(`${campo} no es JSON valido: ${error instanceof Error ? error.message : String(error)}`);
     return undefined;
   }
 }
 
-/**
- * La spec de A2UI exige una raiz con `id: "root"`, y un hijo que no existe es un hueco
- * invisible en la pantalla: las dos cosas se rechazan aqui y no en el navegador.
- */
-function revisarArbol(componentes: Componente[]): string[] {
-  const errores: string[] = [];
-  const ids = new Set(componentes.map((c) => c.id));
-  if (!ids.has(ID_RAIZ)) errores.push(`falta el componente raiz: uno de los componentes tiene que tener id "${ID_RAIZ}"`);
-
-  for (const componente of componentes) {
-    for (const hijo of hijosFijos(componente)) {
-      if (!ids.has(hijo)) errores.push(`${componente.id} declara el hijo "${hijo}", que no esta en la lista`);
-    }
-    const plantilla = componente.children;
-    if (plantilla && !Array.isArray(plantilla) && !ids.has(plantilla.componentId)) {
-      errores.push(`${componente.id} usa la plantilla "${plantilla.componentId}", que no esta en la lista`);
-    }
-  }
-  return errores;
+function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor);
 }
 
 /**

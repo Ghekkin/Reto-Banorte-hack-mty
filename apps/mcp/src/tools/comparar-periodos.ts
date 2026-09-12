@@ -1,7 +1,7 @@
 import { EntradaCompararPeriodos, SalidaCompararPeriodos } from "@maya/schemas";
 import { aBooleano, aEntero, filtrar, type Fila } from "../datos/index.js";
 import { categoria, interesesQueSeEvitan, planAplicado, tarjetaConEstado } from "../dominio/consultas.js";
-import { hoy, periodoAnterior, periodoDe } from "../dominio/tiempo.js";
+import { hoy, periodoAnterior, ultimoMesCerrado } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
 /**
@@ -29,7 +29,7 @@ export const compararPeriodos: DefinicionDeTool = {
   nombre: "comparar_periodos",
   titulo: "Comparar el gasto de dos periodos",
   descripcion:
-    "Gasto por categoria de un mes (AAAA-MM) contra el mes anterior, con el ingreso del periodo, la " +
+    "Gasto por categoria de un mes (AAAA-MM; default: el ultimo mes cerrado) contra el mes anterior, con el ingreso del periodo, la " +
     "participacion de cada categoria y cual es la categoria atipica (la que mas se salio de SU propio " +
     "patron, no la mas grande). Usala cuando pregunten en que se les va el dinero o por que gastaron " +
     "mas. Si hay un plan de pago activo trae `efectoDelPlan` con los intereses que se dejan de pagar.",
@@ -39,7 +39,7 @@ export const compararPeriodos: DefinicionDeTool = {
     const entrada = EntradaCompararPeriodos.parse(argumentos);
     const movimientos = filtrar("movimientos", "usuario_id", entrada.usuarioId);
 
-    const periodo = entrada.periodo ?? periodoConDatos(movimientos);
+    const periodo = entrada.periodo ?? ultimoMesCerrado(hoy());
     const anterior = entrada.periodoAnterior ?? periodoAnterior(periodo);
 
     const delPeriodo = gastoPorCategoria(movimientos, periodo);
@@ -86,13 +86,6 @@ export const compararPeriodos: DefinicionDeTool = {
     });
   },
 };
-
-/** El mes mas reciente con movimientos; si no hay, el mes de `hoy()`. */
-function periodoConDatos(movimientos: Fila[]): string {
-  let maxima = "";
-  for (const m of movimientos) if ((m.fecha ?? "") > maxima) maxima = m.fecha ?? "";
-  return maxima ? periodoDe(maxima) : periodoDe(hoy());
-}
 
 /**
  * Cargos del periodo agrupados por categoria. Se excluyen los abonos (un reembolso no

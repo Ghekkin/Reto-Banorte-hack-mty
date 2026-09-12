@@ -1,69 +1,335 @@
 {
-  "version": "v1",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "http://localhost:3000/catalogo/v1.json",
+  "catalogId": "http://localhost:3000/catalogo/v1.json",
+  "title": "Catalogo Maya — componentes financieros",
+  "description": "Los componentes que el agente puede invocar. Uno por intencion del usuario. Mismo formato que el catalogo basico de A2UI v0.9.1, asi que los JSON Schema oficiales de la spec validan estos componentes sin modificarse.",
   "a2uiVersion": "v0.9.1",
-  "nombre": "Catalogo Maya — componentes financieros",
-  "generadoPor": "pnpm --filter @maya/catalogo generar",
-  "componentes": [
-    {
-      "nombre": "Confirmacion",
-      "cuandoUsarlo": "Justo despues de que una tool de accion cambio el estado: el plan quedo aplicado, el apartado quedo creado. Nunca antes de que la accion ocurra.",
-      "acciones": [],
-      "props": {
-        "$schema": "https://json-schema.org/draft/2020-12/schema",
-        "type": "object",
-        "properties": {
-          "ancho": {
-            "default": "normal",
-            "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
-            "type": "string",
-            "enum": [
-              "normal",
-              "amplio"
-            ]
-          },
-          "razon": {
-            "type": "string",
-            "minLength": 10,
-            "description": "Una frase en segunda persona que explica por que esta pantalla y no otra"
-          },
-          "titulo": {
-            "type": "string",
-            "description": "Lo que acaba de pasar, en pasado: 'Tu plan quedo activo'"
-          },
-          "detalle": {
-            "type": "string",
-            "description": "Una linea con el dato que lo prueba: monto, plazo, fecha"
-          },
-          "montoCentavos": {
-            "description": "El numero grande, si la confirmacion tiene uno",
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "etiquetaMonto": {
-            "description": "Que es ese monto: 'Pago mensual'",
-            "type": "string"
-          },
-          "siguientePaso": {
-            "description": "Que puede hacer ahora la persona",
-            "type": "string"
-          },
-          "tono": {
-            "default": "exito",
-            "description": "exito tras una accion que cambio estado; informativo para un aviso",
-            "type": "string",
-            "enum": [
-              "exito",
-              "informativo"
-            ]
-          }
+  "generadoPor": "pnpm catalogo",
+  "components": {
+    "Confirmacion": {
+      "type": "object",
+      "description": "Justo despues de que una tool de accion cambio el estado: el plan quedo aplicado, el apartado quedo creado. Nunca antes de que la accion ocurra.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
         },
-        "required": [
-          "razon",
-          "titulo",
-          "detalle"
-        ]
-      }
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "Confirmacion"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "titulo": {
+              "description": "Lo que acaba de pasar, en pasado: 'Tu plan quedo activo'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "detalle": {
+              "description": "Una linea con el dato que lo prueba: monto, plazo, fecha",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "montoCentavos": {
+              "description": "El numero grande, si la confirmacion tiene uno",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaMonto": {
+              "description": "Que es ese monto: 'Pago mensual'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "siguientePaso": {
+              "description": "Que puede hacer ahora la persona",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "tono": {
+              "description": "exito tras una accion que cambio estado; informativo para un aviso",
+              "default": "exito",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "exito",
+                    "informativo"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "titulo",
+            "detalle"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Column": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "description": "Apila a sus hijos en vertical.",
+          "properties": {
+            "component": {
+              "const": "Column"
+            },
+            "children": {
+              "description": "Los hijos: arreglo de ids, o una plantilla { componentId, path } para repetir un componente por cada elemento de una lista del data model.",
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ChildList"
+            },
+            "separacion": {
+              "type": "string",
+              "description": "Separacion entre los hijos. Default: normal",
+              "enum": [
+                "chica",
+                "normal",
+                "amplia"
+              ],
+              "default": "normal"
+            }
+          },
+          "required": [
+            "component",
+            "children"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Row": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "description": "Acomoda a sus hijos en horizontal; salta de linea si no caben.",
+          "properties": {
+            "component": {
+              "const": "Row"
+            },
+            "children": {
+              "description": "Los hijos: arreglo de ids, o una plantilla { componentId, path } para repetir un componente por cada elemento de una lista del data model.",
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ChildList"
+            },
+            "separacion": {
+              "type": "string",
+              "description": "Separacion entre los hijos. Default: normal",
+              "enum": [
+                "chica",
+                "normal",
+                "amplia"
+              ],
+              "default": "normal"
+            }
+          },
+          "required": [
+            "component",
+            "children"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Text": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "description": "Una linea de texto. Para titulos y cifras, usa el componente del catalogo que corresponda.",
+          "properties": {
+            "component": {
+              "const": "Text"
+            },
+            "texto": {
+              "description": "El texto a mostrar.",
+              "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString"
+            },
+            "tono": {
+              "type": "string",
+              "description": "suave para texto secundario",
+              "enum": [
+                "normal",
+                "suave"
+              ],
+              "default": "normal"
+            }
+          },
+          "required": [
+            "component",
+            "texto"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Divider": {
+      "type": "object",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "description": "Una linea divisoria.",
+          "properties": {
+            "component": {
+              "const": "Divider"
+            }
+          },
+          "required": [
+            "component"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
     }
-  ]
+  },
+  "functions": {},
+  "$defs": {
+    "CatalogComponentCommon": {
+      "type": "object",
+      "properties": {
+        "weight": {
+          "type": "number",
+          "description": "Peso relativo dentro de un Row o Column, como flex-grow. Solo cuando el componente es hijo directo de un Row o Column."
+        }
+      }
+    },
+    "anyComponent": {
+      "oneOf": [
+        {
+          "$ref": "#/components/Confirmacion"
+        },
+        {
+          "$ref": "#/components/Column"
+        },
+        {
+          "$ref": "#/components/Row"
+        },
+        {
+          "$ref": "#/components/Text"
+        },
+        {
+          "$ref": "#/components/Divider"
+        }
+      ],
+      "discriminator": {
+        "propertyName": "component"
+      }
+    },
+    "anyFunction": {
+      "$comment": "Maya no implementa `functionCall`: quien decide es el agente. Ninguna funcion valida.",
+      "not": {}
+    },
+    "theme": {
+      "type": "object",
+      "description": "Tema de la superficie. La shell mapea `primaryColor` a su token de color.",
+      "properties": {
+        "primaryColor": {
+          "type": "string",
+          "pattern": "^#[0-9a-fA-F]{6}$"
+        },
+        "iconUrl": {
+          "type": "string",
+          "format": "uri"
+        },
+        "agentDisplayName": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  }
 }

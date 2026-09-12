@@ -27,6 +27,7 @@ export const consultarMovimientos: DefinicionDeTool = {
     const hasta = entrada.hasta ?? hoy();
     const desde = entrada.desde ?? sumarDias(hasta, -30);
     const limite = entrada.limite ?? LIMITE_POR_DEFECTO;
+    if (desde > hasta) throw new Error(`el rango esta al reves: desde ${desde} es posterior a hasta ${hasta}`);
 
     const filtrados = filtrar("movimientos", "usuario_id", entrada.usuarioId)
       .filter((m) => (m.fecha ?? "") >= desde && (m.fecha ?? "") <= hasta)

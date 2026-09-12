@@ -1,4 +1,4 @@
-import { escribir } from "./bindings";
+import { borrar, escribir } from "./bindings";
 import { hijosFijos, ID_RAIZ, type Componente, type Estado, type EstadoSuperficie, type MensajeA2UI } from "./tipos";
 
 /**
@@ -12,13 +12,14 @@ export type ResultadoProceso = { estado: Estado; error?: string };
 
 export function procesar(estado: Estado, mensaje: MensajeA2UI): ResultadoProceso {
   if ("createSurface" in mensaje) {
-    const { surfaceId, catalogId } = mensaje.createSurface;
+    const { surfaceId, catalogId, theme } = mensaje.createSurface;
     const siguiente = new Map(estado);
     siguiente.set(surfaceId, {
       id: surfaceId,
       catalogId,
       componentes: new Map(),
       dataModel: {},
+      ...(theme ? { theme } : {}),
     });
     return { estado: siguiente };
   }
@@ -41,15 +42,17 @@ export function procesar(estado: Estado, mensaje: MensajeA2UI): ResultadoProceso
     return { estado: siguiente };
   }
 
-  const { surfaceId, path, value } = mensaje.updateDataModel;
-  const superficie = estado.get(surfaceId);
-  if (!superficie) return { estado, error: `superficie desconocida: ${surfaceId}` };
+  const cuerpo = mensaje.updateDataModel;
+  const superficie = estado.get(cuerpo.surfaceId);
+  if (!superficie) return { estado, error: `superficie desconocida: ${cuerpo.surfaceId}` };
+  // Los dos opcionales de la spec: sin `path`, el modelo entero; sin `value`, se borra.
+  const path = cuerpo.path ?? "/";
   const actualizada: EstadoSuperficie = {
     ...superficie,
-    dataModel: escribir(superficie.dataModel, path, value),
+    dataModel: "value" in cuerpo ? escribir(superficie.dataModel, path, cuerpo.value) : borrar(superficie.dataModel, path),
   };
   const siguiente = new Map(estado);
-  siguiente.set(surfaceId, actualizada);
+  siguiente.set(cuerpo.surfaceId, actualizada);
   return { estado: siguiente };
 }
 

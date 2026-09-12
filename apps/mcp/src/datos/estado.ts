@@ -1,4 +1,4 @@
-import { existsSync, readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { isAbsolute, resolve } from "node:path";
 import { config } from "../config.js";
 import { raizDelRepo } from "./memoria.js";
@@ -64,8 +64,20 @@ export function aplicarAccion(accion: AccionAplicada): { aplicado: boolean; yaEs
     return { aplicado: false, yaEstaba: true };
   }
   estado.acciones.push(accion);
-  writeFileSync(rutaDelEstado(), JSON.stringify(estado, null, 2) + "\n");
+  escribirEstado(estado);
   return { aplicado: true, yaEstaba: false };
+}
+
+/**
+ * Escribe a un archivo temporal y lo renombra encima: el rename es atomico en el mismo
+ * disco, asi que nadie lee jamas un JSON a medio escribir (el servidor lee en cada
+ * llamada, y `reiniciar-estado` corre en otro proceso).
+ */
+function escribirEstado(estado: Estado): void {
+  const ruta = rutaDelEstado();
+  const temporal = `${ruta}.${process.pid}.tmp`;
+  writeFileSync(temporal, JSON.stringify(estado, null, 2) + "\n");
+  renameSync(temporal, ruta);
 }
 
 /** Las acciones de un usuario, opcionalmente de un tipo. */
@@ -78,5 +90,5 @@ export function accionesDe(usuarioId: string, tipo?: string): AccionAplicada[] {
  * efecto en el servidor que ya este corriendo (ver `leerEstado`).
  */
 export function reiniciarEstado(): void {
-  writeFileSync(rutaDelEstado(), JSON.stringify({ acciones: [] }, null, 2) + "\n");
+  escribirEstado({ acciones: [] });
 }

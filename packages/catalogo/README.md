@@ -32,9 +32,32 @@ en 33 horas. Si algún día hay un segundo consumidor, se mueve; el cambio es me
 ## `catalogo.json`
 
 ```bash
-pnpm --filter @maya/catalogo generar
+pnpm catalogo        # o: pnpm --filter @maya/catalogo generar
 ```
 
-Genera el JSON desde los schemas. Lo consumen el agente (structured output) y
-`apps/web`, que lo sirve en `/catalogo/v1.json`: ese es el `catalogId` de cada
-`createSurface` y un juez puede abrirlo. **No se edita a mano.**
+Se genera desde los schemas Zod y es **un catálogo A2UI de verdad**: misma forma que
+`packages/a2ui/spec/v0_9_1/catalogs/basic/catalog.json` (`components` por nombre,
+`$defs.anyComponent`, `unevaluatedProperties: false`). Eso no es decoración: la spec
+referencia el catálogo con una ref relativa, así que con esta forma **los JSON Schema
+oficiales de A2UI validan nuestros componentes** sin una sola regla escrita a mano
+(ver `docs/algoritmos/validacion-a2ui.md`).
+
+Cada prop se publica como `anyOf: [<el schema de Zod>, DataBinding]`, porque cualquier
+prop acepta un enlace `{ "path": "/…" }` al data model. El `cuandoUsarlo` de la entrada
+va como `description`: es lo que lee el modelo para elegir, y lo que lee un juez.
+
+Lo consumen el agente (validación y prompt), `apps/web` —que lo sirve en
+`/catalogo/v1.json`, el `catalogId` de cada `createSurface`— y las pruebas. **No se
+edita a mano**, y el CI falla si está desfasado de los schemas.
+
+## Agregar un componente: lo que las pruebas exigen
+
+`pnpm --filter @maya/catalogo test` falla si falta cualquiera de estos pasos, con el
+mensaje de qué falta:
+
+1. `src/<nombre-kebab>/schema.ts` con el Zod y su entrada en `CATALOGO` (`src/index.ts`).
+2. La línea de `registrar(...)` en `registrarCatalogo()`: lo que el catálogo anuncia
+   tiene que existir en el renderer.
+3. `pnpm catalogo` corrido y commiteado.
+4. `ejemplos/<nombre-kebab>.jsonl` con un mensaje A2UI que use el componente — y ese
+   ejemplo tiene que **validar de verdad** contra los schemas oficiales.

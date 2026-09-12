@@ -13,7 +13,7 @@ export const Periodo = z.string().regex(/^\d{4}-\d{2}$/, "usa AAAA-MM");
 
 export const EntradaCompararPeriodos = z.object({
   usuarioId: IdUsuario,
-  periodo: Periodo.optional().describe("Mes a analizar, AAAA-MM. Default: el mes con datos mas reciente"),
+  periodo: Periodo.optional().describe("Mes a analizar, AAAA-MM. Default: el ultimo mes cerrado (un mes a medias engana)"),
   periodoAnterior: Periodo.optional().describe("Contra que comparar. Default: el mes inmediato anterior"),
 });
 export type EntradaCompararPeriodos = z.infer<typeof EntradaCompararPeriodos>;

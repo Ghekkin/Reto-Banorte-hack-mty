@@ -5,7 +5,7 @@ import { arbol, type Nodo } from "./arbol";
 import { resolver } from "./bindings";
 import { emitirAccion } from "./acciones";
 import { obtener } from "./registro";
-import { propsDe, type Accion, type EstadoSuperficie } from "./tipos";
+import { propsDe, type Accion, type EstadoSuperficie, type Tema } from "./tipos";
 
 /**
  * Pinta una superficie. Recorre el arbol, busca cada nombre en el registro y le
@@ -13,15 +13,28 @@ import { propsDe, type Accion, type EstadoSuperficie } from "./tipos";
  *
  * No hace fetch ni guarda estado propio: cuando el usuario toca algo, llama
  * `alAccionar` y espera la UI nueva del agente.
+ *
+ * Tres llaves de la spec las resuelve el renderer y no los componentes, porque son de
+ * todos y nadie deberia tener que acordarse de ellas al escribir el suyo:
+ *  - `ancho` -> `data-ancho`, que es lo que la rejilla bento lee para dar dos columnas;
+ *  - `weight` -> `flex-grow` dentro de un Row o Column (asi se arma una rejilla en A2UI);
+ *  - `accessibility` -> `aria-label` / `aria-description`.
  */
 export function Superficie({
   superficie,
   conversacionId,
   alAccionar,
+  alFallar,
 }: {
   superficie: EstadoSuperficie | undefined;
   conversacionId: string;
   alAccionar: (accion: Accion) => void;
+  /**
+   * Un componente que el registro no conoce. La spec tiene canal de vuelta para esto
+   * (`client_to_server.json`, `VALIDATION_FAILED`): quien reciba esto puede devolverselo
+   * al agente para que se corrija. Si nadie escucha, se pinta el aviso y ya.
+   */
+  alFallar?: (error: { code: "VALIDATION_FAILED"; surfaceId: string; path: string; message: string }) => void;
 }): ReactNode {
   if (!superficie) return null;
   const raiz = arbol(superficie, (m) => console.warn(`[a2ui] ${m}`));
@@ -31,7 +44,15 @@ export function Superficie({
   function pintar(nodo: Nodo): ReactNode {
     const { componente, item, clave } = nodo;
     const Componente = obtener(componente.component);
-    if (!Componente) return <Desconocido key={clave} nombre={componente.component} />;
+    if (!Componente) {
+      alFallar?.({
+        code: "VALIDATION_FAILED",
+        surfaceId: superficie!.id,
+        path: `/${componente.id}/component`,
+        message: `El componente "${componente.component}" no esta en el catalogo de esta superficie.`,
+      });
+      return <Desconocido key={clave} nombre={componente.component} />;
+    }
 
     const props = resolver(propsDe(componente), superficie!.dataModel, item);
     const hijos = nodo.hijos.map((h) => <Fragment key={h.clave}>{pintar(h)}</Fragment>);
@@ -50,12 +71,53 @@ export function Superficie({
         }
       : undefined;
 
-    return createElement(
+    const pintado = createElement(
       Componente,
       { ...props, key: clave, alAccionar: manejador },
       hijos.length ? hijos : undefined,
     );
+
+    return envolver(pintado, componente.id, props, componente.weight, componente.accessibility, clave);
   }
+}
+
+/**
+ * La envoltura solo aparece cuando hay algo que poner en ella: un componente sin
+ * `ancho`, `weight` ni `accessibility` se pinta tal cual, como antes.
+ *
+ * `grid` en el div y no `block`: asi el componente sigue estirandose al alto de su fila
+ * en la rejilla bento, igual que cuando era el hijo directo.
+ */
+function envolver(
+  pintado: ReactNode,
+  id: string,
+  props: Record<string, unknown>,
+  weight: unknown,
+  accessibility: unknown,
+  clave: string,
+): ReactNode {
+  const ancho = props.ancho === "amplio" || props.ancho === "normal" ? props.ancho : undefined;
+  const peso = typeof weight === "number" && Number.isFinite(weight) ? weight : undefined;
+  const a11y = (accessibility ?? {}) as { label?: unknown; description?: unknown };
+  const etiqueta = typeof a11y.label === "string" ? a11y.label : undefined;
+  const descripcion = typeof a11y.description === "string" ? a11y.description : undefined;
+
+  if (ancho === undefined && peso === undefined && !etiqueta && !descripcion) return pintado;
+
+  return (
+    <div
+      key={clave}
+      className="grid"
+      data-ancho={ancho}
+      data-componente={id}
+      style={peso === undefined ? undefined : { flexGrow: peso, flexBasis: 0, minWidth: 0 }}
+      role={etiqueta || descripcion ? "group" : undefined}
+      aria-label={etiqueta}
+      aria-description={descripcion}
+    >
+      {pintado}
+    </div>
+  );
 }
 
 /** Visible a proposito: un nombre fuera del catalogo no puede pasar desapercibido. */
@@ -68,4 +130,14 @@ function Desconocido({ nombre }: { nombre: string }): ReactNode {
       Componente desconocido: <code>{nombre}</code>
     </div>
   );
+}
+
+/**
+ * El tema de la superficie como variables CSS, para que la shell lo aplique donde
+ * quiera sin que el renderer se meta con el layout. `primaryColor` es el unico que
+ * mapeamos: los otros dos campos de la spec son texto e icono del agente.
+ */
+export function variablesDelTema(tema: Tema | undefined): Record<string, string> | undefined {
+  if (!tema?.primaryColor || !/^#[0-9a-fA-F]{6}$/.test(tema.primaryColor)) return undefined;
+  return { "--primary": tema.primaryColor };
 }

@@ -2,7 +2,6 @@ import { EntradaAplicarPlanPago, SalidaAplicarPlanPago } from "@maya/schemas";
 import { aplicarAccion } from "../datos/index.js";
 import {
   capacidadPagoMensual,
-  planAplicado,
   primerPagoDesde,
   tarjetaConEstado,
   tasaParaPlazo,
@@ -35,8 +34,7 @@ export const aplicarPlanPago: DefinicionDeTool = {
     const conEstado = tarjetaConEstado(entrada.usuarioId, entrada.tarjetaId);
     if (!conEstado) throw new Error(`${entrada.usuarioId} no tiene tarjeta de credito que reestructurar`);
 
-    const { vista } = conEstado;
-    const yaHabia = planAplicado(entrada.usuarioId);
+    const { vista, plan: yaHabia } = conEstado;
     if (yaHabia) {
       return respuesta(yaHabia, vista, false, true, mensajeDeRepetido(yaHabia));
     }

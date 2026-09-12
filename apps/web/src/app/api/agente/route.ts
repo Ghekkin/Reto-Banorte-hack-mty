@@ -1,5 +1,5 @@
 import { correrTurno } from "@/lib/agente/agente";
-import type { LineaStream, PeticionAgente } from "@/lib/agente/tipos";
+import { esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/agente/tipos";
 
 /**
  * `POST /api/agente` — el unico endpoint del cliente. Responde en JSONL:
@@ -11,16 +11,20 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(request: Request): Promise<Response> {
-  let peticion: PeticionAgente;
+  let cuerpo: unknown;
   try {
-    peticion = (await request.json()) as PeticionAgente;
+    cuerpo = await request.json();
   } catch {
-    return Response.json({ error: "cuerpo invalido" }, { status: 400 });
+    return Response.json({ error: "cuerpo invalido: no es JSON" }, { status: 400 });
   }
 
-  if (!peticion.usuarioId || !peticion.conversacionId) {
-    return Response.json({ error: "faltan usuarioId o conversacionId" }, { status: 400 });
+  // Un cuerpo mal formado se rechaza AQUI, con 400 y el detalle, no a media respuesta.
+  const validacion = esquemaPeticion.safeParse(cuerpo);
+  if (!validacion.success) {
+    const detalle = validacion.error.issues.map((i) => `${i.path.join(".") || "cuerpo"}: ${i.message}`);
+    return Response.json({ error: "peticion invalida", detalle }, { status: 400 });
   }
+  const peticion: PeticionAgente = validacion.data;
 
   const codificador = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
@@ -29,7 +33,9 @@ export async function POST(request: Request): Promise<Response> {
         controlador.enqueue(codificador.encode(JSON.stringify(linea) + "\n"));
       }
       try {
-        for await (const linea of correrTurno(peticion)) emitir(linea);
+        // Si la persona cierra la pestana, el turno se corta: no se siguen llamando
+        // tools (ni, peor, una accion) para nadie.
+        for await (const linea of correrTurno(peticion, { senal: request.signal })) emitir(linea);
       } catch (error) {
         emitir({
           tipo: "error",

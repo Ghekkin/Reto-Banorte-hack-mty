@@ -48,3 +48,20 @@ export function pasoConTexto(texto: string) {
 export function modeloGuionizado(pasos: ReturnType<typeof pasoConTool>[]) {
   return new MockLanguageModelV2({ doStream: pasos });
 }
+
+/**
+ * Un modelo que se queda colgado hasta que lo aborten, como un proveedor que no contesta.
+ * Respeta el `abortSignal` cerrando el stream, que es lo que hace un fetch real.
+ */
+export function modeloColgado() {
+  return new MockLanguageModelV2({
+    doStream: async ({ abortSignal }) => ({
+      stream: new ReadableStream<ParteDeStream>({
+        start(controlador) {
+          controlador.enqueue({ type: "stream-start", warnings: [] });
+          abortSignal?.addEventListener("abort", () => controlador.error(abortSignal.reason));
+        },
+      }),
+    }),
+  });
+}

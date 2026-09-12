@@ -15,15 +15,27 @@ export function usuario(usuarioId: string): Fila {
   return fila;
 }
 
-/** La tarjeta de credito de la persona. `undefined` si solo trae debito (Ana). */
+/**
+ * La tarjeta de credito de la persona. `undefined` si solo trae debito (Ana).
+ *
+ * Con `tarjetaId` se exige que sea suya Y de credito: una de debito tiene limite 0 y tasa
+ * 0, y devolverla como si fuera de credito le diria al agente "saludable" sobre una
+ * tarjeta que no puede tener deuda.
+ */
 export function tarjetaDeCredito(usuarioId: string, tarjetaId?: string): Fila | undefined {
   const suyas = filtrar("tarjetas", "usuario_id", usuarioId);
   if (tarjetaId) {
     const exacta = suyas.find((t) => t.id === tarjetaId);
     if (!exacta) throw new Error(`la tarjeta ${tarjetaId} no es de ${usuarioId}`);
+    if (exacta.tipo !== "credito") throw new Error(`la tarjeta ${tarjetaId} es de debito: no tiene deuda que consultar`);
     return exacta;
   }
   return suyas.find((t) => t.tipo === "credito" && t.estatus === "activa");
+}
+
+/** Todas las cuentas activas de la persona. */
+export function cuentasDe(usuarioId: string): Fila[] {
+  return filtrar("cuentas", "usuario_id", usuarioId).filter((c) => c.estatus === "activa");
 }
 
 export function cuentaDe(usuarioId: string, tipo: string): Fila | undefined {
@@ -90,13 +102,13 @@ export type PlanAplicado = {
  * estado sobre los CSV: los datos de partida nunca tienen plan, y esto es lo que hace
  * que una lectura posterior a la accion devuelva algo distinto.
  *
- * Si hay mas de uno (no deberia), gana el ultimo.
+ * Un plan es por TARJETA: con `tarjetaId` se busca el de esa; sin el, el ultimo de la
+ * persona (en la demo nadie tiene dos tarjetas de credito, pero el estado no lo asume).
  */
-export function planAplicado(usuarioId: string): PlanAplicado | null {
-  const acciones = accionesDe(usuarioId, "aplicar_plan_pago");
-  const ultima = acciones.at(-1);
-  if (!ultima) return null;
-  return ultima.datos as unknown as PlanAplicado;
+export function planAplicado(usuarioId: string, tarjetaId?: string): PlanAplicado | null {
+  const planes = accionesDe(usuarioId, "aplicar_plan_pago").map((a) => a.datos as unknown as PlanAplicado);
+  const ultimo = (tarjetaId ? planes.filter((p) => p.tarjetaId === tarjetaId) : planes).at(-1);
+  return ultimo ?? null;
 }
 
 export type ApartadoCreado = {
@@ -145,9 +157,9 @@ export function tarjetaConEstado(usuarioId: string, tarjetaId?: string): { vista
   const fila = tarjetaDeCredito(usuarioId, tarjetaId);
   if (!fila) return null;
 
-  const plan = planAplicado(usuarioId);
+  const plan = planAplicado(usuarioId, fila.id);
   const saldoOriginal = aEntero(fila.saldo_centavos);
-  const difirioEstaTarjeta = plan?.tarjetaId === fila.id;
+  const difirioEstaTarjeta = plan !== null;
   const saldo = difirioEstaTarjeta ? 0 : saldoOriginal;
   const limite = aEntero(fila.limite_centavos);
 

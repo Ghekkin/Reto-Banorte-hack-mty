@@ -6,6 +6,18 @@
 
 export const VERSION_A2UI = "v0.9.1" as const;
 
+/**
+ * El tema que el agente puede mandar con la superficie. La spec lo deja abierto
+ * (`additionalProperties: true`) con tres campos conocidos.
+ */
+export type Tema = {
+  /** Hexadecimal, `#RRGGBB`. La shell lo puede mapear a su variable de color. */
+  primaryColor?: string;
+  iconUrl?: string;
+  agentDisplayName?: string;
+  [clave: string]: unknown;
+};
+
 /** Una prop puede ser un valor literal o un enlace al data model. */
 export type Binding = { path: string };
 export type Valor = unknown;
@@ -68,7 +80,14 @@ export function hijosFijos(componente: Componente): string[] {
 
 export type MensajeCrearSuperficie = {
   version: typeof VERSION_A2UI;
-  createSurface: { surfaceId: string; catalogId: string };
+  createSurface: {
+    surfaceId: string;
+    catalogId: string;
+    /** Tema de la superficie (`primaryColor`, `agentDisplayName`…). Lo guarda el estado. */
+    theme?: Tema;
+    /** La spec permite pedir el data model de vuelta en cada mensaje. No lo usamos. */
+    sendDataModel?: boolean;
+  };
 };
 export type MensajeActualizarComponentes = {
   version: typeof VERSION_A2UI;
@@ -76,7 +95,13 @@ export type MensajeActualizarComponentes = {
 };
 export type MensajeActualizarDatos = {
   version: typeof VERSION_A2UI;
-  updateDataModel: { surfaceId: string; path: string; value: Valor };
+  updateDataModel: {
+    surfaceId: string;
+    /** Opcional en la spec: sin `path`, o con `"/"`, se refiere al modelo entero. */
+    path?: string;
+    /** Sin `value`, la llave de `path` se BORRA (spec v0.9.1). */
+    value?: Valor;
+  };
 };
 export type MensajeBorrarSuperficie = {
   version: typeof VERSION_A2UI;
@@ -109,6 +134,8 @@ export type EstadoSuperficie = {
   /** el componente que nadie tiene como hijo */
   raiz?: string;
   dataModel: Record<string, unknown>;
+  /** lo que vino en `createSurface.theme`, si vino; lo lee la shell */
+  theme?: Tema;
 };
 
 export type Estado = Map<string, EstadoSuperficie>;
