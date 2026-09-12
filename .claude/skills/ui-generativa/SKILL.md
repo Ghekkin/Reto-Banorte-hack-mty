@@ -10,6 +10,15 @@ describe la interfaz en A2UI usando solo los componentes de nuestro catálogo, y
 llena con datos.** La regla 1 del reto dice que el sistema de componentes lo diseña y
 programa el equipo: este catálogo *es* nuestra entrega de "componentes".
 
+## Se construyen sobre shadcn
+
+**Obligatorio**: cada componente del catálogo es una composición de primitivas de
+shadcn/ui (`card`, `button`, `radio-group`, `chart`, `table`…) con nuestras props y
+nuestras acciones A2UI. Nada escrito a mano, ningún hex suelto: invoca
+**`diseno-banorte`** para la paleta y las reglas, y la skill **`shadcn`** para agregar
+el componente con su CLI. La regla 1 del reto se sigue cumpliendo: shadcn son
+primitivas sin opinión; **el catálogo financiero es nuestro**.
+
 ## Qué es un componente del catálogo
 
 Tres archivos en `packages/catalogo/src/<nombre>/`:
@@ -57,14 +66,16 @@ su `catalogId` (`https://<dominio>/catalogo/v1.json`).
 
 ## Diseño
 
-- Sistema visual único: tokens de color, espaciado y tipografía en
-  `packages/catalogo/src/tokens.ts`. Un juez ve una pantalla, no un componente.
+- Sistema visual único: los tokens viven en `apps/web/app/globals.css` (skill
+  `diseno-banorte`), no en el paquete. Un juez ve una pantalla, no un componente.
+- Un solo botón primario (rojo) por superficie.
 - Legible en proyector: contraste alto, números tabulares, nada menor a 14 px.
 - Funciona a 400 px de ancho (la demo puede ir en celular).
 - Nada de capturas en la doc: el `.jsonl` de ejemplo es la captura.
 
 ## Checklist antes de commitear
 
+- [ ] Construido con primitivas de shadcn; cero hex en el `.tsx`.
 - [ ] Schema con descripciones, registrado en el `Catalog` y en el JSON del catálogo.
 - [ ] Acciones declaradas como eventos A2UI; cero fetch en el componente.
 - [ ] Tres estados vistos en pantalla con el `.jsonl` de ejemplo.

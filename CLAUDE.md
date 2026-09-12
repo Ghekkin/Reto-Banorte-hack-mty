@@ -63,6 +63,11 @@ commits no dicen quién los hizo. Al irte, skill `cerrar`.
    Ver `docs/bitacora/README.md`.
 8. **Cada quien toca solo su fila del tablero** (`docs/tablero.md`). Es lo que evita
    conflictos con cuatro personas editando a la vez.
+9. **Toda la UI se construye con shadcn/ui y la paleta de Banorte.** Ningún componente
+   a mano, ninguna otra librería, ningún hex suelto en un `.tsx`: se agrega con
+   `npx shadcn@latest add` y se colorea con los tokens. Antes de escribir CSS o
+   cualquier pantalla, invoca **`diseno-banorte`**; para agregar o depurar componentes,
+   la skill **`shadcn`** (instalada desde el registro oficial).
 
 ## Roles (detalle en `docs/equipo/roles.md`)
 
@@ -107,6 +112,7 @@ el campo nuevo es opcional.
 | `.env.example` | Todas las variables de entorno con comentario; hoy solo `DATABASE_URL` (Postgres en Coolify) | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
+| `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
 | `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
 | `apps/mcp/` | Servidor MCP en TS (Streamable HTTP), tools del dominio financiero | pendiente |
 | `packages/catalogo/` | Catálogo A2UI propio: schema + componente React + `.jsonl` de ejemplo por componente | pendiente |
@@ -185,7 +191,9 @@ Construcción:
 | `datos-mock` | Crear o tocar datos en `apps/mcp/data` |
 | `tool-mcp` | Crear o modificar una tool del servidor MCP |
 | `cambiar-schema` | Tocar `packages/schemas`: el cambio completo en un commit |
-| `ui-generativa` | Crear o modificar un componente que pinta un `tipo` |
+| `diseno-banorte` | **Antes de escribir CSS, un componente o una pantalla**: shadcn obligatorio + tokens de Banorte |
+| `shadcn` | Agregar, buscar, depurar o componer componentes de shadcn/ui (oficial) |
+| `ui-generativa` | Crear o modificar un componente del catálogo A2UI (encima de shadcn) |
 | `agente-host` | Tocar el agente, su prompt o la conexión al MCP |
 | `probar` | Antes de decir que algo está hecho |
 

@@ -11,7 +11,9 @@ lo real, y `CLAUDE.md` recibe los comandos en "Comandos habituales" y el mapa.
 ## Estructura objetivo
 
 ```
-apps/web/            Next.js (App Router) + React + Tailwind + AI SDK    puerto 3000
+apps/web/            Next.js (App Router) + React + Tailwind v4 + shadcn/ui  puerto 3000
+                     components.json en la raiz de apps/web; tokens en app/globals.css
+                     + AI SDK
                      + @ai-sdk/google (principal) + @ai-sdk/anthropic (respaldo)
                      + @a2ui/react @a2ui/web_core (renderer A2UI)
 apps/mcp/            TS + @modelcontextprotocol/sdk + Express             puerto 3100
@@ -44,10 +46,25 @@ scripts/dev.sh       levanta todo con un comando y espera los /health
 - **Patrón de referencia** para `apps/mcp`: `/root/yolani/mcp-tenant/` (server.ts,
   mcp-sink.ts, tests). Sin OAuth: un `Authorization: Bearer` fijo desde `.env` basta.
 
+## shadcn, en el orden correcto
+
+1. `cd apps/web && npx shadcn@latest init` (estilo por defecto, base color neutral:
+   el color real lo ponen nuestros tokens, no el preset).
+2. Pegar el bloque de tokens de la skill **`diseno-banorte`** en `app/globals.css`,
+   reemplazando los que init dejó.
+3. `npx shadcn@latest add button card badge table skeleton progress radio-group slider
+   separator select dialog alert chart scroll-area` — la base que los tres casos de uso
+   necesitan (ADR 0004).
+4. Verificar: un botón `variant="default"` sale rojo Banorte. Si sale negro, los tokens
+   no se aplicaron.
+
+`components.json` **se commitea**: la skill `shadcn` lo lee para conocer el proyecto.
+
 ## Al terminar el scaffold
 
 - [ ] `pnpm install && pnpm typecheck && pnpm test && scripts/dev.sh` corren limpios
       desde un clon fresco.
 - [ ] `CLAUDE.md`: comandos y mapa actualizados.
+- [ ] shadcn inicializado, tokens de Banorte aplicados y verificados en un botón.
 - [ ] Esta skill describe lo real, no el plan.
 - [ ] `docs/arquitectura/vision-general.md` pasa de `plan` a `construido`.

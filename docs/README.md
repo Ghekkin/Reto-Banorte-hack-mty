@@ -48,6 +48,7 @@ quien.
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
+- [Sistema de diseño](arquitectura/diseno.md) — shadcn/ui + paleta de Banorte, con los tokens
 - [Contrato agente ↔ cliente](arquitectura/contrato-agente-cliente.md) — el endpoint, la petición, el stream JSONL, la convención de acciones
 - [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)

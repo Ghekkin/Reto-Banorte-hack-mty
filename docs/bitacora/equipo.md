@@ -14,6 +14,14 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **06:55 · decisión** — Toda la UI con **shadcn/ui** (regla 9 del `CLAUDE.md`) y la
+  **paleta de Banorte** sacada de `Ghekkin/Open-innovation-hack-mty`: rojo `#EC0029`,
+  claro `#FF3355`, oscuro `#C00020`, grises `#F5F5F5`/`#C7C9C9`/`#6A6867`. Skills
+  oficiales de shadcn instaladas (`pnpm dlx skills add shadcn/ui` → `.agents/skills/`,
+  enlazadas en `.claude/skills/`, versión fijada en `skills-lock.json`). Nueva skill
+  `diseno-banorte` con tokens OKLCH listos para `globals.css` y el mapa de qué
+  componente de shadcn usar para cada caso.
+
 - **06:40 · decisión** — Contrato agente↔cliente escrito (`arquitectura/contrato-agente-cliente.md`):
   `POST /api/agente`, stream JSONL con líneas `a2ui`/`texto`/`razon`/`tool`/`error`,
   convención de acciones (mutación = nombre de tool, `ver_*`, `elegir_*`), selección
