@@ -136,13 +136,34 @@ deploys y leer, y responde 403 si intenta crear o borrar recursos. El token root
 mismo Coolify administra la producción de otro proyecto, y un token root en un repo
 de hackathon es poder de más.
 
+### Verificado desde fuera del VPS (2026-09-13 09:15)
+
+```
+https://maya.157.173.204.174.sslip.io/api/health
+  {"ok":true,"servicio":"maya-web","version":"0.1.0","commit":"9d546d5…"}
+https://maya-mcp.157.173.204.174.sslip.io/health
+  {"ok":true,"servicio":"maya-mcp","origenDatos":"memoria","tools":["consultar_perfil"]}
+https://maya.157.173.204.174.sslip.io/catalogo/v1.json    → el catálogo, abrible por un juez
+POST …/api/agente                                          → stream JSONL con mensajes A2UI
+```
+
+Los dos certificados son de **Let's Encrypt** (emitidos el 12-sep, vencen el 11-dic),
+no autofirmados: `curl` sin `-k` funciona.
+
+**Cuidado con `sslip.io`**: no está en la Public Suffix List, así que todos sus
+subdominios comparten el límite de Let's Encrypt (50 certificados nuevos por semana,
+para todo el mundo que use sslip.io). Esta vez emitió; no está garantizado que emita
+la próxima. Es la razón de peso para mover esto al dominio `.tech` en cuanto exista,
+además del premio.
+
 ### Pendiente
 
 - [ ] Dominio `.tech` cuando se compre: se agrega en Coolify (Configuration →
       Domains) y se actualizan las variables `URL_*` del repo. HTTPS lo hace Traefik.
 - [ ] Llave de Gemini en las variables de `maya-web`
       (`GOOGLE_GENERATIVE_AI_API_KEY`): hoy está vacía y el agente publicado responde
-      con la pantalla de ejemplo.
+      con la pantalla de ejemplo. Se pone en Coolify (app → Environment Variables);
+      no hace falta redeploy, Coolify reinicia el contenedor.
 - [ ] Probar `https://maya-mcp.…/mcp` desde un cliente MCP externo con el
       `MCP_TOKEN` (está en `/opt/reto/.env`).
 - [ ] Decidir si Vultr entra (premio) o si se queda todo en este VPS.

@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { validarMensaje, type MensajeA2UI } from "@maya/a2ui";
 import { nombresDelCatalogo } from "@maya/catalogo";
+import { config } from "./config";
 import { hayLlave, proveedorActivo } from "./modelo";
 import type { LineaStream, PeticionAgente } from "./tipos";
 
@@ -59,8 +60,16 @@ export async function* correrTurno(peticion: PeticionAgente): AsyncGenerator<Lin
 async function mensajesDeEjemplo(): Promise<MensajeA2UI[]> {
   const ruta = join(process.cwd(), "..", "..", "packages", "catalogo", "ejemplos", "confirmacion.jsonl");
   const texto = await readFile(ruta, "utf8");
-  return texto
+  const mensajes = texto
     .split("\n")
     .filter((l) => l.trim() !== "")
     .map((l) => JSON.parse(l) as MensajeA2UI);
+
+  // El `.jsonl` trae el catalogId de desarrollo escrito a mano. En el servidor
+  // publicado tiene que ser la URL real: es lo que un juez abre para ver de que
+  // esta hecha la interfaz.
+  for (const m of mensajes) {
+    if ("createSurface" in m) m.createSurface.catalogId = config.urlCatalogo;
+  }
+  return mensajes;
 }
