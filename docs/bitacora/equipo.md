@@ -14,6 +14,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **05:50 · decisión** — Caso de uso (ADR 0004): los tres primeros candidatos como un
+  solo viaje —reestructura de tarjeta, gasto por categoría, meta de ahorro— en orden
+  estricto (fase 1 completa a la hora 10, 2 a la 18, 3 a la 24, congelación 30). Dos
+  usuarios demo; 8 componentes compartidos; 2 tools de acción. Ana obtiene el caso 3
+  como respuesta adaptativa a la misma pregunta de Beto.
+
 - **05:25 · decisión** — El producto vive en el VPS del equipo, administrado con
   Coolify (proyecto `reto-banorte`), no en una VM nueva de Vultr por ahora. Ya está
   arriba un Postgres 17 con TimescaleDB, público en `157.173.204.174:5437` para que

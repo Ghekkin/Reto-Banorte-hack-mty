@@ -1,6 +1,6 @@
 ---
 verificado: 2026-09-12 05:30
-estado: propuesta        # propuesta hasta que el ADR 0004 cierre la decisión
+estado: decidido         # los tres primeros, en orden estricto: ver decisiones/0004-caso-de-uso.md
 ---
 
 # Candidatos de caso de uso
@@ -115,7 +115,13 @@ jurado y la adaptabilidad es más difícil de mostrar. Candidato de respaldo.
 
 ---
 
-## Recomendación (a confirmar en el ADR 0004)
+## Decisión (2026-09-12): casos 1, 2 y 3, en ese orden
+
+El equipo eligió los tres primeros como un solo viaje (deuda → gasto → ahorro), con
+fases estrictas y reparto en la demo definidos en `decisiones/0004-caso-de-uso.md`.
+Lo de abajo fue la recomendación previa; se conserva como registro.
+
+## Recomendación previa
 
 **Caso 1 como flujo principal, con el caso 2 como segunda intención** en la misma demo:
 

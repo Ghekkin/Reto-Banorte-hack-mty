@@ -25,7 +25,7 @@ creíbles, y una regla: nada que no esté probado entra a la demo.
 | **Lenguaje** | TypeScript de punta a punta, Zod como contrato | Python + Next.js; NestJS | Un schema, un lenguaje, cualquiera toca cualquier archivo | Sin pandas/sklearn a la mano (escape: ADR 0002) | 0001 |
 | **ML** | Ninguno como núcleo; Python solo detrás de una tool con fallback | Modelo propio de scoring | Cero riesgo de demo | Menos "IA" aparente; se compensa con la calidad del agente | 0002 |
 | **Datos** | Sintéticos, deterministas, commiteados, con estado mutable reiniciable | Fuentes públicas; base de datos real | Demo reproducible; la acción se ve; se reinicia antes de cada ensayo | No hay "escala real" (Tiger Data como opcional cubre esa narrativa) | — |
-| **Infraestructura** | Local como demo principal; Vultr + Caddy + dominio como respaldo público | Solo local; PaaS | Un endpoint MCP público al que un juez conecta su cliente | Un deploy que mantener; se congela en la hora 30 | — |
+| **Infraestructura** | Local como demo principal; **Coolify en el VPS del equipo** (Postgres 17 + TimescaleDB ya arriba) como respaldo público; Vultr solo por el premio lateral | VM nueva en Vultr; PaaS | Infra que ya conocemos y opera; TimescaleDB listo para movimientos como series de tiempo | Un deploy que mantener; se congela en la hora 30 | ver `deploy.md` |
 | **Estado del agente** | Sin estado en servidor; historial y acciones viajan en el request; el estado del negocio vive en el MCP | Sesiones en servidor | Simplicidad, sin bugs de sesión | Requests más grandes | — |
 
 ## Riesgos aceptados y su mitigación

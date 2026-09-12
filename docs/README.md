@@ -42,6 +42,7 @@ quien.
 - [0001 — Todo en TypeScript](decisiones/0001-stack-typescript.md)
 - [0002 — Python solo detrás de una tool](decisiones/0002-python-solo-detras-de-una-tool.md)
 - [0003 — A2UI real con catálogo propio](decisiones/0003-a2ui-como-protocolo-de-interfaz.md)
+- [0004 — Caso de uso: tres intenciones en orden estricto](decisiones/0004-caso-de-uso.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
