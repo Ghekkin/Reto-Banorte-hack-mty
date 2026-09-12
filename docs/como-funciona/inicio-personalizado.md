@@ -196,6 +196,12 @@ pnpm probar-inicio https://maya.157.173.204.174.sslip.io   # contra lo publicado
 - `inicio-pinta.spec.ts`: `InicioDeMaya` renderiza el `.jsonl` de ejemplo sin componentes
   desconocidos, con el saludo, la evidencia y las sugerencias.
 
+**En producción (2026-09-12 16:25, commit `5b9fbae`)**: el contenedor arrancó con
+`{"inicio":"reloj","cadaMinutos":10,"modelo":"gemini-3.5-flash-lite"}`, la primera revisión
+pasó de largo por los tres (`sin-cambios`, cero tokens: las portadas ya estaban en la base
+compartida), y `GET /api/inicio?usuario=usr_beto` devolvió la portada de Beto rearmada por
+producción después de una acción (`ResumenTarjeta` con plan activo, gasto, termómetro).
+
 En el navegador (2026-09-12 15:35, Playwright a 1 440 y 390 px): la portada de Beto, la
 programada con el aviso mientras se rearma y la llegada sola de la nueva, "Aplicar plan"
 desde Inicio ejecutando la acción en Maya, y la portada rearmada con el plan activo al

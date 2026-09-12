@@ -3434,7 +3434,7 @@
               "const": "AvisoConsultaNoValida"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -3652,7 +3652,7 @@
               "const": "SugerenciasInversion"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {

@@ -18,6 +18,13 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 16:40 · CI** — `main` quedó en rojo con `5d471eb` (dos componentes nuevos): el
+  `catalogo.json` commiteado se generó con un `comunes.ts` viejo (la descripción de
+  `ancho`) y el paso "catalogo.json al día" lo rechazó, así que el deploy de todo lo de
+  después se saltó. Regenerado y subido. Regla que ya está en el CI: **`pnpm catalogo`
+  después de `git pull` y antes de commitear** un componente; si el schema de otro cambió
+  entre tu pull y tu push, el archivo generado cambia aunque tú no lo hayas tocado.
+
 - **sáb 15:45 · producto** — **Inicio ya no es una pantalla programada: la arma Maya**
   para cada persona, con un modelo chico (`gemini-3.5-flash-lite`) y solo cuando la cuenta
   se movió (huella de acciones + movimientos; reloj cada 10 min que pasa de largo si nada
