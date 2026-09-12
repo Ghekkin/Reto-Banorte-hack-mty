@@ -75,7 +75,7 @@ Reglas:
 |---|---|---|
 | `estado` | `pensando` / `consultando` / `pintando` | Indicador de la UI |
 | `tool` | Una llamada MCP terminada | Panel de transparencia (modo demo) |
-| `a2ui` | Un mensaje A2UI v0.9.1 **ya validado** contra el catálogo | `MessageProcessor` del renderer |
+| `a2ui` | Un mensaje A2UI v0.9.1 **ya validado** contra los schemas oficiales y el catálogo | `procesar()` de `packages/a2ui` |
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |

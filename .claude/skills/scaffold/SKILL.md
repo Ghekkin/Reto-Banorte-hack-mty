@@ -15,8 +15,8 @@ apps/web/            Next.js (App Router) + React + Tailwind v4 + shadcn/ui  pue
                      components.json en la raiz de apps/web; tokens en app/globals.css
                      + AI SDK
                      + @ai-sdk/google (principal) + @ai-sdk/anthropic (respaldo)
-                     + @a2ui/react @a2ui/web_core (renderer A2UI)
 apps/mcp/            TS + @modelcontextprotocol/sdk + Express             puerto 3100
+packages/a2ui/       Renderer A2UI propio (ADR 0008): spec/ con los JSON Schema oficiales, reducer, bindings, registro, <Superficie>
 packages/catalogo/   Catálogo A2UI propio: schema + componente React + .jsonl de ejemplo por componente
 packages/schemas/    Zod de tools, sin dependencias de runtime aparte de zod
 services/ml/         (solo si ADR 0002 se activa) FastAPI                 puerto 8000

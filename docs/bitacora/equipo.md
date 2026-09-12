@@ -18,6 +18,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **vie 23:10 · decisión** — Renderer A2UI **propio** (ADR 0008): `packages/a2ui` con los
+  JSON Schema oficiales vendoreados para validar; sin `@a2ui/react` (Lit/shadow DOM
+  rompería shadcn y la paleta) y sin spike. Plan de construcción en
+  `arquitectura/renderer-a2ui.md`; corte sáb 02:00 = pinta `PlanDePago` desde un `.jsonl`
+  y devuelve un `action`.
+
 - **vie 22:55 · decisión** — Zona horaria única: Monterrey (UTC-6). El servidor está en
   UTC+2 y eso hizo creer que íbamos en la hora 11 del reto cuando vamos en la 3. Scripts
   con `TZ=America/Monterrey`; roadmap re-baseado a H3 con 33 h por delante: fase 1 a

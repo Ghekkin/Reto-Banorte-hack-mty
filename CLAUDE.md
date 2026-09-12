@@ -93,9 +93,10 @@ el campo nuevo es opcional.
 
 - **Todo en TypeScript**: Next.js para el host de la UI generativa, servidor MCP en TS
   con `@modelcontextprotocol/sdk`, schemas compartidos con Zod. ADR 0001.
-- **A2UI real (v0.9.1) con catálogo propio**, renderer `@a2ui/react`; el agente emite
+- **A2UI real (v0.9.1) con catálogo propio y renderer propio** (`packages/a2ui`, ~200
+  líneas, validado con los JSON Schema oficiales): el agente emite
   `createSurface`/`updateComponents`/`updateDataModel` restringido a nuestro catálogo y
-  recibe los `action` de la UI. Plan B: processor propio de los mismos mensajes. ADR 0003.
+  recibe los `action` de la UI. Sin `@a2ui/react`. ADR 0003 + 0008.
 - **Python solo detrás de una tool, nunca en el contrato tool → UI.** Si hace falta ML
   pesado, va en un FastAPI mínimo que llama una tool MCP, con mock/fallback en TS.
   Ningún flujo de la demo puede tener a Python como única ruta. ADR 0002.
@@ -122,6 +123,7 @@ el campo nuevo es opcional.
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
 | `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
 | `apps/mcp/` | Servidor MCP en TS (Streamable HTTP), tools del dominio financiero | pendiente |
+| `packages/a2ui/` | Renderer A2UI propio: reducer, bindings, árbol, registro, validación con los schemas oficiales (ADR 0008) | pendiente |
 | `packages/catalogo/` | Catálogo A2UI propio: schema + componente React + `.jsonl` de ejemplo por componente | pendiente |
 | `packages/schemas/` | Schemas Zod de las tools MCP | pendiente |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |

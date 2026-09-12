@@ -5,6 +5,10 @@ fecha: 2026-09-12
 
 # 0003 — A2UI real (v0.9.1) con catálogo propio, no un protocolo inventado
 
+> **Actualizado por el ADR 0008** (2026-09-11 23:10): el renderer es **propio**, fiel
+> a la spec y validado con los JSON Schema oficiales; no se usa `@a2ui/react` ni se
+> hace el spike. Lo demás de este ADR sigue vigente.
+
 ## Contexto
 
 La presentación oficial pone tres piezas no negociables: LLM, MCP y **A2UI "o un

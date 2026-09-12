@@ -27,7 +27,7 @@ El detalle por bloque está en `equipo/roadmap.md`; aquí solo el paso inmediato
 
 - web: tokens → los 8 schemas del catálogo (ADR 0004) en la hora 1 → `ResumenTarjeta`, `PlanDePago`, `Confirmacion`, `Calendario` (fase 1) con sus `.jsonl`
 - mcp: datos de Beto y Ana completos para los tres casos + `estado.json` reiniciable → `consultar_perfil`, `consultar_tarjeta`, `simular_reestructura` → `aplicar_plan_pago` (fase 1)
-- contrato: spike `@a2ui/react` con un componente propio y una `action` de vuelta (2 h, ADR 0003) → schemas de tools → agente con structured output contra los 8 nombres del catálogo → prop `razon`
+- contrato: `packages/a2ui` (renderer propio según `arquitectura/renderer-a2ui.md`, corte sáb 02:00) → schemas de tools → agente con structured output contra los 8 nombres del catálogo → prop `razon`
 - demo: guion literal del viaje (Beto 1 → Beto 2 → Ana 3) → `README.md` con comandos reales → modo transparencia y badges LLM·MCP·A2UI como tareas de hora 12+
 
 ## Hecho hoy
