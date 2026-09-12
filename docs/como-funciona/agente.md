@@ -146,16 +146,28 @@ salen**, no la intención:
 | El prefijo es idéntico **para otra persona y otro turno** | si no, el caché se invalida en cada turno |
 | El `cache_control` de Claude sale **en el cuerpo HTTP**, sobre el system prompt y con lo volátil fuera | el caché de Anthropic es explícito: sin eso no cachea nada. Se comprueba interceptando el `fetch` del proveedor, sin llamar a la API |
 
-Con eso, **nuestro lado es correcto y está fijado**. Lo que no se puede resolver desde
-aquí es el lado del proveedor: al 2026-09-12, con 55 turnos medidos, **Gemini reportó cero
-tokens cacheados en todos**. El SDK suma bien (`addTokenCounts` trata el ausente como 0) y
-`@ai-sdk/google` sí mapea `cachedContentTokenCount`, así que el cero es real: o el caché
-implícito no aplica en este modelo/tier, o hace falta caching **explícito** (crear un
-recurso `cachedContent`, que requiere una llamada a la API y por tanto cuota).
+Con eso, **nuestro lado es correcto y está fijado**.
 
-El log de cada turno ahora trae `entrada`, `salida` y `cache`, así que **una** llamada
-real lo resuelve: `cache: null` = el proveedor no reporta nada; `cache: 0` = reporta que no
-cacheó; `cache: 12000` = está pegando.
+**Medido con el modelo real el 2026-09-12 a las 12:10**, con la cuota ya ampliada:
+
+| Turno | Entrada | Desde caché | |
+|---|---|---|---|
+| Beto, "quiero pagar menos intereses" | 20,336 | **16,276** | 80 % |
+| El mismo, repetido | 20,336 | **16,276** | 80 % |
+| **Ana**, la misma pregunta (otra persona) | 23,415 | **20,341** | 87 % |
+| Beto, **segundo turno** de la conversación | 21,442 | **16,276** | 76 % |
+
+El prefijo compartido —system prompt + definiciones de tools, ~16,000 tokens— se reusa
+**entre personas y entre turnos**, que es exactamente el diseño. Google cobra los tokens
+cacheados con descuento. La latencia no mejora de forma consistente (5.8–7.7 s con caché
+en turnos equivalentes), así que el beneficio medido es de costo, no de velocidad.
+
+**Lo que no se sabe:** en los 55 turnos de la mañana el caché reportó **cero**, con la
+misma forma de petición. Un A/B descartó la única diferencia de código que tocaba la
+petición (`allowSystemInMessages`: sin ella el caché pega igual, 16,276). El cambio fue del
+lado de Google y la causa no se puede determinar desde aquí. Por eso el log de cada turno
+trae `entrada`, `salida` y `cache`: si vuelve a caer a cero, se nota en el siguiente turno
+en vez de en la factura.
 
 ### El texto que acompaña la pantalla es un consejo, no una etiqueta
 

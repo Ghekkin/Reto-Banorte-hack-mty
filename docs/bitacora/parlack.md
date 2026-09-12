@@ -352,6 +352,44 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 12:15 · medido — Con cuota, el caché pega: 76–87 % de la entrada
+
+Subieron el tope y por fin se pudo medir en vez de razonar. Cuatro turnos reales:
+
+| Turno | Entrada | Desde caché |
+|---|---|---|
+| Beto, "quiero pagar menos intereses" | 20,336 | **16,276** (80 %) |
+| El mismo, repetido | 20,336 | **16,276** (80 %) |
+| **Ana**, la misma pregunta | 23,415 | **20,341** (87 %) |
+| Beto, **segundo turno** con historial | 21,442 | **16,276** (76 %) |
+
+Lo que confirma: el prefijo compartido (~16k tokens de system + tools) se reusa **entre
+personas y entre turnos**. El orden estable arriba / volátil abajo hace exactamente lo que
+tenía que hacer.
+
+**Lo que no me cuadraba, y lo probé en vez de suponerlo.** En los 55 turnos de la mañana el
+caché dio cero con la misma forma de petición. La única diferencia de código que tocaba la
+petición era `allowSystemInMessages`, que puse por un warning. Si ESO hubiera activado el
+caché, alguien que borrara el "silenciador" lo apagaría en silencio. Así que hice el A/B:
+quité la opción, dos turnos idénticos, y el caché pegó igual (16,276). **Descartado.** El
+archivo quedó restaurado y lo verifiqué contra `git diff`. El cambio fue del lado de Google
+y la causa no se puede saber desde aquí — por eso el log de cada turno trae `cache`.
+
+**Lo que NO afirmo:** que el caché acelere. Con caché encendido, turnos equivalentes
+tardaron 3.3, 5.8, 6.0 y 7.7 s. El 3.3 s del principio parecía un "casi el doble de rápido"
+y era ruido. El beneficio medido es de costo.
+
+**Y un bug de paso (#14):** el agente le pone `heroe` a `SimuladorMeta`, que no lo declara, y
+el turno de Ana gastó un paso en reintentar. No es descuido del modelo: 13 componentes del
+catálogo aceptan `heroe` y `SimuladorMeta` es de los pocos que no, así que para el modelo
+es una prop general — y para Ana, sin deuda, el simulador **es** su tarjeta principal. Lo
+registré en vez de arreglarlo porque el catálogo está en obra con el fork y una de las dos
+salidas es de diseño (el slider y el botón son rojos: sobre el degradado serían rojo sobre
+rojo).
+
+Cerré el #12 con la evidencia: el arreglo vive fuera del código, así que a mano y no con
+`Fixes`.
+
 ### 11:45 · investigado y fijado — El caché: nuestro lado está probado, el de Gemini no depende de nosotros
 
 "Arregla el caché" resultó ser primero un problema de saber **de qué lado está el fallo**,

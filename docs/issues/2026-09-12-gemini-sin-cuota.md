@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: critica
 area: infra
 encontrado: 2026-09-12 12:40
 github: 12
+resuelto-en: fuera del codigo — tope de gasto ampliado en AI Studio, verificado 2026-09-12 12:10
 ---
 
 # La demo está caída: el proyecto de Gemini pasó su tope de gasto mensual
