@@ -127,7 +127,7 @@ el campo nuevo es opcional.
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
-| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell, `/api/agente` (stream JSONL), **5 rutas `GET /api/*` de lectura para consumidores externos** (`docs/como-funciona/api-rest-lectura.md`), `/catalogo/v1.json`, `src/lib/agente/` (agente real con el AI SDK) | construido; 26 pruebas |
+| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell, `/api/agente` (stream JSONL), **6 rutas `/api/*` de lectura para consumidores externos** (`docs/como-funciona/api-rest-lectura.md`), `/catalogo/v1.json`, `src/lib/agente/` (agente real con el AI SDK), `src/lib/inicio/` (**la portada que arma un modelo chico**, con reloj en `instrumentation.ts`; `docs/como-funciona/inicio-personalizado.md`) | construido; 119 pruebas |
 | `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre PostgreSQL (esquema `banorte`), estado mutable en `acciones_aplicadas` | **18 tools** (14 lectura + 4 acción), 103 pruebas |
 | `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 112 pruebas, incluidos los casos de conformidad oficiales de `spec/` |
 | `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod | **8 de 8 componentes**, 42 pruebas |
@@ -145,6 +145,7 @@ pnpm typecheck                 # tsc en los 5 paquetes
 pnpm test                      # vitest en los 5 paquetes
 pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` corriendo)
 pnpm probar-guion              # ensaya los 9 pasos del guion con el MODELO REAL (necesita llave y `pnpm dev`)
+pnpm probar-inicio             # rearma las 3 portadas de Inicio con el modelo chico real y las revisa
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
 pnpm reiniciar-estado          # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
 pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)

@@ -57,11 +57,13 @@ export const CLASES_GRAFICA = "aspect-auto h-40 w-full @md/tarjeta:h-48";
 export function formatearMontoCorto(centavos: number): string {
   // A mano y no con `notation: "compact"`: el ICU de Node escribe "$86.0 k" y el de
   // Chrome "$86 k", y esa diferencia era un error de hidratación en cada ficha.
+  // Sin espacio antes de la unidad: en una marca de eje, Recharts parte el texto en los
+  // espacios cuando no cabe en el ancho del eje, y "$55.8 k" salia en dos renglones.
   const pesos = Math.abs(centavos) / 100;
   const signo = centavos < 0 ? "−" : "";
   const numero = (v: number) => new Intl.NumberFormat("es-MX", { maximumFractionDigits: 1 }).format(v);
-  if (pesos >= 1_000_000) return `${signo}$${numero(pesos / 1_000_000)} M`;
-  if (pesos >= 1_000) return `${signo}$${numero(pesos / 1_000)} k`;
+  if (pesos >= 1_000_000) return `${signo}$${numero(pesos / 1_000_000)}M`;
+  if (pesos >= 1_000) return `${signo}$${numero(pesos / 1_000)}k`;
   return `${signo}$${new Intl.NumberFormat("es-MX", { maximumFractionDigits: 0 }).format(pesos)}`;
 }
 

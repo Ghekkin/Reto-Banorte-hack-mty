@@ -179,6 +179,7 @@ export function armarMensajes(entrada: EntradaPintarPantalla): Armado {
   // regla de diseno que ningun schema individual puede ver: un solo heroe por pantalla.
   for (const componente of componentes as Componente[]) {
     errores.push(...revisarProps(componente, entrada.razon));
+    completarAccion(componente);
   }
   const heroes = (componentes as Componente[]).filter((c) => c.heroe === true).map((c) => c.id);
   if (heroes.length > 1) {
@@ -201,6 +202,24 @@ export function armarMensajes(entrada: EntradaPintarPantalla): Armado {
   return errores.length ? { ok: false, errores } : { ok: true, mensajes, componentes: componentes.length };
 }
 
+/**
+ * Un componente con boton y sin `action` es un boton apagado. El catalogo declara que
+ * accion dispara cada componente (`acciones`), y todos los componentes ponen en el
+ * `context` lo que su accion necesita al tocarse (el plazo elegido, la suscripcion de
+ * la fila…), asi que la accion por default vale con `context: {}`. Si el modelo la
+ * declaro, se respeta tal cual.
+ *
+ * Paso el 2026-09-12 con la portada de Inicio: el modelo chico pintaba `PlanDePago`
+ * sin `action` en dos corridas seguidas, aun con la regla escrita en el prompt, y el
+ * boton "Aplicar plan" salia deshabilitado.
+ */
+function completarAccion(componente: Componente): void {
+  if (componente.action) return;
+  const entrada = CATALOGO.find((c) => c.nombre === componente.component);
+  const nombre = entrada?.acciones?.[0];
+  if (nombre) componente.action = { event: { name: nombre, context: {} } };
+}
+
 function parsear(texto: string, campo: string, errores: string[]): unknown {
   try {
     return JSON.parse(texto) as unknown;
@@ -213,12 +232,21 @@ function parsear(texto: string, campo: string, errores: string[]): unknown {
       try {
         return JSON.parse(rescatado) as unknown;
       } catch {
-        /* cae al error de abajo */
+        /* cae al siguiente intento */
       }
     }
+    // Tercer intento: comas colgantes (`{"a": 1,}`), el error de sintaxis mas comun de
+    // los modelos chicos en un JSON largo. El 2026-09-12 tumbo dos portadas seguidas.
+    try {
+      return JSON.parse(quitarComasColgantes(rescatado ?? texto)) as unknown;
+    } catch {
+      /* cae al error de abajo */
+    }
     // El detalle del parser va en el mensaje a proposito: es lo que el modelo necesita
-    // para corregir en el reintento, y lo unico que queda en el log para saber QUE mando.
+    // para corregir en el reintento. Y el fragmento va al log, que es el unico lugar
+    // donde se puede ver QUE mando.
     const detalle = error instanceof Error ? error.message : String(error);
+    console.warn(JSON.stringify({ pintar_pantalla: campo, detalle, fragmento: fragmentoDelError(texto, detalle) }));
     errores.push(
       `${campo} no es JSON valido (${detalle}). Manda un solo arreglo JSON, sin texto ni cercas alrededor.`,
     );
@@ -258,6 +286,48 @@ export function rescatarJson(texto: string): string | undefined {
     }
   }
   return undefined;
+}
+
+/**
+ * Quita las comas que van justo antes de `}` o `]`, sin tocar lo que este dentro de una
+ * cadena. Es el unico arreglo "creativo" que se le hace al JSON del modelo: no cambia
+ * ningun valor, solo quita lo que ningun parser acepta.
+ */
+export function quitarComasColgantes(texto: string): string {
+  let salida = "";
+  let enCadena = false;
+  let escapado = false;
+  for (let i = 0; i < texto.length; i++) {
+    const c = texto[i]!;
+    if (enCadena) {
+      salida += c;
+      if (escapado) escapado = false;
+      else if (c === "\\") escapado = true;
+      else if (c === '"') enCadena = false;
+      continue;
+    }
+    if (c === '"') {
+      enCadena = true;
+      salida += c;
+      continue;
+    }
+    if (c === ",") {
+      let j = i + 1;
+      while (j < texto.length && /\s/.test(texto[j]!)) j++;
+      if (texto[j] === "}" || texto[j] === "]") {
+        i = j - 1; // la coma sobra, y el espacio que la seguia tambien
+        continue;
+      }
+    }
+    salida += c;
+  }
+  return salida;
+}
+
+/** ~120 caracteres alrededor de la posicion que reporta el parser, para el log. */
+function fragmentoDelError(texto: string, detalle: string): string {
+  const posicion = Number(/position (\d+)/.exec(detalle)?.[1] ?? 0);
+  return texto.slice(Math.max(0, posicion - 60), posicion + 60);
 }
 
 function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {

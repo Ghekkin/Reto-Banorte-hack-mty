@@ -30,6 +30,12 @@ export type OpcionesDeTurno = {
   senal?: AbortSignal;
   /** Tope del turno en ms. Default `TIMEOUT_TURNO_MS`; las pruebas lo bajan. */
   timeoutMs?: number;
+  /**
+   * Se llama al cerrar un turno en el que una tool de ACCION del MCP aplico algo. Es el
+   * gancho con el que el Inicio personalizado se rearma justo despues de un plan
+   * aplicado o un apartado creado, sin que el agente sepa que existe el Inicio.
+   */
+  alMutar?: (usuarioId: string) => void;
 };
 
 /** Dos entregas invalidas y se corta: el contrato permite un reintento, no una barra libre. */
@@ -253,6 +259,14 @@ export async function* correrTurno(
         tipo: "texto",
         valor: prosa.trim() || "No pude armar la pantalla esta vez. ¿Me lo preguntas de otra forma?",
       };
+    }
+
+    if (usadas.some((l) => l.ok && l.mutacion)) {
+      try {
+        opciones.alMutar?.(peticion.usuarioId);
+      } catch (error) {
+        console.warn(`[agente] alMutar fallo: ${error instanceof Error ? error.message : String(error)}`);
+      }
     }
 
     // `entrada` y `cache` no son decoracion: el prompt caching es invisible cuando NO

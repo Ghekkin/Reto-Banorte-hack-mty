@@ -1,7 +1,7 @@
 "use client";
 
 import { PiggyBank } from "lucide-react";
-import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,17 +9,26 @@ import type { PropsComponente } from "@maya/a2ui";
 import { formatearFecha, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
-import { CLASES_GRAFICA, EJE, Ficha, Grafica, Leyenda, SERIES, TooltipMonto } from "../graficas";
+import { CLASES_GRAFICA, EJE, ETIQUETA, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto, formatearMontoEntero } from "../graficas";
 import type { PropsProyeccionPagoCredito } from "./schema";
 
 /**
  * Cuánto falta para terminar de pagar un crédito, y cuánto de eso son intereses.
  *
- * Una sola gráfica: el saldo bajando pago a pago hasta cero. Los hitos que manda la tool
- * son sus puntos, y debajo van como fichas con el monto completo (en móvil no hay hover).
- * El desglose capital / intereses es una barra fina de dos segmentos, porque es la
- * respuesta a "¿cuánto pagaré de puros intereses?", y la oportunidad de ahorro es una
- * frase, no una caja de color: el rojo es de la marca y el verde ya lo lleva el monto.
+ * La gráfica tiene que explicar algo sola, sin hover: el 2026-09-12 era una línea que
+ * bajaba de "Hoy" a "En 20 meses" sin un solo número encima, y el usuario lo dijo tal
+ * cual ("no explican nada, están muy básicas"). Ahora:
+ *
+ *  - **cada hito lleva su saldo escrito sobre el punto** (`ReferenceDot` con etiqueta), y
+ *    el eje Y con tres marcas da la escala: se lee "en un año debes $24.8 k" sin tocar nada;
+ *  - el eje X marca cada hito en meses desde hoy, no solo los dos extremos;
+ *  - debajo, por hito, **de qué se compone ese pago**: una barra capital / interés y el
+ *    porcentaje que es interés. Es lo que una amortización enseña y una curva no: pagas
+ *    lo mismo cada mes, pero al principio una cuarta parte es interés y al final casi nada.
+ *
+ * El desglose total capital / intereses sigue abajo como una barra de dos segmentos con el
+ * porcentaje, porque es la respuesta a "¿cuánto pagaré de puros intereses?". La oportunidad
+ * de ahorro es una frase, no una caja de color: el rojo es de la marca.
  */
 export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -68,11 +77,14 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
   const serie = [{ pago: hoy, saldo: saldoInsolutoCentavos }, ...hitos.map((h) => ({ pago: h.numeroPago, saldo: h.saldoFinalCentavos }))];
   const costoTotal = saldoInsolutoCentavos + totalInteresesEstimadosCentavos;
   const pctCapital = costoTotal > 0 ? (saldoInsolutoCentavos / costoTotal) * 100 : 100;
+  const pctIntereses = Math.round(100 - pctCapital);
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
   const colores = heroe
     ? { saldo: "var(--primary-foreground)", capital: "var(--primary-foreground)", intereses: "var(--oscuro)" }
     : { saldo: SERIES.principal, capital: SERIES.principal, intereses: SERIES.acento };
-  const mesesAlFinal = ultimo.numeroPago - hoy;
+  const colorEje = heroe ? "var(--primary-foreground)" : EJE.tick.fill;
+  const colorEtiqueta = heroe ? "var(--primary-foreground)" : ETIQUETA.fill;
+  const marcasY = [0, Math.round(saldoInsolutoCentavos / 2), saldoInsolutoCentavos];
 
   return (
     <Tarjeta heroe={heroe}>
@@ -95,18 +107,28 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
           izquierda y los hitos con el desglose a la derecha, para no dejar media tarjeta vacía. */}
       <CardContent className="grid gap-3 @3xl/tarjeta:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @3xl/tarjeta:items-center @3xl/tarjeta:gap-6">
         <Grafica config={{ saldo: { label: "Saldo", color: colores.saldo } }} etiqueta={`Saldo del crédito ${alias} pago a pago`}>
-          <AreaChart data={serie} margin={{ top: 8, right: 36, bottom: 0, left: 16 }}>
+          {/* `top: 22` es el hueco de las etiquetas sobre los puntos; `right` el de la última. */}
+          <AreaChart data={serie} margin={{ top: 22, right: 28, bottom: 0, left: 0 }}>
             <XAxis
               dataKey="pago"
               type="number"
               domain={[hoy, "dataMax"]}
-              ticks={[hoy, ultimo.numeroPago]}
-              interval={0}
-              tickFormatter={(p: number) => (p === hoy ? "Hoy" : `En ${mesesAlFinal} ${mesesAlFinal === 1 ? "mes" : "meses"}`)}
+              ticks={[hoy, ...hitos.map((h) => h.numeroPago)]}
+              interval="preserveStartEnd"
+              minTickGap={18}
+              tickFormatter={(p: number) => etiquetaDeMeses(p - hoy)}
               {...EJE}
-              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
+              tick={{ ...EJE.tick, fill: colorEje }}
             />
-            <YAxis hide domain={[0, "dataMax"]} />
+            {/* Tres marcas bastan para dar escala; más, en 160 px de alto, se pisan. */}
+            <YAxis
+              domain={[0, saldoInsolutoCentavos]}
+              ticks={marcasY}
+              tickFormatter={formatearMontoCorto}
+              width={60}
+              {...EJE}
+              tick={{ ...EJE.tick, fill: colorEje }}
+            />
             <TooltipMonto etiquetaDe={(p) => (Number(p) === hoy ? "Hoy" : `Después del pago ${String(p)}`)} />
             <Area
               type="monotone"
@@ -116,12 +138,23 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               strokeWidth={2}
               fill={colores.saldo}
               fillOpacity={heroe ? 0.2 : 0.06}
-              // Punto lleno, sin anillo: el anillo del color de la tarjeta sobre su propia
-              // linea hacia que la curva se viera cortada en cada hito.
-              dot={{ r: 3.5, fill: colores.saldo, strokeWidth: 0 }}
+              dot={false}
               activeDot={{ r: 5, fill: colores.intereses, stroke: "var(--card)", strokeWidth: 2 }}
               isAnimationActive={false}
             />
+            {/* El saldo de cada hito, escrito sobre su punto: la gráfica se lee sin hover. */}
+            {hitos.map((h) => (
+              <ReferenceDot
+                key={h.numeroPago}
+                x={h.numeroPago}
+                y={h.saldoFinalCentavos}
+                r={4}
+                fill={colores.saldo}
+                stroke="var(--card)"
+                strokeWidth={2}
+                label={{ value: formatearMontoCorto(h.saldoFinalCentavos), position: "top", ...ETIQUETA, fill: colorEtiqueta }}
+              />
+            ))}
           </AreaChart>
         </Grafica>
 
@@ -130,12 +163,14 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               cuando comparten la tarjeta con la curva. */}
           <div className="grid grid-cols-2 gap-3 @xl/tarjeta:grid-cols-4 @3xl/tarjeta:grid-cols-2">
             {hitos.slice(0, 4).map((h, i) => (
-              <Ficha
+              <FichaDePago
                 key={h.numeroPago}
                 etiqueta={etiquetaDeHito(h.periodo)}
-                valor={formatearMonto(h.saldoFinalCentavos)}
-                detalle={`interés ${formatearMonto(h.interesCentavos)}`}
-                detalleSoloEscritorio
+                saldoCentavos={h.saldoFinalCentavos}
+                capitalCentavos={h.capitalCentavos}
+                interesCentavos={h.interesCentavos}
+                mensualidadCentavos={mensualidadCentavos}
+                colores={colores}
                 heroe={heroe}
                 acento={i === Math.min(hitos.length, 4) - 1}
               />
@@ -152,7 +187,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               heroe={heroe}
               series={[
                 { nombre: `Capital ${formatearMonto(saldoInsolutoCentavos)}`, color: colores.capital },
-                { nombre: `Intereses ${formatearMonto(totalInteresesEstimadosCentavos)}`, color: colores.intereses },
+                { nombre: `Intereses ${formatearMonto(totalInteresesEstimadosCentavos)} · ${pctIntereses} % de lo que pagarás`, color: colores.intereses },
               ]}
             />
           </div>
@@ -175,7 +210,63 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
   );
 }
 
+/**
+ * Un hito con su saldo y, debajo, de qué se compone ESE pago: capital en oscuro, interés
+ * en rojo, y el porcentaje que es interés. Cuatro de estas en fila cuentan la historia
+ * de una amortización mejor que cualquier curva: el pago es el mismo, el interés baja.
+ */
+function FichaDePago({
+  etiqueta,
+  saldoCentavos,
+  capitalCentavos,
+  interesCentavos,
+  mensualidadCentavos,
+  colores,
+  heroe,
+  acento,
+}: {
+  etiqueta: string;
+  saldoCentavos: number;
+  capitalCentavos: number;
+  interesCentavos: number;
+  mensualidadCentavos: number;
+  colores: { capital: string; intereses: string };
+  heroe: boolean;
+  acento: boolean;
+}) {
+  // Si la tool manda capital e interés del pago, suman la mensualidad; si trae acumulados
+  // o vienen a medias, la mensualidad de la cabecera es la referencia.
+  const pago = capitalCentavos + interesCentavos > 0 ? capitalCentavos + interesCentavos : mensualidadCentavos;
+  const pctInteres = pago > 0 ? Math.min(100, Math.round((interesCentavos / pago) * 100)) : 0;
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const fuerte = heroe ? "text-primary-foreground" : "text-foreground";
+  return (
+    <div className="flex min-w-0 flex-col gap-1">
+      <span className={`truncate text-xs ${suave}`}>{etiqueta}</span>
+      <span className={`monto truncate text-sm ${fuerte} ${acento ? "font-semibold" : "font-medium"}`}>{formatearMonto(saldoCentavos)}</span>
+      <div
+        className="flex h-1.5 w-full gap-px overflow-hidden rounded-full"
+        role="img"
+        aria-label={`Del pago, ${pctInteres} % es interés`}
+      >
+        <div className="h-full rounded-l-full" style={{ width: `${100 - pctInteres}%`, background: colores.capital }} />
+        <div className="h-full flex-1 rounded-r-full" style={{ background: colores.intereses }} />
+      </div>
+      <span className={`monto truncate text-xs ${suave}`}>
+        {formatearMontoEntero(interesCentavos)} de interés · {pctInteres} %
+      </span>
+    </div>
+  );
+}
+
 /** La tool a veces manda la fecha del pago (`2026-10-20`) y a veces una etiqueta ("En 6 meses"). */
 function etiquetaDeHito(periodo: string): string {
   return /^\d{4}-\d{2}-\d{2}$/.test(periodo) ? formatearFecha(periodo) : periodo;
+}
+
+/** Marca del eje X: meses desde hoy. `0` es hoy; 12 y 24 se dicen en años. */
+function etiquetaDeMeses(meses: number): string {
+  if (meses <= 0) return "Hoy";
+  if (meses % 12 === 0) return meses === 12 ? "1 año" : `${meses / 12} años`;
+  return meses === 1 ? "1 mes" : `${meses} meses`;
 }

@@ -1,6 +1,8 @@
+import { after } from "next/server";
 import { correrTurno } from "@/lib/agente/agente";
 import { config } from "@/lib/agente/config";
 import { capacidadesDelServidor, esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/agente/tipos";
+import { regenerarSiCambio } from "@/lib/inicio/servicio";
 
 /**
  * `POST /api/agente` — el unico endpoint del cliente. Responde en JSONL:
@@ -57,7 +59,20 @@ export async function POST(request: Request): Promise<Response> {
       try {
         // Si la persona cierra la pestana, el turno se corta: no se siguen llamando
         // tools (ni, peor, una accion) para nadie.
-        for await (const linea of correrTurno(peticion, { senal: request.signal })) emitir(linea);
+        for await (const linea of correrTurno(peticion, {
+          senal: request.signal,
+          // Una accion aplicada cambia los datos de la portada: se rearma en segundo
+          // plano, despues de cerrar el stream, sin que este turno espere al otro modelo.
+          alMutar: (usuarioId) => {
+            try {
+              after(() => regenerarSiCambio(usuarioId, "accion"));
+            } catch {
+              // Fuera del alcance de la peticion (no deberia pasar): se rearma igual.
+              void regenerarSiCambio(usuarioId, "accion");
+            }
+          },
+        }))
+          emitir(linea);
       } catch (error) {
         emitir({
           tipo: "error",

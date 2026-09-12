@@ -43,7 +43,8 @@ export async function llamarTool(
   }
 }
 
-export type LlamadaRegistrada = { nombre: string; ms: number; ok: boolean };
+/** `mutacion`: la tool era de accion (`readOnlyHint: false`). Es lo que dispara rearmar el Inicio. */
+export type LlamadaRegistrada = { nombre: string; ms: number; ok: boolean; mutacion?: boolean };
 
 export type OpcionesDeHerramientas = {
   /** El usuario de este turno. Ninguna tool puede leer datos de otra persona. */
@@ -97,7 +98,7 @@ export async function herramientasDelMcp(cliente: Client, opciones: OpcionesDeHe
           }
         }
         const { resultado, ms, ok } = await llamarTool(cliente, tool.name, argumentos);
-        opciones.alTerminar?.({ nombre: tool.name, ms, ok });
+        opciones.alTerminar?.({ nombre: tool.name, ms, ok, mutacion: !esLectura });
         return resultado;
       },
     });

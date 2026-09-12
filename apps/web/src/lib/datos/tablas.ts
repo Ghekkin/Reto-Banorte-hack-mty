@@ -98,6 +98,25 @@ export const leerTabla = cache(async (tabla: string): Promise<Fila[]> => {
   }
 });
 
+/**
+ * Una consulta con parametros, tal cual, para lo que `leerTabla` no cubre: contar,
+ * agrupar, escribir. La usa el Inicio personalizado (`lib/inicio/`), que necesita una
+ * huella de los datos de una persona sin traerse 2 265 movimientos, y que ESCRIBE su
+ * pantalla en `pantallas_inicio`.
+ *
+ * A diferencia de `leerTabla`, **no cae al volcado**: sin base, lanza. Quien la llama
+ * decide que hacer (el Inicio se queda con su pantalla programada), y una escritura
+ * que "funciona" contra un archivo seria una mentira.
+ */
+export async function consultar<T extends Record<string, unknown> = Record<string, unknown>>(
+  sql: string,
+  valores: unknown[] = [],
+): Promise<T[]> {
+  if (!process.env.DATABASE_URL) throw new Error("sin DATABASE_URL: no hay base que consultar");
+  const { rows } = await obtenerPool().query<T>(sql, valores);
+  return rows;
+}
+
 // --- Conversiones -----------------------------------------------------------
 // Todo llega como texto. Convertir en un solo lugar evita el `Number(x) || 0`
 // repetido por los componentes, que esconde datos faltantes en vez de mostrarlos.

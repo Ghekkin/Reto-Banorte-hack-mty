@@ -19,6 +19,7 @@ Cinco direcciones, una por cada cosa que alguien querría preguntar:
 | ¿Qué productos tiene? | `GET /api/productos?usuario=usr_beto` |
 | ¿En qué se le va el dinero? | `GET /api/movimientos?usuario=usr_beto` |
 | ¿Quién es y cuánto debe? | `GET /api/perfil?usuario=usr_beto` |
+| ¿Qué portada le armó Maya, y está al día? | `GET /api/inicio?usuario=usr_beto` |
 
 Dos cosas que sorprenden a quien la usa por primera vez:
 
@@ -41,6 +42,7 @@ Dos cosas que sorprenden a quien la usa por primera vez:
 | `GET /api/productos` | `apps/web/src/app/api/productos/route.ts` |
 | `GET /api/movimientos` | `apps/web/src/app/api/movimientos/route.ts` |
 | `GET /api/perfil` | `apps/web/src/app/api/perfil/route.ts` |
+| `GET` / `POST /api/inicio` | `apps/web/src/app/api/inicio/route.ts` — la portada que armó Maya (`inicio-personalizado.md`). El `POST` la rearma y espera; lleva `Authorization: Bearer <MCP_TOKEN>` porque gasta modelo |
 
 Todas son `runtime = "nodejs"` (necesitan `pg`) y `dynamic = "force-dynamic"` (los datos
 cambian con las acciones de la demo, no se prerenderizan).

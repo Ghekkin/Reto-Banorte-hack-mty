@@ -194,6 +194,23 @@ En `mcp-cliente.ts`, antes de llamar cualquier tool:
 - **Las tools de acción reciben la `idempotencyKey` de la interfaz** si el modelo no la
   puso. Las acciones se detectan por la anotación MCP `readOnlyHint: false`.
 
+Y en `pantalla.ts`, al armar los mensajes:
+
+- **La `action` por default.** Un componente con botón y sin `action` es un botón apagado.
+  Si el catálogo declara `acciones` para ese componente y el modelo no puso ninguna, se le
+  pone la primera con `context: {}` (todos los componentes ponen en el `context` lo que su
+  acción necesita al tocarse). Si el modelo la declaró, se respeta tal cual.
+- **Comas colgantes.** `parsear` hace un tercer intento quitando las comas antes de `}` o
+  `]` (sin tocar cadenas): el error de sintaxis más común de un modelo chico en un JSON
+  largo. El fragmento alrededor del error va al log.
+
+Los dos nacieron con el Inicio personalizado (`inicio-personalizado.md`), que usa este
+mismo `armarMensajes` con un modelo más chico, pero valen para la conversación.
+
+Al cerrar un turno en el que una tool de acción aplicó algo, `correrTurno` llama
+`opciones.alMutar(usuarioId)`. El agente no sabe quién escucha; la ruta lo conecta con el
+Inicio personalizado (`after(() => regenerarSiCambio(usuarioId, "accion"))`).
+
 ### Modelo y proveedor
 
 `MODELO=gemini` (default) → `google("gemini-3.8-flash")` con

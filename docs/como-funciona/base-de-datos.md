@@ -594,6 +594,22 @@ La **única** tabla que el agente escribe. Índice `ix_acciones_usuario (usuario
 `JSONB` y no `JSON`: se indexa y se consulta, y aquí no importa conservar el orden de las
 llaves.
 
+### `pantallas_inicio` — 0 filas al cargar (migración 0002)
+
+La portada que Maya armó para cada persona (`docs/como-funciona/inicio-personalizado.md`).
+Una fila por usuario; la escribe la web, no el MCP. `reiniciar.sql` no la toca: al
+reiniciar cambia la `huella` y la portada queda desactualizada sola.
+
+| Columna | Tipo | Notas |
+|---|---|---|
+| `usuario_id` | `TEXT` | PK, FK → `usuarios(id)` |
+| `huella` | `TEXT` | Con qué datos se armó: `v1|c18|a:<acciones>|m:<movimientos>` (`lib/inicio/huella.ts`) |
+| `mensajes` | `JSONB` | Los tres mensajes A2UI validados |
+| `texto`, `razon` | `TEXT` | Lo que Maya dice y por qué esta portada |
+| `sugerencias`, `tools` | `JSONB` | Arreglos de texto |
+| `modelo`, `entrada_tokens`, `salida_tokens`, `cache_tokens`, `ms` | | Trazabilidad de la generación |
+| `generada_en` | `TIMESTAMPTZ` | `DEFAULT now()` |
+
 ### El contrato del prefijo `_base_`
 
 `db/reiniciar.sql` borra de `metas` y `topes_gasto` **todo lo que no lleve el prefijo

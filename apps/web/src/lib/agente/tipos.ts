@@ -59,6 +59,19 @@ export type PeticionAgente = {
  * `usuarioId` lleva el patron de los ids sinteticos: es lo unico del cuerpo que se
  * interpola en el prompt como texto.
  */
+/**
+ * Una accion tal como la manda la interfaz. Aparte porque tiene DOS puertas: el cuerpo
+ * de `POST /api/agente` y el `?accion=` con el que Inicio manda a la persona a Maya con
+ * el boton que toco ya disparado (`components/inicio/inicio-de-maya.tsx`).
+ */
+export const esquemaAccionEntrante = z.object({
+  name: z.string().min(1).max(64),
+  surfaceId: z.string().min(1).max(64),
+  sourceComponentId: z.string().min(1).max(128),
+  timestamp: z.string().max(64),
+  context: z.record(z.string(), z.unknown()).default({}),
+});
+
 export const esquemaPeticion = z
   .object({
     usuarioId: z.string().regex(/^usr_[a-z0-9_]+$/, "usuarioId invalido"),
@@ -67,15 +80,7 @@ export const esquemaPeticion = z
       .array(z.object({ rol: z.enum(["usuario", "agente", "accion"]), texto: z.string().max(4000) }))
       .max(40)
       .default([]),
-    accion: z
-      .object({
-        name: z.string().min(1).max(64),
-        surfaceId: z.string().min(1).max(64),
-        sourceComponentId: z.string().min(1).max(128),
-        timestamp: z.string().max(64),
-        context: z.record(z.string(), z.unknown()).default({}),
-      })
-      .optional(),
+    accion: esquemaAccionEntrante.optional(),
     error: z
       .object({
         code: z.literal("VALIDATION_FAILED"),
