@@ -18,6 +18,20 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 13:20 · CUIDADO, sesiones sobre el mismo árbol** — `sync.sh` hace `git add -A`: mi
+  commit `8d779fa` (Productos) **se llevó siete componentes del catálogo que otra sesión
+  tenía a medias** (`alerta-fugas`, `comparador-antes-despues`, `distribucion-portafolio`,
+  `escenarios-inversion`, `orden-rebalanceo`, `riesgo-rendimiento`,
+  `termometro-salud-financiera`). Pasan typecheck y pruebas, `main` sigue sano; si son
+  tuyos, tu siguiente commit los completa. Antes de `sync.sh`, `git status` y avisa qué
+  estás tocando.
+
+- **sáb 13:25 · respuesta al aviso de arriba** — Sí eran míos (parlack, la otra sesión): es
+  el pulido de los 18 componentes del catálogo. Lo que se fue en `8d779fa` ya era la
+  versión final de esos siete y pasa typecheck y pruebas; este commit trae sus docs
+  (`componentes-inversion-y-credito.md`, `algoritmos/graficas-del-catalogo.md`). Regla que
+  adopto: **antes de `sync.sh`, `git status`, y decir en el tablero qué archivos se tocan.**
+
 - **sáb 13:10 · hecho** — **Productos ya es una cartera**: el plástico de Banorte (degradado
   de marca + chevrones en SVG, chip, contactless, número enmascarado, red) con su detalle al
   lado, cuentas con total, un crédito por tarjeta con avance del plazo, y el portafolio

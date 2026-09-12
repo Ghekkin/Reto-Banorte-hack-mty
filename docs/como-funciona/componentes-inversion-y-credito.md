@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 11:05
+verificado: 2026-09-12 13:10
 estado: construido
 ---
 
@@ -8,6 +8,8 @@ estado: construido
 Este documento describe los **10 nuevos componentes del catálogo A2UI** desarrollados para el Reto Banorte (Hack Monterrey 2026). Estos componentes extienden el sistema para cubrir el viaje patrimonial, de financiamiento, diagnóstico holístico y optimización de gastos, permitiendo al agente de IA generar interfaces financieras interactivas, explicables y con ciclo de acción cerrado.
 
 Todos los componentes se construyen sobre **shadcn/ui**, usan exclusivamente la **paleta de tokens de Banorte**, cumplen la regla de **altura táctil mínima de 48 px (`min-h-12`)** y se visualizan en la galería interactiva en `/catalogo`.
+
+**Pulido del 2026-09-12 (13:10).** Los diez se revisaron con capturas del navegador a 1280 px y a 390 px y se reescribieron con tres reglas: (1) la anatomía de tarjeta del sistema —etiqueta chica, el número grande, una línea de detalle, cuerpo, pie con un solo botón píldora y la razón—; (2) donde el dato es una serie, hay una gráfica de Recharts (`@/components/ui/chart`) con etiquetas directas y ningún número que viva solo en el tooltip; (3) fuera lo que gritaba sin informar: títulos en mayúsculas, cajas con borde dentro de la tarjeta, iconos de chispas y alerta, montos en rojo. El módulo compartido es `packages/catalogo/src/graficas.tsx` y las decisiones (forma por tipo de dato, orden de colores validado, serie calibrada del slider, referencias de los pilares) están en [`docs/algoritmos/graficas-del-catalogo.md`](../algoritmos/graficas-del-catalogo.md).
 
 ---
 
@@ -65,10 +67,11 @@ Permite al usuario consultar el comportamiento y plusvalía acumulada de un inst
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `$1,114.00` con indicador en verde `+11.4%` (`text-exito`).
-- **Contexto**: Inició en `$1,000.00` hace 12 semanas.
-- **Gráfica de barras adaptativa**: Barras proporcionales con el punto más reciente destacado en rojo Banorte (`bg-primary`).
-- **Botón de acción**: `Ver detalle del instrumento` (min-h-12).
+- **Etiqueta**: nombre del instrumento y clave (`Certificados de la Tesorería 28 días · CETES28`).
+- **Cifra principal**: `$1,114.00`, el precio de cierre.
+- **Detalle**: `+11.4 %` en `text-exito` con el periodo y el precio inicial (`inició en $1,000.00`).
+- **Curva de área** (`AreaChart`): la serie de precios con eje de fechas legible (`20 jun`, `4 jul`…), eje Y oculto, línea en oscuro (`--chart-1`) y el **punto de cierre en rojo con su etiqueta directa** (`$1,114`). Sustituye a las barras con base en el mínimo, que exageraban el cambio.
+- **Pie**: botón en contorno `Ver detalle del instrumento` (píldora, 48 px) y la razón.
 
 ---
 
@@ -101,12 +104,13 @@ Muestra cómo crece el patrimonio al sumar aportaciones periódicas más el rend
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: Saldo final acumulado de `$189,456.00` (`text-3xl`).
-- **Ganancia en intereses**: `+$31,456.00` en verde con icono de chispa.
-- **Barra compuesta segmentada**: Proporción de dinero aportado (`bg-chart-1`) vs. rendimientos generados (`bg-primary`).
-- **Slider táctil**: Permite ajustar la aportación mensual de `$500` a `$20,000` con recálculo dinámico.
-- **Hitos temporales**: Desglose por año (Año 1, Año 2, Meta final).
-- **Botón de acción**: `Invertir con este plan`.
+- **Etiqueta**: `En 36 meses (3 años) · 10.5 % anual estimado`.
+- **Cifra principal**: el cierre proyectado (`$189,456.00`), que cambia con el slider.
+- **Detalle**: `+$31,456.00 de rendimiento sobre $158,000.00 aportados` (rendimiento en `text-exito`).
+- **Área apilada** (`AreaChart` con `stackId`): lo aportado en oscuro y el rendimiento en rojo encima, mes a mes; el eje X marca `Hoy` y los hitos (`Año 1`, `Año 2`, `Año 3`). Leyenda debajo.
+- **Fichas de hitos**: una por hito con el total en ese mes y, en escritorio, lo aportado en formato corto (`$86 k aportados`). Salen de la **misma serie** que la curva (calibrada con la tool), así que ya no contradicen al encabezado.
+- **Slider**: `Aportación mensual` con el monto en `text-xl`, de `$100` a `$20,000` (o 4× la aportación inicial).
+- **Pie**: botón `Invertir con este plan` y la razón.
 
 ---
 
@@ -148,13 +152,12 @@ Presenta simultáneamente tres escenarios de retorno de inversión (pesimista, e
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: Valor final del escenario activo (por ejemplo, `$120,560.00` en esperado).
-- **Ganancia esperada**: `+$20,560.00` (`9.8%` anual).
-- **Selector táctil de 3 tarjetas**:
-  1. *Pesimista* (5.5% anual → `$111,300.00`)
-  2. *Esperado* (9.8% anual → `$120,560.00`, resaltado con borde rojo Banorte)
-  3. *Optimista* (14.2% anual → `$130,420.00`)
-- **Botón de confirmación**: `Elegir escenario Esperado`.
+- **Etiqueta**: `Escenario esperado a 24 meses (2 años) · inviertes $100,000.00`.
+- **Cifra principal**: valor final del escenario activo (`$120,560.00`).
+- **Detalle**: `+$20,560.00 · 9.8 % anual`.
+- **Selector de 3 opciones** (`role="radiogroup"`): nombre y tasa en una línea, monto final debajo; la activa lleva borde y fondo de tinte, igual que una opción de `PlanDePago`. Sin iconos ni colores por escenario.
+- **Descripción** del escenario activo en una línea gris.
+- **Pie**: botón `Elegir escenario esperado` y la razón.
 
 ---
 
@@ -213,11 +216,12 @@ Resuelve el seguimiento patrimonial integral (la necesidad identificada en el vi
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `$250,000.00` con `+8.7%` de rendimiento global.
-- **Badge de advertencia**: "Desviación 6.0%" cuando el portafolio difiere del perfil objetivo.
-- **Barra continua multicolor**: Tramos proporcionales por clase usando tokens de paleta Banorte.
-- **Lista de activos táctil**: Monto en pesos de cada posición y barra de progreso individual.
-- **Botón de acción**: `Rebalancear al modelo recomendado`.
+- **Etiqueta**: `Tu portafolio · 4 clases de activo`, con badge `6 % fuera del modelo` cuando la desviación pasa de 5 %.
+- **Cifra principal**: `$250,000.00`.
+- **Detalle**: `+8.7 % de rendimiento sobre $230,000.00 aportados`.
+- **Dona** (`PieChart`, 160 px) con el total compacto al centro (`$250 k`), separación de 2 px entre segmentos y colores por clase en orden oscuro → rojo → gris → plata (el par rojo / rojo claro no pasa el validador de daltonismo).
+- **Lista de clases** al lado de la dona (debajo, en móvil): cuadro de color, nombre, monto y `45 % · objetivo 40 %`; el objetivo se marca en negro cuando la clase se desvía 3 puntos o más. Sin barras por fila: la dona ya es la proporción.
+- **Pie**: botón `Rebalancear al modelo` y la razón.
 
 ---
 
@@ -289,10 +293,11 @@ Organiza y clasifica alternativas de inversión en una escala de riesgo del 1 (m
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `11.8%` anual en la opción sugerida (`Fondo Deuda Estratégica NTREX`), calculando una ganancia de `+$5,900.00/año` para un capital base de `$50,000.00`.
-- **Lista ordenada por riesgo**: Cuadros numerados del 1 al 5 indicando el nivel de riesgo.
-- **Badges contextuales**: Badge rojo Banorte "Sugerido" en el producto ideal, y alerta "Alto riesgo" en opciones que superen la tolerancia del perfil.
-- **Botón de acción**: `Invertir en NTREX`.
+- **Etiqueta**: `Perfil moderado · tolera riesgo hasta 3 de 5`.
+- **Cifra principal**: la tasa de la opción seleccionada (`11.8 %`), que cambia con la selección.
+- **Detalle**: `anual estimado con Fondo Deuda Estratégica · +$5,900.00 al año sobre $50,000.00`.
+- **Grupo de radios** (`RadioGroup`, el mismo patrón que `PlanDePago`): cada opción es un `<label>` de 48 px con el nombre, el badge `Sugerido` en tinte, **cinco puntos de riesgo** (los llenos son el nivel) con su palabra (`riesgo bajo`), la clave en escritorio, y a la derecha la tasa con `anual`. Una opción por encima de la tolerancia dice `supera tu perfil` en `text-advertencia` y sus puntos van en ese color.
+- **Pie**: botón `Invertir en NTREX` y la razón.
 
 ---
 
@@ -351,12 +356,14 @@ Proyecta la extinción paulatina de un crédito vigente (nómina, personal o aut
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `$55,783.00` de saldo insoluto pendiente en tipografía destacada (`monto text-3xl`).
-- **Mensualidad**: `$3,250.00` fija mensual a 20 meses.
-- **Barra de contraste de deuda**: Capital restante (80%) en gris oscuro frente a intereses proyectados (20%) en rojo Banorte (`$14,217.00`).
-- **Tarjeta de oportunidad de ahorro**: Destaca en verde (`text-exito`) el beneficio de `$4,850.00` si se abona a capital.
-- **Hitos cronológicos de amortización**: Fila a fila mostrando la caída del saldo (Próximo pago, 6 meses, 1 año, Liquidación).
-- **Botón de acción**: `Simular abono a capital`.
+- **Etiqueta**: `Crédito de Nómina Banorte · 20 meses restantes`, con badge `24.5 % anual`.
+- **Cifra principal**: `$55,783.00` de saldo.
+- **Detalle**: `de saldo · pagas $3,250.00 al mes`.
+- **Curva del saldo** (`AreaChart`): de hoy a la liquidación, con un punto por hito de la tool y el eje X en `Pago 1 · Pago 6 · Pago 12 · Pago 20`.
+- **Fichas de hitos** (2 columnas en móvil, 4 en escritorio): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, con el interés del periodo en escritorio.
+- **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos: la respuesta a "¿cuánto pagaré de puros intereses?".
+- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color.
+- **Pie**: botón `Simular abono a capital` y la razón.
 
 ---
 
@@ -399,10 +406,11 @@ Complementa a `DistribucionPortafolio`. Cuando el usuario decide rebalancear, el
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `$250,000.00` de valor patrimonial total.
-- **Comisiones**: `Sin costo ($0.00 MXN)` destacado en verde.
-- **Lista de operaciones**: Indicadores visuales de Venta (rojo) y Compra (verde) con claves de instrumento y transición de porcentajes (`45% → 40%`).
-- **Botón de acción**: `Confirmar y rebalancear portafolio`.
+- **Etiqueta**: `Orden de rebalanceo · Estrategia Balanceada Carmen`, con badge `2 operaciones`.
+- **Cifra principal**: `$250,000.00`.
+- **Detalle**: `en el portafolio · sin comisión` (en `text-exito`; si hay comisión, el monto).
+- **Lista de operaciones**: badge `Venta` (tinte) o `Compra` (verde suave), clave del instrumento y clase de activo, monto y `45 % → 40 %`. Sin cuadros de icono ni título en mayúsculas.
+- **Pie**: botón `Confirmar rebalanceo` y la razón.
 
 ---
 
@@ -440,12 +448,12 @@ Permite al usuario contrastar de forma contundente su situación financiera actu
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `+$132,065.00` en verde como ahorro neto obtenido.
-- **Tiempo ganado**: `34 meses` menos pagando deuda.
-- **Tarjetas comparativas**:
-  - *Camino actual*: Costo total de `$189,450.00` en 52 meses.
-  - *Estrategia Maya*: Costo total de `$57,385.00` en 18 meses (resaltado con borde Banorte).
-- **Botón de acción**: `Aplicar estrategia recomendada`.
+- **Etiqueta**: el título de la comparativa (`Reestructura de Tarjeta Clásica`).
+- **Cifra principal**: el ahorro (`$132,065.00`), en negro.
+- **Detalle**: `de ahorro con la estrategia · terminas 34 meses antes`.
+- **Dos barras horizontales en la misma escala**: `Pagando el mínimo actual $189,450.00` en rojo (lo que duele) y `Con Plan Fijo Banorte 18 meses $57,385.00` en oscuro, cada una con `52 meses · $1,950.00 al mes` debajo. Sustituyen a las dos tarjetas de texto.
+- **Descripción** de la estrategia en una línea.
+- **Pie**: botón `Aplicar estrategia` y la razón.
 
 ---
 
@@ -475,14 +483,12 @@ Ofrece un diagnóstico integral del estado financiero del usuario (escala del 0 
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `74 / 100` con badge cualitativo `Estable` y tendencia `+6 pts vs. mes anterior`.
-- **Saldo de ahorro líquido**: `$45,000.00`.
-- **Barras de pilares**:
-  - *Endeudamiento*: `22.0%` (dentro de límites saludables).
-  - *Ahorro mensual*: `18.0%` (destacado en verde).
-  - *Fondo de emergencia*: `2.4 meses` de cobertura.
-- **Caja de recomendación IA**: Explicación del hábito financiero detectado.
-- **Botón de acción**: `Mejorar mi salud financiera`.
+- **Etiqueta**: `Salud financiera`, con badge de calificación (`Estable` en verde suave; `Frágil`/`Crítica` en tinte).
+- **Medio arco** (`RadialBarChart`, 192 × 96 px) con el puntaje adentro en `text-4xl` (`74 / 100`); el arco va en oscuro cuando la calificación es estable o sana y en rojo cuando no.
+- **Al lado del arco**: `+6 puntos vs. el mes anterior` en `text-exito` y `Ahorro líquido $45,000.00`.
+- **Tres pilares** (una fila cada uno en móvil, tres columnas en escritorio): `Endeudamiento 22 %`, `Ahorro mensual 18 %`, `Fondo de emergencia 2.4 meses`, cada uno con una barra medida contra **su referencia** (máx. 35 %, meta 20 %, meta 3 meses) escrita debajo; la barra va en rojo si el pilar está fuera de su referencia.
+- **Hábito** detectado como un párrafo normal, sin caja ni icono.
+- **Pie**: botón `Mejorar mi salud financiera` y la razón.
 
 ---
 
@@ -533,9 +539,11 @@ Detecta gastos hormiga recurrentes y suscripciones sin uso reciente, calcula el 
 ```
 
 ### Elementos Visuales en Pantalla
-- **Cifra principal**: `$13,776.00` de fuga anual potencial en rojo Banorte.
-- **Badge de alerta**: `1 sin uso reciente`.
-- **Lista de suscripciones**: Cada fila muestra concepto, comercio, monto mensual y un botón destructivo `Cancelar` para eliminar la fuga de inmediato.
+- **Etiqueta**: `Suscripciones · 3 cargos recurrentes`, con badge `1 sin uso`.
+- **Cifra principal**: `$13,776.00` al año, **en negro**: el rojo es de la marca, no de "esto está mal".
+- **Detalle**: `al año · $1,148.00 al mes, 4.5 % de tu ingreso`.
+- **Lista de suscripciones** separada por líneas (sin cajas): concepto, `comercio · periodicidad`, badge `Sin uso hace 3 meses` en tinte cuando aplica, el monto y el botón `Cancelar`. **Solo la que lleva meses sin uso tiene el botón rojo**; las demás lo tienen en contorno. En móvil el botón baja a su propia fila, a lo ancho.
+- **Pie**: la razón.
 
 ---
 
@@ -551,7 +559,7 @@ Detecta gastos hormiga recurrentes y suscripciones sin uso reciente, calcula el 
 
 3. **Verificación automatizada**:
    ```bash
-   pnpm --filter @maya/catalogo test   # 87 pruebas en verde
+   pnpm --filter @maya/catalogo test   # 91 pruebas en verde (2026-09-12 13:10)
    pnpm typecheck                      # Verificación completa de tipos en 5 paquetes
    ```
 
