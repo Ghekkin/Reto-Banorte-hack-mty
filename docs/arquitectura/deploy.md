@@ -222,3 +222,34 @@ además del premio.
 - [ ] Probarlo además desde un cliente MCP de verdad (Claude Desktop o el inspector),
       no sólo con `curl`.
 - [ ] Decidir si Vultr entra (premio) o si se queda todo en este VPS.
+
+## Entre apps del VPS: alias de red, nunca la IP pública
+
+Dos reglas que costaron un rato y una caída de producción (issue #5):
+
+1. **Desde dentro de un contenedor, la IP pública del propio VPS no es alcanzable.** Es
+   hairpin NAT: el paquete sale por el bridge de Docker y no vuelve a entrar por Traefik.
+   Así que `curl` a la URL pública desde tu máquina **no prueba** que la app pueda usarla.
+   Entre apps del mismo servidor se usa el nombre interno.
+2. **El alias de red se pone en `custom_network_aliases`**, no en
+   `custom_docker_run_options`. La opción `--network-alias maya-mcp` en el segundo campo
+   estuvo puesta dos deploys y no se aplicó nunca; con el primero, el siguiente deploy sí:
+
+   ```bash
+   curl -X PATCH "$COOLIFY_URL/api/v1/applications/$COOLIFY_APP_MCP_UUID" \
+     -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'content-type: application/json' \
+     -d '{"custom_network_aliases":"maya-mcp"}'
+   ```
+
+   Requiere un **deploy** (un `restart` no lo aplica). Se comprueba con
+   `docker inspect <contenedor> --format '{{range .NetworkSettings.Networks}}{{.Aliases}}{{end}}'`:
+   el alias tiene que estar junto al nombre largo.
+
+Con eso, `MCP_URL=http://maya-mcp:3100/mcp` en la app de la web — **en las dos filas de la
+variable**, producción y preview, porque Coolify guarda un par por variable y el contenedor
+puede arrancar con cualquiera de las dos.
+
+La URL pública del MCP (`https://maya-mcp.…/mcp`) sigue siendo la buena para el mundo: exige
+`Authorization: Bearer` (401 sin token) y es la que se le da a un juez que quiera conectar su
+propio cliente MCP.
+

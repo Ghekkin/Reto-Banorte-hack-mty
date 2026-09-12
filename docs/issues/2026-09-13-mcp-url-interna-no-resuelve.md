@@ -58,13 +58,29 @@ mensaje. Verificar esa URL con `curl` desde tu máquina **no prueba** que la app
 **Arreglado de verdad** con el alias de red estable, que era la alternativa descartada:
 
 ```
-app maya-mcp → custom_docker_run_options: "--network-alias maya-mcp"
+app maya-mcp → custom_network_aliases: "maya-mcp"
 app maya-web → MCP_URL = http://maya-mcp:3100/mcp   (en las dos filas, producción y preview)
 ```
 
-Requiere un **deploy forzado** del MCP: un `restart` no aplica `custom_docker_run_options`.
-Comprobado después: `docker inspect` del contenedor del MCP lista `maya-mcp` entre sus alias,
-la web lo resuelve, y `curl http://maya-mcp:3100/health` desde la web devuelve 200.
+**Ojo con cuál es el campo**, porque cuesta veinte minutos: `custom_docker_run_options` con
+`--network-alias maya-mcp` **ya estaba puesto** desde antes, y el alias no aparecía. Dos
+deploys con solo esa opción: el contenedor seguía con un único alias, su nombre completo con
+el timestamp. En cuanto se puso el otro campo, el siguiente deploy lo aplicó:
+
+```bash
+curl -X PATCH "$COOLIFY_URL/api/v1/applications/$COOLIFY_APP_MCP_UUID" \
+  -H "Authorization: Bearer $COOLIFY_TOKEN" -H 'content-type: application/json' \
+  -d '{"custom_network_aliases":"maya-mcp"}'
+```
+
+Al final los dos campos quedaron puestos, así que no se puede *demostrar* que el segundo sea
+el único que sirve; lo que sí está medido es que con el primero solo, dos deploys seguidos no
+aplicaron el alias, y con el segundo, el primer deploy sí. Si alguien necesita otro alias,
+empiece por `custom_network_aliases`.
+
+Requiere un **deploy** del MCP: un `restart` no lo aplica. Comprobado después:
+`docker inspect` del contenedor del MCP lista `maya-mcp` entre sus alias, la web lo resuelve,
+y `curl http://maya-mcp:3100/health` desde la web devuelve 200.
 
 **Verificado de punta a punta en producción** (2026-09-13 13:25), que es lo que importa:
 
@@ -78,7 +94,15 @@ y con una acción encima:
   → "Tu plan de pagos a 18 meses quedó activo con éxito."
 ```
 
-Los tres pasos del reto, corriendo en la URL pública.
+Y el tercer paso del guion, que es el 20 % de la rúbrica: **Ana, con la misma frase**, recibe
+otra interfaz —`SimuladorMeta`, porque no tiene tarjeta de crédito— después de que el agente
+consulta `panorama_inicial`, `consultar_tarjeta`, `consultar_creditos` y `proyectar_ahorro`.
+Cinco pasos, 18 s (el más lento de los tres; queda medido para quien optimice).
+
+Los tres pasos del reto, corriendo en la URL pública, con el modelo real.
+
+**Después de probar, el estado de producción se reinició** (`docker exec <mcp> pnpm
+reiniciar-estado`): un ensayo no debe arrancar con el plan de Beto ya aplicado.
 
 **Cómo se encontró:** el paso `un prompt del guion contra la URL publica` del workflow, que
 hace exactamente eso y exige una línea `"tipo":"a2ui"`. Llevaba fallando y se confundía con
