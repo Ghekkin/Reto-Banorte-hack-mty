@@ -352,6 +352,38 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 11:20 · arreglado — El CI vuelve a servir de señal
+
+El único paso rojo era "un prompt del guion contra la URL publica", y no por un bug: el
+tope de gasto de Gemini (issue #12) tumbaba la llamada al modelo. El deploy se publicaba
+igual, así que el rojo era permanente y **tapaba** cualquier otra cosa que se rompiera.
+Un CI que no distingue lo externo de lo propio deja de ser señal y pasa a ser ruido.
+
+Ahora el paso clasifica tres desenlaces:
+
+- salen mensajes `a2ui` → **pasa**, y lista los componentes que el agente construyó;
+- el stream trae `codigo: "modelo"` → **avisa y sigue**: la app llegó al proveedor y
+  reportó el fallo con honestidad; sin cuota, el deploy no está roto;
+- cualquier otra cosa, **o el stream sin `fin`** → **falla**. Ese segundo caso es nuevo y
+  vale por sí solo: el contrato dice que el stream siempre termina en `fin`, así que si no
+  llega, es un bug nuestro sin importar lo demás.
+
+Probé el bash **aquí**, no en el CI: extraje el cuerpo del paso a un script y lo corrí con
+cuatro respuestas de verdad (la buena grabada del ensayo, la de cuota copiada del log del
+run que falló, una sin A2UI y una sin `fin`), comprobando el `exit` de cada una. Los cuatro
+correctos. La primera vez medí mal —leía el código de salida de `head` en vez del script—
+y los cuatro casos me salían 0; si me hubiera fiado, habría subido un paso que nunca falla.
+Iterar esto en GitHub habría costado cuatro pushes de tres minutos.
+
+También cambié un `cut -c 34-` que sacaba el motivo del error contando caracteres a ciegas
+por un `sed` con grupo de captura: el `cut` se comía los primeros cuatro caracteres del
+mensaje.
+
+Y una decisión que vale decir en voz alta: con el aviso, un deploy con el agente muerto
+sale **verde**. Para que nadie lo lea como "la demo funciona", el aviso lleva título en el
+resumen del run y el log dice literalmente que el agente publicado no está construyendo
+pantallas, con el número del issue.
+
 ### 11:00 · arreglado — Dos tarjetas se pintaban encima de su propio pie
 
 Siguiendo con las capturas, `Calendario` tenía el texto **encimado**: "… y 1 más,

@@ -77,14 +77,51 @@ jobs:
           URL_MCP_PUBLICA: ${{ vars.URL_MCP_PUBLICA }}
         run: scripts/deploy.sh
 
+      # Un prompt real contra lo publicado. Distingue tres desenlaces, porque "no salio
+      # una pantalla" tiene dos causas muy distintas y antes las trataba igual:
+      #
+      #   1. salen mensajes A2UI            -> pasa: el agente publicado construye UI;
+      #   2. el stream dice `codigo: modelo`-> AVISA y sigue: la app llego al proveedor y
+      #      reporto el fallo con honestidad. Si el proyecto se quedo sin cuota o el
+      #      proveedor esta caido, eso NO es un deploy roto y no puede bloquear el resto;
+      #   3. cualquier otra cosa            -> falla: sin `fin` el contrato del stream se
+      #      rompio, y sin A2UI ni error de modelo el problema es nuestro.
+      #
+      # El 2026-09-12 el tope de gasto de Gemini (50 MXN al mes, issue #12) dejo este paso
+      # en rojo en cada push: el deploy se publicaba igual y el rojo tapaba si algo mas se
+      # rompia. Un CI que no sabe distinguir lo externo de lo propio deja de servir.
       - name: un prompt del guion contra la URL publica
         if: vars.URL_WEB_PUBLICA != ''
         env:
           URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
         run: |
-          respuesta=$(curl -fsS --max-time 30 -X POST "$URL_WEB_PUBLICA/api/agente" \
+          respuesta=$(curl -fsS --max-time 40 -X POST "$URL_WEB_PUBLICA/api/agente" \
             -H 'content-type: application/json' \
-            -d '{"usuarioId":"usr_beto","conversacionId":"c_ci","mensajes":[{"rol":"usuario","texto":"Quiero pagar menos intereses de mi tarjeta"}]}')
-          echo "$respuesta" | head -5
-          echo "$respuesta" | grep -q '"tipo":"a2ui"' \
-            || { echo "::error::la URL publica no devolvio mensajes A2UI"; exit 1; }
+            -d '{"usuarioId":"usr_beto","conversacionId":"c_ci","mensajes":[{"rol":"usuario","texto":"Quiero pagar menos intereses de mi tarjeta"}]}') || {
+            echo "::error::la URL publica no contesto el POST /api/agente"
+            exit 1
+          }
+          echo "$respuesta" | head -8
+
+          # El contrato dice que el stream SIEMPRE termina en `fin`, pase lo que pase.
+          # Si eso no se cumple, es un bug nuestro sin importar lo demas.
+          echo "$respuesta" | grep -q '"tipo":"fin"' || {
+            echo "::error::el stream no termino en \`fin\`: el contrato agente-cliente esta roto"
+            exit 1
+          }
+
+          if echo "$respuesta" | grep -q '"tipo":"a2ui"'; then
+            componentes=$(echo "$respuesta" | grep -o '"component":"[^"]*"' | sort -u | tr '\n' ' ')
+            echo "el agente publicado construyo una pantalla: $componentes"
+            exit 0
+          fi
+
+          if echo "$respuesta" | grep -q '"codigo":"modelo"'; then
+            motivo=$(echo "$respuesta" | sed -n 's/.*"codigo":"modelo","mensaje":"\([^"]*\)".*/\1/p' | head -1 | cut -c -300)
+            echo "::warning title=El agente publicado no tiene modelo::La app respondio y reporto el fallo, asi que el deploy esta bien; lo que falta es cuota o disponibilidad del proveedor. Motivo: $motivo"
+            echo "OJO: el agente publicado NO esta construyendo pantallas. Revisa el issue #12."
+            exit 0
+          fi
+
+          echo "::error::la URL publica no devolvio mensajes A2UI ni un error de modelo: el problema es nuestro"
+          exit 1

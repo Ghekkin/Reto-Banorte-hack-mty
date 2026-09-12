@@ -166,8 +166,24 @@ Deploy key **de solo lectura** `coolify-maya`, par generado en el VPS:
    `/health` **devuelvan el commit que se está publicando** — el contenedor viejo
    responde igual, así que esperar "algo vivo" daba por bueno un deploy a medias.
    Por eso los dos `/health` traen el campo `commit`, que sale del `SOURCE_COMMIT`
-   que Coolify inyecta al construir y finalmente **manda un prompt del guion a la URL pública**
-   y verifica que la respuesta traiga mensajes A2UI. Si eso falla, el workflow falla.
+   que Coolify inyecta al construir y finalmente **manda un prompt del guion a la URL
+   pública**.
+
+   Ese último paso clasifica **tres desenlaces**, porque "no salió una pantalla" tiene dos
+   causas muy distintas y antes las trataba igual:
+
+   | Lo que devuelve el stream | Qué hace el workflow |
+   |---|---|
+   | mensajes `a2ui` | **pasa**, y lista los componentes que el agente construyó |
+   | `error { codigo: "modelo" }` | **avisa y sigue**: la app llegó al proveedor y reportó el fallo con honestidad. Sin cuota o con el proveedor caído, el deploy no está roto |
+   | cualquier otra cosa, o el stream sin `fin` | **falla**: el contrato del stream se rompió, o el problema es nuestro |
+
+   El 2026-09-12 el tope de gasto de Gemini (50 MXN al mes, issue #12) dejó este paso en
+   rojo en cada push: el deploy se publicaba igual y ese rojo permanente **tapaba** si algo
+   más se rompía. Un CI que no distingue lo externo de lo propio deja de servir como señal.
+   El aviso sale con título en el resumen del run y dice explícitamente que el agente
+   publicado no está construyendo pantallas, para que nadie lea el verde como "la demo
+   funciona".
 
 Secretos y variables del repo (`gh secret list`, `gh variable list`):
 
