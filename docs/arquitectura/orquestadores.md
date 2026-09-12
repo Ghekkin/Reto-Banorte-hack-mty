@@ -1,7 +1,28 @@
 ---
-estado: propuesta
+estado: parcialmente ejecutado
 fecha: 2026-09-12 08:30 (hora de Monterrey)
+actualizado: 2026-09-12 11:15
 ---
+
+> **Actualización 2026-09-12.** **Bloque A completo.** `analizar_gasto`,
+> `analizar_ahorro` y `ejecutar_decision` existen, están registradas en
+> `apps/mcp/src/tools/index.ts` (21 tools en total) y tienen 14 pruebas propias en
+> `apps/mcp/src/__tests__/orquestadores.spec.ts` (117 en total en `@maya/mcp`).
+> `pnpm typecheck` y `pnpm test` en verde en los 5 paquetes. **Bloque B (§3, agente)
+> sigue sin empezar.** Dos decisiones de diseño que valen la pena dejar escritas aquí
+> porque el texto original (§2-3) no las anticipaba:
+>
+> - Las fachadas de lectura **no reimplementan el cálculo**: llaman directo al `manejar`
+>   de la tool atómica (`comparar_periodos`, `detectar_fugas`, `proyectar_ahorro`,
+>   `consultar_inversiones`), tal como §1.3 ya proponía para `ejecutar_decision`. Es más
+>   simple que extraer la lógica a `dominio/` y da la misma garantía de "no inventa"
+>   (las pruebas comparan con `toEqual` contra la tool suelta).
+> - `analizar_ahorro` puede legítimamente no tener meta que proyectar (Beto, por
+>   ejemplo): en vez de dejar que `proyectar_ahorro` truene el turno, el catch queda
+>   documentado en el código y `ahorro` sale `null` con `estadoAhorro: "sin_meta_activa"`,
+>   mismo criterio que `tarjeta: null` en `panorama_inicial`.
+>
+> El texto original queda igual abajo.
 
 # Orquestadores: plan en 2 bloques para desarrollo en paralelo
 

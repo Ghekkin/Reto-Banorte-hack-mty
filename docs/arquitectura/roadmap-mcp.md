@@ -1,8 +1,16 @@
 ---
 estado: parcialmente ejecutado
 fecha: 2026-09-12 08:15
-actualizado: 2026-09-13 00:00
+actualizado: 2026-09-12 11:15
 ---
+
+> **Actualización 2026-09-12 (Bloque A de `docs/arquitectura/orquestadores.md`).**
+> **O2 (`ejecutar_decision`) y O4 (`analizar_gasto`, `analizar_ahorro`) ya están hechos**:
+> `apps/mcp/src/tools/ejecutar-decision.ts`, `analizar-gasto.ts`, `analizar-ahorro.ts`,
+> con 14 pruebas nuevas (`src/__tests__/orquestadores.spec.ts`). **O3 (prefetch en
+> `agente.ts`) sigue sin hacerse**: es Bloque B, vive en `apps/web/src/lib/agente`, no en
+> el MCP. El texto original de las secciones 4-5 queda igual abajo como el razonamiento
+> que llevó a estas decisiones.
 
 # Roadmap de pulido del MCP — contraste entre lo que hay y lo que los datos permiten
 

@@ -1,9 +1,9 @@
 ---
-verificado: 2026-09-12 09:40
+verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores)
 estado: construido
 ---
 
-# Las 15 tools del servidor MCP
+# Las tools del servidor MCP
 
 ## Para cualquiera
 
@@ -62,10 +62,19 @@ nada.
 | `detectar_fugas` | lectura | suscripciones y cargos recurrentes que se escapan, con lo que costarían al año | "¿en qué se me va el dinero sin darme cuenta?" |
 | `cancelar_suscripcion` | **acción** | la suscripción cancelada y lo que se deja de pagar | solo cuando llega la acción A2UI del mismo nombre |
 | `crear_tope_gasto` | **acción** | el tope creado para una categoría | solo cuando llega la acción A2UI del mismo nombre |
+| `analizar_gasto` | lectura | `comparar_periodos` + `detectar_fugas` + topes excedidos, más `patronGasto` | "¿en qué se me va el dinero?" — en vez de las dos por separado |
+| `analizar_ahorro` | lectura | `proyectar_ahorro` + `consultar_inversiones`, más `estadoAhorro` | por su ahorro, su meta o su portafolio — en vez de las dos por separado |
+| `ejecutar_decision` | **acción** | la mutación que corresponda + la lectura posterior, en una sola respuesta | siempre que la acción A2UI sea una de mutación: reemplaza el patrón "mutar y luego leer" |
 
-Las nueve primeras son las del ADR 0004. Las seis siguientes son los **Paquetes 1 y 2** del
-[roadmap del MCP](../arquitectura/roadmap-mcp.md), y ninguna inventa un dato nuevo: abren
-tablas que ya estaban en la base y que ninguna tool podía ver.
+Las nueve primeras son las del ADR 0004. Las seis siguientes (`diagnostico_salud_financiera`
+hasta `crear_tope_gasto`) son los **Paquetes 1 y 2** del [roadmap del MCP](../arquitectura/roadmap-mcp.md),
+y ninguna inventa un dato nuevo: abren tablas que ya estaban en la base y que ninguna tool
+podía ver. Las tres de Inversiones (`consultar_inversiones`, `consultar_catalogo_inversiones`,
+`consultar_historico_inversion`) completan el viaje de Carmen (enmienda del ADR 0004,
+2026-09-13). Las tres últimas son los **orquestadores del Bloque A**
+(`docs/arquitectura/orquestadores.md`): `analizar_gasto` y `analizar_ahorro` son fachadas
+de lectura (O4) que componen llamando por dentro a las tools atómicas — son las mismas, no
+una segunda versión —, y `ejecutar_decision` es el orquestador de acción (O2).
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
@@ -80,6 +89,23 @@ sobre umbrales fijos —un dato, con pruebas—, **no** una instrucción de inte
 ningún componente. Quien interpreta la intención y elige qué construir sigue siendo el
 modelo. Esa frontera es la respuesta cuando un juez pregunte si el MCP está decidiendo la
 UI.
+
+#### Los orquestadores (Bloque A)
+
+Plan completo en `docs/arquitectura/orquestadores.md`. Tres tools, dos ideas:
+
+- **Fachadas de lectura (O4).** `analizar_gasto` y `analizar_ahorro` llaman por dentro a
+  las tools atómicas (`comparar_periodos` + `detectar_fugas`; `proyectar_ahorro` +
+  `consultar_inversiones`) y agregan una clasificación sobre umbrales fijos
+  (`patronGasto`, `estadoAhorro`), igual que `panorama_inicial` con `situacion`. No
+  inventan un dato nuevo: cada campo compuesto es idéntico al que devuelve su tool
+  especializada (`src/__tests__/orquestadores.spec.ts` lo comprueba con `toEqual`). Las
+  atómicas siguen expuestas para el detalle.
+- **Orquestador de acción (O2).** `ejecutar_decision` recibe la acción tal como llega de
+  la interfaz (su `name` es idéntico al nombre de la tool de mutación:
+  `esAccionDeMutacion` en `packages/a2ui/src/acciones.ts`), despacha a esa tool sin
+  reimplementar su lógica, y devuelve ya la lectura posterior. El ciclo de acción pasa de
+  3 llamadas a 2. No agrega lógica de negocio: solo despacha y relee.
 
 ### Cómo se registra una tool
 
@@ -155,11 +181,15 @@ del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `ho
 ### Cómo probarlo
 
 ```bash
-pnpm --filter @maya/mcp test     # 78 pruebas: finanzas, lecturas, salud, créditos, panorama, acciones y auditoría
+pnpm --filter @maya/mcp test     # finanzas, lecturas, salud, créditos, panorama, acciones, auditoría y orquestadores
 pnpm dev                         # levanta mcp (3100) y web (3000)
-pnpm humo                        # 12 tools, lecturas y el ciclo completo de la acción por HTTP
+pnpm humo                        # lecturas y el ciclo completo de la acción por HTTP
 pnpm reiniciar-estado            # después del humo, antes de un ensayo
 ```
+
+**El total de tools y de pruebas no se afirma en ningún lado que pueda quedar
+desfasado** (motivo en la sección de arriba): `apps/mcp/src/tools/index.ts` → `TOOLS` y
+`pnpm --filter @maya/mcp test` son la fuente de verdad, no este documento.
 
 `apps/mcp/src/__tests__/finanzas.spec.ts` compara la matemática contra
 la tabla `banorte.planes_reestructura`: si alguien cambia una fórmula, el test truena, porque

@@ -31,3 +31,6 @@ export * from "./tools/panorama-inicial.js";
 export * from "./tools/consultar-inversiones.js";
 export * from "./tools/consultar-catalogo-inversiones.js";
 export * from "./tools/consultar-historico-inversion.js";
+export * from "./tools/analizar-gasto.js";
+export * from "./tools/analizar-ahorro.js";
+export * from "./tools/ejecutar-decision.js";

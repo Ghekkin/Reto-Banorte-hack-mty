@@ -88,6 +88,33 @@ export function calcularPromedioHistorico(
   return Math.round(acumulado / meses);
 }
 
+export type TopeEvaluado = TopeInfo & { estatus: EstatusTope; pctUsado: number; gastadoActualCentavos: number };
+
+/**
+ * Todos los topes de la persona (estado mutable + `topes_gasto` de partida), cada uno
+ * ya evaluado contra el gasto real del periodo en curso. La usa `analizar_gasto` para no
+ * repetir, categoria por categoria, lo que ya hace `buscarTopeExistente`.
+ */
+export function todosLosTopesEvaluados(usuarioId: string): TopeEvaluado[] {
+  const categoriasConTope = new Set<string>();
+  for (const a of accionesDe(usuarioId, "crear_tope_gasto")) {
+    const categoriaId = (a.datos as Partial<TopeInfo>).categoriaId;
+    if (categoriaId) categoriasConTope.add(categoriaId);
+  }
+  for (const fila of filtrar("topes_gasto", "usuario_id", usuarioId)) {
+    if (fila.categoria_id) categoriasConTope.add(fila.categoria_id);
+  }
+
+  return [...categoriasConTope]
+    .map((categoriaId) => buscarTopeExistente(usuarioId, categoriaId))
+    .filter((tope): tope is TopeInfo => tope !== undefined)
+    .map((tope) => {
+      const gastadoActualCentavos = calcularGastadoCategoriaPeriodo(usuarioId, tope.categoriaId);
+      const { estatus, pctUsado } = evaluarEstatusTope(gastadoActualCentavos, tope.montoLimiteCentavos, tope.alertarEnPct);
+      return { ...tope, estatus, pctUsado, gastadoActualCentavos };
+    });
+}
+
 /**
  * Determina el estatus ("dentro" | "cerca" | "excedido") y el porcentaje usado.
  */

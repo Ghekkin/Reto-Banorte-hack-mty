@@ -18,6 +18,15 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 11:15 · hecho** — **Bloque A de los orquestadores (`docs/arquitectura/
+  orquestadores.md`) completo.** Tres tools nuevas en `apps/mcp`: `analizar_gasto` y
+  `analizar_ahorro` (O4, fachadas de lectura que componen las atómicas por dentro sin
+  reimplementar nada) y `ejecutar_decision` (O2, el ciclo de acción pasa de 3 llamadas a
+  2). 21 tools en total, 14 pruebas nuevas (117 en `@maya/mcp`), `pnpm typecheck` y
+  `pnpm test` en verde en los 5 paquetes. **Bloque B (prefetch en `agente.ts` y que el
+  ciclo de acción del prompt use `ejecutar_decision`) sigue sin empezar** — vive en
+  `apps/web/src/lib/agente`, es de quien tome el rol `contrato`.
+
 - **sáb 05:30 · hecho** — **El producto funciona en producción, con el modelo real.** Los
   tres pasos del guion corriendo contra `https://maya.157.173.204.174.sslip.io`: Beto pide
   bajar intereses y recibe `ResumenTarjeta` + `PlanDePago` con sus números reales (4 pasos,
