@@ -18,6 +18,26 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 05:30 · hecho** — **El producto funciona en producción, con el modelo real.** Los
+  tres pasos del guion corriendo contra `https://maya.157.173.204.174.sslip.io`: Beto pide
+  bajar intereses y recibe `ResumenTarjeta` + `PlanDePago` con sus números reales (4 pasos,
+  6.4 s); aplica el plan de 18 meses, se ejecuta `aplicar_plan_pago` y la pantalla vuelve
+  como `Confirmacion` + `Calendario` (3 pasos, 4.5 s); y **Ana, con la misma frase, recibe
+  otra interfaz** —`SimuladorMeta`, porque no tiene tarjeta— (5 pasos, 18 s). El 20 % de
+  adaptabilidad de la rúbrica, demostrado en la URL pública.
+
+  Estaba caído por una variable de entorno: `MCP_URL` apuntaba a un hostname interno que no
+  resuelve (issue #5). **La llave de Gemini sí está puesta en Coolify**, así que lo que
+  decía el tablero —"falta una llave para probar el nivel 4"— ya no era cierto.
+
+  Dos cosas aprendidas que valen para cualquiera: desde dentro de un contenedor, **la IP
+  pública del propio VPS no es alcanzable** (hairpin NAT), así que verificar una URL con
+  `curl` desde tu máquina no prueba que la app pueda usarla; y el alias de red entre apps de
+  Coolify se pone en **`custom_network_aliases`**, no en `custom_docker_run_options`.
+
+  El estado de producción se reinició después de probar.
+
+
 - **09:55 · hecho (aldair/mcp)** — El MCP pasa de 9 a **12 tools**. Las tres nuevas
   (`panorama_inicial`, `diagnostico_salud_financiera`, `consultar_creditos`) no agregan
   datos: abren tablas que ya estaban en `db/datos/` y que ninguna tool podía ver. Dos

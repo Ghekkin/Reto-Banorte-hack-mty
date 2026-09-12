@@ -2,6 +2,53 @@
 
 ## 2026-09-12
 
+### 05:30 · hecho — Prod estaba caído; los tres pasos del guion ya corren con el modelo real
+
+El CI quedó verde en `typecheck, tests y build` (mi arreglo del humo), el deploy se publicó
+bien, y falló el paso siguiente: `un prompt del guion contra la URL publica`. No era el CI:
+**era el producto, caído en producción.** El stream lo dijo completo:
+
+```
+{"tipo":"error","codigo":"tool","mensaje":"no pude conectar al MCP en http://a7ld8…:3100/mcp: fetch failed"}
+```
+
+Ese mensaje es de la auditoría de la mañana —antes esto salía como `codigo: "modelo"`, que
+manda a buscar el problema al lugar equivocado—. Con la URL dentro del mensaje, el
+diagnóstico fue inmediato: el hostname no resolvía.
+
+Dos hallazgos que cuestan tiempo si no están escritos, y quedaron en el issue #5:
+
+1. **Desde dentro de un contenedor, la IP pública del propio VPS no es alcanzable**
+   (hairpin NAT). Mi primer arreglo fue apuntar `MCP_URL` a la URL pública del MCP —que
+   responde 200 con token y 401 sin él desde fuera— y falló igual: hasta un HTTP simple al
+   puerto 80 se cuelga. Verificar una URL con `curl` desde tu máquina **no prueba** que la
+   app pueda usarla.
+2. **El alias de red entre apps de Coolify se pone en `custom_network_aliases`.** La opción
+   `--network-alias maya-mcp` ya estaba en `custom_docker_run_options` y no se aplicaba: dos
+   deploys con el contenedor conservando un solo alias, su nombre con el timestamp. Puse el
+   otro campo y el siguiente deploy sí lo trajo.
+
+Y lo importante: **el nivel 4 de `probar` ya pasó, en producción.** La llave de Gemini está
+puesta en Coolify, así que el bloqueo que yo llevaba media sesión repitiendo —"falta una
+llave"— ya no existía; lo corregí en el tablero. Los tres pasos del guion, medidos:
+
+| Paso | Tools | Componentes | Pasos · tiempo |
+|---|---|---|---|
+| Beto: bajar intereses | `panorama_inicial`, `simular_reestructura`, `consultar_tarjeta` | `Column`, `ResumenTarjeta`, `PlanDePago` | 4 · 6.4 s |
+| Beto aplica 18 meses | `aplicar_plan_pago`, `consultar_plan` | `Column`, `Confirmacion`, `Calendario` | 3 · 4.5 s |
+| **Ana, la misma frase** | `panorama_inicial`, `consultar_tarjeta`, `consultar_creditos`, `proyectar_ahorro` | **`SimuladorMeta`** | 5 · 18 s |
+
+Los componentes que construí hace dos horas son los que el modelo eligió solo, y la `razon`
+trae los números de `db/datos/` ($132,065 de ahorro, 96.7 % del límite, 12 días de mora):
+coinciden con el guion, que era la condición para no llamarlo bug.
+
+**Lo que hay que mirar:** el turno de Ana tarda **18 s**. El guion dice "~2 s por pantalla".
+No lo toqué —son 5 pasos y cuatro tools— pero queda medido para quien optimice; bajar el
+tope de pasos o apoyarse más en `panorama_inicial` es por donde yo empezaría.
+
+Reinicié el estado de producción después de probar: un ensayo no debe arrancar con el plan
+de Beto ya aplicado.
+
 ### 05:00 · hecho — Que no se pueda commitear un conflicto a medias
 
 El issue #4 (`CLAUDE.md` con marcadores de conflicto en `main`, que encontró la otra
