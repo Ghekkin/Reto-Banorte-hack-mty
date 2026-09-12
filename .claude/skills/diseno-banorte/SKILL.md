@@ -1,6 +1,6 @@
 ---
 name: diseno-banorte
-description: El sistema de diseño del proyecto - shadcn/ui obligatorio para toda la UI y la paleta de Banorte como única fuente de color. Tokens listos para globals.css, reglas de uso, qué componente de shadcn usar para cada caso y cómo se construyen encima los componentes del catálogo A2UI. Invocar antes de escribir cualquier CSS, componente o pantalla.
+description: El sistema de diseño del proyecto - shadcn/ui obligatorio, paleta de Banorte y la forma flotante (lienzo gris, sidebar y tarjetas redondeadas con sombra suave, rejilla bento, barra de conversación). Tokens listos para globals.css, anatomía de tarjeta, qué componente de shadcn usar para cada caso y cómo el agente coloca sus superficies. Invocar antes de escribir cualquier CSS, componente o pantalla.
 ---
 
 # Diseño: shadcn/ui + identidad Banorte
@@ -86,12 +86,19 @@ la línea de shadcn. Los nombres son los que shadcn espera: no se renombran.
   --marca-claro: oklch(0.6533 0.2345 18.56);      /* #FF3355 */
   --marca-oscuro: oklch(0.5091 0.2061 24.53);     /* #C00020 */
 
+  /* Forma: lienzo flotante (ver "La forma") */
+  --lienzo: oklch(0.9614 0.0013 286.38);          /* #F2F2F3 fondo de la app */
+  --tinte: oklch(0.9506 0.0256 5.65);             /* #FFE8EC chips y fondos suaves */
+  --tinte-fuerte: oklch(0.9026 0.0529 5.02);      /* #FFD1DA hover de chips */
+  --oscuro: oklch(0.2114 0.0088 351.77);          /* #1C1719 tarjeta oscura, barras */
+  --borde-sutil: oklch(0.9265 0.0022 17.20);      /* #E8E6E6 bordes de tarjeta */
+
   /* Gráficas: el rojo primero, después neutros. Nunca arcoíris. */
-  --chart-1: oklch(0.5943 0.2407 24.68);
-  --chart-2: oklch(0.6533 0.2345 18.56);
-  --chart-3: oklch(0.5091 0.2061 24.53);
-  --chart-4: oklch(0.5188 0.0030 48.68);
-  --chart-5: oklch(0.8343 0.0022 197.11);
+  --chart-1: oklch(0.2114 0.0088 351.77);         /* oscuro: ingresos / lo bueno */
+  --chart-2: oklch(0.5943 0.2407 24.68);          /* rojo: gasto / lo que duele */
+  --chart-3: oklch(0.6533 0.2345 18.56);          /* rojo claro: tercera serie */
+  --chart-4: oklch(0.8343 0.0022 197.11);         /* plata: resto */
+  --chart-5: oklch(0.9506 0.0256 5.65);           /* tinte: fondo de barra */
 }
 
 .dark {
@@ -119,6 +126,118 @@ la línea de shadcn. Los nombres son los que shadcn espera: no se renombran.
 
 El proyecto se presenta en **modo claro** (es lo que el jurado verá en el proyector).
 El oscuro existe para que la página no se rompa si alguien lo tiene puesto.
+
+## La forma: lienzo con piezas flotantes
+
+La referencia visual acordada es un panel financiero moderno: **nada pegado al borde**.
+Todo flota sobre un lienzo gris claro.
+
+```
+┌──────────────────────────────────────────────────────────────┐  ← lienzo #F2F2F3
+│  ┌──────────┐   ┌────────────────────────────────────────┐   │
+│  │ sidebar  │   │  barra superior (título + acciones)     │   │
+│  │ flotante │   └────────────────────────────────────────┘   │
+│  │          │   ┌──────────────┐ ┌──────────┐ ┌───────────┐  │
+│  │  blanca  │   │  héroe rojo  │ │  tarjeta │ │  tarjeta  │  │  ← superficies
+│  │ redondeada│  └──────────────┘ └──────────┘ └───────────┘  │    generadas
+│  │          │   ┌───────────────────────┐ ┌───────────────┐  │    por el agente
+│  │          │   │       tarjeta         │ │   tarjeta     │  │
+│  └──────────┘   └───────────────────────┘ └───────────────┘  │
+│                 ┌────────────────────────────────────────┐   │
+│                 │  barra de conversación (flotante)      │   │  ← siempre visible
+└──────────────────────────────────────────────────────────────┘
+```
+
+### Medidas
+
+| Elemento | Valor |
+|---|---|
+| Lienzo | `bg-[--lienzo]`, `p-3` (móvil) a `p-4` (escritorio) |
+| Sidebar | `w-64`, blanca, `rounded-2xl`, separada del borde por el padding del lienzo, alto completo menos el padding |
+| Tarjetas | `rounded-2xl border border-[--borde-sutil] bg-card shadow-sm` |
+| Separación entre tarjetas | `gap-4` |
+| Padding interno de tarjeta | `p-5` (`p-4` en móvil) |
+| Radio | `--radius: 0.625rem` para controles; **`rounded-2xl` (1rem) para tarjetas y sidebar** |
+| Sombra | `shadow-sm` y nada más. Sin sombras de color, sin `shadow-lg` |
+
+### Sidebar flotante
+
+- Tarjeta blanca `rounded-2xl`, con: logo + nombre del producto arriba; **selector de
+  usuario demo** (Beto / Ana) como tarjeta con avatar y `chevron`; etiqueta
+  `MAIN MENU` en mayúsculas diminutas grises; ítems con icono a la izquierda.
+- **Ítem activo**: fondo `bg-[--tinte]` con texto e icono en `text-primary`, `rounded-xl`.
+  No una barra lateral, no subrayado: una píldora rellena.
+- Ítems inactivos: `text-muted-foreground`, hover `bg-muted`.
+- Abajo, separada, una tarjeta pequeña de contexto (en nuestro caso: "Reto Banorte ·
+  Hack MTY 2026" o el modo transparencia).
+- Componente: `sidebar` de shadcn en variante `inset` o `floating` — **no la escribas
+  a mano**, invoca la skill `shadcn`.
+- En móvil (< 768 px): se colapsa a `sheet`.
+
+### Barra superior
+
+Título de la pantalla + una línea de subtítulo en `text-muted-foreground`. A la
+derecha: buscador opcional con chip `⌘K`, y el `select` de usuario si no cabe en el
+sidebar. Flota igual: `rounded-2xl`, o simplemente sin fondo sobre el lienzo.
+
+### Anatomía de una tarjeta
+
+De arriba abajo: **etiqueta** pequeña en gris (`text-xs text-muted-foreground`), el
+**dato grande** (`text-3xl font-semibold tabular-nums`), y debajo el detalle, la
+gráfica o los controles. Acciones al pie, alineadas a la izquierda. Si hay estado,
+`badge` arriba a la derecha.
+
+### La tarjeta héroe
+
+**Una por pantalla, nunca dos.** Fondo con el degradado de marca
+(`bg-[linear-gradient(135deg,#EC0029_0%,#C00020_100%)]`), texto blanco, dos botones
+píldora: uno claro (`bg-white/90 text-primary`) y uno oscuro (`bg-[--oscuro] text-white`).
+Es donde va el número que resume la situación: el saldo de la tarjeta, el total del
+gasto, el avance de la meta.
+
+Si el agente genera dos superficies que ambas piden héroe, la segunda va en blanco. La
+regla vive en el prompt del agente y en el schema del componente.
+
+### Botones y chips
+
+- Botones principales: **píldora** (`rounded-full`), `h-10`, con icono a la derecha
+  (`→`, `↑`) cuando la acción lleva a algo.
+- Chips de sugerencia (como las del asistente de la referencia): `rounded-full border
+  bg-background text-sm px-3 py-1.5`, hover `bg-[--tinte]`.
+- `badge` para estados: `Plan activo` en `--tinte` con texto `--primary`; `Atrasado` en
+  `--oscuro` con texto blanco. **El rojo no se usa para error**: es el color de la
+  marca. Un error va en tarjeta con borde `--oscuro`.
+
+### Gráficas
+
+Par de dos tonos como la referencia, pero con nuestro par: **oscuro `#1C1719` + rojo
+`#EC0029`** (`--chart-1` / `--chart-2`). En un gasto por categoría, lo que más duele va
+en rojo y el resto en plata. Barras `rounded-t-md`, sin cuadrícula pesada, etiquetas en
+`text-xs text-muted-foreground`. Donut con el total en el centro. Componente `chart` de
+shadcn (Recharts).
+
+### La barra de conversación
+
+Es lo que hace que esto **no sea un dashboard**: siempre visible, flotante abajo del
+lienzo (`sticky bottom-4`), `rounded-2xl border bg-card shadow-sm`, con el input, los
+chips de sugerencia encima cuando el agente los ofrece, y el botón **Enviar** en
+píldora roja. En la referencia es la tarjeta del asistente; aquí es el centro del
+producto.
+
+### Cómo encaja con las superficies del agente
+
+El lienzo es una **rejilla bento** donde el agente coloca lo que genera:
+
+- El renderer A2UI pinta la superficie `principal` dentro del lienzo, no en un panel
+  aparte.
+- Cada componente del catálogo ocupa 1 o 2 columnas según su prop `ancho`
+  (`"normal" | "amplio"`), por defecto `normal`. `GastoPorCategoria` y las tablas piden
+  `amplio`; `Confirmacion` y `ResumenTarjeta` van `normal`.
+- Al llegar una UI nueva, las tarjetas **entran con una transición corta** (`opacity` +
+  `translate-y-1`, 150 ms) para que se vea que el agente las acaba de construir. Nada
+  más de animación.
+- Rejilla: `grid gap-4 md:grid-cols-2 xl:grid-cols-3`, con `col-span-2` para `amplio`.
+  A 400 px, una columna.
 
 ## Reglas de uso
 
@@ -155,7 +274,10 @@ El oscuro existe para que la página no se rompa si alguien lo tiene puesto.
 | Aviso corto | `alert` | Para "¿por qué veo esto?" no: eso es texto al pie |
 | Gráfica | `chart` (Recharts) | Colores `--chart-1..5`, nunca paleta propia |
 | Separadores | `separator` | |
-| Cambiar de usuario demo | `select` | En la cabecera, discreto |
+| Cambiar de usuario demo | `select` | En el sidebar, como tarjeta con avatar |
+| Sidebar flotante | `sidebar` (variante `inset`/`floating`) | Nunca a mano |
+| Sidebar en móvil | `sheet` | Se colapsa < 768 px |
+| Chips de sugerencia | `button` `variant="outline"` `rounded-full` | Encima de la barra de conversación |
 
 Antes de agregar cualquiera: **invoca la skill `shadcn`** y usa su CLI. No copies código
 de componentes a mano.
@@ -186,4 +308,6 @@ agente puede invocar".
 - [ ] Un solo botón primario en la superficie.
 - [ ] Montos con `tabular-nums` y formato `es-MX`.
 - [ ] Se ve bien a 400 px y en el proyector.
+- [ ] Todo flota: nada pegado al borde del lienzo; `rounded-2xl` + `shadow-sm`.
+- [ ] Una sola tarjeta héroe por pantalla.
 - [ ] Estados `skeleton` / vacío / error resueltos (skill `ui-generativa`).

@@ -15,7 +15,7 @@ cree que es real.
   2–4 cuentas cada uno (nómina, ahorro, inversión, crédito) y tarjetas enmascaradas
   `•••• 4821`. Ver "Tres perfiles" abajo.
 - **La fuente son CSV commiteados en `db/datos/`; PostgreSQL es una copia cargable.**
-  Nunca se commitea un dump ni el estado de la base. Detalle en ADR 0005.
+  Nunca se commitea un dump ni el estado de la base. Detalle en ADR 0007.
 - **Ids estables y legibles**: `usr_ana`, `cta_ana_nomina`, `mov_000123`, `cred_beto_tdc`.
   Nunca UUIDs aleatorios: en la demo se leen en voz alta y en los logs.
 - **Montos en centavos enteros** (`BIGINT`), columna `moneda` = `MXN` explícita. Fechas
@@ -64,7 +64,7 @@ corre antes de cada ensayo. Los datos base nunca se mutan.
 
 Esta tanda cubre **Crédito**, **Banca personal + Educación financiera** e **Inversiones**.
 **Pagos y Seguros quedan fuera** y sus tablas no existen todavía: se agregan cuando haya
-un caso de uso que las pida, no antes. Razones en ADR 0005.
+un caso de uso que las pida, no antes. Razones en ADR 0007.
 
 ## Archivos
 

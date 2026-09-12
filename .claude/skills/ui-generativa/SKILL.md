@@ -38,7 +38,8 @@ su `catalogId` (`https://<dominio>/catalogo/v1.json`).
    agente elija este componente? Si no puedes decirlo en una frase, no va.
 2. **Schema primero.** Props mínimas, cada una con `.describe()`. Montos en centavos
    con moneda. Lo que cambia con el usuario es binding al data model (`{ path }`), no
-   literal.
+   literal. Toda tarjeta declara `ancho: "normal" | "amplio"` (una o dos columnas de
+   la rejilla bento) y, si aplica, `heroe: boolean` — **solo una por pantalla**.
 3. **Acciones = eventos A2UI.** Un botón declara `action: { event: { name,
    context } }`. El `context` resuelve paths del data model (ej. el plazo elegido). El
    componente **nunca** hace fetch ni llama al MCP: dispara la acción y el agente
