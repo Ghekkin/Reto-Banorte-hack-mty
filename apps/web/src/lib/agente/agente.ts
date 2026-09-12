@@ -146,9 +146,14 @@ export async function* correrTurno(
       // 2026-09-12 con "simula mi fondo de emergencia", donde el modelo llamo
       // `proyectar_ahorro` seis veces y murio en el paso 8 sin pintar nada. Mas vale una
       // pantalla con lo que ya sabe que una disculpa.
+      // Y cuando llega ese paso, el modelo solo ve `pintar_pantalla`: las 21 definiciones
+      // de tools del MCP son ~6,600 tokens de entrada que se reenvian en CADA peticion, y
+      // en el paso de pintar no sirven para nada. Recortarlas ahi baja la peticion mas
+      // cara del turno de ~14,000 a ~7,400 tokens, y de paso le quita al modelo la
+      // tentacion de consultar una vez mas en vez de entregar la pantalla.
       prepareStep: ({ stepNumber }) =>
         stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR
-          ? { toolChoice: { type: "tool", toolName: "pintar_pantalla" } }
+          ? { toolChoice: { type: "tool", toolName: "pintar_pantalla" }, activeTools: ["pintar_pantalla"] }
           : undefined,
       providerOptions: opcionesDelProveedor(),
       abortSignal: senal,
