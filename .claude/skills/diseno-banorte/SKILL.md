@@ -296,9 +296,18 @@ agente puede invocar".
 
 ## Marca
 
-- El producto tiene **nombre propio**; no es "Banorte algo". El dominio tampoco.
-- Se usa la **paleta** de Banorte, no su logotipo ni su tipografía corporativa, salvo
-  que ellos lo autoricen en el stand.
+El agente se llama **Maya**, como la asistente virtual real de Banorte (ADR 0009). El
+encuadre es *evolución*: Maya ya hace 17 operaciones bancarias; nosotros cambiamos cómo
+las entrega. Límites:
+
+- Se usan el **nombre Maya** y la **paleta**. **Nunca** el logotipo de Banorte, su
+  tipografía corporativa ni la imagen oficial de Maya.
+- El **dominio no imita a Banorte**: nada de `maya-banorte.tech`. Neutro o descriptivo.
+- Pie de la app y `README.md`: *"Prototipo de hackathon. Concepto sobre Maya, la
+  asistente virtual de Banorte. No es un producto oficial ni está afiliado a Grupo
+  Financiero Banorte."*
+- El nombre vive en **un solo archivo de configuración**, no esparcido en los
+  componentes: si en el stand piden no usarlo, se cambia en un `sed`.
 - El encabezado puede decir "Reto Banorte · Hack Monterrey 2026" como contexto.
 
 ## Checklist antes de commitear UI

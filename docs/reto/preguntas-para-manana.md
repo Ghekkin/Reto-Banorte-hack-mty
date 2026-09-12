@@ -15,6 +15,9 @@ las respuestas aquí con hora y actualizar `contexto-del-reto.md`.
 - [ ] ¿Formato de entrega: repo, demo en vivo, video, deploy público?
 - [ ] ¿Hay mentores de Banorte disponibles? ¿Cuándo? → stand de Banorte
 - [ ] **¿Estamos registrados en el reto?** (se registra en el stand)
+- [ ] **¿Podemos llamar Maya a nuestro agente?** Encuadre: evolución del asistente real,
+      sin logotipo ni tipografía corporativa, datos sintéticos, disclaimer en el README
+      (ADR 0009). Es lo normal en un reto de marca, pero se pregunta.
 - [ ] ¿Qué da Banorte por su reto y cuál es el premio principal del evento? (la página
       de MLH solo lista los de patrocinadores MLH; ver `premios-objetivo.md`)
 - [ ] ¿Los premios MLH exigen registro aparte (Devpost u otro)? ¿Fecha límite?

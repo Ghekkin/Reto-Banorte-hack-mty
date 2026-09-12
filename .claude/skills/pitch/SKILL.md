@@ -22,7 +22,7 @@ contexto, y las tres piezas (LLM, MCP, A2UI) nombradas en pantalla. Detalle en
 
 | Tiempo | Qué | Fuente |
 |---|---|---|
-| 0:00–0:30 | El problema en una frase y quién es el usuario. Sin "hola somos…" largo. | ADR 0003 |
+| 0:00–0:30 | **Maya hoy**: el jurado ve una respuesta de texto de su propio asistente. Una frase: "Maya ya hace 17 operaciones bancarias. Lo que le falta no es capacidad: es superficie." | ADR 0009 |
 | 0:30–1:00 | La idea: el agente no responde texto, **genera la interfaz que el usuario necesita** y lo que la persona toca vuelve al agente. Una frase por pieza: LLM al centro, MCP para datos y acciones, A2UI para la interfaz. | `contexto-del-reto.md` |
 | 1:00–4:00 | Demo en vivo, guion literal. Cada pantalla: qué pidió el usuario, qué decidió el agente, qué tool alimentó la vista. | `guion-demo.md` |
 | 4:00–4:40 | Qué aprendimos y qué decidimos a propósito: dos o tres decisiones con hora, sacadas de la bitácora ("a la hora 6 decidimos que el agente no escribe HTML porque…"). | `bitacora/equipo.md`, `decisiones/` |

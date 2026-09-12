@@ -18,6 +18,13 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **vie 23:30 · decisión** — El agente se llama **Maya** (ADR 0009), no Brújula: es la
+  asistente virtual real de Banorte (300+ consultas, **17 operaciones bancarias**, hoy
+  en texto y menús). El encuadre es evolución, no crítica: "lo que le falta no es
+  capacidad, es superficie". Paquetes `@maya/*`. Límites de marca: sin logotipo, sin
+  tipografía corporativa, dominio que no imita, disclaimer en el README, y se confirma
+  en el stand.
+
 - **vie 23:25 · hecho** — `packages/a2ui/spec/`: spec A2UI v0.9.1 vendoreada del repo
   oficial (commit `1c45c809`): schemas de mensajes, catálogo básico con 18 componentes y
   **8 archivos de casos de conformidad** que serán los tests del renderer. Apache 2.0.

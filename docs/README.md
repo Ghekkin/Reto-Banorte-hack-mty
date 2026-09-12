@@ -48,6 +48,7 @@ quien.
 - [0006 — Estado del MCP en JSON](decisiones/0006-estado-del-mcp-en-json.md) — reemplazada por 0007
 - [0007 — PostgreSQL como fuente de datos mock, CSV commiteados, fallback en memoria](decisiones/0007-postgresql-como-fuente-de-datos-mock.md)
 - [0008 — Renderer A2UI propio, fiel a la spec](decisiones/0008-renderer-a2ui-propio.md)
+- [0009 — El agente se llama Maya](decisiones/0009-maya-como-marca-del-agente.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
