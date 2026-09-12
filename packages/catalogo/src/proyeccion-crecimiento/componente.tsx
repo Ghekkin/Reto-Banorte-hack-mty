@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
-import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,7 +11,7 @@ import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
-import { CLASES_GRAFICA, EJE, Ficha, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
+import { CLASES_GRAFICA, EJE, ETIQUETA, Ficha, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsProyeccionCrecimiento } from "./schema";
 
 const PASO_APORTACION = 50000; // $500.00
@@ -22,9 +22,15 @@ const APORTACION_MINIMA = 10000; // $100.00
  *
  * **La gráfica es el componente.** Antes había una barra apilada (aportado / rendimiento)
  * más una lista de hitos; ninguna de las dos mostraba lo único que una proyección tiene
- * que mostrar: la curva que se separa de la línea recta de las aportaciones. Ahora es un
- * área apilada mes a mes —lo aportado en oscuro, el rendimiento en rojo encima— y los
- * hitos son fichas debajo, con sus montos siempre visibles.
+ * que mostrar: la curva que se separa de la línea recta de las aportaciones. Luego fue un
+ * área apilada con lo aportado en oscuro macizo y el rendimiento como una franja roja
+ * encima, y tampoco explicaba nada: una montaña negra con un filo rojo, sin un número
+ * (feedback del usuario, 2026-09-12). Ahora la lectura es **la separación**: la línea
+ * recta de lo aportado (oscura, sin relleno) y encima la curva de lo que vale con
+ * rendimiento (roja); la franja entre las dos ES el rendimiento. Cada hito lleva su valor
+ * escrito sobre el punto, el cierre dice cuánto puso de su bolsillo, y el eje Y da la
+ * escala. Los hitos van también como fichas con el monto completo, y el slider los mueve
+ * a todos a la vez.
  *
  * **Un solo origen para todos los números.** La versión anterior recalculaba el total al
  * mover el slider pero dejaba los hitos con los valores del agente, así que el encabezado
@@ -96,6 +102,14 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
     : { aportado: SERIES.principal, rendimiento: SERIES.acento };
   const mesesConHito = new Set((hitos ?? []).map((h) => h.mes));
   const maximoSlider = Math.max(aportacionMensualCentavos * 4, 2000000);
+  const colorEje = heroe ? "var(--primary-foreground)" : EJE.tick.fill;
+  const colorEtiqueta = heroe ? "var(--primary-foreground)" : ETIQUETA.fill;
+  const marcasY = [0, Math.round(final.total / 2), final.total];
+  /** Los hitos sobre la serie simulada, con el último siempre en el cierre. */
+  const puntosDeHito = [...mesesConHito]
+    .filter((m) => m > 0 && m < plazoMeses)
+    .map((m) => serie[m] ?? final)
+    .concat([final]);
 
   return (
     <Tarjeta heroe={heroe}>
@@ -118,19 +132,30 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
             config={{ aportado: { label: "Aportado", color: colores.aportado }, rendimiento: { label: "Rendimiento", color: colores.rendimiento } }}
             etiqueta={`Crecimiento proyectado a ${plazoMeses} meses`}
           >
-            <AreaChart data={serie} margin={{ top: 8, right: 28, bottom: 0, left: 20 }} stackOffset="none">
+            {/* `top: 22` es el hueco de las etiquetas sobre los puntos; `right` el de la última. */}
+            <AreaChart data={serie} margin={{ top: 22, right: 30, bottom: 0, left: 0 }} stackOffset="none">
               <XAxis
                 dataKey="mes"
                 type="number"
                 domain={[0, plazoMeses]}
                 ticks={mesesConHito.size > 0 ? [0, ...mesesConHito] : undefined}
-                interval={0}
+                interval="preserveStartEnd"
+                minTickGap={18}
                 tickFormatter={(m: number) => etiquetaDeMes(m, hitos)}
                 {...EJE}
-                tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
+                tick={{ ...EJE.tick, fill: colorEje }}
               />
-              <YAxis hide domain={[0, "dataMax"]} />
-              <TooltipMonto etiquetaDe={(m) => `Mes ${String(m)}`} />
+              {/* Tres marcas dan la escala; el tope es el cierre, que cambia con el slider. */}
+              <YAxis
+                domain={[0, final.total]}
+                ticks={marcasY}
+                tickFormatter={formatearMontoCorto}
+                width={60}
+                {...EJE}
+                tick={{ ...EJE.tick, fill: colorEje }}
+              />
+              <TooltipMonto etiquetaDe={(m) => etiquetaDeMes(Number(m), hitos)} />
+              {/* Lo aportado: una línea recta casi sin relleno. Es la referencia, no la figura. */}
               <Area
                 type="monotone"
                 dataKey="aportado"
@@ -139,10 +164,11 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
                 stroke={colores.aportado}
                 strokeWidth={2}
                 fill={colores.aportado}
-                fillOpacity={heroe ? 0.35 : 0.9}
+                fillOpacity={heroe ? 0.12 : 0.05}
                 dot={false}
                 isAnimationActive={false}
               />
+              {/* El rendimiento, apilado encima: la franja entre las dos líneas. */}
               <Area
                 type="monotone"
                 dataKey="rendimiento"
@@ -151,9 +177,47 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
                 stroke={colores.rendimiento}
                 strokeWidth={2}
                 fill={colores.rendimiento}
-                fillOpacity={0.9}
+                fillOpacity={heroe ? 0.55 : 0.3}
                 dot={false}
                 isAnimationActive={false}
+              />
+              {/* El valor de cada hito, escrito sobre su punto en la curva de arriba. */}
+              {puntosDeHito.map((punto) => (
+                <ReferenceDot
+                  key={punto.mes}
+                  x={punto.mes}
+                  y={punto.total}
+                  r={4}
+                  fill={colores.rendimiento}
+                  stroke="var(--card)"
+                  strokeWidth={2}
+                  label={{ value: formatearMontoCorto(punto.total), position: "top", ...ETIQUETA, fill: colorEtiqueta }}
+                />
+              ))}
+              {/* Y al cierre, cuánto puso de su bolsillo: la distancia hasta el punto de arriba es la
+                  ganancia. La etiqueta va DEBAJO del punto y termina en él (anclada al final), para
+                  no pisar la del hito anterior ni salirse por la derecha. En una tarjeta angosta
+                  (< 28rem) no cabe sin cruzar la línea: se oculta, y el dato sigue en el encabezado. */}
+              <ReferenceDot
+                x={plazoMeses}
+                y={final.aportado}
+                r={4}
+                fill={colores.aportado}
+                stroke="var(--card)"
+                strokeWidth={2}
+                label={(props: { viewBox?: { x?: number; y?: number } }) => (
+                  <text
+                    className="hidden @md/tarjeta:block"
+                    x={(props.viewBox?.x ?? 0) + 2}
+                    y={(props.viewBox?.y ?? 0) + 30}
+                    textAnchor="end"
+                    fill={colorEtiqueta}
+                    fontSize={ETIQUETA.fontSize}
+                    fontWeight={500}
+                  >
+                    {formatearMontoCorto(final.aportado)} aportados
+                  </text>
+                )}
               />
             </AreaChart>
           </Grafica>

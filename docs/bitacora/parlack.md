@@ -2,6 +2,31 @@
 
 ## 2026-09-12
 
+### 16:15 · arreglado — Las gráficas de las proyecciones ya explican algo
+
+El usuario mandó dos capturas: "siento que las gráficas así no explican nada, están muy
+básicas y no dan información de nada". Tenía razón: `ProyeccionPagoCredito` era una
+línea bajando de "Hoy" a "En 20 meses" sin un solo número encima, y `ProyeccionCrecimiento`
+una montaña negra maciza (lo aportado) con un filo rojo (el rendimiento), sin eje ni
+etiquetas.
+
+Lo que cambió, y vale como regla para toda gráfica del catálogo
+(`docs/algoritmos/graficas-del-catalogo.md`, reglas 7 y 7b):
+
+- **El valor de cada hito va escrito sobre su punto** (`ReferenceDot` con etiqueta) y el
+  **eje Y lleva tres marcas** en formato corto. La gráfica se lee sin hover.
+- **La gráfica enseña una comparación, no una forma.** En el crecimiento, lo aportado es
+  una línea casi sin relleno y el rendimiento la franja entre esa línea y la curva: la
+  lectura es "cuánto se separa"; al cierre dice `$158k aportados` debajo de la línea (solo
+  en tarjetas anchas: en una angosta cruzaba la línea). En el crédito, cada hito trae
+  debajo una barra capital / interés de ESE pago con su porcentaje (35 % → 27 % → 15 % →
+  2 %): es lo que una amortización enseña y una curva no.
+- `formatearMontoCorto` ya no lleva espacio antes de la unidad (`$55.8k`): Recharts
+  partía la marca de eje en dos renglones en el espacio.
+
+Capturado en la galería a 1 280 y 390 px, sin errores de consola; 93 pruebas del catálogo
+en verde. Es dominio `web`; cambio acotado a los dos componentes y `graficas.tsx`.
+
 ### 15:45 · hecho — Inicio ya lo arma Maya: una portada por persona, con un modelo chico y solo cuando algo cambió
 
 El usuario lo pidió así: "que se pueda hacer dependiendo del usuario, que un llm pequeño y

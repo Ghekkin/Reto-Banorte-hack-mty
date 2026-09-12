@@ -109,8 +109,8 @@ Muestra cómo crece el patrimonio al sumar aportaciones periódicas más el rend
 - **Etiqueta**: `En 36 meses (3 años) · 10.5 % anual estimado`.
 - **Cifra principal**: el cierre proyectado (`$189,456.00`), que cambia con el slider.
 - **Detalle**: `+$31,456.00 de rendimiento sobre $158,000.00 aportados` (rendimiento en `text-exito`).
-- **Área apilada** (`AreaChart` con `stackId`): lo aportado en oscuro y el rendimiento en rojo encima, mes a mes; el eje X marca `Hoy` y los hitos (`Año 1`, `Año 2`, `Año 3`). Leyenda debajo.
-- **Fichas de hitos**: una por hito con el total en ese mes y, en escritorio, lo aportado en formato corto (`$86 k aportados`). Salen de la **misma serie** que la curva (calibrada con la tool), así que ya no contradicen al encabezado.
+- **La separación** (`AreaChart` con `stackId`, rehecha el 2026-09-12 por feedback del usuario): lo aportado es una línea oscura casi sin relleno y el rendimiento la franja roja entre esa línea y la curva de arriba. **Cada hito lleva su valor escrito sobre el punto** (`$92.3k`, `$138.7k`, `$189.5k`), el cierre dice `$158k aportados` debajo de la línea oscura (solo en tarjetas de 28rem o más), y el eje Y da la escala con tres marcas. El eje X marca `Hoy` y los hitos. Leyenda debajo.
+- **Fichas de hitos**: una por hito con el total en ese mes y, en escritorio, lo aportado en formato corto (`$86k aportados`). Salen de la **misma serie** que la curva (calibrada con la tool), así que ya no contradicen al encabezado.
 - **Slider**: `Aportación mensual` con el monto en `text-xl`, de `$100` a `$20,000` (o 4× la aportación inicial).
 - **Pie**: botón `Invertir con este plan` y la razón.
 
@@ -361,11 +361,11 @@ Proyecta la extinción paulatina de un crédito vigente (nómina, personal o aut
 - **Etiqueta**: `Crédito de Nómina Banorte · 20 meses restantes`, con badge `24.5 % anual`.
 - **Cifra principal**: `$55,783.00` de saldo.
 - **Detalle**: `de saldo · pagas $3,250.00 al mes`.
-- **Curva del saldo** (`AreaChart`): de hoy a la liquidación, con un punto por hito de la tool. El eje X marca solo `Hoy` y `En N meses`: la tool real numera los pagos desde la contratación (23, 27, 31, 36 a quien ya lleva 22), así que "hoy" es el pago anterior al primer hito y la curva ya no se aplasta a la derecha.
-- **Fichas de hitos** (2 columnas en tarjeta angosta, 4 desde 36rem, otra vez 2 cuando comparten tarjeta con la curva): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, con el interés del periodo desde 24rem. Si la tool manda una fecha (`2026-10-20`) en vez de etiqueta, se pinta `20 de octubre`.
-- **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos: la respuesta a "¿cuánto pagaré de puros intereses?".
-- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color.
-- **Pie**: botón `Simular abono a capital` y la razón.
+- **Curva del saldo** (`AreaChart`, rehecha el 2026-09-12 por feedback del usuario): de hoy a la liquidación, **con el saldo de cada hito escrito sobre su punto** (`$53.7k`, `$41.5k`, `$24.8k`, `$0`), eje Y de tres marcas para la escala y el eje X con cada hito en meses desde hoy (`Hoy`, `6 meses`, `1 año`, `20 meses`; las marcas que se pisarían en una tarjeta angosta se esconden, nunca la primera ni la última). La tool real numera los pagos desde la contratación (23, 27, 31, 36 a quien ya lleva 22), así que "hoy" es el pago anterior al primer hito y la curva no se aplasta a la derecha.
+- **Fichas de hitos** (2 columnas en tarjeta angosta, 4 desde 36rem, otra vez 2 cuando comparten tarjeta con la curva): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, y debajo de cada una **de qué se compone ese pago**: una barra capital / interés y `$1,140 de interés · 35 %` … `$70 de interés · 2 %`. Es lo que una amortización enseña y una curva no: el pago es el mismo, el interés baja. Si la tool manda una fecha (`2026-10-20`) en vez de etiqueta, se pinta `20 de octubre`.
+- **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos y el porcentaje (`Intereses $14,217.00 · 20 % de lo que pagarás`): la respuesta a "¿cuánto pagaré de puros intereses?".
+- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color (solo si la tool mandó el dato; hoy ninguna lo hace).
+- **Pie**: la razón. Sin botón: `simular_abono_capital` no lo atiende ninguna tool.
 
 ---
 

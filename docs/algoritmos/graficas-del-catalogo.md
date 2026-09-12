@@ -59,8 +59,21 @@ tenían una barra de dos segmentos y una lista.
 ### Ejes y tamaño
 
 6. Sin línea de eje, sin marcas, sin cuadrícula. Texto de eje en `text-xs` gris.
-7. El eje Y va oculto: el dato grande del encabezado ya da la escala, y las etiquetas
-   directas (el punto final, las fichas) dan los intermedios.
+7. ~~El eje Y va oculto.~~ Desde el 2026-09-12 (16:10) las proyecciones llevan **eje Y con
+   tres marcas** (`0`, la mitad, el tope) en formato corto, y **cada hito lleva su valor
+   escrito sobre el punto** (`ReferenceDot` con `label`). El usuario vio la curva del
+   crédito bajando de "Hoy" a "En 20 meses" sin un número encima y lo dijo tal cual: "no
+   explican nada, están muy básicas". Una gráfica del catálogo tiene que leerse sola, sin
+   hover: la escala en el eje, el valor en el punto, y en el eje X todos los hitos (con
+   `interval="preserveStartEnd"` y `minTickGap` para que en una tarjeta angosta se
+   escondan las marcas que se pisarían, nunca la primera ni la última).
+7b. **La gráfica enseña una comparación, no una forma.** En `ProyeccionCrecimiento` lo
+   aportado es una línea casi sin relleno y el rendimiento la franja entre esa línea y la
+   curva de arriba: la lectura es "cuánto se separa". Antes lo aportado era una montaña
+   oscura maciza con un filo rojo, y la franja —lo único que importa— se perdía. En
+   `ProyeccionPagoCredito`, debajo de la curva del saldo, cada hito trae una barra
+   capital / interés de ESE pago con su porcentaje: es lo que una amortización enseña y
+   una curva no (pagas lo mismo, el interés baja de 35 % a 2 %).
 8. Altura fija: 160 px en una tarjeta angosta y 192 px cuando la TARJETA mide 28rem o más
    (`CLASES_GRAFICA`, `@md/tarjeta:h-48`; antes era `md:h-48`, que miraba la pantalla). El
    `aspect-video` de shadcn hacía que la tarjeta amplia midiera 400 px de alto a 720 px de
@@ -70,9 +83,11 @@ tenían una barra de dos segmentos y una lista.
 
 ### Formato compacto (`formatearMontoCorto`)
 
-10. Para marcas de eje y fichas: `$24.8 k`, `$1.1 M`, `$950`. Se calcula a mano porque
+10. Para marcas de eje y fichas: `$24.8k`, `$1.1M`, `$950`. Se calcula a mano porque
     `Intl.NumberFormat` con `notation: "compact"` escribe `$86.0 k` en Node y `$86 k` en
-    Chrome, y esa diferencia era un error de hidratación en cada ficha.
+    Chrome, y esa diferencia era un error de hidratación en cada ficha. **Sin espacio antes
+    de la unidad**: Recharts parte una marca de eje en los espacios cuando no cabe en el
+    ancho del eje, y `$55.8 k` salía en dos renglones (visto el 2026-09-12).
 
 ### La serie simulada de `ProyeccionCrecimiento`
 
