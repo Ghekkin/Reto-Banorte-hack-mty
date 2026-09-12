@@ -49,18 +49,39 @@ disparar() {
   return 1
 }
 
+# El commit que se esta publicando. Esperar "que /health responda" no sirve: el
+# contenedor VIEJO responde igual, y el deploy se daba por bueno cuando todavia
+# estaba construyendo. Lo que prueba que termino es que /health devuelva ESTE sha.
+SHA="${GITHUB_SHA:-$(git rev-parse HEAD 2>/dev/null || echo "")}"
+
 esperar() {
   local nombre="$1" url="$2"
   [ -z "$url" ] && { echo "    (sin URL publica de $nombre; no espero)"; return 0; }
   echo "==> esperando $nombre en $url"
-  for _ in $(seq 1 60); do
-    if curl -fsS --max-time 5 "$url" >/dev/null 2>&1; then
-      echo "    arriba"
-      return 0
+  [ -n "$SHA" ] && echo "    hasta que sirva el commit ${SHA:0:8}"
+
+  local cuerpo commit
+  for _ in $(seq 1 90); do
+    cuerpo=$(curl -fsS --max-time 5 "$url" 2>/dev/null || true)
+    if [ -n "$cuerpo" ]; then
+      if [ -z "$SHA" ]; then
+        echo "    arriba (sin sha con que comparar)"
+        return 0
+      fi
+      commit=$(echo "$cuerpo" | sed -n 's/.*"commit":"\([^"]*\)".*/\1/p')
+      if [ "$commit" = "$SHA" ]; then
+        echo "    arriba y sirviendo ${SHA:0:8}"
+        return 0
+      fi
+      if [ -z "$commit" ] || [ "$commit" = "null" ]; then
+        # El servicio no reporta commit (build local, o SOURCE_COMMIT ausente).
+        echo "    arriba, pero no reporta commit: no puedo confirmar que sea el nuevo"
+        return 0
+      fi
     fi
-    sleep 5
+    sleep 10
   done
-  echo "    NO respondio en 5 minutos: revisa el log en $COOLIFY_URL" >&2
+  echo "    $nombre no llego a servir $SHA en 15 minutos: revisa el log en $COOLIFY_URL" >&2
   return 1
 }
 
@@ -68,7 +89,7 @@ disparar "mcp" "$COOLIFY_APP_MCP_UUID"
 disparar "web" "$COOLIFY_APP_WEB_UUID"
 
 # El build tarda; darle margen antes de empezar a preguntar.
-sleep 30
+sleep 20
 esperar "mcp" "${URL_MCP:+$URL_MCP/health}"
 esperar "web" "${URL_WEB:+$URL_WEB/api/health}"
 

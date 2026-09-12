@@ -20,6 +20,7 @@ app.get("/health", (_req, res) => {
     ok: true,
     servicio: "maya-mcp",
     version: config.version,
+    commit: config.commit,
     origenDatos: config.origenDatos,
     tools: TOOLS.map((t) => t.nombre),
   });

@@ -116,8 +116,12 @@ Deploy key **de solo lectura** `coolify-maya`, par generado en el VPS:
    `catalogo.json` no esté desfasado de los schemas, `typecheck`, `test`,
    `build` de la web y `scripts/humo.sh` contra el MCP levantado en el runner.
 2. **`desplegar`** (solo `main`, y solo si el anterior pasó): corre
-   `scripts/deploy.sh`, que dispara el deploy de las dos apps por la API de Coolify,
-   espera los dos `/health` y finalmente **manda un prompt del guion a la URL pública**
+   `scripts/deploy.sh`, que dispara el deploy de las dos apps por la API de Coolify
+   (con reintentos: el panel devuelve 502 de vez en cuando) y espera a que los dos
+   `/health` **devuelvan el commit que se está publicando** — el contenedor viejo
+   responde igual, así que esperar "algo vivo" daba por bueno un deploy a medias.
+   Por eso los dos `/health` traen el campo `commit`, que sale del `SOURCE_COMMIT`
+   que Coolify inyecta al construir y finalmente **manda un prompt del guion a la URL pública**
    y verifica que la respuesta traiga mensajes A2UI. Si eso falla, el workflow falla.
 
 Secretos y variables del repo (`gh secret list`, `gh variable list`):

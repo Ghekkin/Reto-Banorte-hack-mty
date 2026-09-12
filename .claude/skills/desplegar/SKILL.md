@@ -53,7 +53,9 @@ por API, eso se hace desde el VPS con el token root, nunca desde Actions.
   (`POST /api/v1/deploy?uuid=...`; el `GET` responde 405 desde Coolify 4.3), con
   **5 reintentos con espera creciente** porque el panel devuelve 502 de vez en cuando
   mientras construye otra cosa; un 4xx no se reintenta (token o uuid malos no mejoran
-  solos). Después espera los `/health` hasta 5 minutos. Si no
+  solos). Después **espera a que los `/health` devuelvan el commit que se está publicando**
+  (hasta 15 min), no sólo a que respondan: el contenedor viejo responde igual, y
+  esperar "algo vivo" daba deploys por buenos mientras seguían construyendo. Si no
   responden, falla ruidosamente y **no hace rollback solo**: la versión anterior sigue
   sirviendo hasta que el contenedor nuevo pase su healthcheck, y el rollback a una
   build anterior se hace desde el panel (Deployments → la que funcionaba → Redeploy).

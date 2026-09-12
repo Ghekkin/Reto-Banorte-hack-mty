@@ -14,4 +14,6 @@ export const config = {
   /** Donde vive el estado que las acciones mutan. Se reinicia antes de cada ensayo. */
   archivoEstado: process.env.MCP_ESTADO ?? "apps/mcp/estado.json",
   version: "0.1.0",
+  /** Lo inyecta Coolify al construir. Es como `deploy.sh` sabe que ya se publico. */
+  commit: process.env.SOURCE_COMMIT ?? null,
 };

@@ -96,3 +96,25 @@ push a `main` → Actions verifica → Coolify construye y publica.
 Pendiente mío: la llave de Gemini en las variables de `maya-web` está vacía, así que el
 agente publicado responde con la pantalla de ejemplo. En cuanto alguien la ponga en
 Coolify, la URL pública queda completa.
+
+### 09:30 — Dos fallos del deploy que sólo aparecen bajo carga
+
+El pipeline quedó en verde, pero encontré dos cosas que habrían mordido de madrugada:
+
+1. **Un 502 del panel tumbaba el deploy entero.** Coolify está detrás de un proxy y
+   devuelve 502 mientras construye otra cosa. Ahora `deploy.sh` reintenta 5 veces con
+   espera creciente; un 4xx no se reintenta, porque un token o un uuid malos no mejoran
+   solos.
+2. **Peor: el deploy se daba por bueno cuando todavía estaba construyendo.** El script
+   esperaba a que `/health` respondiera, y **el contenedor viejo responde igual**. El
+   workflow salía en verde, el smoke test pasaba contra la versión anterior, y producción
+   seguía con el commit de antes. Lo vi porque `/api/health` reportaba `9d546d5` después
+   de un deploy "exitoso" de otro commit.
+
+   Arreglado: ahora espera a que `/health` devuelva **el commit que se está publicando**
+   (`SOURCE_COMMIT`, que Coolify inyecta al construir). Le agregué el campo `commit` al
+   `/health` del MCP, que no lo tenía. Si un servicio no reporta commit, lo dice en el
+   log en vez de mentir.
+
+La lección para el checklist: "el workflow está en verde" no era prueba de que lo
+publicado sea lo último. Ahora sí.
