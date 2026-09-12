@@ -352,6 +352,67 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 10:15 · arreglado — El hilo guarda las pantallas, el caché pega, y el guion entero pasa
+
+Cuatro cosas de una captura y una frase ("el componente no se guarda en el historial, el
+prompt caching se tiene que guardar, todo debe ser natural con consejos").
+
+**1. Las pantallas se quedan en el hilo.** Era lo peor de la conversación: cada pregunta
+nueva borraba la tarjeta anterior, así que al desplazarse hacia arriba quedaban frases
+sueltas —"en agosto tu mayor gasto fue Vivienda"— sin la pantalla que las sostenía. Ahora
+`hilo` es **una sola lista en orden** con las dos cosas (lo dicho y lo construido); al
+cerrar el turno la superficie se congela ahí con su tira de transparencia. Congelar es
+quedarse con la referencia, porque `procesar` nunca muta. El historial que viaja al agente
+se **deriva** de esa misma lista: antes eran dos estados paralelos que podían separarse.
+
+La única decisión que se puede equivocar en silencio es cuál pantalla está viva (pintarla
+dos veces, o no pintarla), así que salió del hook a `calcularSuperficieViva` y tiene seis
+pruebas.
+
+**2. El prompt caching.** Estaba a medias sin que se notara: el system prompt iba en
+`system` (no cacheable con Claude) y nada reportaba si pegaba. Ahora va como **primer
+mensaje** con el breakpoint `cacheControl: ephemeral` —Gemini cachea el prefijo estable
+solo; Claude necesita que se lo pidan— y el orden quedó explícito: lo grande y estable
+arriba, el historial que solo crece en medio, y lo volátil del turno (quién pregunta, qué
+hay en pantalla, el data model) **al final**, fuera del prefijo. La prueba que lo cuida no
+mira el texto: exige que el prefijo sea byte por byte idéntico para otra persona y otro
+turno. Y el `fin` del stream ahora reporta `cacheLeido`, porque un caché que no pega no se
+nota: solo sale más caro y más lento.
+
+**3. El tono.** El `texto` era una etiqueta descriptiva ("aquí tienes tu gasto"). Ahora son
+de una a tres frases con el dato y **la recomendación**. Lo que sale hoy: *"Tus retiros en
+efectivo subieron 74.7 % y llegaron a $4,601. Si los moderas a su nivel habitual de $2,600,
+liberas casi $2,000 al mes para cubrir tu plan sin presiones."*
+
+**4. El turno que se quedaba sin pasos.** La captura mostraba `proyectar_ahorro` llamada
+seis veces, 8 pasos consumidos, 17 segundos y una disculpa. Tres causas, y ninguna era
+"el modelo es tonto":
+
+- la tool **rechazaba con razón**: Beto no tiene meta de ahorro, así que hacía falta
+  `montoObjetivoCentavos`, y el modelo no tenía cómo saberlo. Quedó en el `.describe()`
+  del schema, que es donde el modelo mira al llenar argumentos, y en el prompt: proponer
+  un objetivo (tres meses de gastos) **no es inventar un dato**, es una recomendación;
+- `aportacionCentavos: 0` también se rechazaba, y ese cero **lo puede mandar el slider**
+  del `SimuladorMeta` en su mínimo: era un bug alcanzable desde la interfaz, no solo por
+  el modelo. Ahora vale como "no me dijiste nada" y se usa la capacidad calculada;
+- no había **reserva de pasos**: si el turno se entretenía consultando, no quedaba paso
+  para pintar. Ahora `prepareStep` fuerza `pintar_pantalla` en los dos últimos.
+
+De paso: pedir las tools del mismo paso juntas (se ejecutan en paralelo) bajó el turno de
+Carmen de **22.5 s a 4.5 s** y el de Ana de 16.7 s a 2.7 s. Y `armarMensajes` ahora rescata
+el JSON cuando el modelo le pega una cerca de markdown o una frase: tirar un turno de 6 s
+por una comilla no vale la pena, y el contenido se valida igual después.
+
+**Lo que de verdad cambió mi forma de trabajar aquí: `pnpm probar-guion`.** Las 315 pruebas
+del repo usan un modelo simulado —prueban el cableado— y no podían ver nada de esto. El
+script recorre los 9 pasos del guion contra el agente real (los tres perfiles, la acción
+incluida) y marca el turno que no pintó, el que usó el componente equivocado, el que tardó
+más de 15 s y la tool que falló. Encontró los cuatro bugs de arriba en dos minutos, y
+distingue lo recuperado (aviso, con su costo en segundos) de lo roto. Ya está en la
+checklist previa, después de `reiniciar-estado`.
+
+Estado final: **los 9 pasos pasan**, entre 2.7 s y 5.9 s, sin avisos. 315 pruebas en verde.
+
 ### 09:50 · nota — Conflicto en el tablero con luis, resuelto
 
 `sync.sh` choco en `docs/tablero.md`: luis habia tomado el rol `contrato` mientras yo

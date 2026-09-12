@@ -35,6 +35,29 @@ import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente
  */
 export const SUPERFICIE = "principal";
 
+/**
+ * Cual es la pantalla del turno EN CURSO: la que todavia no se congelo en el hilo.
+ *
+ * Vive fuera del hook porque es la unica decision del hilo que se puede equivocar en
+ * silencio: si devuelve la que ya esta congelada, la pantalla se ve dos veces; si
+ * devuelve `undefined` de mas, el turno en curso no se ve mientras se arma.
+ *
+ * La comparacion es por REFERENCIA y eso es exacto, no una aproximacion: `procesar`
+ * nunca muta, devuelve estado nuevo en cada mensaje, asi que la superficie congelada al
+ * cerrar el turno es identica a la del estado hasta que llegue el `createSurface` del
+ * turno siguiente.
+ */
+export function calcularSuperficieViva(
+  hilo: EntradaDelHilo[],
+  superficie: EstadoSuperficie | undefined,
+): EstadoSuperficie | undefined {
+  for (let i = hilo.length - 1; i >= 0; i--) {
+    const entrada = hilo[i]!;
+    if (entrada.tipo === "pantalla") return superficie === entrada.superficie ? undefined : superficie;
+  }
+  return superficie;
+}
+
 /** Una entrada del hilo: una linea de conversacion, o una pantalla ya construida. */
 export type EntradaDelHilo =
   | { tipo: "mensaje"; rol: MensajeHistorial["rol"]; texto: string }
@@ -206,17 +229,7 @@ export function usarAgente(usuarioId: string) {
 
   const superficie = useMemo(() => estado.get(SUPERFICIE), [estado]);
 
-  /**
-   * La del turno en curso: la que todavia no se congelo en el hilo. Se compara por
-   * referencia, que es exacta porque `procesar` nunca muta.
-   */
-  const superficieViva = useMemo(() => {
-    for (let i = hilo.length - 1; i >= 0; i--) {
-      const entrada = hilo[i]!;
-      if (entrada.tipo === "pantalla") return superficie === entrada.superficie ? undefined : superficie;
-    }
-    return superficie;
-  }, [hilo, superficie]);
+  const superficieViva = useMemo(() => calcularSuperficieViva(hilo, superficie), [hilo, superficie]);
 
   return {
     hilo,

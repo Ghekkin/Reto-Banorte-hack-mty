@@ -17,6 +17,11 @@ y resultado al final. Si algo falla y no se arregla en 10 minutos, se registra e
 
 ## Funcional
 
+- [ ] **`pnpm probar-guion`**: los 9 pasos en verde. Recorre el guion completo contra el
+      agente real (los tres perfiles, la acción incluida) y marca el turno que no pintó,
+      el que usó el componente equivocado, el que tardó más de 15 s y la tool que falló.
+      Dos minutos, y es lo único que prueba lo que el jurado va a ver: las 315 pruebas del
+      repo usan un modelo simulado. Se corre **después** de `reiniciar-estado`.
 - [ ] Cada paso del guion se ejecutó completo, en orden, con los mismos prompts.
 - [ ] Cada interfaz generada renderiza sin error de consola.
 - [ ] La conversación completa cabe en 3 minutos con margen.

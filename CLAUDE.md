@@ -144,6 +144,7 @@ pnpm dev                       # levanta mcp (3100) y web (3000) y espera sus /h
 pnpm typecheck                 # tsc en los 5 paquetes
 pnpm test                      # vitest en los 5 paquetes
 pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` corriendo)
+pnpm probar-guion              # ensaya los 9 pasos del guion con el MODELO REAL (necesita llave y `pnpm dev`)
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
 pnpm reiniciar-estado          # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
 pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)

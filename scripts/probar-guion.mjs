@@ -222,7 +222,15 @@ for (const caso of CASOS) {
       if (r.componentes.length > 0 && e.startsWith("a2ui:")) avisos.push(e);
       else problemas.push(e);
     }
-    if (r.tools.some((t) => t.endsWith("!"))) problemas.push(`tool con error: ${r.tools.filter((t) => t.endsWith("!")).join(", ")}`);
+    // Una tool que fallo y de la que el turno se recupero es un aviso con su costo en
+    // segundos, no un fallo: la pantalla salio. Si NO salio, ya lo marco el bloque de
+    // arriba. Lo que si es fallo es que la misma tool falle y nadie la corrija.
+    const conError = r.tools.filter((t) => t.endsWith("!"));
+    if (conError.length > 0) {
+      const mensaje = `tool con error (reintentada): ${[...new Set(conError)].join(", ")}`;
+      if (r.componentes.length > 0) avisos.push(mensaje);
+      else problemas.push(mensaje);
+    }
     if (!r.cierre) problemas.push("no dijo nada (texto vacio)");
     if (r.ms > LIMITE_MS) problemas.push(`tardo ${(r.ms / 1000).toFixed(1)} s (limite ${LIMITE_MS / 1000} s)`);
     // Una tool repetida con los mismos datos es el sintoma del bucle de pasos.

@@ -102,6 +102,47 @@ de cada API. La validación de verdad está en `armarMensajes`.
    componente nuevo, queda validado sin que nadie escriba una regla.
    Ver [Validación A2UI](../algoritmos/validacion-a2ui.md).
 
+### El último paso se reserva para pintar
+
+El turno tiene un tope de pasos (`AGENTE_MAX_PASOS`, 8 por defecto) y **los dos últimos
+están reservados**: al llegar ahí, `prepareStep` fuerza `toolChoice` sobre
+`pintar_pantalla`. Uno para pintar y uno de gracia si la primera entrega viene inválida.
+
+No es teórico. El 2026-09-12 con *"simula mi fondo de emergencia"* el modelo llamó
+`proyectar_ahorro` seis veces —las dos primeras con argumentos que la tool rechazaba— y
+se quedó sin pasos: la persona recibió *"No pude armar la pantalla esta vez"* después de
+17 segundos. Más vale una pantalla con lo que ya sabe que una disculpa.
+
+Del mismo ensayo salieron otras tres reglas, todas en el prompt: **pedir las tools del
+mismo paso juntas** (se ejecutan en paralelo; a Carmen le bajó el turno de 22.5 s a
+4.5 s), **no repetir una tool con los mismos argumentos**, y **leer el `error` de una
+tool en vez de reintentar igual**.
+
+### El prompt caching, y por qué el orden de los mensajes no es cosmético
+
+Los dos proveedores cachean por **coincidencia de prefijo**: el primer byte que cambia
+invalida todo lo que sigue. De ahí el orden que arma `mensajesDelTurno`:
+
+1. el **system prompt** como primer mensaje —lo grande: el catálogo entero con sus
+   schemas y los ejemplos—, con el breakpoint `cacheControl: ephemeral` que Claude
+   necesita (Gemini cachea el prefijo estable solo, sin que se le pida);
+2. el **historial**, que solo crece: los turnos viejos viajan byte por byte iguales;
+3. el **bloque de contexto del turno**, lo único volátil (quién pregunta, qué hay en
+   pantalla, el data model), al final y por eso fuera del prefijo cacheado.
+
+Si alguien mete la fecha, el `usuarioId` o el data model arriba, el caché deja de pegar
+y **nadie se entera**: el turno solo sale más caro y más lento. Dos cosas lo cuidan: una
+prueba que exige que el prefijo sea byte por byte idéntico para otra persona y otro
+turno, y el `cacheLeido` que el stream reporta en su línea `fin`.
+
+### El texto que acompaña la pantalla es un consejo, no una etiqueta
+
+`texto` son de una a tres frases con el dato clave **y la recomendación**: no describe la
+pantalla ("aquí tienes tu gasto" no le sirve a nadie), dice qué haría Maya en su lugar.
+Sale así del ensayo del guion: *"Tus retiros en efectivo subieron 74.7 % y llegaron a
+$4,601. Si los moderas a su nivel habitual de $2,600, liberas casi $2,000 al mes para
+cubrir tu plan sin presiones."*
+
 ### La superficie se rearma completa en cada turno
 
 El agente emite siempre los tres mensajes: `createSurface` + `updateComponents` con la

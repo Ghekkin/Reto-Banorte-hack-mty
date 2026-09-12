@@ -18,6 +18,34 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 10:15 · hecho** — **El hilo de Maya guarda las pantallas.** Cada turno deja su
+  superficie congelada en la conversación, con su tira LLM · MCP · A2UI. Antes cada
+  pregunta nueva borraba la tarjeta anterior y el hilo quedaba en frases sueltas. Detalle
+  en `como-funciona/shell-web.md`.
+
+- **sáb 10:15 · hecho** — **`pnpm probar-guion`**: ensaya los 9 pasos del guion contra el
+  agente REAL (los tres perfiles, la acción incluida) y marca el turno que no pintó, el
+  componente equivocado, el que tardó más de 15 s y la tool que falló. **Córrelo antes de
+  cada ensayo**, después de `reiniciar-estado`; ya está en la checklist previa. Las 315
+  pruebas del repo usan un modelo simulado: prueban el cableado y no pueden ver nada de
+  lo que el jurado sí va a ver. Encontró cuatro bugs en dos minutos.
+
+- **sáb 10:15 · decisión** — **El system prompt viaja como primer mensaje, no en `system`**,
+  con el breakpoint de caché de Claude. El orden de `mensajesDelTurno` es ahora parte del
+  contrato: estable arriba, historial en medio, lo volátil del turno al final. Si metes la
+  fecha o el `usuarioId` arriba, el caché deja de pegar y nadie se entera; hay una prueba
+  que exige que el prefijo sea byte por byte idéntico entre personas y turnos, y el `fin`
+  del stream reporta `cacheLeido`.
+
+- **sáb 10:15 · para `mcp`** — `proyectar_ahorro` aceptaba `aportacionCentavos: 0` como
+  error, y ese cero **lo manda el slider del `SimuladorMeta` en su mínimo**: era alcanzable
+  desde la interfaz. Ahora vale como "no me dijiste nada" y usa la capacidad calculada, con
+  tres pruebas. Cuando una tool rechaza algo que la UI puede mandar, el bug es de la tool.
+
+- **sáb 10:15 · para todos** — el turno reserva sus **dos últimos pasos** para pintar
+  (`prepareStep`), y el prompt pide las tools del mismo paso **juntas**: se ejecutan en
+  paralelo. El turno de Carmen bajó de 22.5 s a 4.5 s.
+
 - **sáb 12:05 · hecho** — **`estable` existe por primera vez**, apuntando a `6ed173d`, que
   es exactamente lo que corre en producción. El corte H14 (fase 1 completa y `estable`
   marcado, "el corte más importante del hack") queda cerrado, y de paso la fase 3: el

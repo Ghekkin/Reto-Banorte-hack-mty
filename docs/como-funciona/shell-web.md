@@ -86,6 +86,31 @@ apps/web/src/
     agente/usar-agente.ts       cliente del streaming JSONL
 ```
 
+### El hilo guarda las pantallas, no solo el texto
+
+La conversación de Maya es **una sola lista en orden** (`hilo`, en
+`lib/agente/usar-agente.ts`) con las dos cosas que pasaron: lo que se dijo y lo que Maya
+construyó. Al cerrar un turno (la línea `fin` del stream) la superficie se **congela** en
+esa lista junto con la tira de transparencia de ese turno, y ahí se queda.
+
+Antes el hilo guardaba solo texto y la pantalla vivía aparte, así que **cada pregunta
+nueva borraba la tarjeta anterior**: al desplazarse hacia arriba quedaban frases sueltas
+("en agosto tu mayor gasto fue Vivienda") sin la pantalla que las sostenía, y la
+conversación no se podía leer. Ahora se lee como un chat: pregunta, consejo, pantalla.
+
+Tres detalles que hacen que funcione:
+
+- **Congelar es quedarse con la referencia.** `procesar` nunca muta: devuelve estado nuevo
+  en cada mensaje, así que el objeto congelado no puede cambiar por debajo.
+- **La del turno en curso se pinta aparte** hasta que se congela, y `calcularSuperficieViva`
+  decide cuál es comparando por referencia. Es la única decisión del hilo que se puede
+  equivocar en silencio (pintar dos veces, o no pintar), así que es una función pura y
+  tiene pruebas en `lib/__tests__/hilo.spec.ts`.
+- **El historial que viaja al agente se deriva del mismo hilo** (solo las entradas de
+  texto, como exige el contrato). Una sola conversación: imposible que las dos versiones
+  se separen.
+- Un turno que no pintó nada (prosa, error) no congela nada: no deja hueco.
+
 ### El usuario activo va en cookie, no en contexto de React
 
 Es la decisión estructural del shell y conviene entenderla antes de tocar nada.
@@ -229,8 +254,9 @@ Verificado al 2026-09-12 11:45, midiendo el DOM en el navegador:
 
 ### Lo que falta
 
-- **El lienzo de Maya es un placeholder.** Dibuja el hueco y explica qué va ahí, porque 7
-  de los 8 componentes del catálogo A2UI son carpetas con README y sin código.
+- ~~El lienzo de Maya es un placeholder.~~ **Ya no**: los 8 componentes del catálogo
+  existen, pintan, y el hilo guarda la pantalla de cada turno (ver abajo). El placeholder
+  solo sale antes del primer turno.
 - **Pagos, Servicios, Seguridad y Estados de cuenta** están en Más como filas apagadas con
   la etiqueta "pendiente". No tienen datos: el territorio Pagos quedó fuera del esquema.
 - **Sin `skeleton` de carga.** Las pantallas de servidor no tienen `loading.tsx`.

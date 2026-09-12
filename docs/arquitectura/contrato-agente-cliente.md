@@ -106,7 +106,7 @@ Reglas:
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |
-| `fin` | Métricas del turno | Log, transparencia |
+| `fin` | Métricas del turno: `pasos`, `ms` y `cacheLeido` (tokens que el proveedor sirvió desde su caché; ausente si no lo reporta) | Log, transparencia |
 
 El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
 **siempre** termina en `fin`, pase lo que pase: la interfaz nunca se queda esperando.

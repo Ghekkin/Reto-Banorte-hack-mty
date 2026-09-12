@@ -24,7 +24,9 @@ export const EntradaProyectarAhorro = z.object({
   aportacionCentavos: Centavos.optional()
     .describe(
       "Lo que la persona movio en el slider. Omitela (o manda 0) para que se use la " +
-        "capacidad de ahorro calculada de la persona.",
+        "capacidad de ahorro calculada de la persona. Ojo: si esa capacidad es CERO " +
+        "(alguien con la deuda al limite), no hay de donde proyectar y tienes que mandar " +
+        "tu una aportacion; `panorama_inicial` te dice la capacidad antes de preguntar.",
     ),
   frecuencia: Frecuencia.optional().describe("Default: mensual"),
 });

@@ -82,6 +82,15 @@ corresponde.
 
 ## Límites y supuestos
 
+- **`aportacionCentavos: 0` (o negativa) vale como "no me dijiste nada"** y se usa la
+  capacidad calculada. El cero llega por dos caminos reales: el slider del
+  `SimuladorMeta` en su mínimo, y el modelo cuando no sabe qué poner. Rechazarlo tumbaba
+  la pantalla completa (ensayo del 2026-09-12).
+- Si la capacidad calculada **también** es cero —alguien con la deuda al límite, como
+  Beto— no hay de dónde proyectar y la tool sí falla, diciendo que hace falta una
+  aportación explícita. El agente entonces propone el monto, que es lo correcto: la
+  decisión es suya, no del cálculo.
+
 - **Sin rendimiento y sin inflación.** El objetivo es nominal.
 - **Aportaciones iguales y puntuales.** No modela que un mes no alcance.
 - **La quincenal es "dos por mes"**, no 26 al año. Simplifica la fecha y la diferencia es
