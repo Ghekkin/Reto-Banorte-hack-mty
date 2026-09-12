@@ -2,6 +2,19 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/*
+ * Tailwind v4 detecta las fuentes solo desde la raiz de ESTA app, asi que los paquetes
+ * del workspace quedaban fuera: una clase usada UNICAMENTE en `packages/catalogo` no
+ * generaba CSS y nadie se enteraba. Costo real, medido el 2026-09-12: en
+ * `GastoPorCategoria` todas las barras salian rojas porque `bg-chart-4` (la plata del
+ * resto de las categorias) no existia, y los overrides de la barra del heroe tampoco,
+ * asi que el "uso del limite" era un indicador rojo sobre una tarjeta roja.
+ *
+ * Las clases que si funcionaban era por casualidad: `apps/web` las usaba tambien.
+ */
+@source "../../../../packages/catalogo/src";
+@source "../../../../packages/a2ui/src";
+
 @custom-variant dark (&:is(.dark *));
 
 /* Tokens -> utilidades de Tailwind v4.

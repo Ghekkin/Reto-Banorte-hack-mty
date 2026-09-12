@@ -132,6 +132,22 @@ En Tailwind v4 **`bg-[--lienzo]` no funciona**: o se mapea en `@theme inline` (l
 hicimos) o se escribe `bg-[var(--lienzo)]`. Si agregas un token, agrégalo en los dos
 lugares del archivo, y aquí.
 
+**Y la trampa que costó una mañana:** Tailwind v4 detecta las fuentes desde la raíz de
+`apps/web`, así que `packages/*` queda fuera. Una clase usada **únicamente** en
+`packages/catalogo` no genera CSS: no avisa, no rompe el build, no falla ninguna prueba
+—simplemente no se ve—. Por eso `globals.css` declara
+
+```css
+@source "../../../../packages/catalogo/src";
+@source "../../../../packages/a2ui/src";
+```
+
+Si agregas un paquete con clases de Tailwind, agrégalo ahí. Lo pasado el 2026-09-12: en
+`GastoPorCategoria` **todas** las barras salían rojas porque `bg-chart-4` no existía, y el
+"uso del límite" del héroe era un indicador rojo sobre una tarjeta roja. Las clases que sí
+funcionaban era por casualidad: `apps/web` las usaba también. Hay dos pruebas que lo
+cuidan en `apps/web/src/lib/__tests__/estilos.spec.ts`.
+
 El bloque, como referencia:
 
 ```css

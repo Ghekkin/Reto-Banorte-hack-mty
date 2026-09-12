@@ -352,6 +352,57 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 10:45 · arreglado — Tailwind no compilaba las clases del catálogo, y no se notaba
+
+Abrí el navegador de verdad (Chromium de Playwright, capturas que pude mirar yo mismo) y
+la primera pasada por los 8 componentes de `/catalogo` me dio tres cosas. Una de ellas es
+de las que dan miedo.
+
+**Tailwind v4 no escaneaba `packages/*`.** Detecta las fuentes desde la raíz de `apps/web`,
+así que una clase usada **únicamente** en `packages/catalogo` no generaba CSS: sin aviso,
+sin romper el build, sin fallar una prueba. Lo medí en el CSS servido: `bg-chart-4` →
+**cero** reglas. Las clases que sí funcionaban era por casualidad, porque `apps/web` las
+usaba también (`bg-tinte`: 4 reglas; `border-borde-sutil`: 1).
+
+Lo que eso significaba en pantalla, y explica una de las capturas de antes:
+
+- **`GastoPorCategoria` pintaba TODAS las barras en rojo.** El diseño dice "lo que más
+  duele va en rojo y el resto en plata"; sin `bg-chart-4` la gráfica decía que todo duele,
+  que es justo no decir nada. Ahora solo "Retiros de efectivo +74.7 %" va en rojo.
+- **La barra de "uso del límite" del héroe era invisible**: indicador rojo sobre tarjeta
+  roja con la pista transparente, porque los overrides `[&_[data-slot=progress-*]]`
+  tampoco se generaban. Está en `ResumenTarjeta` y en `MetaActiva`.
+
+Dos líneas de `@source` en `globals.css` lo arreglan, y le puse dos pruebas más una nota
+en la skill `diseno-banorte`, porque es el tipo de fallo que vuelve: no duele hasta que
+alguien mira la pantalla.
+
+**Lo que aprendí de método**: llegué a esto midiendo, no mirando. Mi primera lectura de la
+captura fue "falta el degradado de marca en el héroe" — y era falsa: le pregunté al
+navegador por el `background-image` computado y el degradado estaba ahí, solo que entre
+`#EC0029` y `#C00020` hay poca distancia. Si hubiera "arreglado" lo que creí ver, habría
+cambiado la paleta de Banorte sin necesidad. El `getComputedStyle` y el CSS servido
+decidieron las tres.
+
+**Los otros dos, más chicos:**
+
+- `PlanDePago`: la opción **recomendada** —justo la que se quiere leer— se partía en "18 /
+  meses" porque el badge le robaba el ancho, y la fila quedaba 12 px más alta que las
+  otras. `whitespace-nowrap`.
+- `SimuladorMeta`: tenía los datos del avance ($48,150 de $96,000) solo en texto. Le puse
+  la barra "Ya llevas 50.2 %", el mismo patrón que `MetaActiva` — son la misma meta antes
+  y después de crearla.
+- Y en la galería, `pb-28` no alcanzaba: el panel de acción es `fixed` y crece a 256 px, así
+  que tapaba la última tarjeta.
+
+**Un tropiezo mío que vale anotar:** metí el comentario del `pb-72` como segundo hijo raíz
+del `return`, que es JSX inválido, y la galería dejó de renderizar. Lo detecté porque el
+script de capturas encontró **0 secciones**. `pnpm typecheck` lo habría dicho en dos
+segundos: de aquí en adelante, typecheck antes de capturar.
+
+Verificado a 1280 px y a 390 px: sin desborde horizontal, la etiqueta larga se trunca con
+elipsis, y la consola del navegador sin un solo error ni warning. 332 pruebas en verde.
+
 ### 10:15 · arreglado — El hilo guarda las pantallas, el caché pega, y el guion entero pasa
 
 Cuatro cosas de una captura y una frase ("el componente no se guarda en el historial, el

@@ -88,7 +88,10 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
                 <RadioGroupItem value={String(o.plazoMeses)} />
                 <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-center gap-2 text-sm font-medium">
-                    {o.plazoMeses} meses
+                    {/* Sin `whitespace-nowrap`, el badge "Recomendado" le robaba el ancho
+                        y la opcion recomendada —justo la que se quiere leer— se partia en
+                        "18 / meses", con la fila 12 px mas alta que las otras. */}
+                    <span className="whitespace-nowrap">{o.plazoMeses} meses</span>
                     {o.recomendado ? (
                       <Badge variant="secondary" className="bg-tinte text-primary">
                         <Star /> Recomendado

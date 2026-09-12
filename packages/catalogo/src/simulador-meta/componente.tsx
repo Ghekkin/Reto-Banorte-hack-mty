@@ -4,10 +4,18 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_TARJETA, formatearFecha, formatearMonto, hoyISO, sumarMeses } from "../comunes";
+import {
+  CLASES_TARJETA,
+  formatearFecha,
+  formatearMonto,
+  formatearPorcentaje,
+  hoyISO,
+  sumarMeses,
+} from "../comunes";
 import type { PropsSimuladorMeta } from "./schema";
 
 /** El slider trabaja en pesos: el paso de un centavo no significa nada para nadie. */
@@ -60,6 +68,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
   const meses = porMes > 0 ? Math.max(1, Math.ceil(faltante / porMes)) : 0;
   const fecha = meses > 0 ? sumarMeses(fechaInicio ?? hoyISO(), meses) : undefined;
   const minimo = Math.min(aportacionMinimaCentavos, aportacionMaximaCentavos);
+  const avance = metaCentavos > 0 ? Math.min(1, saldoInicialCentavos / metaCentavos) : 0;
 
   return (
     <Card className={CLASES_TARJETA}>
@@ -85,7 +94,21 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         )}
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-2">
+      <CardContent className="flex flex-col gap-3">
+        {/* Lo que ya lleva ahorrado, en barra y no solo en texto: es el dato que motiva
+            ("ya vas a la mitad") y era lo unico del componente que no se veia de un
+            vistazo. Mismo patron que `MetaActiva`, a proposito: son la misma meta antes
+            y despues de crearla. */}
+        {saldoInicialCentavos > 0 ? (
+          <div className="flex flex-col gap-1.5">
+            <div className="flex justify-between text-xs text-muted-foreground">
+              <span>Ya llevas</span>
+              <span className="monto">{formatearPorcentaje(avance)}</span>
+            </div>
+            <Progress value={Math.round(avance * 100)} aria-label={`Avance: ${formatearPorcentaje(avance)}`} />
+          </div>
+        ) : null}
+
         <div className="flex flex-wrap items-baseline justify-between gap-x-3">
           <span className="text-sm">Aportación {frecuencia === "quincenal" ? "quincenal" : "mensual"}</span>
           <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>

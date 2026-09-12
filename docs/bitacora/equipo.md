@@ -18,6 +18,22 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 10:45 · CUIDADO, aplica a quien escriba UI** — **Tailwind v4 no escaneaba
+  `packages/*`**: una clase usada únicamente en `packages/catalogo` **no generaba CSS**, sin
+  aviso y sin fallar nada. Medido: `bg-chart-4` tenía cero reglas, y por eso
+  `GastoPorCategoria` pintaba todas las barras en rojo en vez de rojo + plata, y la barra
+  del héroe era un indicador rojo sobre tarjeta roja. Arreglado con dos `@source` en
+  `globals.css`, con dos pruebas (`apps/web/src/lib/__tests__/estilos.spec.ts`) y una nota
+  en la skill `diseno-banorte`. **Si agregas un paquete con clases de Tailwind, decláralo
+  ahí**; y si algo no se ve como lo escribiste, mira primero si la clase existe en el CSS
+  servido antes de pelearte con el componente.
+
+- **sáb 10:45 · método** — se puede mirar la pantalla de verdad desde aquí: hay un Chromium
+  de Playwright en `/root/.cache/ms-playwright` y playwright en `/root/yolani`, así que
+  capturar `/catalogo` y **leer** la imagen es cuestión de un script. Vale más que adivinar:
+  mi primera lectura de la captura ("falta el degradado de marca") era falsa, y lo desmintió
+  el `background-image` computado. Mide antes de arreglar.
+
 - **sáb 10:15 · hecho** — **El hilo de Maya guarda las pantallas.** Cada turno deja su
   superficie congelada en la conversación, con su tira LLM · MCP · A2UI. Antes cada
   pregunta nueva borraba la tarjeta anterior y el hilo quedaba en frases sueltas. Detalle

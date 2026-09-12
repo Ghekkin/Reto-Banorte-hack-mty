@@ -50,8 +50,11 @@ export function Galeria({
   const [ultimaAccion, setUltimaAccion] = useState<Accion | undefined>();
   const [fallos, setFallos] = useState<FalloDeRender[]>([]);
 
+  // `pb-72` y no `pb-28`: el panel de accion de abajo es `fixed` y crece hasta
+  // `max-h-64` (256 px) cuando muestra el JSON de la accion, asi que con menos padding
+  // se come la ultima tarjeta.
   return (
-    <div className="min-h-svh bg-lienzo p-3 pb-28 md:p-6">
+    <div className="min-h-svh bg-lienzo p-3 pb-72 md:p-6 md:pb-72">
       <header className="mx-auto flex max-w-6xl flex-col gap-2 pb-4">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-xl font-semibold">Catálogo A2UI</h1>
