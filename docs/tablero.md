@@ -15,7 +15,7 @@ vez sin conflictos de git.
 | web | — | — | — |
 | mcp | — | — | — |
 | contrato | — | — | — |
-| demo | parlack | Coolify en el VPS: proyecto `reto-banorte` + Postgres arriba; siguen apps web/mcp y dominio | 2026-09-12 05:20 |
+| demo | parlack | Coolify en el VPS: proyecto `reto-banorte` + Postgres arriba; siguen apps web/mcp y dominio | vie 21:20 |
 
 ## Bloqueos
 

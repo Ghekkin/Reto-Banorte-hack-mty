@@ -16,10 +16,15 @@ antes de tocar nada.
 
 ## Arranque
 
-El primer commit del repo salió el **2026-09-12 a las 04:08**, después de la hora de
-arranque del reto (2026-09-11 20:00). Todo lo anterior a ese commit se preparó sin
-commitear a propósito; por eso el historial empieza con la base completa en un solo
-commit.
+El primer commit del repo salió el **viernes 2026-09-11 a las 22:08, hora de
+Monterrey**, después de la hora de arranque del reto (20:00). Todo lo anterior se
+preparó sin commitear a propósito; por eso el historial empieza con la base completa
+en un solo commit.
+
+**Zona horaria: todas las horas del repo son de Monterrey (UTC-6).** El servidor donde
+corren las sesiones está en UTC+2; los scripts fuerzan `TZ=America/Monterrey`. Cuando
+escribas una hora a mano en un doc o en la bitácora, usa la de Monterrey. El plan hora
+por hora está en `docs/equipo/roadmap.md`.
 
 ## Al abrir una sesión
 

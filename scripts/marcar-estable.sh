@@ -3,6 +3,7 @@
 # Solo se corre despues de un ensayo de demo que paso completo (skill checklist-demo).
 # Si main se rompe, la demo se presenta desde aqui:  git checkout estable
 set -eu
+export TZ=America/Monterrey
 cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}"
 scripts/sync.sh "demo verificada, marcada estable" >/dev/null || true
 git tag -f estable >/dev/null

@@ -7,6 +7,7 @@
 #
 # Nunca hace force. Si el rebase choca, aborta, deja el commit local y avisa.
 set -u
+export TZ=America/Monterrey   # todas las horas del repo en hora de Monterrey (UTC-6)
 cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}" || exit 0
 
 modo="manual"; msg="${1:-}"

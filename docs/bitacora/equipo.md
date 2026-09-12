@@ -1,5 +1,9 @@
 # Bitácora del equipo
 
+> **Horas en hora de Monterrey (UTC-6).** Las entradas del 2026-09-12 anteriores a esta
+> nota se escribieron con la hora del servidor (UTC+2): réstales 8 h — ocurrieron la
+> noche del viernes 11 (p. ej. "04:08" = vie 20:08). Desde aquí, todo en hora local.
+
 Entradas con fecha y hora, las más recientes **arriba**. Se escribe conforme pasa,
 no al final. La bitácora personal de cada quien está al lado (`<nombre>.md`, ver
 `README.md`). Tres tipos de entrada:
@@ -13,6 +17,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 ---
 
 ## 2026-09-12
+
+- **vie 22:55 · decisión** — Zona horaria única: Monterrey (UTC-6). El servidor está en
+  UTC+2 y eso hizo creer que íbamos en la hora 11 del reto cuando vamos en la 3. Scripts
+  con `TZ=America/Monterrey`; roadmap re-baseado a H3 con 33 h por delante: fase 1 a
+  H14 (sáb 10:00), ensayo a H20, fase 3 a H28, congelación H30, entrega H36 (dom 08:00,
+  por confirmar). Se trabaja la noche del viernes entera; dos ventanas de sueño de 4 h.
 
 - **07:30 · decisión** — Roadmap de las horas restantes en `docs/equipo/roadmap.md`,
   re-baseado a H11: cortes en H14 (A2UI), H16 (`dev.sh`), **H22 (fase 1)**, H26 (ensayo),
