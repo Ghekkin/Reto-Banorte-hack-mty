@@ -11,20 +11,29 @@ import { leerCSV, type Fila } from "./csv.js";
  */
 export type Tablas = Map<string, Fila[]>;
 
-/** `db/datos` desde la raiz del repo, corra desde donde corra el proceso. */
-export function carpetaDeDatos(): string {
-  const desdeEnv = process.env.DATOS_CSV;
-  if (desdeEnv) return resolve(desdeEnv);
+/**
+ * La raiz del repo, corra desde donde corra el proceso: `pnpm --filter @maya/mcp dev`
+ * arranca con `cwd` en `apps/mcp`, y `pnpm humo` o un test lo hacen desde la raiz. Todo
+ * lo que sea una ruta relativa del repo (los CSV, `estado.json`) se resuelve desde aqui.
+ */
+export function raizDelRepo(): string {
   let dir = process.cwd();
   for (let i = 0; i < 5; i++) {
     try {
       readdirSync(join(dir, "db", "datos"));
-      return join(dir, "db", "datos");
+      return dir;
     } catch {
       dir = resolve(dir, "..");
     }
   }
-  throw new Error("no encuentro db/datos; define DATOS_CSV con la ruta absoluta");
+  throw new Error("no encuentro la raiz del repo (busco db/datos hacia arriba); define DATOS_CSV");
+}
+
+/** `db/datos` desde la raiz del repo, corra desde donde corra el proceso. */
+export function carpetaDeDatos(): string {
+  const desdeEnv = process.env.DATOS_CSV;
+  if (desdeEnv) return resolve(desdeEnv);
+  return join(raizDelRepo(), "db", "datos");
 }
 
 export function cargarTablas(carpeta = carpetaDeDatos()): Tablas {

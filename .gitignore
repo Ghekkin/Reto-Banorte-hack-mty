@@ -33,3 +33,4 @@ apps/mcp/estado.json
 
 # material del reto (PDFs, videos): pesado y no versionable
 .orca/
+apps/mcp/estado.pruebas.json

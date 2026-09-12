@@ -1,6 +1,7 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { isAbsolute, resolve } from "node:path";
 import { config } from "../config.js";
+import { raizDelRepo } from "./memoria.js";
 
 /**
  * El estado que las acciones mutan.
@@ -25,8 +26,14 @@ type Estado = { acciones: AccionAplicada[] };
 const VACIO: Estado = { acciones: [] };
 let cache: Estado | undefined;
 
+/**
+ * `MCP_ESTADO` viene como ruta del repo (`apps/mcp/estado.json`), y el servidor arranca
+ * con `cwd` en `apps/mcp`: resolverla contra `cwd` dejaba el archivo en
+ * `apps/mcp/apps/mcp/estado.json` y cada arranque empezaba sin estado. Se resuelve
+ * contra la raiz del repo, que es lo que la variable describe.
+ */
 function archivo(): string {
-  return resolve(config.archivoEstado);
+  return isAbsolute(config.archivoEstado) ? config.archivoEstado : resolve(raizDelRepo(), config.archivoEstado);
 }
 
 export function leerEstado(): Estado {

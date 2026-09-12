@@ -18,8 +18,28 @@ pnpm --filter @maya/mcp reiniciar-estado # antes de cada ensayo
 | `src/servidor.ts` | Construye el `McpServer` y registra las tools |
 | `src/tools/registro.ts` | Cómo se registra una tool: anotaciones, log por llamada, errores que no lanzan |
 | `src/tools/<tool>.ts` | Una tool por archivo |
+| `src/dominio/finanzas.ts` | Mensualidad, amortización, CAT, escenario de pago mínimo |
+| `src/dominio/consultas.ts` | Las consultas que más de una tool necesita (y la única que decide cuánto debe alguien) |
+| `src/dominio/tiempo.ts` | Qué día es "hoy" para el dominio, y aritmética de meses |
 | `src/datos/` | La puerta única a los datos: CSV en memoria (default) y el estado mutable |
 | `scripts/reiniciar-estado.ts` | Vuelve el estado al punto de partida |
+
+## Las 9 tools
+
+| Tool | Clase | Para qué |
+|---|---|---|
+| `consultar_perfil` | lectura | quién es la persona: ingreso, ocupación, segmento |
+| `consultar_tarjeta` | lectura | límite, saldo, uso, mora, intereses del mes, plan activo, `alerta` |
+| `consultar_movimientos` | lectura | movimientos filtrados + totales del filtro completo |
+| `simular_reestructura` | lectura | una opción por plazo: mensualidad, CAT, ahorro vs. pagar el mínimo |
+| `consultar_plan` | lectura | el plan aplicado y su calendario de pagos |
+| `aplicar_plan_pago` | **acción** | difiere el saldo de la tarjeta; idempotente |
+| `comparar_periodos` | lectura | gasto por categoría de dos meses + la categoría atípica |
+| `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios |
+| `crear_apartado` | **acción** | crea la meta con aportación automática; idempotente |
+
+El detalle (qué devuelve cada una, casos límite, idempotencia) está en
+`docs/como-funciona/tools-mcp.md`. La matemática, en `docs/algoritmos/`.
 
 ## Datos
 

@@ -1,0 +1,25 @@
+{
+  "acciones": [
+    {
+      "id": "acc_usr_carmen_12m_1789197478743",
+      "tipo": "aplicar_plan_pago",
+      "usuarioId": "usr_carmen",
+      "idempotencyKey": "humo:1789197478",
+      "aplicadaEn": "2026-09-12T07:17:58.742Z",
+      "datos": {
+        "id": "plan_carmen_oro_12m",
+        "tarjetaId": "tar_carmen_oro",
+        "plazoMeses": 12,
+        "tasaAnual": 0.199,
+        "cat": 0.2569,
+        "saldoDiferidoCentavos": 2841500,
+        "mensualidadCentavos": 267433,
+        "totalAPagarCentavos": 3209196,
+        "interesesTotalesCentavos": 367696,
+        "ahorroVsMinimoCentavos": 5050488,
+        "aplicadoEn": "2026-09-12T07:17:58.742Z",
+        "primerPagoFecha": "2026-10-12"
+      }
+    }
+  ]
+}
