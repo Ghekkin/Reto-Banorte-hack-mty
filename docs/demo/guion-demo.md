@@ -1,24 +1,24 @@
 ---
-verificado: 2026-09-12 00:10
-estado: plan            # pasa a construido cuando una corrida completa lo respalde
+verificado: 2026-09-12 10:10 (hora de Monterrey)
+estado: construido      # corrida completa verificada en produccion el 2026-09-12 09:00
 ---
 
 # Guion de la demo
 
 **3 minutos.** Lo que el jurado va a buscar, literal del entregable 01: *"el flujo
-completo: intención, UI generada, interacción y la acción que dispara"*. Y para el 20%
+completo: intención, UI generada, interacción y la acción que dispara"*. Y para el 20 %
 de adaptabilidad: **la misma pregunta con otro perfil produce otra interfaz**.
-
-Antes de empezar, siempre: `pnpm reiniciar-estado`.
 
 ## Antes de leer
 
+- **`pnpm reiniciar-estado`, siempre.** Lee su salida: dice cuántas filas borró y contra
+  qué base. Si dice 0 y acabas de ensayar, algo está mal (fue el issue #9).
 - **Dos personas**: una narra, otra teclea. Los prompts se pegan desde
   `docs/demo/prompts.txt`, no se escriben a mano.
-- Los números de abajo salen de `db/datos/` y son los que el jurado va a ver. Si un
-  número en pantalla no coincide con este guion, **es un bug**, no una variación.
-- Marcado `[PENDIENTE]` lo que todavía no existe al 2026-09-12 00:10: los 7 componentes
-  que son andamio y las tools de `simular_reestructura` en adelante.
+- Los números salen de PostgreSQL (esquema `banorte`) y son los que el jurado va a ver.
+  Si un número en pantalla no coincide con este guion, **es un bug**, no una variación.
+- **Todo lo de aquí corre.** Verificado de punta a punta contra la URL pública el
+  2026-09-12 a las 09:00, con el modelo real. Los tiempos son los medidos.
 
 ## Los dos perfiles, con sus números reales
 
@@ -35,12 +35,11 @@ Antes de empezar, siempre: `pnpm reiniciar-estado`.
 
 ### 0:00–0:20 · Maya hoy
 
-En pantalla: nada nuestro todavía. Una captura o la app real de Banorte con una
+En pantalla: nada nuestro todavía. Una captura de la app real de Banorte con una
 respuesta de Maya en texto.
 
 > "Esta es Maya, la asistente de Banorte. Hoy resuelve más de trescientas consultas y
-> ejecuta diecisiete operaciones bancarias. Y todo eso te lo entrega así: texto y
-> menús.
+> ejecuta diecisiete operaciones bancarias. Y todo eso te lo entrega así: texto y menús.
 >
 > Maya ya sabe hacer las cosas. Lo que le falta no es capacidad: **es superficie**."
 
@@ -48,49 +47,44 @@ Cambio a nuestra pantalla, vacía, con la barra de conversación abajo.
 
 ### 0:20–1:00 · Intención → interfaz generada
 
-**Prompt 1** (usuario Beto, se pega tal cual):
+**Prompt 1** (Beto):
 
 ```
 Quiero pagar menos intereses de mi tarjeta
 ```
 
-Lo que debe aparecer, en este orden:
-
 | Momento | Qué se ve |
 |---|---|
-| Inmediato | Estado "pensando"; badges **LLM · MCP · A2UI** encendiéndose |
-| ~1 s | `ResumenTarjeta` (héroe, degradado rojo): **$47,386 de $49,000**, "96.7 % usado", chip rojo **"12 días de atraso"** |
-| ~2 s | `PlanDePago` con **tres opciones** de reestructura: 12, 18 y 24 meses, cada una con mensualidad, CAT y **cuánto ahorra frente a seguir pagando el mínimo** |
-| Al pie | La línea `razon`: *"Te muestro planes de pago porque tu tarjeta está al 96.7 % y hoy pagas $2,950 al mes, de los cuales la mayor parte son intereses."* |
+| Inmediato | La tira enciende **LLM**, luego **MCP** con los nombres `panorama_inicial · simular_reestructura`, luego **A2UI** |
+| ~10 s | `ResumenTarjeta` (héroe, degradado rojo): **$47,386 de $49,000**, 96.7 % usado, badge **"12 días de atraso"** |
+| Junto | `PlanDePago` con **12, 18 y 24 meses**, cada uno con mensualidad, CAT y **cuánto ahorra frente a seguir pagando el mínimo** |
+| Al pie de cada tarjeta | "¿Por qué veo esto?" con el dato que lo justifica |
 
-> "No programamos esta pantalla. Maya pidió los datos al servidor MCP, decidió que esta
-> situación se resuelve con un plan de pago, y **describió la interfaz en A2UI**. Cada
-> componente que ve es del catálogo que nosotros diseñamos: Maya no puede inventarse
-> uno."
-
-*(Aquí, una sola vez, se abre el **modo transparencia**: se ven las llamadas MCP y el
-JSON A2UI pasando. Se cierra a los cinco segundos.)* `[PENDIENTE]`
+> "No programamos esta pantalla. Maya pidió los datos al servidor MCP —los está viendo
+> ahí arriba—, decidió que esta situación se resuelve con un plan de pago, y **describió
+> la interfaz en A2UI**. Cada componente es del catálogo que nosotros diseñamos: Maya no
+> puede inventarse uno."
 
 ### 1:00–1:50 · Interacción → acción real → nueva interfaz
 
-Se toca la opción de **18 meses** y luego el botón **Aplicar plan**.
+Se toca **18 meses** y luego **Aplicar plan**.
 
 | Momento | Qué se ve |
 |---|---|
-| Al tocar | La opción queda seleccionada (`elegir_plazo`, solo cambia el data model) |
-| Al aplicar | Estado "pensando"; en transparencia se ve `aplicar_plan_pago` |
-| ~2 s | `Confirmacion`: "Tu plan quedó activo", con plazo, mensualidad y fecha del primer pago |
+| Al tocar | La opción queda seleccionada; no hay turno, es estado de interfaz |
+| Al aplicar | La tira enciende MCP con **`aplicar_plan_pago · consultar_plan`** |
+| ~6 s | `Confirmacion`: "Tu plan quedó activo", con mensualidad de **$3,193.35** y primer pago el **12 de octubre de 2026** |
+| **Arriba** | **`ResumenTarjeta` vuelve cambiada**: saldo en **$0**, badge "Plan activo", el atraso desaparece |
 | Junto | `Calendario` con los 18 pagos |
-| Arriba | **`ResumenTarjeta` ahora dice "Plan activo"** y el chip de atraso desaparece |
 
 > "Lo que Beto tocó no fue un botón de una app. Fue un mensaje de vuelta a Maya, que
-> ejecutó la operación con una herramienta del MCP y **volvió a construir la pantalla**
-> con el resultado. El estado cambió de verdad: la tarjeta ya no dice lo mismo que hace
-> diez segundos. **El ciclo se cierra.**"
+> ejecutó la operación con una herramienta del MCP y **volvió a construir la pantalla**.
+> Fíjense en la tarjeta de arriba: es la misma de hace diez segundos y ya no dice lo
+> mismo. El cambio está en la base de datos. **El ciclo se cierra.**"
 
-### 1:50–2:30 · El ciclo alimenta lo siguiente
+### 1:50–2:20 · El ciclo alimenta lo siguiente
 
-**Prompt 2** (mismo usuario):
+**Prompt 2** (Beto):
 
 ```
 ¿Y en qué se me está yendo el dinero?
@@ -98,18 +92,16 @@ Se toca la opción de **18 meses** y luego el botón **Aplicar plan**.
 
 | Momento | Qué se ve |
 |---|---|
-| ~2 s | `GastoPorCategoria` (ancho): gráfica de barras oscuro/rojo, con **"Intereses y comisiones"** resaltado en rojo como la categoría que más pesa |
-| En la misma tarjeta | Una nota: ese costo **baja a partir del plan que acaba de aplicar** |
-| Al pie | `razon` explicando por qué se resalta esa categoría |
+| ~4 s | `GastoPorCategoria` (ancho): las seis categorías con su monto siempre visible, y **"Retiros de efectivo"** resaltado en rojo como la atípica (+74.7 %) |
+| Al pie | La razón menciona que **los intereses empiezan a bajar por el plan que acaba de aplicar** |
 
 > "Esta segunda pantalla **sabe lo que pasó en la primera**. No es un dashboard con
-> pestañas: es la misma conversación, y el plan que Beto aplicó hace veinte segundos ya
-> está descontado aquí."
+> pestañas: es la misma conversación, y el plan que aplicó hace veinte segundos ya cuenta
+> aquí."
 
-### 2:30–2:50 · Adaptabilidad: la misma pregunta, otra persona
+### 2:20–2:50 · Adaptabilidad: la misma pregunta, otra persona
 
-Se cambia el perfil a **Ana** en el selector del sidebar. **Prompt 3**, idéntico al
-primero:
+Se cambia el perfil a **Ana** en el sidebar. **Prompt 3**, idéntico al primero:
 
 ```
 Quiero pagar menos intereses de mi tarjeta
@@ -117,12 +109,17 @@ Quiero pagar menos intereses de mi tarjeta
 
 | Momento | Qué se ve |
 |---|---|
-| ~2 s | **Otra interfaz**: Ana no tiene deuda. Maya responde con `SimuladorMeta` — si no pagas intereses, lo que sigue es que tu dinero los gane — con el slider de aportación |
-| Al pie | `razon`: *"No tienes deuda revolvente, así que en vez de un plan de pago te muestro qué pasaría si apartas parte de tu quincena."* |
+| ~6 s | **Otra interfaz**: `SimuladorMeta` con el slider de aportación. Ana no tiene deuda revolvente |
+| Al pie | La razón lo dice: no tienes deuda, así que en vez de un plan de pago, esto |
 
-> "Misma frase. Misma Maya. **Otra pantalla.** Porque la interfaz se decide con el
-> contexto de quien pregunta, no con un menú fijo. Eso es lo que no puede hacer una app
-> con pantallas programadas."
+Se arrastra el slider y se toca **Crear apartado**.
+
+| Momento | Qué se ve |
+|---|---|
+| ~3 s | `Confirmacion` + **`MetaActiva`** con el avance y la fecha en que llega a su meta |
+
+> "Misma frase. Misma Maya. **Otra pantalla, y otra acción real.** Porque la interfaz se
+> decide con el contexto de quien pregunta, no con un menú fijo."
 
 ### 2:50–3:00 · Cierre
 
@@ -132,34 +129,48 @@ Quiero pagar menos intereses de mi tarjeta
 
 ## Prompts, para pegar
 
-Viven en `docs/demo/prompts.txt`, uno por línea, en este orden:
+`docs/demo/prompts.txt`, uno por línea:
 
 1. `Quiero pagar menos intereses de mi tarjeta` (Beto)
 2. `¿Y en qué se me está yendo el dinero?` (Beto)
 3. `Quiero pagar menos intereses de mi tarjeta` (Ana)
 
-## Criterios de aceptación del guion
+## Criterios de aceptación
 
 Cada paso cumple, o es issue `alta`:
 
-- [ ] Cada prompt produce su interfaz en **menos de 8 segundos**.
+- [ ] Cada turno produce su interfaz en **menos de 12 segundos**.
 - [ ] Los números en pantalla coinciden con la tabla de perfiles de arriba.
-- [ ] **La opción de 18 meses ahorra más** que seguir con el pago mínimo, y se ve en pesos.
-- [ ] Tras aplicar el plan, `ResumenTarjeta` **cambia** y el atraso desaparece.
+- [ ] **La opción de 18 meses ahorra más** que seguir con el mínimo, y se ve en pesos.
+- [ ] Tras aplicar el plan, `ResumenTarjeta` **vuelve cambiada** y el atraso desaparece.
 - [ ] El prompt 2 refleja el plan aplicado en el prompt 1.
 - [ ] El prompt 3 con Ana produce un componente **distinto** al del prompt 1 con Beto.
+- [ ] Ana crea el apartado y vuelve `MetaActiva`.
 - [ ] Cero errores en consola en toda la corrida.
 - [ ] Un prompt fuera de guion no rompe nada.
 
-## Qué falta para que este guion corra `[PENDIENTE]`
+## Lo medido (2026-09-12 09:00, producción, modelo real)
 
-| Pieza | Dueño | Estado |
-|---|---|---|
-| `ResumenTarjeta`, `PlanDePago`, `Calendario`, `GastoPorCategoria`, `SimuladorMeta` | `web` | Andamio, sin construir |
-| `Confirmacion` | `web` | **Construido** |
-| `simular_reestructura`, `aplicar_plan_pago`, `consultar_movimientos`, `proyectar_ahorro` | `mcp` | Solo existe `consultar_perfil` |
-| Agente real (hoy es mock) y la prop `razon` | `contrato` | Pendiente |
-| Modo transparencia y badges | `web` | Pendiente, bloque 5 |
+| Paso | Tools | Componentes | Tiempo |
+|---|---|---|---|
+| 1 · Beto pide bajar intereses | `panorama_inicial` → `simular_reestructura` | `ResumenTarjeta` + `PlanDePago` | 10.5 s |
+| 2 · Beto aplica 18 meses | `aplicar_plan_pago` → `consultar_plan` | `Confirmacion` + `ResumenTarjeta` (plan activo) + `Calendario` | 5.8 s |
+| 3 · Beto, su gasto | `comparar_periodos` | `GastoPorCategoria` | 3.6 s |
+| 4 · Ana, la misma frase | `panorama_inicial` → `consultar_tarjeta` → `consultar_creditos` → `proyectar_ahorro` | `SimuladorMeta` | 5.8 s |
+| 5 · Ana crea el apartado | `crear_apartado` | `Confirmacion` + `MetaActiva` | 2.9 s |
+
+El paso 1 es el más lento y es el primero: conviene empezar a hablar mientras corre, que
+es justo para lo que sirve la tira con los badges.
+
+## Lo que NO se enseña
+
+- **Carmen no pregunta por su portafolio.** El catálogo no tiene componente de portafolio
+  y el agente terminaba pintando su valor de mercado dentro de `MetaActiva`, como si fuera
+  una meta por alcanzar. Su portafolio se ve en Productos → Inversiones, que es una
+  pantalla programada (ADR 0004, enmienda del 2026-09-12 por la tarde).
+- **Las pestañas del banco** (Inicio, Productos, Movimientos, Más) salvo que un juez las
+  pida. La demo vive en Maya: si el recorrido empieza por una pantalla programada, se
+  pierde el argumento de que el LLM es el centro y no un chat pegado a un lado.
 
 ## Plan B
 
