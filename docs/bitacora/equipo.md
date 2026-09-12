@@ -18,6 +18,41 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 12:05 · hecho** — **`estable` existe por primera vez**, apuntando a `6ed173d`, que
+  es exactamente lo que corre en producción. El corte H14 (fase 1 completa y `estable`
+  marcado, "el corte más importante del hack") queda cerrado, y de paso la fase 3: el
+  ensayo verificó **los cinco pasos** del viaje, incluidos los dos que nunca se habían
+  probado —el segundo turno de Beto y el apartado de Ana—, todos por debajo de 12 s.
+
+  Salieron tres bugs y ninguno era del guion: **`pnpm reiniciar-estado` no borraba nada**
+  y decía que sí (issue #9, es el primer paso de todo ensayo); **el plan B sin red no
+  funcionaba** porque el volcado no se puede restaurar en una base vacía (issue #10, ya
+  ensayado entero: 3,690 filas y el MCP arriba contra Postgres local); y **`main` estaba
+  roto** con marcadores de conflicto en el prompt, lo que dejaba al CI cortando antes del
+  deploy sin que nadie lo notara (issue #11).
+
+  Lo que cambió del producto: la tira **LLM · MCP · A2UI** encendiéndose con el stream
+  real y nombrando las tools del turno; **la tarjeta que vuelve cambiada tras la acción,
+  siempre** (era una moneda al aire, y cuando volvía lo hacía con los valores de antes);
+  y el agente hablando en segunda persona, que salía en tercera tres de cada cuatro veces.
+
+- **sáb 12:05 · decisión** — **Carmen no pregunta por su portafolio.** Medido contra
+  producción: sin componente de portafolio, el agente pintaba su valor de mercado dentro
+  de `MetaActiva`, o sea una barra de avance hacia una meta ya alcanzada. Era la única
+  interfaz generada del proyecto que mentía. Las salidas eran quitar la pregunta o
+  construir el componente; se quitó la pregunta, porque un componente nuevo a la hora 12.5
+  es abrir alcance y el consejo oficial es el contrario. Las tools de Inversiones se
+  quedan (son de lectura y enriquecen lo que ve un juez con su propio cliente MCP) y su
+  portafolio sigue visible en Productos. Tercera enmienda del ADR 0004.
+
+- **sáb 12:05 · decisión** — **`marcar-estable.sh` ya no commitea.** Llamaba a `sync.sh`,
+  que hace `git add -A`; con cuatro sesiones sobre el mismo árbol, marcar estable habría
+  publicado el trabajo a medio hacer de los demás. Ahora solo etiqueta, comprueba que el
+  commit esté en `origin/main` y avisa si el árbol está sucio. Es la misma lección del
+  issue #8: en este repo, **todo commit va por rutas**, y publicar sin tocar el árbol
+  compartido se hace con `git worktree`.
+
+
 - **sáb 09:40 · arreglado** — **La consola no pintaba nada porque el registro del renderer
   estaba vacío en ese camino.** `registrarLayout()`/`registrarCatalogo()` solo se llamaban
   en `/catalogo`, así que la galería se veía perfecta y la demo no pintaba una tarjeta.

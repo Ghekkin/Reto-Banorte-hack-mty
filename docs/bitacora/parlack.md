@@ -2,6 +2,88 @@
 
 ## 2026-09-12
 
+### 12:05 · hecho — `estable` existe, y lo que costo llegar: tres bugs y un `main` roto
+
+El corte H14 pedia fase 1 completa y `estable` marcado. Esta hecho: **`estable` apunta a
+`6ed173d`, que es exactamente lo que corre en produccion**, verificado paso por paso con
+el modelo real.
+
+**El ensayo final, los cinco pasos:**
+
+| Paso | Tools | Pinta | Tiempo |
+|---|---|---|---|
+| Beto pide bajar intereses | `panorama_inicial` → `simular_reestructura` | `ResumenTarjeta` + `PlanDePago` | 3.6 s |
+| Aplica 18 meses | `aplicar_plan_pago` → `consultar_plan` | `Confirmacion` + **`ResumenTarjeta` con saldo 0, mora 0, plan activo** + `Calendario` | 4.4 s |
+| Su gasto | `comparar_periodos` | `GastoPorCategoria` | 3.1 s |
+| Ana, la misma frase | `panorama_inicial` → `proyectar_ahorro` | `SimuladorMeta` | 7.7 s |
+| Ana crea el apartado | `crear_apartado` | `Confirmacion` + `MetaActiva` | 3.2 s |
+
+Todos bajo 12 s; el primero bajo de 10.5 a 3.6. Ana corrida tres veces seguidas antes de
+dar por buena la adaptabilidad: `SimuladorMeta` las tres.
+
+**Tres bugs, los tres registrados y cerrados:**
+
+- **#9 · `pnpm reiniciar-estado` decia que vaciaba la tabla y no borraba nada.** Sin
+  `DATABASE_URL` exportada se saltaba el `truncate` y limpiaba una cache en memoria del
+  proceso que moria enseguida, imprimiendo exito. Es el primer paso del checklist de
+  cada ensayo: se ensayaba con el plan de Beto ya aplicado y nadie se enteraba. Ahora
+  carga el `.env`, exige la variable, verifica que quedo vacia y dice cuantas filas borro
+  y contra que base.
+- **#10 · el plan B sin red no funcionaba.** `pnpm datos:restaurar` listaba
+  `modelos_portafolio` antes que `instrumentos`, del que depende por llave foranea.
+  Contra la base de la demo no se notaba (`on conflict do nothing`), solo contra una base
+  vacia, que es el unico caso para el que existe. Rehice `ORDEN` desde el grafo real y
+  **ensaye el plan B entero**: Postgres 17 limpio, `schema.sql`, migraciones, restaurar
+  (3,690 filas), el MCP arranca contra esa base con 18 tools y `consultar_tarjeta`
+  devuelve a Beto. Era el riesgo abierto del ADR 0010 desde ayer.
+- **#11 · `main` roto.** Otra sesion subio `prompt.ts` con marcadores de conflicto
+  dentro; el typecheck fallaba y **el CI cortaba antes del deploy**, asi que lo publicado
+  se quedaba atras sin que nadie lo notara. El lado perdedor del conflicto venia de un
+  stash viejo y mandaba llamar `ejecutar_decision`, una tool que no existe: habria roto
+  el ciclo de accion. Lo mismo pasaba con `analizar_gasto` y `analizar_ahorro`, que el
+  prompt nombraba fuera del conflicto. Resuelto desde un `git worktree` aparte, **sin
+  tocar el arbol compartido**, y respetando el prefetch de `panorama_inicial`, que si
+  esta implementado y es trabajo bueno de esa sesion.
+
+**Cuatro cosas del producto que cambiaron**, todas medidas antes y despues:
+
+1. **La tira LLM · MCP · A2UI** sobre el lienzo, encendiendose con el stream real y
+   nombrando las tools de cada turno. Sale de `transparencia`, que el hook ya guardaba;
+   no toque el hook. Cubre los segundos en que antes solo se movia el spinner del boton.
+2. **La tarjeta vuelve cambiada tras la accion, siempre.** Era una moneda al aire: una de
+   cada dos veces el agente repintaba solo la confirmacion, y cuando si repintaba la
+   tarjeta la enlazaba con `{path}` al data model, que todavia trae lo de ANTES — o sea
+   "Plan activo" con el saldo intacto, peor que no repintarla. El prompt ahora exige
+   valores literales.
+3. **Segunda persona.** Salia "Alberto tiene la tarjeta al 96.7 %" en tres de cuatro
+   turnos, y una vez "Muestro el desglose". Ahora habla de la persona y su dinero.
+4. **Fuera la razon duplicada** del pie del lienzo: cada tarjeta ya trae la suya junto al
+   dato, y las dos decian cosas distintas en la misma pantalla.
+
+**Y una decision que documente como decision, no como olvido:** Carmen ya no pregunta por
+su portafolio. Lo probe y el agente, sin componente de portafolio, pintaba su valor de
+mercado dentro de `MetaActiva`: una barra de avance hacia una meta ya alcanzada, la unica
+interfaz del proyecto que mentia. Quitar el chip cuesta una linea; un componente nuevo a
+la hora 12.5 es abrir alcance, justo lo que el consejo oficial desaconseja. Su portafolio
+se ve en Productos → Inversiones, que es una pantalla programada y honesta sobre serlo.
+Tercera enmienda del ADR 0004.
+
+**Lo que deje escrito para el jurado:** `vision-general.md` y `trade-offs.md` pasaron de
+"plan; nada construido aun" a `construido`, con lo medido y no con lo planeado, mas las
+tres preguntas que el video dice que van a hacer. Y `pitch.md`, que estaba vacio, ya
+tiene el guion hablado literal, la frase de cada pantalla, once preguntas de jueces con
+su respuesta y que hacer si algo falla en vivo.
+
+**`marcar-estable.sh` ya no commitea nada.** Llamaba a `sync.sh`, que hace `git add -A`:
+con cuatro sesiones sobre el mismo arbol, marcar estable habria publicado el trabajo a
+medio hacer de los demas (issue #8). Ahora etiqueta un commit, comprueba que ese commit
+este en `origin/main` y avisa si el arbol esta sucio en vez de barrerlo.
+
+**Lo que sigue y no es mio:** el primer turno sigue siendo el mas lento y variable; y la
+sesion que trabaja las tools compuestas (`analizar_gasto`, `analizar_ahorro`,
+`ejecutar_decision`) tiene que volver a tocar dos puntos del prompt cuando existan.
+
+
 ### 08:55 · hecho — Primer ensayo completo del guion contra producción, y el reinicio que mentía
 
 Corrí los cinco pasos del viaje contra `https://maya.157.173.204.174.sslip.io` con el
