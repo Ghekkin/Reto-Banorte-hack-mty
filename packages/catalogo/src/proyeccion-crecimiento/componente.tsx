@@ -1,26 +1,37 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowUpRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { CLASES_GRAFICA, EJE, Ficha, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsProyeccionCrecimiento } from "./schema";
 
-const PASO_APORTACION = 50000; // $500.00 MXN
+const PASO_APORTACION = 50000; // $500.00
+const APORTACION_MINIMA = 10000; // $100.00
 
-export function ProyeccionCrecimiento(
-  props: Partial<PropsProyeccionCrecimiento> & Pick<PropsComponente, "alAccionar">,
-) {
+/**
+ * Cuánto crece el dinero si se invierte mes con mes.
+ *
+ * **La gráfica es el componente.** Antes había una barra apilada (aportado / rendimiento)
+ * más una lista de hitos; ninguna de las dos mostraba lo único que una proyección tiene
+ * que mostrar: la curva que se separa de la línea recta de las aportaciones. Ahora es un
+ * área apilada mes a mes —lo aportado en oscuro, el rendimiento en rojo encima— y los
+ * hitos son fichas debajo, con sus montos siempre visibles.
+ *
+ * **Un solo origen para todos los números.** La versión anterior recalculaba el total al
+ * mover el slider pero dejaba los hitos con los valores del agente, así que el encabezado
+ * decía $195,827 y la fila "Año 3" $189,456. Aquí todo sale de la misma serie simulada,
+ * calibrada para que en la aportación inicial coincida con lo que dijo la tool
+ * (`docs/algoritmos/proyeccion-de-crecimiento.md`).
+ */
+export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento> & Pick<PropsComponente, "alAccionar">) {
   const {
     capitalInicialCentavos,
     aportacionMensualCentavos,
@@ -46,142 +57,227 @@ export function ProyeccionCrecimiento(
     typeof valorFinalEstimadoCentavos !== "number"
   ) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Preparando tu proyección de inversión">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <Skeleton className={CLASES_GRAFICA} />
+          <div className="flex items-baseline justify-between">
+            <Linea tamano="sm" ancho="w-32" />
+            <Linea tamano="xl" ancho="w-24" />
+          </div>
+          <div className="py-3">
+            <Skeleton className="h-1 w-full" />
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  // Recalcular estimación rápida si el usuario mueve el slider
-  const tasaMensual = tasaAnualEstimadaPct / 12;
-  const nuevoAportado = capitalInicialCentavos + aportacion * plazoMeses;
-  // Interés compuesto aproximado con aportaciones mensuales vencidas
-  let saldoSimulado = capitalInicialCentavos;
-  for (let m = 0; m < plazoMeses; m++) {
-    saldoSimulado = (saldoSimulado + aportacion) * (1 + tasaMensual);
-  }
-  const nuevoRendimiento = Math.max(0, Math.round(saldoSimulado - nuevoAportado));
-  const nuevoTotal = Math.round(saldoSimulado);
-
-  const proporcionAportado = Math.round((nuevoAportado / nuevoTotal) * 100);
+  const serie = simular({
+    capitalInicialCentavos,
+    aportacionCentavos: aportacion,
+    plazoMeses,
+    tasaAnual: tasaAnualEstimadaPct,
+    calibracion: calibrar({
+      capitalInicialCentavos,
+      aportacionCentavos: aportacionMensualCentavos,
+      plazoMeses,
+      tasaAnual: tasaAnualEstimadaPct,
+      rendimientoEsperado: rendimientoEstimadoCentavos ?? valorFinalEstimadoCentavos - totalAportadoCentavos,
+    }),
+  });
+  const final = serie[serie.length - 1]!;
   const anios = Math.round(plazoMeses / 12);
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const colores = heroe
+    ? { aportado: "var(--primary-foreground)", rendimiento: "var(--oscuro)" }
+    : { aportado: SERIES.principal, rendimiento: SERIES.acento };
+  const mesesConHito = new Set((hitos ?? []).map((h) => h.mes));
+  const maximoSlider = Math.max(aportacionMensualCentavos * 4, 2000000);
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <span className="text-xs text-muted-foreground">
-          Proyección de inversión a {plazoMeses} meses ({anios} {anios === 1 ? "año" : "años"}) · Tasa estimada {formatearPorcentaje(tasaAnualEstimadaPct)} anual
+        <span className={`text-xs ${suave}`}>
+          En {plazoMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} · {formatearPorcentaje(tasaAnualEstimadaPct)} anual estimado
         </span>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">{formatearMonto(nuevoTotal)}</span>
-          <span className="monto flex items-center gap-1 text-sm font-semibold text-exito">
-            <Sparkles className="size-4" />+{formatearMonto(nuevoRendimiento)}
-            <span className="text-xs text-muted-foreground font-normal">en rendimientos</span>
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Iniciando con <span className="monto font-medium">{formatearMonto(capitalInicialCentavos)}</span>
-        </p>
+        <span className="monto text-3xl font-semibold">{formatearMonto(final.total)}</span>
+        <span className={`text-sm ${suave}`}>
+          <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(final.rendimiento)}</span> de rendimiento sobre{" "}
+          <span className="monto">{formatearMonto(final.aportado)}</span> aportados
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Desglose visual de aportado vs rendimiento generado */}
-        <div className="flex flex-col gap-2 rounded-xl border border-borde-sutil bg-muted/30 p-3">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Tu capital: <strong className="text-foreground monto">{formatearMonto(nuevoAportado)}</strong></span>
-            <span>Rendimiento neto: <strong className="text-exito monto">{formatearMonto(nuevoRendimiento)}</strong></span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-muted flex">
-            <div
-              style={{ width: `${proporcionAportado}%` }}
-              className="bg-chart-1 transition-all duration-300"
-              title={`Aportado: ${formatearMonto(nuevoAportado)}`}
+      <CardContent className="flex flex-col gap-3">
+        <Grafica
+          config={{ aportado: { label: "Aportado", color: colores.aportado }, rendimiento: { label: "Rendimiento", color: colores.rendimiento } }}
+          etiqueta={`Crecimiento proyectado a ${plazoMeses} meses`}
+        >
+          <AreaChart data={serie} margin={{ top: 8, right: 28, bottom: 0, left: 20 }} stackOffset="none">
+            <XAxis
+              dataKey="mes"
+              type="number"
+              domain={[0, plazoMeses]}
+              ticks={mesesConHito.size > 0 ? [0, ...mesesConHito] : undefined}
+              interval={0}
+              tickFormatter={(m: number) => etiquetaDeMes(m, hitos)}
+              {...EJE}
+              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
             />
-            <div
-              style={{ width: `${100 - proporcionAportado}%` }}
-              className="bg-primary transition-all duration-300"
-              title={`Rendimiento: ${formatearMonto(nuevoRendimiento)}`}
+            <YAxis hide domain={[0, "dataMax"]} />
+            <TooltipMonto etiquetaDe={(m) => `Mes ${String(m)}`} />
+            <Area
+              type="monotone"
+              dataKey="aportado"
+              name="Aportado"
+              stackId="1"
+              stroke={colores.aportado}
+              strokeWidth={2}
+              fill={colores.aportado}
+              fillOpacity={heroe ? 0.35 : 0.9}
+              dot={false}
+              isAnimationActive={false}
             />
-          </div>
-          <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-chart-1 inline-block" /> Aportaciones ({proporcionAportado}%)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-primary inline-block" /> Intereses ganados ({100 - proporcionAportado}%)
-            </span>
-          </div>
-        </div>
+            <Area
+              type="monotone"
+              dataKey="rendimiento"
+              name="Rendimiento"
+              stackId="1"
+              stroke={colores.rendimiento}
+              strokeWidth={2}
+              fill={colores.rendimiento}
+              fillOpacity={0.9}
+              dot={false}
+              isAnimationActive={false}
+            />
+          </AreaChart>
+        </Grafica>
+        <Leyenda
+          series={[
+            { nombre: "Aportado", color: colores.aportado },
+            { nombre: "Rendimiento", color: colores.rendimiento },
+          ]}
+        />
 
-        {/* Ajuste interactivo de aportación */}
-        <div className="flex flex-col gap-2">
-          <div className="flex justify-between items-baseline text-sm">
-            <span className="text-muted-foreground">Aportación mensual simulada</span>
-            <span className="monto font-semibold text-base">{formatearMonto(aportacion)}</span>
-          </div>
-          <Slider
-            value={[aportacion]}
-            min={10000}
-            max={Math.max(aportacionMensualCentavos * 4, 2000000)}
-            step={PASO_APORTACION}
-            onValueChange={(val) => setAportacion(Array.isArray(val) ? val[0] ?? aportacion : val)}
-            aria-label="Aportación mensual"
-            className="py-3"
-          />
-        </div>
-
-        {/* Lista de hitos temporales */}
         {hitos && hitos.length > 0 ? (
-          <div className="flex flex-col gap-1.5 border-t border-borde-sutil pt-3">
-            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-              Evolución en el tiempo
-            </span>
-            {hitos.map((h) => (
-              <div
-                key={h.mes}
-                className="flex items-center justify-between text-xs py-1 border-b border-borde-sutil last:border-0"
-              >
-                <span className="font-medium">{h.etiqueta}</span>
-                <div className="flex items-baseline gap-2">
-                  <span className="text-muted-foreground monto text-[11px]">
-                    (Aportado: {formatearMonto(h.aportadoCentavos)})
-                  </span>
-                  <span className="monto font-semibold text-foreground">
-                    {formatearMonto(h.saldoEstimadoCentavos)}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className={`grid gap-3 border-t pt-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`} style={{ gridTemplateColumns: `repeat(${Math.min(hitos.length, 4)}, minmax(0, 1fr))` }}>
+            {hitos.slice(0, 4).map((h, i) => {
+              const punto = serie[Math.min(h.mes, plazoMeses)] ?? final;
+              return (
+                <Ficha
+                  key={h.mes}
+                  etiqueta={h.etiqueta}
+                  valor={formatearMonto(punto.total)}
+                  detalle={`${formatearMontoCorto(punto.aportado)} aportados`}
+                  detalleSoloEscritorio
+                  acento={i === Math.min(hitos.length, 4) - 1}
+                />
+              );
+            })}
           </div>
         ) : null}
 
-        {alAccionar ? (
-          <Button
-            className="min-h-12 w-full rounded-xl"
-            onClick={() =>
-              alAccionar({
-                accion: "simular_inversion",
-                aportacionMensualCentavos: aportacion,
-                valorFinalEstimadoCentavos: nuevoTotal,
-              })
-            }
-          >
-            Invertir con este plan <ArrowUpRight className="ml-1 size-4" />
-          </Button>
-        ) : null}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 pt-1">
+          <span className="text-sm">Aportación mensual</span>
+          <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
+        </div>
+        {/* `py-3` le da al slider los 48 px de alto tocable sin engordar la barra. */}
+        <Slider
+          value={[aportacion]}
+          min={APORTACION_MINIMA}
+          max={maximoSlider}
+          step={PASO_APORTACION}
+          onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacion) : valor)}
+          aria-label="Aportación mensual"
+          className={
+            heroe
+              ? "py-3 [&_[data-slot=slider-track]]:bg-white/30 [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:ring-white/40"
+              : "py-3"
+          }
+        />
+        <div className={`flex justify-between text-xs ${suave}`}>
+          <span className="monto">{formatearMonto(APORTACION_MINIMA)}</span>
+          <span className="monto">{formatearMonto(maximoSlider)}</span>
+        </div>
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+        {alAccionar ? (
+          <Button
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            onClick={() =>
+              alAccionar({ accion: "simular_inversion", aportacionMensualCentavos: aportacion, valorFinalEstimadoCentavos: final.total })
+            }
+          >
+            Invertir con este plan <ArrowRight />
+          </Button>
+        ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
+}
+
+type Punto = { mes: number; aportado: number; rendimiento: number; total: number };
+
+/**
+ * Interés compuesto mensual con la aportación al inicio de cada mes. `calibracion`
+ * escala el rendimiento para que, con la aportación original, el cierre coincida con el
+ * que mandó la tool: la tool es la fuente de verdad y el componente solo interpola.
+ */
+function simular({
+  capitalInicialCentavos,
+  aportacionCentavos,
+  plazoMeses,
+  tasaAnual,
+  calibracion,
+}: {
+  capitalInicialCentavos: number;
+  aportacionCentavos: number;
+  plazoMeses: number;
+  tasaAnual: number;
+  calibracion: number;
+}): Punto[] {
+  const r = tasaAnual / 12;
+  const puntos: Punto[] = [{ mes: 0, aportado: capitalInicialCentavos, rendimiento: 0, total: capitalInicialCentavos }];
+  let saldo = capitalInicialCentavos;
+  for (let m = 1; m <= plazoMeses; m++) {
+    saldo = (saldo + aportacionCentavos) * (1 + r);
+    const aportado = capitalInicialCentavos + aportacionCentavos * m;
+    const rendimiento = Math.max(0, Math.round((saldo - aportado) * calibracion));
+    puntos.push({ mes: m, aportado, rendimiento, total: aportado + rendimiento });
+  }
+  return puntos;
+}
+
+/** El factor que hace que la simulación con la aportación original cierre donde dijo la tool. */
+function calibrar({
+  capitalInicialCentavos,
+  aportacionCentavos,
+  plazoMeses,
+  tasaAnual,
+  rendimientoEsperado,
+}: {
+  capitalInicialCentavos: number;
+  aportacionCentavos: number;
+  plazoMeses: number;
+  tasaAnual: number;
+  rendimientoEsperado: number;
+}): number {
+  const base = simular({ capitalInicialCentavos, aportacionCentavos, plazoMeses, tasaAnual, calibracion: 1 });
+  const simulado = base[base.length - 1]!.rendimiento;
+  if (simulado <= 0 || rendimientoEsperado <= 0) return 1;
+  const factor = rendimientoEsperado / simulado;
+  // Fuera de este rango la tool usa otra convención y no vale la pena imitarla.
+  return factor > 0.5 && factor < 2 ? factor : 1;
+}
+
+/** `Año 1` si el agente puso un hito en ese mes; si no, `Mes 12`. */
+function etiquetaDeMes(mes: number, hitos: PropsProyeccionCrecimiento["hitos"] | undefined): string {
+  const hito = hitos?.find((h) => h.mes === mes);
+  if (hito) return hito.etiqueta.replace(/\s*\(.*\)\s*$/, "");
+  if (mes === 0) return "Hoy";
+  return `Mes ${mes}`;
 }
