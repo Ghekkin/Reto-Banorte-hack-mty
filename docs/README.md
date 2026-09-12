@@ -32,15 +32,19 @@ quien.
 ### Reto
 - [Contexto del reto](reto/contexto-del-reto.md) — lo que sabemos hoy y la hipótesis de solución
 - [Preguntas para el día 1](reto/preguntas-para-manana.md) — lo que hay que confirmar cuando den detalles
+- [Rúbrica y entregables](reto/rubrica-y-entregables.md) — los 7 criterios con peso, los 4 entregables y qué los cubre
 - [Premios objetivo](reto/premios-objetivo.md) — qué premios laterales vale la pena perseguir y cuáles no
+- [Transcripción del video](reto/transcripcion-video.md) — la explicación oral del 2026-09-11, literal
 
 ### Decisiones
 - [Cómo se escribe una decisión](decisiones/README.md)
 - [0001 — Todo en TypeScript](decisiones/0001-stack-typescript.md)
 - [0002 — Python solo detrás de una tool](decisiones/0002-python-solo-detras-de-una-tool.md)
+- [0003 — A2UI real con catálogo propio](decisiones/0003-a2ui-como-protocolo-de-interfaz.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
+- [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)
 
 ### Cómo funciona

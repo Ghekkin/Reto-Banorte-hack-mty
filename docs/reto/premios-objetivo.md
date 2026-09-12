@@ -23,7 +23,7 @@ se escribe en el chat. Y nada nuevo entra después de la hora 30.
 | Vultr | Deploy + URL pública HTTPS para el MCP | ~1 h | **Sí** |
 | Tiger Data | Los movimientos financieros *son* series de tiempo | 2–3 h | **Sí, mejora el reto** |
 | ElevenLabs | Voz de entrada, interfaz generada de salida; ya usado en Yolani | 1–2 h | **Sí** |
-| Gemini API | Con AI SDK es agregar `@ai-sdk/google` | 1 h | Probable |
+| Gemini API | Con AI SDK es agregar `@ai-sdk/google`; A2UI nace en Google y sus ejemplos usan Gemini | 1 h | **Probable, subió** |
 | MongoDB Atlas | Compite con Tiger Data por la misma capa | 2 h | Solo si Tiger falla |
 | Snowflake | Igual, y más pesado de montar | 3 h+ | No |
 | Solana | Diluye la narrativa bancaria | 4 h+ | **No** |

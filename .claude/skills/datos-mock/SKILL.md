@@ -1,6 +1,6 @@
 ---
 name: datos-mock
-description: Cómo se generan y mantienen los datos financieros simulados - un solo usuario demo, ids estables, comercios y categorías mexicanas plausibles, montos en centavos, generación determinista, integridad entre archivos. Invocar antes de crear o modificar cualquier dato en apps/mcp/data.
+description: Cómo se generan y mantienen los datos financieros simulados - dos usuarios demo con contexto opuesto, estado mutable que las acciones cambian y se reinicia, ids estables, comercios y categorías mexicanas plausibles, montos en centavos, generación determinista, integridad entre archivos. Invocar antes de crear o modificar cualquier dato en apps/mcp/data.
 ---
 
 # Datos mock
@@ -33,14 +33,30 @@ cree que es real.
   referenciado existe, que los montos son enteros, que cada movimiento tiene categoría
   válida y que los JSON pasan los schemas de `packages/schemas`.
 
+## Dos usuarios demo, no uno
+
+La adaptabilidad (20% de la rúbrica) se demuestra con **la misma pregunta y otro
+contexto**. Por eso hay dos usuarios demo con perfiles opuestos (p. ej. uno con saldo
+holgado y sin deuda, otro con tarjeta al límite y un pago atrasado). Mismos archivos,
+dos ids: `usr_ana`, `usr_beto`.
+
+## Estado mutable
+
+Las tools de acción **cambian datos**: `estado.json` guarda lo que las acciones
+modifican (planes aplicados, transferencias programadas, productos contratados).
+`apps/mcp/scripts/reiniciar-estado.ts` lo regresa al punto de partida; se corre antes
+de cada ensayo. Los datos base (`usuario.json`, `movimientos.json`) nunca se mutan.
+
 ## Archivos
 
 ```
 apps/mcp/data/
-  usuario.json        el usuario demo y sus cuentas
-  movimientos.json    generado
+  usuarios.json       los dos usuarios demo y sus cuentas
+  movimientos.json    generado, para ambos
   categorias.json     fijo, a mano
-  productos.json      créditos/inversiones ofertables, si el caso lo pide
+  productos.json      créditos/planes/inversiones ofertables
+  estado.json         mutable; lo escriben las tools de acción
+  estado.inicial.json el punto de partida al que vuelve reiniciar-estado
 ```
 
 ## Doc

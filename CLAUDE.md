@@ -1,8 +1,13 @@
 # Reto Banorte — Hack Monterrey 2026 — guía del repositorio para agentes
 
-Proyecto de 36 horas (arranca 2026-09-11). Reto: **agentes de IA que generan interfaces
-en tiempo real**, caso de uso abierto en servicios financieros, **requiere MCP**.
-Lo que sabemos del reto y lo que falta por confirmar vive en `docs/reto/`.
+Proyecto de 36 horas (arrancó 2026-09-11 20:00). Reto oficial: **"Interfaces que la IA
+construye en tiempo real"**: que el modelo no solo conteste, sino que arme la pantalla
+que resuelve el problema financiero de quien pregunta. Tres piezas no negociables:
+**LLM** al centro, **MCP** para datos y acciones, **A2UI** para transmitir la interfaz.
+El ciclo se cierra: lo que la persona toca regresa al agente y cambia la experiencia.
+Caso de uso libre dentro de servicios financieros; al menos **un flujo accionable con
+cambio real**; componentes y datos **propios**. Todo en `docs/reto/contexto-del-reto.md`
+y la rúbrica en `docs/reto/rubrica-y-entregables.md`.
 
 Somos cuatro personas trabajando a la vez sobre `main`, desde donde sea. Todo lo que
 alguien necesita para retomar el trabajo está en el repo: `docs/tablero.md` dice quién
@@ -63,10 +68,10 @@ commits no dicen quién los hizo. Al irte, skill `cerrar`.
 
 | Rol | Dueño de |
 |---|---|
-| `web` | `apps/web/`: host, chat, streaming, componentes generados |
-| `mcp` | `apps/mcp/` y datos mock: tools, servidor, capa de datos |
-| `contrato` | `packages/schemas/` y el pegamento agente↔tools; arbitra cuando front y back se cruzan |
-| `demo` | Deploy, dominio, guion, pitch, docs transversales, issues, premios laterales |
+| `web` | `packages/catalogo/` (los componentes A2UI propios) y la cara visible de `apps/web` |
+| `mcp` | `apps/mcp/` y datos sintéticos: tools de lectura y de acción, estado mutable |
+| `contrato` | El agente (`apps/web/src/lib/agente/`), la capa A2UI (renderer, `catalogo.json`), `packages/schemas/`; arbitra cuando front y back se cruzan |
+| `demo` | Guion, pitch, `README.md`, doc técnica (arquitectura y trade-offs), deploy, issues, premios laterales |
 
 Un rol es responsabilidad, no territorio: **cualquiera toca cualquier archivo**. Si es
 dominio ajeno: pull antes, cambio chico, commit separado con el dominio en el mensaje,
@@ -78,6 +83,9 @@ el campo nuevo es opcional.
 
 - **Todo en TypeScript**: Next.js para el host de la UI generativa, servidor MCP en TS
   con `@modelcontextprotocol/sdk`, schemas compartidos con Zod. ADR 0001.
+- **A2UI real (v0.9.1) con catálogo propio**, renderer `@a2ui/react`; el agente emite
+  `createSurface`/`updateComponents`/`updateDataModel` restringido a nuestro catálogo y
+  recibe los `action` de la UI. Plan B: processor propio de los mismos mensajes. ADR 0003.
 - **Python solo detrás de una tool, nunca en el contrato tool → UI.** Si hace falta ML
   pesado, va en un FastAPI mínimo que llama una tool MCP, con mock/fallback en TS.
   Ningún flujo de la demo puede tener a Python como única ruta. ADR 0002.
@@ -90,7 +98,9 @@ el campo nuevo es opcional.
 
 | Ruta | Qué es | Estado |
 |---|---|---|
+| `README.md` | Entregable 02: qué es y cómo se corre (comandos reales cuando exista el scaffold) | existe |
 | `docs/` | Toda la documentación. Índice en `docs/README.md` | existe |
+| `docs/reto/` | Contexto oficial, rúbrica y entregables, premios, transcripción del video | existe |
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
 | `scripts/` | `sesion-inicio.sh` (hook de inicio), `sync.sh` (commit+pull+push), `marcar-estable.sh` | existe |
@@ -98,7 +108,8 @@ el campo nuevo es opcional.
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
 | `apps/mcp/` | Servidor MCP en TS (Streamable HTTP), tools del dominio financiero | pendiente |
-| `packages/schemas/` | Schemas Zod compartidos: el contrato tool → UI | pendiente |
+| `packages/catalogo/` | Catálogo A2UI propio: schema + componente React + `.jsonl` de ejemplo por componente | pendiente |
+| `packages/schemas/` | Schemas Zod de las tools MCP | pendiente |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 
 Cuando crees una carpeta nueva, agrégala aquí en el mismo commit.
@@ -129,6 +140,9 @@ negocio**. Lo útil:
 
 ## Convenciones de desarrollo
 
+- **Los tres pasos del reto son el criterio de "completo"**: interpretar la intención,
+  generar la interfaz, ejecutar la acción y que la UI cambie con el resultado. Una
+  feature sin el tercer paso es media feature.
 - **Dominio en español, siempre.** Tools, schemas, componentes, campos y datos usan las
   palabras del negocio en español (`cuenta`, `movimiento`, `saldo`), nunca mezclado con
   inglés (`account`). Utilidades genéricas de código pueden ir en inglés.

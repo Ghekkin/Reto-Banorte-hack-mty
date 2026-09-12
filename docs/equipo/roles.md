@@ -8,10 +8,10 @@ archivo**. Lo que evita que nos pisemos no es la prohibición, son las reglas de
 
 | Rol | Dueño de | Decide sobre | Su doc |
 |---|---|---|---|
-| **web** | `apps/web/` | El host: chat, streaming, componentes generados, diseño | `docs/como-funciona/` de cada componente |
-| **mcp** | `apps/mcp/`, datos mock | Las tools, sus descripciones, el servidor, la capa de datos | `docs/como-funciona/` de cada tool |
-| **contrato** | `packages/schemas/`, el pegamento agente↔tools (loop del AI SDK, cliente MCP, `registry.ts`) | Qué schemas existen, cómo se llama una tool desde el host, qué componente pinta cada `tipo` | `docs/arquitectura/` |
-| **demo** | Deploy, dominio, guion, pitch, docs transversales, triage de issues, premios laterales | Qué entra a la demo y qué no; cuándo se congela | `docs/demo/`, `docs/reto/` |
+| **web** | `packages/catalogo/` (componentes A2UI propios: schema, React, ejemplos, tokens) y la cara visible de `apps/web` (layout, chat, tema) | Qué componentes existen, cómo se ven, qué props aceptan | `docs/como-funciona/componente-*.md` |
+| **mcp** | `apps/mcp/`, datos sintéticos, estado mutable | Las tools de lectura y de acción, sus descripciones, el servidor, la capa de datos | `docs/como-funciona/tool-*.md`, `datos-mock.md` |
+| **contrato** | El agente (`apps/web/src/lib/agente/`), la capa A2UI (renderer, `catalogo.json`, validación), `packages/schemas/` | Cómo el agente elige componentes, cómo cierra el ciclo con las acciones, qué contratos existen | `docs/arquitectura/` |
+| **demo** | Guion, pitch, `README.md`, `trade-offs.md`, deploy, dominio, triage de issues, premios laterales | Qué entra a la demo y qué no; cuándo se congela; que los 4 entregables existan | `docs/demo/`, `docs/reto/` |
 
 `contrato` es el rol que arbitra cuando front y back se cruzan, que es la mayor parte
 del tiempo. `demo` no es el puesto de castigo: es quien llega al domingo con la
@@ -30,8 +30,9 @@ Va a pasar todo el tiempo y está bien. El procedimiento:
 
 ## La regla del cambio completo
 
-Un cambio de schema en `packages/schemas` **no está terminado** hasta que el mock de
-la tool y el componente que lo pinta también cambiaron, en el mismo commit. Quien lo
+Un cambio de contrato —schema de tool en `packages/schemas` o schema de props de un
+componente en `packages/catalogo`— **no está terminado** hasta que todos sus
+consumidores cambiaron, en el mismo commit (skill `cambiar-schema`). Quien lo
 empieza lo termina. Si no puede terminarlo, agrega el campo como **opcional** para que
 nada se rompa mientras tanto.
 

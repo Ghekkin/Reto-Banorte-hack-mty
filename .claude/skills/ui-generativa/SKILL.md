@@ -1,52 +1,71 @@
 ---
 name: ui-generativa
-description: Cómo se crea o modifica un componente que renderiza el resultado de una tool (UI generada por el agente) - un componente por schema, registro por campo tipo, estados de carga/error/vacío, y doc. Invocar antes de tocar apps/web/src/components/generated.
+description: Cómo se crea o modifica un componente del catálogo A2UI propio (packages/catalogo) - schema de props, implementación React, registro en el Catalog, bindings al data model, acciones que regresan al agente, tres estados, y doc. Invocar antes de tocar packages/catalogo o el renderer en apps/web.
 ---
 
-# Componentes de UI generativa
+# Componentes del catálogo A2UI
 
-El principio: **el agente no escribe HTML; elige entre interfaces que nosotros
-diseñamos, y las llena con datos.** Cada schema de salida de tool tiene exactamente un
-componente que lo renderiza. El agente "genera la interfaz" al decidir qué tool llamar,
-con qué parámetros, y en qué orden componer los resultados.
+El principio, ahora con protocolo estándar (ADR 0003): **el agente no escribe HTML;
+describe la interfaz en A2UI usando solo los componentes de nuestro catálogo, y los
+llena con datos.** La regla 1 del reto dice que el sistema de componentes lo diseña y
+programa el equipo: este catálogo *es* nuestra entrega de "componentes".
+
+## Qué es un componente del catálogo
+
+Tres archivos en `packages/catalogo/src/<nombre>/`:
+
+| Archivo | Qué contiene |
+|---|---|
+| `schema.ts` | Schema de props (Zod → JSON Schema) que el agente ve. Cada prop con descripción: es lo que el modelo lee para decidir cómo usarlo. Props enlazables aceptan `{ path }` (JSON Pointer al data model). Acciones se declaran con el tipo `Action` común del catálogo. |
+| `componente.tsx` | La implementación React. Recibe props ya resueltas por el renderer. |
+| `README.md` | Para qué sirve, cuándo el agente debe elegirlo, ejemplo de mensaje `updateComponents` que lo usa. |
+
+Y una línea en `packages/catalogo/src/index.ts` que lo registra en el `Catalog` con
+su `catalogId` (`https://<dominio>/catalogo/v1.json`).
 
 ## Orden obligatorio
 
-1. **Parte del schema, no del diseño.** Lee el schema en `packages/schemas`. Si el
-   componente necesita un dato que el schema no tiene, se cambia el schema (y la tool,
-   y su mock) — no se inventa en el front.
-2. **Un componente por schema**, en `apps/web/src/components/generated/<slug>.tsx`.
-   Recibe `props` tipadas con el tipo inferido del schema. Nada más.
-3. **Registro en el mapa `tipo → componente`** (un solo archivo, `registry.ts`). El
-   host elige componente por el campo `tipo` del resultado. Sin `switch` sueltos.
-4. **Tres estados siempre**: cargando (mientras la tool corre, con el skeleton del
-   mismo tamaño que el resultado final), error (mensaje corto + qué puede hacer el
-   usuario), vacío (sin datos, con una frase útil, nunca un espacio en blanco).
-5. **Acciones = tools.** Si el componente tiene un botón que hace algo ("transferir",
-   "aceptar oferta"), ese botón dispara un mensaje al agente o una tool, nunca un fetch
-   propio. La UI generada no tiene backdoor al backend.
-6. **Doc** en `docs/como-funciona/<slug>.md`, en el mismo doc que la tool si ya
-   existe (sección "Componente").
+1. **Parte de la intención, no del diseño.** ¿Qué pregunta del usuario hace que el
+   agente elija este componente? Si no puedes decirlo en una frase, no va.
+2. **Schema primero.** Props mínimas, cada una con `.describe()`. Montos en centavos
+   con moneda. Lo que cambia con el usuario es binding al data model (`{ path }`), no
+   literal.
+3. **Acciones = eventos A2UI.** Un botón declara `action: { event: { name,
+   context } }`. El `context` resuelve paths del data model (ej. el plazo elegido). El
+   componente **nunca** hace fetch ni llama al MCP: dispara la acción y el agente
+   decide. Nombres de acción en `snake_case`, en español, coherentes con la tool que
+   las ejecuta (`aplicar_plan_pago`).
+4. **Tres estados siempre**: cargando (skeleton del tamaño final; el data model puede
+   llegar después que los componentes), vacío (frase útil, nunca blanco), error
+   (mensaje corto + qué puede hacer la persona).
+5. **Registro** en el `Catalog` y en el JSON del catálogo que se le pasa al agente
+   (el mismo schema sirve para los dos: nada se escribe dos veces).
+6. **Prueba** con un mensaje A2UI escrito a mano en
+   `packages/catalogo/ejemplos/<nombre>.jsonl` que lo renderiza (skill `probar`,
+   nivel 2). Ese archivo es también documentación.
+7. **Doc** en `docs/como-funciona/componente-<nombre>.md`, dos niveles.
 
-## Streaming
+## Reglas de adaptabilidad (20% de la rúbrica)
 
-- El resultado puede llegar parcial. El componente debe renderizar con datos
-  incompletos sin explotar (campos opcionales en el schema o valores por defecto).
-- No bloquear el render del texto del agente por un componente: cada uno se pinta
-  cuando su tool termina.
+- Un componente cubre **una** intención bien. Mejor `PlanDePago`, `TablaMovimientos`,
+  `GraficaGasto`, `SimuladorCredito`, `Confirmacion` que un `Panel` genérico.
+- Variantes por contexto van como props (`enfasis: "ahorro" | "urgencia"`), para que el
+  agente pueda adaptar la misma pantalla a otro perfil sin otro componente.
+- Los componentes de layout (Column, Row, Text) pueden venir del catálogo básico de
+  A2UI; los que el jurado va a mirar son nuestros.
 
 ## Diseño
 
-- Consistencia sobre originalidad: mismo sistema de espaciado, tipografía y color en
-  todos los componentes. Un juez ve una pantalla, no un componente.
-- Colores de datos (gráficas, estados) desde un único archivo de tokens.
-- Funciona a 400 px de ancho. Se ensaya en la resolución del proyector.
-- Nada de capturas en la doc: describe el flujo y apunta al archivo.
+- Sistema visual único: tokens de color, espaciado y tipografía en
+  `packages/catalogo/src/tokens.ts`. Un juez ve una pantalla, no un componente.
+- Legible en proyector: contraste alto, números tabulares, nada menor a 14 px.
+- Funciona a 400 px de ancho (la demo puede ir en celular).
+- Nada de capturas en la doc: el `.jsonl` de ejemplo es la captura.
 
 ## Checklist antes de commitear
 
-- [ ] Props tipadas desde `packages/schemas`, sin tipos locales duplicados.
-- [ ] Registrado en `registry.ts`.
-- [ ] Estados cargando / error / vacío implementados y vistos en pantalla.
-- [ ] Renderiza con el resultado del mock sin errores de consola.
-- [ ] Doc actualizado. Entrada en tu bitácora (`docs/bitacora/<nombre>.md`).
+- [ ] Schema con descripciones, registrado en el `Catalog` y en el JSON del catálogo.
+- [ ] Acciones declaradas como eventos A2UI; cero fetch en el componente.
+- [ ] Tres estados vistos en pantalla con el `.jsonl` de ejemplo.
+- [ ] Sin errores de consola.
+- [ ] Doc y README del componente. Entrada en tu bitácora.

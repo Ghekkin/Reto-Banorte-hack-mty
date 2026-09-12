@@ -9,12 +9,21 @@ El pitch es **la demo con voz**. Cinco minutos: tres de demo en vivo (ya escrita
 `docs/demo/guion-demo.md`), dos de contexto y cierre. Se escribe en
 `docs/demo/pitch.md` y se ensaya con cronómetro al menos tres veces.
 
+## Qué pesa (rúbrica oficial)
+
+Utilidad 25 · Adaptabilidad de la UI 20 · Calidad de IA 15 · Arquitectura 15 · UX 10 ·
+Innovación 10 · Presentación 5. La presentación vale 5: "la demo importa, pero no
+salva una solución incompleta". El pitch existe para que el jurado **vea** los otros 95:
+el flujo completo (intención → UI → interacción → acción), la adaptación a otro
+contexto, y las tres piezas (LLM, MCP, A2UI) nombradas en pantalla. Detalle en
+`docs/reto/rubrica-y-entregables.md`.
+
 ## Estructura (5:00)
 
 | Tiempo | Qué | Fuente |
 |---|---|---|
 | 0:00–0:30 | El problema en una frase y quién es el usuario. Sin "hola somos…" largo. | ADR 0003 |
-| 0:30–1:00 | La idea: el agente no responde texto, **genera la interfaz que el usuario necesita**. Una frase sobre MCP: las capacidades son tools. | `contexto-del-reto.md` |
+| 0:30–1:00 | La idea: el agente no responde texto, **genera la interfaz que el usuario necesita** y lo que la persona toca vuelve al agente. Una frase por pieza: LLM al centro, MCP para datos y acciones, A2UI para la interfaz. | `contexto-del-reto.md` |
 | 1:00–4:00 | Demo en vivo, guion literal. Cada pantalla: qué pidió el usuario, qué decidió el agente, qué tool alimentó la vista. | `guion-demo.md` |
 | 4:00–4:40 | Qué aprendimos y qué decidimos a propósito: dos o tres decisiones con hora, sacadas de la bitácora ("a la hora 6 decidimos que el agente no escribe HTML porque…"). | `bitacora/equipo.md`, `decisiones/` |
 | 4:40–5:00 | Qué sigue en una frase. Gracias. | — |
@@ -37,6 +46,9 @@ El pitch es **la demo con voz**. Cinco minutos: tres de demo en vivo (ya escrita
   frontera; el agente nunca ve más de lo que la tool devuelve; auth va en el MCP.
 - ¿Por qué MCP y no llamar la API directo? → Las mismas tools sirven a cualquier
   cliente (nuestro host, Claude Desktop, otro agente); lo demostramos.
+- ¿Por qué A2UI y no HTML generado? → UI como datos: el agente solo puede usar nuestro
+  catálogo; sin inyección, sin código arbitrario, y la interacción regresa tipada.
+- ¿Qué pasa si el usuario tiene otro perfil? → Mostrar el segundo usuario demo.
 - ¿Cuánto cuesta por conversación? → Número real medido en los ensayos (tokens × precio).
 - ¿Por qué no es solo un chatbot? → La UI es la respuesta; mostrar una pantalla compuesta.
 - ¿Qué se rompió? → Contar uno de la bitácora de issues. Suma credibilidad.

@@ -12,8 +12,10 @@ lo real, y `CLAUDE.md` recibe los comandos en "Comandos habituales" y el mapa.
 
 ```
 apps/web/            Next.js (App Router) + React + Tailwind + AI SDK    puerto 3000
+                     + @a2ui/react @a2ui/web_core (renderer A2UI)
 apps/mcp/            TS + @modelcontextprotocol/sdk + Express             puerto 3100
-packages/schemas/    Zod, sin dependencias de runtime aparte de zod
+packages/catalogo/   Catálogo A2UI propio: schema + componente React + .jsonl de ejemplo por componente
+packages/schemas/    Zod de tools, sin dependencias de runtime aparte de zod
 services/ml/         (solo si ADR 0002 se activa) FastAPI                 puerto 8000
 scripts/dev.sh       levanta todo con un comando y espera los /health
 .env.example         TODAS las variables, con comentario y valor de ejemplo
@@ -31,6 +33,10 @@ scripts/dev.sh       levanta todo con un comando y espera los /health
 - **`.env.example` es obligatorio y siempre completo.** Cada variable nueva entra ahí
   en el mismo commit que la usa, con comentario. `.env` nunca se commitea.
 - **`/health`** en cada servicio, devuelve `{ ok: true, servicio, version }`.
+- **`apps/mcp/scripts/reiniciar-estado.ts`**: vuelve el estado mutable al punto de
+  partida. Se corre antes de cada ensayo de demo.
+- **`packages/catalogo`** genera su JSON de catálogo (`catalogo.json`) desde los
+  schemas con `pnpm --filter catalogo generar`; el agente lee ese JSON.
 - **`scripts/dev.sh`**: arranca `apps/mcp`, espera su `/health`, arranca `apps/web`,
   imprime las URLs. Si `services/ml` existe y `ML_URL` está definida, lo arranca
   también; si su `/health` no responde en 10 s, sigue sin él (mock toma el control).

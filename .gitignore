@@ -23,3 +23,6 @@ service-account*.json
 # ruido
 *.log
 .DS_Store
+
+# material del reto (PDFs, videos): pesado y no versionable
+.orca/

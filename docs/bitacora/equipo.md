@@ -14,6 +14,16 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **04:45 · decisión** — Con la presentación oficial en mano: el reto exige LLM + MCP +
+  **A2UI** y un flujo accionable con cambio real. Adoptamos A2UI v0.9.1 con catálogo
+  propio y `@a2ui/react` (ADR 0003); el campo `tipo` se vuelve el `component` del
+  catálogo. Nuevo `packages/catalogo`. Rúbrica y entregables en
+  `docs/reto/rubrica-y-entregables.md`; trade-offs en `docs/arquitectura/trade-offs.md`;
+  `README.md` raíz como entregable 02. Skills `ui-generativa`, `agente-host`,
+  `tool-mcp`, `cambiar-schema`, `elegir-caso-de-uso`, `scaffold`, `probar`,
+  `checklist-demo`, `pitch` y `datos-mock` reescritas o ajustadas. Roles: `web` es
+  dueño del catálogo; `contrato` del agente y la capa A2UI.
+
 - **04:08 · hecho** — Primer commit y push del repo, ya pasada la hora de arranque. Sube
   la base completa: `CLAUDE.md`, 19 documentos, 19 skills y los 3 scripts de sesión.
   `CLAUDE.md` deja de anunciar la regla de las 20:00 y la registra como hecho.

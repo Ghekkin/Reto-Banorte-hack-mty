@@ -1,41 +1,50 @@
 ---
 name: elegir-caso-de-uso
-description: Decisión del caso de uso del reto en menos de 45 minutos - matriz de criterios, elección, ADR 0003 con las interfaces y tools que implica, y arranque en paralelo de los cuatro roles. Invocar el día 1 en cuanto Banorte dé los detalles.
+description: Decisión del caso de uso del reto en menos de 45 minutos con la rúbrica oficial como criterio - matriz, elección, ADR 0004 con el flujo accionable, los componentes del catálogo y las tools que implica, y arranque en paralelo de los cuatro roles. Invocar al arrancar el desarrollo.
 ---
 
 # Elegir el caso de uso
 
-Timebox: **45 minutos** desde que empieza esta skill. Discutir más no mejora la
-decisión, solo la atrasa. Si a los 45 no hay acuerdo, decide el rol `demo`.
+Timebox: **45 minutos**. Si a los 45 no hay acuerdo, decide el rol `demo`. El consejo
+oficial manda: **"elijan un problema pequeño y resuélvanlo completo. Un solo flujo
+financiero, con una UI que de verdad cambia y una acción que de verdad ocurre, vale
+más que cinco pantallas a medias."**
 
 ## Pasos
 
-1. **Lee** `docs/reto/contexto-del-reto.md` (candidatos) y las respuestas ya anotadas
-   en `docs/reto/preguntas-para-manana.md`. Si Banorte dio una rúbrica, es el criterio
-   número uno y desplaza a los demás.
-2. **Matriz**, en `docs/decisiones/0003-caso-de-uso.md` (borrador), un renglón por
-   candidato, puntúa 1–3 cada columna:
-   - Se demuestra completo en 3 minutos
-   - Luce **≥3 interfaces distintas** generadas en una conversación (tabla, gráfica,
-     formulario, comparador, línea de tiempo…)
-   - Los datos se simulan de forma creíble con mock
-   - Encaja con lo que Banorte dijo que evalúa
-   - Riesgo técnico bajo (nada que dependa de una API externa que no controlamos)
-3. **Elige** el de mayor puntaje. Empates: gana el que tenga más interfaces distintas.
-4. **Cierra el ADR 0003** con: la historia de usuario en una frase ("Soy X y quiero
-   Y"), las **3–4 interfaces** que el agente generará (nombre de `tipo` de cada una),
-   las **tools** que las alimentan (nombres `snake_case`), y qué NO entra.
-5. **Reparte de inmediato**, en `docs/tablero.md` (cada quien su fila y su línea de
-   "Siguiente"):
-   - `contrato`: schemas Zod de los 3–4 `tipo` + registry vacío
-   - `mcp`: datos mock (skill `datos-mock`) + primera tool
-   - `web`: layout del host + componente del primer `tipo` con datos de ejemplo fijos
-   - `demo`: guion literal en `docs/demo/guion-demo.md` + cuentas de servicios
-6. Actualiza `docs/reto/contexto-del-reto.md`: la hipótesis pasa a ser la decisión.
-   Entrada `decisión` en `docs/bitacora/equipo.md` con hora.
+1. **Lee** `docs/reto/contexto-del-reto.md` (dominio, ejemplo oficial, reglas) y
+   `docs/reto/rubrica-y-entregables.md`. La rúbrica es el criterio; no hay otro.
+2. **Candidatos**: máximo cinco, uno por línea, cada uno con su **flujo accionable**
+   escrito ("el usuario elige plazo y aplica el plan → el saldo y el calendario
+   cambian"). Un candidato sin acción real queda fuera antes de puntuar. El ejemplo de
+   la portada oficial (reestructura de tarjeta con plan de pago) es un candidato
+   legítimo: es lo que el jurado tiene en la cabeza.
+3. **Matriz** en `docs/decisiones/0004-caso-de-uso.md`, puntúa 1–3:
+   - **Utilidad real** (25%): ¿resuelve un problema que una persona reconoce?
+   - **Adaptabilidad visible** (20%): ¿la misma pregunta con otro contexto produce otra
+     interfaz? ¿Intenciones distintas producen ≥3 componentes distintos?
+   - **Cambio real demostrable** (regla 3): ¿la acción muta estado y se ve después?
+   - **Datos sintéticos creíbles** en 2 horas.
+   - **Riesgo técnico bajo**: nada que dependa de una API externa que no controlamos.
+   - **Innovación** (10%): ¿hay un ángulo que los demás equipos no van a tener?
+4. **Elige** el mayor. Empate: gana el que tenga la acción más clara.
+5. **Cierra el ADR 0004** con: historia de usuario en una frase; los **dos usuarios
+   demo** con contexto distinto (para demostrar adaptabilidad); los **3–4 componentes
+   del catálogo** (nombre en PascalCase, para qué intención); las **tools** de lectura
+   y **la tool de acción** (nombres `snake_case`); el flujo accionable paso a paso;
+   qué NO entra.
+6. **Reparte de inmediato** en `docs/tablero.md`:
+   - `contrato`: spike `@a2ui/react` con un componente propio (ADR 0003) → schemas de
+     tools → agente.
+   - `mcp`: datos sintéticos con estado mutable → tools de lectura → tool de acción.
+   - `web`: tokens visuales → primer componente del catálogo con `.jsonl` de ejemplo.
+   - `demo`: guion literal con los prompts, cuentas de servicios, `README.md` raíz.
+7. `docs/reto/contexto-del-reto.md`: la sección de decisiones apunta al ADR 0004.
+   Entrada `decisión` en `docs/bitacora/equipo.md`.
 
 ## Señales de que la elección está mal
 
-- Necesita autenticación real, una API bancaria real o un modelo entrenado por nosotros.
-- La demo se explica con texto y la UI es decoración.
-- Nadie del equipo sabe describir la pantalla 3.
+- La "acción" es mostrar otra pantalla, no cambiar un estado.
+- Se explica con texto y la UI es decoración.
+- Nadie sabe describir qué cambia si el usuario tiene otro saldo.
+- Necesita autenticación real, API bancaria real o un modelo entrenado por nosotros.

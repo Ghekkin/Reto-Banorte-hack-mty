@@ -26,6 +26,24 @@ las respuestas aquí con hora y actualizar `contexto-del-reto.md`.
 - [ ] ¿Hora límite para congelar features? (sugerido: hora 30)
 - [ ] ¿Hora del primer ensayo de demo completo? (sugerido: hora 24)
 
-## Respuestas
+## Respuestas (2026-09-12 04:40, de la presentación oficial y el video)
 
-(vacío hasta el día 1)
+- **¿UI web, dentro de un chat, o cliente MCP?** Host propio. La interfaz se transmite
+  con **A2UI o protocolo equivalente** y la pintan **componentes propios** ("no se
+  entrega biblioteca de UI"). Decidido: A2UI real con catálogo propio (ADR 0003).
+- **¿MCP propio o consumido?** Propio: "exponer al modelo los datos, las herramientas
+  y las acciones que el equipo construyó".
+- **¿Datos de Banorte?** No. "Sintéticos, simulados o de fuentes públicas", creados por
+  el equipo. Son un entregable (03 · Datos).
+- **¿Modelo/proveedor?** Libre. "Lenguaje, framework, modelo y proveedor de
+  infraestructura: libre elección de cada equipo." Créditos/API keys: **pendiente de
+  confirmar**.
+- **¿Qué evalúan?** Rúbrica de 7 criterios en `rubrica-y-entregables.md`. 45% utilidad
+  + adaptabilidad de la UI; 30% ingeniería (LLM, contexto, MCP, A2UI); 5% presentación.
+- **¿Formato de entrega?** Cuatro entregables: demo en vivo (flujo completo), repositorio
+  con instrucciones, APIs y datasets, diagrama de arquitectura con trade-offs.
+  **Plataforma y hora límite: pendiente de confirmar.**
+- **¿Mentores?** Pendiente de confirmar.
+- **Reglas duras**: componentes propios; datos propios; **al menos un flujo accionable
+  con cambio real**; libertad de stack.
+- **Consejo oficial**: problema pequeño, resuelto completo.

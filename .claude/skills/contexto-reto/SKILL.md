@@ -8,7 +8,8 @@ description: Carga el contexto del Reto Banorte (Hack Monterrey 2026) al inicio 
 Orden de lectura, sin saltarse ninguno:
 
 1. `CLAUDE.md` — reglas y mapa del repo.
-2. `docs/reto/contexto-del-reto.md` — qué pidieron y la hipótesis de solución.
+2. `docs/reto/contexto-del-reto.md` — el reto oficial: tres piezas (LLM, MCP, A2UI), el
+   ciclo cerrado, las cuatro reglas. Y `docs/reto/rubrica-y-entregables.md`: qué pesa.
 3. `docs/reto/preguntas-para-manana.md` — si la sección "Respuestas" sigue vacía, el
    reto no ha dado detalles todavía: **no inventes requisitos**.
 4. `docs/tablero.md` y `docs/bitacora/equipo.md` — solo las entradas del día actual y

@@ -23,10 +23,10 @@ vez sin conflictos de git.
 
 ## Siguiente
 
-- web: —
-- mcp: —
-- contrato: —
-- demo: —
+- web: tokens visuales en `packages/catalogo/src/tokens.ts` → primer componente del catálogo (el del flujo accionable) con su `.jsonl` de ejemplo
+- mcp: datos sintéticos de los dos usuarios demo + `estado.json` reiniciable → tools de lectura → la tool de acción
+- contrato: spike `@a2ui/react` con un componente propio y una `action` de vuelta (2 h, ADR 0003) → schemas de tools → agente con structured output contra el catálogo
+- demo: `elegir-caso-de-uso` (45 min, con todos) → guion literal con los dos usuarios → cuentas de servicios → `README.md` con comandos reales
 
 ## Hecho hoy
 

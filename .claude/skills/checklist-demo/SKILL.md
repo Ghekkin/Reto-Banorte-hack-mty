@@ -14,8 +14,12 @@ ya estaba bien hace una hora".
    no está definida: dilo y para.
 2. Verifica entorno: repo en `main` al último commit, `.env` presente, dependencias
    instaladas, script de arranque levanta todo, cada `/health` responde.
-3. Ejecuta el guion **con los prompts literales**, en orden. Para cada paso anota:
-   renderizó lo esperado sí/no, error en consola sí/no, tiempo.
+3. `pnpm --filter mcp reiniciar-estado`. Luego ejecuta el guion **con los prompts
+   literales**, en orden. Para cada paso anota: renderizó lo esperado sí/no, error en
+   consola sí/no, tiempo. El guion debe cubrir, explícitamente y en este orden, lo que
+   el jurado va a buscar: **intención → UI generada → interacción → acción que cambia
+   algo → nueva UI**, y un segundo usuario demo que obtenga otra interfaz con la misma
+   pregunta (adaptabilidad).
 4. Un prompt fuera de guion: el agente responde algo razonable sin romper nada.
 5. Plan B: la grabación abre y se ve; los prompts están en un archivo de texto.
 6. Anota la corrida en la tabla "Registro de corridas" del checklist con hora, quién

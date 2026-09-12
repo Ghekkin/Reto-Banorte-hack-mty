@@ -1,76 +1,128 @@
 ---
-verificado: 2026-09-10
-fuentes: [convocatoria-publica]
+verificado: 2026-09-12 04:30
+fuentes: [presentacion-oficial-pdf, video-explicacion-2026-09-11]
 ---
 
 # Contexto del reto
 
-## Lo que sabemos (2026-09-10, un día antes)
+Material oficial en `.orca/drops/` (fuera de git por tamaño): la presentación
+`Reto_UI_Generativa_Banorte_Tec` (11 láminas) y el video de explicación del
+2026-09-11 (4:54, transcripción en `docs/reto/transcripcion-video.md`).
 
-Texto de la convocatoria, literal:
+## El reto en una frase (oficial)
 
-> Este reto trata sobre agentes de IA que generan interfaces en tiempo real. Se trata
-> de un caso de uso abierto en servicios financieros. Requiere MCP.
+> **Interfaces que la IA construye en tiempo real.** El reto: que el modelo no solo
+> conteste, sino que arme la pantalla que resuelve el problema financiero de quien
+> pregunta.
 
-- Organiza: Banorte, dentro de Hack Monterrey 2026.
-- Duración: 36 horas, arranca 2026-09-11.
-- Detalles oficiales: **no los han dado**. Todo lo de abajo es hipótesis hasta que se
-  confirme el día 1 (ver `preguntas-para-manana.md`).
+Hoy un asistente responde con un muro de texto, la misma pantalla para cualquier
+intención, y para actuar la persona se va a otra app. Aquí **el agente construye la
+UI**: la pantalla se arma según la intención detectada, con componentes propios
+(simuladores, tablas, formularios), y **lo que la persona toca regresa al modelo como
+contexto**.
 
-## Lectura del reto
+## Los tres pasos que evalúan
 
-Tres frases, tres restricciones:
+| Paso | Qué es | Frase de la presentación |
+|---|---|---|
+| 1. Interpretar la intención | El agente entiende qué quiere lograr la persona y con qué contexto llega | — |
+| 2. Generar la interfaz | Decide qué componentes mostrar y los transmite mediante **A2UI o un protocolo equivalente** | "El LLM es el centro de la experiencia, no un chat pegado a un lado" |
+| 3. Ejecutar la acción | La interacción con esa UI dispara nuevas acciones y **vuelve a cambiar la experiencia** | "El ciclo se cierra" |
 
-1. **"Agentes de IA que generan interfaces en tiempo real"**: el producto no es un
-   chatbot que responde texto. Es un agente que, según lo que el usuario pide y los
-   datos que obtiene, **decide qué interfaz mostrar** y la construye al vuelo: una
-   tabla de movimientos, un formulario de transferencia, una gráfica de gasto, un
-   comparador de créditos. La UI es la respuesta.
-2. **"Caso de uso abierto en servicios financieros"**: elegimos nosotros el problema.
-   Eso es una ventaja si lo elegimos rápido y una trampa si lo discutimos 6 horas.
-3. **"Requiere MCP"**: las capacidades del agente (leer cuentas, mover dinero, consultar
-   crédito) se exponen como tools de un servidor MCP. Probablemente evalúan que el
-   MCP esté bien hecho, no solo que exista.
+**El ciclo se cierra** es la idea que más repiten: no basta con generar una pantalla
+una vez. Cada interacción con la UI generada debe volver al agente y producir nuevas
+acciones o una nueva interfaz.
 
-## Hipótesis de solución (a validar el día 1)
+## Base técnica común: tres piezas no negociables
 
-Un host web (Next.js) donde el usuario conversa con un agente. El agente tiene tools
-de un servidor MCP propio con datos financieros simulados. Cada tool devuelve datos con
-un schema conocido; el host renderiza para cada schema el componente adecuado, en
-streaming, mientras el agente sigue trabajando. El agente puede además componer
-varios resultados en una sola pantalla.
+| Pieza | Qué exigen | Cómo lo cubrimos |
+|---|---|---|
+| **LLM** | "Un LLM debe ser parte central de la experiencia: interpreta, decide y orquesta" | El agente en `apps/web` (skill `agente-host`) |
+| **MCP** | "Model Context Protocol para exponer al modelo los datos, las herramientas y las acciones que el equipo construyó" | Servidor propio en `apps/mcp` (skill `tool-mcp`) |
+| **A2UI** | "Agent-to-UI, o un protocolo equivalente, para representar y transmitir la interfaz que genera el agente" | A2UI v0.9.1 con catálogo propio (ADR 0003, skill `ui-generativa`) |
 
-Apuesta a preparar: que el reto se refiera a **MCP Apps** (la extensión de MCP donde
-una tool devuelve un recurso `ui://` que el cliente renderiza). Si es así, el servidor
-MCP ya está listo; solo cambia cómo se entrega la UI. Si no, el mismo servidor sirve
-con el agente del Vercel AI SDK.
+Lenguaje, framework, modelo y proveedor de infraestructura: **libre elección**.
 
-## Ideas de caso de uso (elegir UNA el día 1, en menos de 1 hora)
+## Arquitectura de referencia (lámina 6, literal)
 
-Sin orden de preferencia; se decide cuando haya detalles:
+```
+Usuario → Agente/LLM → MCP → A2UI → Componentes
+   ↑                                      |
+   └──── la interacción regresa al agente como contexto ────┘
+```
 
-- **Asesor financiero personal**: "¿en qué se me fue el dinero este mes?" → gráfica +
-  categorías + acción sugerida. "¿Me conviene este crédito?" → comparador.
-- **Onboarding / apertura de producto**: el agente arma el formulario justo para el
-  producto que el usuario necesita, con validaciones en vivo.
-- **Atención a PyMEs**: flujo de caja, conciliación, alertas; el agente genera el
-  panel que el dueño necesita ese día.
-- **Cobranza / negociación**: el agente presenta opciones de reestructura como
-  interfaz interactiva, no como texto.
+- Usuario: expresa una necesidad.
+- Agente/LLM: interpreta intención y contexto.
+- MCP: datos, herramientas y acciones propias.
+- A2UI: describe la UI que se renderiza.
+- Componentes: UI propia, viva y accionable.
 
-Criterio para elegir: (a) se puede demostrar en 3 minutos, (b) luce la generación de
-UI (varios tipos de interfaz distintos en una conversación), (c) los datos se pueden
-simular de forma creíble.
+Nuestra `docs/arquitectura/vision-general.md` sigue esta cadena pieza por pieza.
 
-## Regla de arranque
+## Las cuatro reglas para todos los equipos
 
-**El primer commit sale el 2026-09-11 a las 20:00, no antes.** Hasta esa hora no se hace
-commit ni push: todo lo preparado vive en el árbol de trabajo sin commitear y GitHub
-sigue vacío. Por eso `.claude/settings.json` (que activa el commit+push automático) se
-copia al repo **a las 20:00**, después del primer `scripts/sync.sh`.
+1. **Sus propios componentes.** No se entrega biblioteca de UI. El sistema de
+   componentes que el agente invoca lo diseña y programa el equipo. (Usar primitivas
+   como Tailwind es fino; el *catálogo* que el agente invoca es nuestro.)
+2. **Sus propios datos y APIs.** Sintéticos, simulados o de fuentes públicas. Nada de
+   Banorte real.
+3. **Al menos un flujo accionable.** Un flujo donde la persona interactúe con la UI
+   generada y esa interacción **produzca un cambio real** (un estado que cambia y se
+   ve reflejado después).
+4. **Libertad de stack.**
+
+## Dominio: servicios y productos financieros
+
+| Área | Ejemplos que dan |
+|---|---|
+| Banca personal | Cuentas, movimientos, control de gasto |
+| Inversiones | Perfilamiento, portafolios, simulación |
+| Crédito | Precalificación, amortización, refinanciamiento |
+| Pagos | Transferencias, cobros, conciliación |
+| Seguros | Cotización, coberturas, siniestros |
+| Educación financiera | Diagnóstico, metas, hábitos |
+
+"Cada equipo define el problema concreto: no hay un enunciado único."
+
+**El ejemplo que ellos mismos usan en la portada**: usuario dice *"Quiero pagar menos
+intereses de mi tarjeta"* → componente generado *Plan de pago*: "Reestructura tu saldo
+de $18,400", tres opciones (12 meses · CAT 32.4% · $1,690; 18 meses · CAT 34.1% ·
+$1,215; 24 meses · CAT 36.0% · $980), botón **Aplicar plan →**. Es la imagen mental
+del jurado de lo que quieren ver.
+
+## Cómo se reparten los puntos
+
+Detalle y estrategia en `rubrica-y-entregables.md`. Resumen:
+
+| Criterio | Peso |
+|---|---|
+| Cumplimiento y utilidad para el usuario | **25%** |
+| Calidad y adaptabilidad de la UI generada | **20%** |
+| Calidad de la solución de IA | 15% |
+| Arquitectura e ingeniería | 15% |
+| UX y diseño | 10% |
+| Innovación | 10% |
+| Presentación | 5% |
+
+**45%** es resolver algo útil con una UI buena y adaptable. **30%** es ingeniería (LLM,
+contexto, MCP, A2UI). **5%** la presentación: "la demo importa, pero no salva una
+solución incompleta".
+
+## Consejo oficial
+
+> Elijan un problema pequeño y resuélvanlo completo. Un solo flujo financiero, con una
+> UI que de verdad cambia y una acción que de verdad ocurre, vale más que cinco
+> pantallas a medias.
+
+## Decisiones ya tomadas a partir de esto
+
+- Stack TS (ADR 0001), Python solo detrás de una tool (ADR 0002).
+- **A2UI real** con catálogo propio, no un protocolo inventado (ADR 0003).
+- El caso de uso se decide con la skill `elegir-caso-de-uso` y queda en ADR 0004.
 
 ## Lo que NO vamos a hacer
 
-- Conectar con APIs bancarias reales. Todo es mock con datos plausibles.
-- Entrenar modelos de ML como núcleo del proyecto (ver ADR 0002).
+- Conectar con APIs bancarias reales. Todo es sintético.
+- Entrenar modelos de ML como núcleo (ADR 0002).
 - Autenticación real. Un usuario demo fijo.
+- Cinco pantallas a medias. Un flujo completo, con acción real, y luego lo demás.
