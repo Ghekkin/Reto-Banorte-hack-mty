@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo, LienzoPlaceholder } from "@/components/maya/lienzo";
+import { ProgresoMaya } from "@/components/maya/progreso-maya";
 import { usarAgente } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
 import type { UsuarioDemo } from "@/lib/usuarios";
@@ -12,7 +13,11 @@ import type { UsuarioDemo } from "@/lib/usuarios";
 const CHIPS_INICIALES: Record<string, string[]> = {
   usr_beto: ["Quiero pagar menos intereses", "¿En qué se me fue el dinero?", "¿Cómo estoy?"],
   usr_ana: ["¿En qué se me fue el dinero?", "Quiero empezar a ahorrar", "¿Cómo estoy?"],
-  usr_carmen: ["¿Cómo va mi portafolio?", "¿En qué se me fue el dinero?", "¿Cómo estoy?"],
+  // Carmen NO trae "¿cómo va mi portafolio?": el catálogo no tiene componente de
+  // portafolio y el agente terminaba metiendo su valor de mercado en `MetaActiva`, que es
+  // para metas de ahorro. Su portafolio se ve en Productos → Inversiones, que es una
+  // pantalla programada. Ver ADR 0004, enmienda del 2026-09-12 (tarde).
+  usr_carmen: ["¿Cómo estoy?", "¿En qué se me fue el dinero?", "Quiero apartar dinero cada mes"],
 };
 
 /**
@@ -58,6 +63,8 @@ export function ConsolaMaya({
         </div>
       )}
 
+      <ProgresoMaya transparencia={agente.transparencia} ocupado={agente.ocupado} />
+
       <Lienzo
         superficie={agente.superficie}
         conversacionId={agente.conversacionId}
@@ -66,11 +73,9 @@ export function ConsolaMaya({
         vacio={<LienzoPlaceholder />}
       />
 
-      {agente.razon && (
-        <p className="px-1 text-xs text-muted-foreground">
-          <span className="font-medium">Por qué ves esto:</span> {agente.razon}
-        </p>
-      )}
+      {/* La razón NO se pinta aquí: cada tarjeta del catálogo ya trae la suya al pie
+          ("¿Por qué veo esto? …"), junto al dato que la justifica. Tener las dos daba dos
+          respuestas distintas a la misma pregunta en la misma pantalla. */}
 
       <BarraConversacion sugerencias={chips} ocupado={agente.ocupado} alEnviar={enviarTexto} />
     </div>

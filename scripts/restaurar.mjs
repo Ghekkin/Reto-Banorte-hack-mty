@@ -28,11 +28,29 @@ if (!process.env.DATABASE_URL) { console.error('falta DATABASE_URL'); process.ex
 
 const RECREAR = process.argv.includes('--recrear');
 
-// El orden importa: es el de dependencia entre tablas (las llaves foraneas).
-const ORDEN = ['usuarios','cuentas','tarjetas','categorias','comercios','movimientos','suscripciones',
-  'productos_credito','creditos','amortizaciones','buro','planes_reestructura','metas','topes_gasto',
-  'diagnostico_habitos','perfiles_inversion','modelos_portafolio','instrumentos','portafolios',
-  'posiciones','precios_historicos','acciones_aplicadas'];
+// El orden importa: es el de dependencia entre tablas (las llaves foraneas). Primero las
+// cuatro que no dependen de nadie, luego las demas.
+//
+// Ojo: este orden solo se puede verificar contra una base VACIA. Contra la base de la
+// demo, que ya tiene los datos, cada insert cae en `on conflict do nothing` y un orden
+// malo pasa desapercibido. Asi estuvo: `modelos_portafolio` iba antes que `instrumentos`,
+// y el plan B —Postgres local para presentar sin red— fallaba con una violacion de
+// llave foranea la primera vez que alguien lo intentara.
+const ORDEN = [
+  // sin dependencias
+  'usuarios', 'categorias', 'instrumentos', 'productos_credito',
+  // primer nivel
+  'cuentas', 'comercios', 'buro', 'diagnostico_habitos', 'perfiles_inversion',
+  'modelos_portafolio', 'precios_historicos',
+  // dependen de cuentas / categorias / comercios
+  'tarjetas', 'movimientos', 'suscripciones', 'metas', 'topes_gasto', 'portafolios',
+  // dependen de tarjetas / portafolios
+  'creditos', 'planes_reestructura', 'posiciones',
+  // dependen de creditos
+  'amortizaciones',
+  // estado mutable
+  'acciones_aplicadas',
+];
 
 const datos = JSON.parse(readFileSync(VOLCADO, 'utf8'));
 const cliente = new pg.Client({ connectionString: process.env.DATABASE_URL, connectionTimeoutMillis: 10000 });
@@ -53,10 +71,19 @@ for (const tabla of ORDEN) {
   for (const fila of filas) {
     const valores = columnas.map((c) => (fila[c] === '' ? null : fila[c]));
     const marcas = columnas.map((_, i) => `$${i + 1}`).join(', ');
-    const { rowCount } = await cliente.query(
-      `insert into banorte."${tabla}" (${columnas.map((c) => `"${c}"`).join(', ')}) values (${marcas}) on conflict do nothing`,
-      valores,
-    );
+    let rowCount = 0;
+    try {
+      ({ rowCount } = await cliente.query(
+        `insert into banorte."${tabla}" (${columnas.map((c) => `"${c}"`).join(', ')}) values (${marcas}) on conflict do nothing`,
+        valores,
+      ));
+    } catch (error) {
+      console.error(`\nFallo insertando en banorte.${tabla}: ${error.message}`);
+      if (error.detail) console.error(`  ${error.detail}`);
+      console.error('  Si es una llave foranea, la tabla de la que depende va despues en ORDEN.');
+      await cliente.end();
+      process.exit(1);
+    }
     insertadas += rowCount ?? 0;
   }
   total += insertadas;

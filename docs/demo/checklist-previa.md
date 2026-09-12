@@ -38,6 +38,17 @@ No sustituye a la demo local, pero si la máquina falla, esto salva el pitch.
 ## Plan B
 
 - [ ] La etiqueta `estable` apunta a un commit que arranca: `git checkout estable` y probar.
+- [ ] **Sin red**: Postgres local levantado y poblado. Probado el 2026-09-12, toma ~2 min:
+
+      docker run -d --name maya-pg -e POSTGRES_PASSWORD=local -e POSTGRES_USER=reto \
+        -e POSTGRES_DB=reto_banorte -p 5599:5432 postgres:17
+      export DATABASE_URL="postgres://reto:local@localhost:5599/reto_banorte"
+      psql "$DATABASE_URL" -f db/schema.sql && pnpm datos:migrar && pnpm datos:restaurar
+      pnpm dev
+
+      Tienen que salir **3,690 filas** y `/health` debe decir `origenDatos: postgres`
+      con 18 tools. La llave del modelo sigue haciendo falta: sin internet tampoco hay
+      Gemini, así que sin red de verdad la salida es la grabación.
 - [ ] Grabación de la demo en el escritorio, probada que abre y suena.
 - [ ] Prompts del guion copiados en un archivo de texto para pegar rápido.
 

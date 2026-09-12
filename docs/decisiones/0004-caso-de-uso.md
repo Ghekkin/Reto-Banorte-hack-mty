@@ -58,6 +58,31 @@ Carmen (patrimonial, con portafolio). Ver skill `datos-mock`.
 > portafolio); Carmen sigue siendo contraste y no una cuarta intención con flujo de
 > acción propio; el orden estricto de construcción y la demo con Beto no se tocan.
 
+> **Enmienda del 2026-09-12 (tarde).** Se cierra el ida y vuelta sobre Inversiones con
+> una regla, no con otra reversión: **las tres tools de Inversiones se quedan** (son de
+> lectura, ya están probadas y enriquecen lo que ve un juez que conecte su cliente MCP),
+> pero **el viaje de Carmen no pasa por el agente**, y su chip "¿Cómo va mi portafolio?"
+> se quitó de la consola.
+>
+> El motivo es medible, no de opinión. Se probó contra producción: Carmen pregunta por su
+> portafolio y el agente, al no tener componente para eso, pinta **`MetaActiva`** con el
+> valor de mercado del portafolio como si fuera la meta y lo aportado como avance. En
+> pantalla eso es una barra de progreso hacia un objetivo que ya se alcanzó: la única
+> interfaz generada del proyecto que **miente**.
+>
+> Las dos salidas eran quitar la pregunta o construir un componente de portafolio. Se
+> eligió la primera: un componente nuevo a la hora 12.5 es abrir alcance, justo lo que el
+> consejo oficial desaconseja ("un problema pequeño resuelto completo"). El portafolio de
+> Carmen **sí se ve** en Productos → Inversiones, que es una pantalla programada y honesta
+> sobre serlo.
+>
+> El prompt del agente ganó además una regla general: **un componente se usa solo para lo
+> que dice su descripción**, y si nada del catálogo sirve, se contesta con `Text` y se
+> ofrece lo que sí. Vale para cualquier pregunta fuera de guion, no solo para Carmen.
+>
+> **Lo que NO cambia**: Carmen sigue siendo el tercer perfil de contraste, con su
+> diagnóstico de salud financiera y su gasto, que el catálogo sí sabe pintar.
+
 ### Orden de construcción (no negociable)
 
 > **Las horas vigentes son las de `docs/equipo/roadmap.md`** (fase 1 a H14 = sáb 10:00,

@@ -1,3 +1,4 @@
+// @ts-ignore
 import pg from "pg";
 import { config } from "../config.js";
 import type { Fila } from "./fila.js";
@@ -62,7 +63,7 @@ export async function nombresDeTablas(cliente: pg.Pool): Promise<string[]> {
     "select table_name from information_schema.tables where table_schema = $1 order by table_name",
     [ESQUEMA],
   );
-  return rows.map((r) => r.table_name);
+  return rows.map((r: { table_name: string }) => r.table_name);
 }
 
 /**
@@ -76,14 +77,14 @@ export async function cargarTablasDesdePostgres(): Promise<Map<string, Fila[]>> 
   const nombres = await nombresDeTablas(cliente);
   if (nombres.length === 0) {
     throw new Error(
-      `la base respondio pero el esquema "${ESQUEMA}" no tiene tablas: corre \`pnpm datos:cargar\``,
+      `la base respondio pero el esquema "${ESQUEMA}" no tiene tablas: corre \`pnpm datos:restaurar\``,
     );
   }
   for (const nombre of nombres) {
     const { rows } = await cliente.query<Record<string, unknown>>(`select * from ${ESQUEMA}."${nombre}"`);
     tablas.set(
       nombre,
-      rows.map((fila) => {
+      rows.map((fila: Record<string, unknown>) => {
         const salida: Fila = {};
         for (const [columna, valor] of Object.entries(fila)) salida[columna] = aTexto(valor);
         return salida;

@@ -23,9 +23,35 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   `analizar_ahorro` (O4, fachadas de lectura que componen las atómicas por dentro sin
   reimplementar nada) y `ejecutar_decision` (O2, el ciclo de acción pasa de 3 llamadas a
   2). 21 tools en total, 14 pruebas nuevas (117 en `@maya/mcp`), `pnpm typecheck` y
-  `pnpm test` en verde en los 5 paquetes. **Bloque B (prefetch en `agente.ts` y que el
-  ciclo de acción del prompt use `ejecutar_decision`) sigue sin empezar** — vive en
-  `apps/web/src/lib/agente`, es de quien tome el rol `contrato`.
+  `pnpm test` en verde en los 5 paquetes. **Bloque B lo cerró `luis` en paralelo** (ver
+  la entrada de las 09:20 abajo): prefetch en `agente.ts`, ciclo de acción con
+  `ejecutar_decision`, y el prompt prefiriendo las tools compuestas.
+
+- **sáb 09:40 · arreglado** — **La consola no pintaba nada porque el registro del renderer
+  estaba vacío en ese camino.** `registrarLayout()`/`registrarCatalogo()` solo se llamaban
+  en `/catalogo`, así que la galería se veía perfecta y la demo no pintaba una tarjeta.
+  **Regla nueva: todo módulo que renderice un `<Superficie>` llama
+  `registrarComponentes()`** (`apps/web/src/lib/registrar-componentes.ts`, una sola
+  función, idempotente). Si algún día vuelve a aparecer "X no está en el catálogo de esta
+  superficie" para **varios** componentes a la vez —`Column` incluido—, no falta un
+  componente: falta el registro. `<Superficie>` ahora lo grita en consola.
+
+- **sáb 09:40 · lección** — **290 pruebas y ninguna cazó esto**, porque todas probaban
+  *mensajes* (que validen, que el reducer los aplique) y ninguna probaba que la pantalla
+  **se pinte**. Un mensaje válido que nadie sabe pintar se ve igual que uno roto. Ya hay
+  tres pruebas que renderizan el lienzo de verdad con `renderToStaticMarkup`, sin DOM ni
+  testing-library. Si agregas un camino de render nuevo, prueba que pinte, no que valide.
+
+- **sáb 09:40 · ojo al ensayar** — el agente contestaba "ya tienes un plan activo" a todo
+  porque el estado traía los planes de las pruebas de humo. **`pnpm reiniciar-estado` antes
+  de cada ensayo**, como dice el `CLAUDE.md`; no es opcional.
+
+- **sáb 09:20 · hecho (luis/contrato)** — **Bloque B de los orquestadores
+  (`docs/arquitectura/orquestadores.md`) completo, sobre el Bloque A de `aldair`.**
+  Prefetch determinista de `panorama_inicial` (O3) antes del primer turno, el ciclo de
+  acción del prompt ahora llama `ejecutar_decision` (O2) en vez de la tool de mutación
+  suelta, y el prompt prefiere las tools compuestas (`analizar_gasto`, `analizar_ahorro`)
+  sobre las atómicas (O4). 32 pruebas en verde.
 
 - **sáb 05:30 · hecho** — **El producto funciona en producción, con el modelo real.** Los
   tres pasos del guion corriendo contra `https://maya.157.173.204.174.sslip.io`: Beto pide

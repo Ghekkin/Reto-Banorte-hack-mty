@@ -41,13 +41,22 @@ ejemplo y lo dice.
 
 ### Qué pasa cuando corres `pnpm dev`
 
-1. `scripts/dev.sh` instala si hace falta y **genera `catalogo.json`** desde los schemas.
+1. `scripts/dev.sh` instala si hace falta, **carga el `.env` de la raíz y lo exporta** (los
+   dos procesos corren con su propio `cwd`) y **genera `catalogo.json`** desde los schemas.
+   Si falta `DATABASE_URL`, se detiene ahí con el motivo.
 2. Levanta `@maya/mcp` en el 3100 y **espera a que `/health` responda** (hasta 30 s).
-   El MCP carga los 22 CSV de `db/datos/` al arrancar: si falta uno, se sabe ahí.
+   El MCP trae el esquema `banorte` entero de PostgreSQL al arrancar: si la base no
+   responde, **no arranca** (ADR 0010) y se sabe ahí, no en la demo.
 3. Levanta `@maya/web` en el 3000.
 4. Imprime las tres URLs: la web, el MCP y el catálogo.
 
 `Ctrl-C` baja las dos.
+
+**`dev.sh` es bash y en Windows no corre.** Levantando las apps a mano
+(`pnpm --filter @maya/mcp dev`, `pnpm --filter @maya/web dev`) el `.env` de la raíz igual se
+carga, porque `apps/mcp/src/config.ts` y `apps/web/next.config.ts` lo leen por ruta
+absoluta desde su propia ubicación. Antes no lo hacían y el resultado era una app entera
+con las pantallas vacías.
 
 ### Una vuelta completa del ciclo
 
@@ -71,10 +80,10 @@ Contrato completo en `docs/arquitectura/contrato-agente-cliente.md`; el renderer
 
 ### Estado mutable y ensayos
 
-Los CSV **no se tocan nunca**: son la foto de partida. Lo que una tool de acción aplica
-se escribe en `apps/mcp/estado.json` (fuera de git) y las lecturas lo superponen. Por
-eso `pnpm reiniciar-estado` es borrar un archivo, y la demo arranca igual las veces que
-haga falta. Va antes de cada ensayo (skill `checklist-demo`).
+Los datos de partida **no se tocan nunca**: las tablas de `banorte` son la foto inicial. Lo
+que una tool de acción aplica se escribe en `banorte.acciones_aplicadas` y las lecturas lo
+superponen. Por eso `pnpm reiniciar-estado` es truncar esa tabla, y la demo arranca igual
+las veces que haga falta. Va antes de cada ensayo (skill `checklist-demo`).
 
 ### Qué está mockeado hoy
 

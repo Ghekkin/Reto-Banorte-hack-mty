@@ -38,18 +38,21 @@ nosotros con cada punto. Es el documento que el rol `demo` revisa cada 6 horas.
 
 | # | Entregable | Qué piden literal | Dónde vive en nuestro repo | Estado |
 |---|---|---|---|---|
-| 01 · Demo | **Corrida en vivo** | "El flujo completo: intención, UI generada, interacción y la acción que dispara" | `docs/demo/guion-demo.md`, `checklist-previa.md` | plan |
-| 02 · Código | **Repositorio** | "Componentes, servidor MCP y capa A2UI, con instrucciones para correrlo" | `apps/web` (componentes + capa A2UI), `apps/mcp`, `README.md` raíz con instrucciones | plan |
-| 03 · Datos | **APIs y datasets** | "Los servicios creados por el equipo, aunque los datos sean sintéticos" | `db/datos/` (22 CSV), `db/schema.sql`, `docs/como-funciona/datos-mock.md` | construido |
-| 04 · Técnico | **Decisiones** | "Diagrama de arquitectura y los trade-offs: modelo, protocolo, infraestructura" | `docs/arquitectura/vision-general.md` + `docs/arquitectura/trade-offs.md` + `docs/decisiones/` | plan |
+| 01 · Demo | **Corrida en vivo** | "El flujo completo: intención, UI generada, interacción y la acción que dispara" | `docs/demo/guion-demo.md`, `pitch.md`, `checklist-previa.md` | **construido** (corrida verificada 2026-09-12 09:00) |
+| 02 · Código | **Repositorio** | "Componentes, servidor MCP y capa A2UI, con instrucciones para correrlo" | `packages/catalogo` (8 componentes), `packages/a2ui` (motor), `apps/mcp` (18 tools), `README.md` con los comandos reales | **construido** |
+| 03 · Datos | **APIs y datasets** | "Los servicios creados por el equipo, aunque los datos sean sintéticos" | PostgreSQL esquema `banorte`; `db/schema.sql` y `db/migraciones/`; `docs/como-funciona/datos-mock.md` y `base-de-datos.md` (ADR 0010) | **construido** |
+| 04 · Técnico | **Decisiones** | "Diagrama de arquitectura y los trade-offs: modelo, protocolo, infraestructura" | `docs/arquitectura/vision-general.md` + `trade-offs.md` + `docs/decisiones/` (10 ADR) | **construido** (2026-09-12 10:00) |
 
 ### Lo que el repo tiene que tener el domingo, sin excepción
 
-- [ ] `README.md` raíz: qué es, cómo se corre en 5 comandos, dónde está cada cosa,
-      qué modelo usa y cómo poner la API key.
-- [ ] `docs/arquitectura/vision-general.md` con el diagrama en `construido`.
-- [ ] `docs/arquitectura/trade-offs.md`: modelo, protocolo, infraestructura, con la
-      alternativa descartada de cada uno.
-- [ ] Datos sintéticos commiteados y documentados.
-- [ ] Servidor MCP que arranca solo y lista sus tools.
-- [ ] Catálogo A2UI documentado: qué componentes existen y qué props aceptan.
+- [x] `README.md` raíz: qué es, cómo se corre, dónde está cada cosa, qué modelo usa y
+      cómo poner la API key.
+- [x] `docs/arquitectura/vision-general.md` con el diagrama, en `construido`.
+- [x] `docs/arquitectura/trade-offs.md`: modelo, protocolo, infraestructura, con la
+      alternativa descartada de cada uno y las tres preguntas que esperamos del jurado.
+- [x] Datos sintéticos documentados; esquema y migraciones en `db/` (viven en PostgreSQL,
+      ADR 0010).
+- [x] Servidor MCP que arranca solo y lista sus tools en `/health`.
+- [x] Catálogo A2UI documentado y **publicado** en `/catalogo/v1.json`.
+- [ ] Grabación de respaldo de la demo, desde `estable`.
+- [ ] Plan B sin red ensayado (Postgres local + `pnpm datos:restaurar`).

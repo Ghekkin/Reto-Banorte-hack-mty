@@ -18,8 +18,9 @@ UPDATE creditos
    SET estatus = 'vigente'
  WHERE estatus = 'reestructurado';
 
--- 3. Los topes que la demo creo o movio. Los cuatro topes base se restauran desde el
---    CSV; cualquier otro lo creo una accion y no deberia sobrevivir al reinicio.
+-- 3. Los topes que la demo creo o movio. Los cuatro topes base son parte del volcado
+--    (`pnpm datos:restaurar`); cualquier otro lo creo una accion y no deberia
+--    sobrevivir al reinicio.
 DELETE FROM topes_gasto
  WHERE id NOT LIKE 'tope_base_%';
 

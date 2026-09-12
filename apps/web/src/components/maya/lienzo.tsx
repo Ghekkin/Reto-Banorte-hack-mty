@@ -3,6 +3,7 @@
 import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender } from "@maya/a2ui";
 import { LayoutGrid } from "lucide-react";
+import { registrarComponentes } from "@/lib/registrar-componentes";
 
 /**
  * El lienzo: la rejilla bento donde el agente coloca lo que construye. Cada componente
@@ -12,7 +13,12 @@ import { LayoutGrid } from "lucide-react";
  * El renderer pinta los hijos; esta rejilla solo les da el hueco. Por eso este archivo
  * no sabe nada de plan de pago, gasto ni metas: si supiera, el catalogo dejaria de ser
  * intercambiable.
+ *
+ * Lo unico que si tiene que saber es que el registro exista: sin el, `<Superficie>` no
+ * encuentra ni `Column` y la pantalla entera cae en `Desconocido`.
  */
+registrarComponentes();
+
 export function Lienzo({
   superficie,
   conversacionId,
@@ -41,13 +47,11 @@ export function Lienzo({
 }
 
 /**
- * PLACEHOLDER del lienzo, a proposito.
+ * El estado vacio del lienzo: lo que se ve antes del primer turno.
  *
- * Aqui van los componentes del catalogo A2UI (`PlanDePago`, `GastoPorCategoria`,
- * `SimuladorMeta`...). Hoy 7 de los 8 son carpetas con README y sin codigo, asi que en
- * vez de inventar tarjetas falsas se dibuja el hueco y se dice que va en el.
- *
- * Un placeholder honesto es mejor que una maqueta que el jurado confunda con lo real.
+ * No es una maqueta ni un placeholder de trabajo pendiente. Los 8 componentes del
+ * catalogo existen y se pintan aqui en cuanto el agente construye la primera pantalla;
+ * esto solo dibuja el hueco para que la rejilla no arranque vacia.
  */
 export function LienzoPlaceholder() {
   return (
@@ -60,8 +64,9 @@ export function LienzoPlaceholder() {
         Aquí Maya construye la pantalla. Escribe abajo lo que necesitas resolver y las
         tarjetas aparecen en esta rejilla.
       </p>
-      <p className="text-xs text-muted-foreground/70">
-        Los componentes del catálogo se conectan en el siguiente paso.
+      <p className="text-sm text-muted-foreground/70">
+        Un plan de pagos, tu gasto por categoría, un simulador de ahorro: Maya elige el
+        componente que resuelve lo que pides.
       </p>
     </div>
   );

@@ -37,7 +37,7 @@ Tres párrafos máximo.
 - Tool: `apps/mcp/src/tools/<archivo>.ts` → `<nombreTool>`
 - Schema: `packages/schemas/src/<archivo>.ts` → `<NombreSchema>`
 - Componente: `apps/web/src/components/generated/<archivo>.tsx`
-- Datos mock: `db/datos/<archivo>.csv`
+- Datos mock: tablas del esquema `banorte` en PostgreSQL (ADR 0010)
 
 ### Flujo paso a paso
 1. ...

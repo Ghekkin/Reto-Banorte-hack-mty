@@ -41,11 +41,11 @@ vez de repetir una plantilla.
 
 | Ruta | Sección | Tipo | Datos |
 |---|---|---|---|
-| `/` | Inicio | Server component | CSV: cuentas, tarjetas, movimientos, créditos |
-| `/productos` | Productos | Server component | CSV: cuentas, tarjetas, créditos, portafolio |
+| `/` | Inicio | Server component | Base: cuentas, tarjetas, movimientos, créditos |
+| `/productos` | Productos | Server component | Base: cuentas, tarjetas, créditos, portafolio |
 | `/maya` | Maya | Client (streaming) | El agente vía `POST /api/agente` |
-| `/movimientos` | Movimientos | Server + filtro cliente | CSV: movimientos, categorías |
-| `/mas` | Más | Server component | CSV: resumen; el resto es estático |
+| `/movimientos` | Movimientos | Server + filtro cliente | Base: movimientos, categorías |
+| `/mas` | Más | Server component | Base: resumen; el resto es estático |
 
 `ORDEN_PESTANAS` en [navegacion.ts](../../apps/web/src/components/shell/navegacion.ts) fija
 el orden de la barra inferior con Maya en la posición central.
@@ -81,7 +81,7 @@ apps/web/src/
     marca.ts                    nombre, tagline, aviso legal: un solo lugar
     usuario-activo.ts           lee la cookie (server-only)
     usuarios.ts                 los tres perfiles demo
-    datos/leer-csv.ts           parser + cache de los CSV (server-only)
+    datos/tablas.ts             lector de PostgreSQL + conversiones (server-only)
     datos/consultas.ts          consultas tipadas para las pantallas
     agente/usar-agente.ts       cliente del streaming JSONL
 ```
@@ -90,8 +90,8 @@ apps/web/src/
 
 Es la decisión estructural del shell y conviene entenderla antes de tocar nada.
 
-Inicio, Productos y Movimientos son **componentes de servidor**: leen los CSV directo del
-disco. Para eso necesitan saber de quién son los datos **antes** de que exista cualquier
+Inicio, Productos y Movimientos son **componentes de servidor**: consultan PostgreSQL
+directo. Para eso necesitan saber de quién son los datos **antes** de que exista cualquier
 contexto de cliente. Un `useState` en un provider no le sirve al servidor; una cookie sí,
 porque llega en el request del primer render.
 
@@ -107,13 +107,13 @@ sequenceDiagram
     A->>C: set maya_usuario
     A->>A: revalidatePath("/", "layout")
     P->>C: usuarioActivo() lee la cookie
-    P->>P: consulta los CSV de ese usuario
+    P->>P: consulta la base para ese usuario
     P-->>U: pantalla nueva
 ```
 
 Sin el `revalidatePath` la cookie cambia pero las pantallas siguen mostrando el cache del
 usuario anterior. El id se **valida contra `USUARIOS`** en la server action: llega del
-navegador y termina en una lectura de disco.
+navegador y termina en una consulta a la base.
 
 ### Navegación en los dos tamaños
 
@@ -137,16 +137,26 @@ pitch (ver la enmienda del ADR).
 
 ### La capa de datos
 
-`lib/datos/` lee los 22 CSV de `db/datos/`. **Es el fallback que el ADR 0007 exige** y que
-no existía: con `FEATURE_POSTGRES` apagado la app no abre conexión. Hoy es la única ruta que
-funciona, porque el Postgres remoto no es alcanzable
-(`docs/issues/2026-09-12-postgres-remoto-inalcanzable.md`).
+`lib/datos/` consulta **PostgreSQL** (esquema `banorte`) con `pg`. Es la única fuente de
+datos del sistema: no hay CSV ni volcados en el repo (ADR 0010). La conexión sale de
+`DATABASE_URL`, y **es obligatoria**.
 
 - `leerTabla` está envuelto en `cache` de React: Inicio pide `cuentas` desde tres
-  componentes y el archivo se lee una vez por request.
-- `server-only` en los dos archivos: si alguien los importa en un componente de cliente,
-  falla al compilar en vez de intentar leer disco en el navegador.
+  componentes y la consulta se hace una vez por request.
+- `server-only` en los dos archivos: aquí hay credenciales y una conexión; si alguien los
+  importa en un componente de cliente, falla al compilar.
+- Si la base no responde, `leerTabla` avisa en el log y devuelve `[]`: la pantalla muestra
+  su estado vacío y la app no se cae. **Ojo con eso al depurar**: una base inalcanzable y
+  un usuario sin movimientos se ven exactamente igual. Si todo sale en cero, lo primero es
+  revisar `DATABASE_URL`, no los componentes.
+- El `.env` vive en la **raíz** del repo y Next corre con `cwd` en `apps/web`, así que
+  `next.config.ts` lo carga explícitamente con `process.loadEnvFile`. Sin eso, arrancar con
+  `pnpm --filter @maya/web dev` (o cualquier cosa que no sea `scripts/dev.sh`, que es bash
+  y no corre en Windows) dejaba la app sin `DATABASE_URL` y **todas las pantallas vacías**.
 - Los montos salen en **centavos**; formatear es de quien pinta (`lib/dinero.ts`).
+- `consultas.ts` tiene un segundo consumidor: las cinco rutas `GET /api/*`, que exponen
+  los mismos datos por HTTP para quien consulta de fuera. Las páginas **no** pasan por
+  ahí. Ver [la API REST de lectura](api-rest-lectura.md).
 
 ### Tres trampas que ya costaron un bug
 
@@ -176,7 +186,7 @@ tres arregladas:
 
 | Causa | Efecto | Estado |
 |---|---|---|
-| Cada navegación re-leía y re-parseaba los 365 KB de `movimientos.csv` | 100–300 ms por ruta | **Arreglado**: memoria a nivel de proceso en `leer-csv.ts` |
+| Cada navegación re-leía y re-parseaba los 365 KB de `movimientos.csv` | 100–300 ms por ruta | **Ya no aplica**: con el ADR 0010 los datos salen de la base, no de un archivo |
 | `/movimientos` mandaba los ~700 movimientos del usuario al navegador | ~1 200 ms → **~250 ms** | **Arreglado**: `TOPE_MOVIMIENTOS = 300` |
 | Sin `loading.tsx` no pasaba nada al tocar una pestaña | Se sentía trabado aunque tardara poco | **Arreglado**: skeletons del tamaño del contenido |
 | Modo desarrollo: Turbopack compila cada ruta en su primera visita y **`<Link>` no hace prefetch** | Picos de 1,5 a 2,9 s | **No se arregla**: es así por diseño. En producción el prefetch está activo y la ruta ya está compilada |

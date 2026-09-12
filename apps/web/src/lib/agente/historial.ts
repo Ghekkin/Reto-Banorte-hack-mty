@@ -13,14 +13,14 @@ import type { PeticionAgente } from "./tipos";
 /** Mas alla de esto, el data model de la pantalla se recorta: el modelo no lo necesita completo. */
 const LIMITE_DATA_MODEL = 2000;
 
-export function mensajesDelTurno(peticion: PeticionAgente): ModelMessage[] {
+export function mensajesDelTurno(peticion: PeticionAgente, panorama?: unknown): ModelMessage[] {
   const mensajes: ModelMessage[] = peticion.mensajes.map((m) => {
     if (m.rol === "agente") return { role: "assistant" as const, content: m.texto };
     if (m.rol === "accion") return { role: "user" as const, content: `[la persona toco la interfaz] ${m.texto}` };
     return { role: "user" as const, content: m.texto };
   });
 
-  mensajes.push({ role: "user", content: bloqueDeContexto(peticion) });
+  mensajes.push({ role: "user", content: bloqueDeContexto(peticion, panorama) });
   return mensajes;
 }
 
@@ -28,7 +28,7 @@ export function mensajesDelTurno(peticion: PeticionAgente): ModelMessage[] {
  * El bloque que le dice al modelo donde esta parado: con quien habla, que hay en
  * pantalla y, si vino de un toque, exactamente que accion fue y que se espera de el.
  */
-function bloqueDeContexto(peticion: PeticionAgente): string {
+function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string {
   const partes: string[] = ["--- contexto del turno ---", `usuarioId: ${peticion.usuarioId}`];
 
   if (peticion.superficie) {
@@ -38,6 +38,10 @@ function bloqueDeContexto(peticion: PeticionAgente): string {
     );
   } else {
     partes.push("pantalla actual: (todavia no hay; es el primer turno)");
+  }
+
+  if (panorama) {
+    partes.push(`panorama ya calculado: ${JSON.stringify(panorama)}`);
   }
 
   if (peticion.error) {
@@ -54,7 +58,7 @@ function bloqueDeContexto(peticion: PeticionAgente): string {
       `La persona acaba de tocar "${sourceComponentId}" y eso disparo la accion "${name}".`,
       `context de la accion: ${JSON.stringify(context)}`,
       esAccionDeMutacion(name)
-        ? `"${name}" cambia estado: llama la tool "${name}" con los datos de ese context (incluida ` +
+        ? `"${name}" cambia estado: llama la tool "ejecutar_decision" con accion: "${name}" y los datos de ese context (incluida ` +
           "`idempotencyKey` tal cual viene), y DESPUES vuelve a pintar la pantalla con el resultado."
         : `"${name}" solo cambia la vista: no llames tools de accion, consulta lo que necesites y vuelve a pintar.`,
     );
