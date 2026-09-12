@@ -123,7 +123,7 @@ el campo nuevo es opcional.
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
 | `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
 | `apps/mcp/` | Servidor MCP en TS (Streamable HTTP), tools del dominio financiero | pendiente |
-| `packages/a2ui/` | Renderer A2UI propio: reducer, bindings, árbol, registro, validación con los schemas oficiales (ADR 0008) | pendiente |
+| `packages/a2ui/` | Renderer A2UI propio: reducer, bindings, árbol, registro, validación con los schemas oficiales (ADR 0008) | `spec/` existe (schemas y casos de conformidad v0.9.1 vendoreados); `src/` pendiente |
 | `packages/catalogo/` | Catálogo A2UI propio: schema + componente React + `.jsonl` de ejemplo por componente | pendiente |
 | `packages/schemas/` | Schemas Zod de las tools MCP | pendiente |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |

@@ -18,6 +18,10 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **vie 23:25 · hecho** — `packages/a2ui/spec/`: spec A2UI v0.9.1 vendoreada del repo
+  oficial (commit `1c45c809`): schemas de mensajes, catálogo básico con 18 componentes y
+  **8 archivos de casos de conformidad** que serán los tests del renderer. Apache 2.0.
+
 - **vie 23:10 · decisión** — Renderer A2UI **propio** (ADR 0008): `packages/a2ui` con los
   JSON Schema oficiales vendoreados para validar; sin `@a2ui/react` (Lit/shadow DOM
   rompería shadcn y la paleta) y sin spike. Plan de construcción en

@@ -1,0 +1,5 @@
+# Workspace del monorepo. Todo paquete nuevo vive en apps/ o packages/
+# y entra al mapa de CLAUDE.md en el mismo commit.
+packages:
+  - "apps/*"
+  - "packages/*"

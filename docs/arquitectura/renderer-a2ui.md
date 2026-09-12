@@ -23,9 +23,11 @@ componente salga con nuestro diseño y para entender cada línea cuando nos preg
 
 ```
 packages/a2ui/
-  spec/                      JSON Schema oficiales v0.9.1 (vendoreados, Apache 2.0)
-    mensajes.schema.json
-    catalogo-basico.schema.json
+  spec/                      YA EXISTE: copia literal de specification/v0_9_1 del repo oficial
+    v0_9_1/json/             server_to_client.json, client_to_server.json, common_types.json…
+    v0_9_1/catalogs/basic/   catalog.json (18 componentes: modelo de nuestro catalogo.json)
+    v0_9_1/test/cases/       8 archivos de conformidad oficiales → nuestros tests de la spec
+    README.md, LICENSE-A2UI, UPSTREAM_COMMIT
   src/
     tipos.ts                 tipos de los 4 mensajes y del action (derivados del schema)
     validar.ts               validarMensaje(m) → ok | errores   (ajv sobre spec/)
@@ -114,9 +116,9 @@ importarse; `layout/` registra Column, Row, Text, Divider. `apps/web` sirve
 
 ## Criterios de aceptación (sustituyen al spike; corte H6 = sáb 02:00)
 
-- [ ] `pnpm --filter a2ui test` en verde: reducer con los 4 mensajes, bindings
-      absolutos y relativos, árbol con 3 niveles, validación que rechaza un componente
-      inexistente y un mensaje sin `version`.
+- [ ] `pnpm --filter a2ui test` en verde: **los casos de conformidad de `spec/v0_9_1/test/cases/`
+      pasan contra `validar()`**, más reducer con los 4 mensajes, bindings absolutos y
+      relativos, árbol con 3 niveles, y rechazo de un componente inexistente.
 - [ ] `ejemplos/plan-de-pago.jsonl` (a mano) pinta `PlanDePago` con datos del data
       model dentro del lienzo de `apps/web`.
 - [ ] Tocar "Aplicar plan" produce el `action` con `context.plazo` resuelto, impreso en
