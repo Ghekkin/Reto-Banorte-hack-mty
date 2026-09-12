@@ -1,9 +1,14 @@
 ---
-estado: aceptada
+estado: reemplazada por 0007
 fecha: 2026-09-12
 ---
 
 # 0006 — El estado del MCP vive en JSON; TimescaleDB entra después y detrás de flag
+
+> **Reemplazada por el ADR 0007** el 2026-09-12: los datos crecieron a 22 CSV con
+> relaciones, la fuente es CSV commiteado y Postgres es copia cargable detrás de
+> `FEATURE_POSTGRES`, con fallback en memoria. La regla de fondo se conserva: la demo
+> nunca depende de la base.
 
 ## Contexto
 

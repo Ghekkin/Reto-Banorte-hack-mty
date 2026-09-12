@@ -27,6 +27,7 @@ quien.
 ### Coordinación
 - [Tablero](tablero.md) — quién está en qué, bloqueos, siguiente
 - [Roles](equipo/roles.md) — los cuatro roles y cómo tocar dominio ajeno
+- [Roadmap](equipo/roadmap.md) — las horas que quedan, bloque por bloque y rol por rol, con los cortes que deciden
 - [Bitácoras](bitacora/README.md) — cómo funcionan · [Equipo](bitacora/equipo.md)
 
 ### Reto
@@ -44,7 +45,8 @@ quien.
 - [0003 — A2UI real con catálogo propio](decisiones/0003-a2ui-como-protocolo-de-interfaz.md)
 - [0004 — Caso de uso: tres intenciones en orden estricto](decisiones/0004-caso-de-uso.md)
 - [0005 — Gemini 3.8 Flash principal, Sonnet 5 de respaldo](decisiones/0005-modelo-gemini-3-8-flash.md)
-- [0006 — Estado del MCP en JSON; TimescaleDB detrás de flag](decisiones/0006-estado-del-mcp-en-json.md)
+- [0006 — Estado del MCP en JSON](decisiones/0006-estado-del-mcp-en-json.md) — reemplazada por 0007
+- [0007 — PostgreSQL como fuente de datos mock, CSV commiteados, fallback en memoria](decisiones/0007-postgresql-como-fuente-de-datos-mock.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan

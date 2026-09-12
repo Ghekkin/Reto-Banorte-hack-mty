@@ -107,7 +107,9 @@ el campo nuevo es opcional.
 | `docs/` | Toda la documentación. Índice en `docs/README.md` | existe |
 | `docs/reto/` | Contexto oficial, rúbrica y entregables, premios, transcripción del video | existe |
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
+| `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
+| `db/` | Datos sintéticos: 22 CSV (fuente), `schema.sql`, `cargar.sql`, `reiniciar.sql` (ADR 0007) | existe |
 | `scripts/` | `sesion-inicio.sh` (hook de inicio), `sync.sh` (commit+pull+push), `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario; hoy solo `DATABASE_URL` (Postgres en Coolify) | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |

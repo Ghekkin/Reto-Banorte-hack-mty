@@ -3,7 +3,10 @@ estado: aceptada
 fecha: 2026-09-12
 ---
 
-# 0005 — PostgreSQL como fuente de los datos mock, con CSV commiteados y fallback en memoria
+# 0007 — PostgreSQL como fuente de los datos mock, con CSV commiteados y fallback en memoria
+
+> Reemplaza al ADR 0006 (estado del MCP en JSON). Se escribió como 0005 en paralelo al
+> ADR 0005 del modelo; se renumeró el 2026-09-12 para deshacer la colisión.
 
 ## Contexto
 

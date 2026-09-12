@@ -31,6 +31,11 @@ estable). Ver skill `datos-mock`.
 
 ### Orden de construcción (no negociable)
 
+> Las horas de esta tabla se escribieron a la hora 6 del reto. **Las vigentes son las de
+> `docs/equipo/roadmap.md`** (fase 1 a H22, fase 2 a H26, fase 3 a H31, congelación
+> H32), re-baseadas a la hora 11 con la base y los datos ya listos. El orden y la regla
+> de corte no cambian.
+
 | Fase | Caso | Entra a la siguiente fase cuando… | Hora objetivo |
 |---|---|---|---|
 | 1 | Reestructura de tarjeta, **flujo accionable obligatorio** | Los 4 niveles de `probar` pasan: Beto pregunta → `PlanDePago` → aplica → estado cambia → `ConfirmacionPlan`. Ana con la misma pregunta recibe otra UI. | hora 10 |

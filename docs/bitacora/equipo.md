@@ -14,6 +14,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **07:30 · decisión** — Roadmap de las horas restantes en `docs/equipo/roadmap.md`,
+  re-baseado a H11: cortes en H14 (A2UI), H16 (`dev.sh`), **H22 (fase 1)**, H26 (ensayo),
+  H32 (congelación), H35 (último ensayo). Turnos de sueño: nunca `contrato` y `mcp` a la
+  vez. Colisión de ADR resuelta: Postgres pasa a **0007**; el 0006 (JSON) queda
+  reemplazado. `db/` entra al mapa del `CLAUDE.md`.
+
 - **07:15 · decisión** — Identidad visual: forma flotante sobre lienzo gris `#F2F2F3`
   (sidebar y tarjetas `rounded-2xl` con `shadow-sm`, rejilla bento, barra de
   conversación fija abajo, una tarjeta héroe con degradado rojo por pantalla). Par de
