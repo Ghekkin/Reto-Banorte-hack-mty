@@ -483,3 +483,39 @@ mapa. Issue #4.
 Propuesta para que no vuelva a pasar, que dejo escrita en el issue y no implemento por
 no tocar el hook de todos sin avisar: que el hook `Stop` rechace el commit si algún
 archivo tiene `<<<<<<<`.
+
+### 13:30 — El ciclo completo corriendo en la URL pública
+
+La llave de Gemini quedó puesta (probada antes de instalarla: válida, y
+`gemini-3.8-flash` responde, así que el ADR 0005 sigue en pie). Pero con la llave puesta
+el agente publicado seguía sin contestar: **no alcanzaba al MCP**.
+
+Dos intentos antes de dar con ello:
+
+1. `MCP_URL` al uuid de la app → no resuelve. El único alias que Coolify pone es el
+   nombre del contenedor **con el timestamp del deploy**, que cambia cada vez.
+2. `MCP_URL` a la URL pública del MCP → *timeout* desde dentro del contenedor, aunque
+   desde fuera responda perfecto. **Hairpin NAT.** Esta es la que más me interesa
+   recordar: verificar una URL con `curl` desde mi máquina no prueba que la app pueda
+   usarla. Hay que probar desde donde vive el código: `docker exec <web> curl …`.
+
+Lo que funcionó: alias de red estable (`--network-alias maya-mcp`) y
+`MCP_URL=http://maya-mcp:3100/mcp`. Necesita deploy **forzado**; el `restart` no aplica
+esa opción.
+
+Verificado en producción, los tres pasos del reto:
+
+```
+"Quiero pagar menos intereses de mi tarjeta"
+  → panorama_inicial · simular_reestructura      (interpretar con datos reales)
+  → createSurface + ResumenTarjeta + PlanDePago  (generar la interfaz)
+  → razon: "Tienes $47,386 … al 96.7 % de tu límite"
+con la accion encima:
+  → aplicar_plan_pago · consultar_plan           (ejecutar y que la UI cambie)
+  → "Tu plan de pagos a 18 meses quedó activo con éxito."
+```
+
+Nota de coordinación: somos al menos tres sesiones sobre el mismo árbol. El issue #5 lo
+había documentado otra sesión con el arreglo equivocado (la URL pública); corregí esa
+parte del archivo con la medición, dejando intacto su análisis de la causa, que era
+bueno. Conviene decir siempre quién toca qué antes de tocarlo.
