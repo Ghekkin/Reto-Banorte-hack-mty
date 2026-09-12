@@ -1,0 +1,25 @@
+# dependencias y builds
+node_modules/
+.next/
+dist/
+.vercel/
+__pycache__/
+.venv/
+
+# entorno y secretos: con commit automatico, lo que no este aqui SE SUBE
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+credentials*.json
+service-account*.json
+
+# local de cada quien: identidad de sesion y ajustes personales de Claude Code
+.sesion
+.claude/settings.local.json
+
+# ruido
+*.log
+.DS_Store

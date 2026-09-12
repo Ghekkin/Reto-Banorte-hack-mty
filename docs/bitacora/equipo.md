@@ -1,0 +1,59 @@
+# Bitácora del equipo
+
+Entradas con fecha y hora, las más recientes **arriba**. Se escribe conforme pasa,
+no al final. La bitácora personal de cada quien está al lado (`<nombre>.md`, ver
+`README.md`). Tres tipos de entrada:
+
+- **decisión** — algo que se acordó y por qué (si es grande, también va a `decisiones/`)
+- **hecho** — algo que quedó funcionando (o que se rompió)
+- **idea** — algo que se pensó y no se hizo, para no perderlo
+
+Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque...".
+
+---
+
+## 2026-09-12
+
+- **04:08 · hecho** — Primer commit y push del repo, ya pasada la hora de arranque. Sube
+  la base completa: `CLAUDE.md`, 19 documentos, 19 skills y los 3 scripts de sesión.
+  `CLAUDE.md` deja de anunciar la regla de las 20:00 y la registra como hecho.
+
+## 2026-09-11
+
+- **09:30 · hecho** — Diez skills nuevas para el ciclo completo: `elegir-caso-de-uso`,
+  `scaffold`, `datos-mock`, `agente-host`, `cambiar-schema`, `probar`,
+  `resolver-conflicto`, `premio-lateral`, `desplegar`, `pitch`. `CLAUDE.md` gana
+  "Convenciones de desarrollo" y la definición de hecho. El conector de Yolani queda
+  fuera de este repo (`disableClaudeAiConnectors`).
+
+- **08:40 · decisión** — El primer commit sale hoy a las **20:00**, no antes. Un commit
+  local hecho a las 08:24 se deshizo con `git reset --soft` (archivos intactos) para que
+  el historial empiece a la hora del reto. `.claude/settings.json` se copia a las 20:00.
+- **08:35 · hecho** — `gh auth setup-git` conecta `gh` como credencial de `git`; sin
+  eso, `fetch`/`push` por HTTPS fallaban con "could not read Username". Los scripts ya
+  distinguen ese caso de "sin red".
+
+- **00:30 · decisión** — Cuatro roles (`web`, `mcp`, `contrato`, `demo`) como
+  responsabilidad, no territorio: cualquiera toca cualquier archivo con las reglas de
+  `docs/equipo/roles.md`. Tablero con una fila por rol; bitácora personal por persona.
+- **00:30 · decisión** — Commit y push automáticos al final de cada turno (hook
+  `Stop` → `scripts/sync.sh --auto`), con prefijo `[nombre/rol]`. Reemplaza la regla
+  de "sin push sin pedir". `main` siempre arranca; la etiqueta `estable` marca la
+  última demo verificada.
+- **00:30 · hecho** — Ritual de sesión: hook `SessionStart` hace pull y muestra el
+  tablero; skill `inicio` pregunta nombre y rol; skill `cerrar` deja todo escrito y
+  sube. Premios laterales analizados en `docs/reto/premios-objetivo.md`.
+
+## 2026-09-10
+
+- **23:05 · decisión** — Todo issue se registra en dos lugares y en el mismo momento:
+  archivo en `docs/issues/` y `gh issue create` en `Ghekkin/Reto-Banorte-hack-mty`.
+  Crear issues en GitHub queda autorizado de forma permanente; `git push` sigue
+  requiriendo que el usuario lo pida.
+
+- **22:40 · decisión** — Stack todo en TypeScript (ADR 0001). Python solo detrás de
+  una tool con mock en TS (ADR 0002).
+- **22:40 · decisión** — Reglas del repo: documentación en dos niveles, issues
+  obligatorios, algoritmos explicados, `main` siempre demostrable, sin push sin pedir.
+- **22:40 · hecho** — Creados `CLAUDE.md`, estructura de `docs/` y skills del repo.
+  Sin código todavía; el reto empieza mañana y faltan los detalles oficiales.

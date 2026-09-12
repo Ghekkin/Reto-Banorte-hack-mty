@@ -1,0 +1,85 @@
+# Registro de hallazgos (issues)
+
+Aquí se anotan bugs, riesgos y deudas que alguien encuentra **mientras hacía otra
+cosa**, y también los bugs propios que se deciden no arreglar ahora. El hallazgo
+casual es el más fácil de perder: quien lo ve está ocupado en otro problema y, si no
+lo escribe en ese momento, desaparece. En un hackathon, además, ese bug reaparece en
+la demo.
+
+**Cada hallazgo vive en dos lugares, siempre:** un archivo aquí (el detalle, con
+archivo y línea) y un issue en GitHub (`Ghekkin/Reto-Banorte-hack-mty`, la visibilidad
+para todo el equipo y el cierre automático con `Fixes #N`). Se crean los dos en el
+mismo momento. Un archivo sin `github:` o un issue de GitHub sin archivo están a medias.
+
+## Cuándo escribir aquí
+
+- Encontraste un fallo real en el código que no es parte de tu tarea.
+- Dejaste algo funcionando "por ahora" que sabes que se va a romper.
+- Una dependencia rompe algo o tiene una versión problemática.
+- El código hace algo distinto de lo que dice un doc.
+
+## Cuándo NO escribir aquí
+
+- Ideas de features. Eso va a `bitacora.md` como "idea", o a `reto/`.
+- Cosas que arreglaste como parte de tu tarea normal (eso va en el commit).
+
+## Reglas
+
+- Un archivo por hallazgo: `YYYY-MM-DD-slug-corto.md`.
+- **Sin archivo y línea, el issue no sirve.**
+- **Se sube a GitHub en el momento**, con `gh issue create`, y el número va al
+  frontmatter `github:`. Si todavía no tiene número, **no escribas el campo** (ni vacío
+  ni con guión: un barrido automático lo daría por publicado).
+- Etiquetas en GitHub: la severidad (`critica`, `alta`, `media`, `baja`) y el área
+  (`web`, `mcp`, `schemas`, `ml`, `docs`, `infra`). Si no existen, se crean con
+  `gh label create`.
+- Si lo resuelves en la misma sesión: `estado: resuelto`, `resuelto-en:` con el hash,
+  y el commit lleva `Fixes #N` para que GitHub lo cierre al hacer push. No se borra el
+  archivo ni se cierra el issue a mano: `Fixes #N` lo cierra; si el arreglo vive fuera
+  del código (una variable de entorno, una decisión), entonces sí `gh issue close N`
+  con un comentario que diga por qué.
+- Se agrega una fila a la tabla de abajo en el mismo commit.
+
+## Formato del archivo
+
+```markdown
+---
+estado: abierto        # abierto | resuelto | descartado
+severidad: media       # critica (rompe la demo) | alta | media | baja
+area: mcp              # web | mcp | schemas | ml | docs | infra
+encontrado: 2026-09-11 15:20
+github: 7              # número del issue; solo cuando ya exista
+resuelto-en:           # hash del commit, solo si estado: resuelto
+---
+
+# Título en una línea, concreto
+
+**Dónde:** `apps/mcp/src/tools/movimientos.ts:42`
+
+**Qué esperaba:** ...
+
+**Qué pasa:** ...
+
+**Cómo lo reproduje / por qué estoy seguro:** ...
+
+**Impacto en la demo:** ninguno | se nota si ... | la rompe
+```
+
+## Formato del issue en GitHub
+
+Mismo título que el archivo. El cuerpo es el contenido del archivo sin frontmatter, más
+una última línea `Ficha: docs/issues/YYYY-MM-DD-slug-corto.md`.
+
+```bash
+gh issue create \
+  --repo Ghekkin/Reto-Banorte-hack-mty \
+  --title "Título en una línea, concreto" \
+  --label media --label mcp \
+  --body-file /ruta/al/cuerpo.md
+```
+
+## Tabla
+
+| Fecha | Sev. | Área | Título | GitHub | Estado |
+|---|---|---|---|---|---|
+| — | — | — | (sin hallazgos aún) | — | — |
