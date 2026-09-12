@@ -59,6 +59,50 @@ commiteado.
 nadie lo escucha todavía. Conectarlo al agente le permitiría corregirse en el mismo turno,
 y es la mejor respuesta a "¿y si el modelo se equivoca?". Queda anotado, no empezado.
 
+### 01:55 · hecho — Auditoría del backend, el MCP y el A2UI: 12 huecos cerrados
+
+Pasada con ojos frescos sobre todo lo que existe, archivo por archivo. Lo que se
+encontró y se arregló, con prueba cada uno (`auditoria.spec.ts` en el MCP y `cortes del
+turno` / `esquemaPeticion` en el agente):
+
+**Agente**
+- **El timeout no se reportaba como timeout.** El AI SDK no lanza al abortar: emite una
+  parte `abort` y cierra el stream. Sin ese `case`, un turno de 30 s salía como "el
+  modelo no entregó pantalla". Lo comprobé con un mock que respeta el `abortSignal`.
+- **Cerrar la pestaña no cortaba nada**: el turno seguía llamando tools (y podía aplicar
+  una acción) para nadie. `route.ts` pasa `request.signal` y se combina con el timeout.
+- **La petición no se validaba**: `mensajes` ausente tronaba dentro del stream. Ahora
+  `esquemaPeticion` (Zod) devuelve 400 con detalle, con topes y `usuarioId` con patrón.
+- **MCP caído se reportaba como error del modelo**; ahora `codigo: "tool"` con la URL.
+- **Un proveedor caído producía dos errores** (el suyo y "no entregó pantalla"); ahora uno.
+- `datosJson` aceptaba `null`, un arreglo o un texto como data model; y con `"null"` el
+  modelo recibía una lista de errores **vacía**. Ahora exige objeto y siempre dice por qué.
+- La regla "un solo `heroe` por pantalla" estaba en el prompt y en ningún validador.
+- `revisarArbol` duplicaba lo que `validar.ts` ya sabía hacer (`arbolCompleto`).
+
+**MCP**
+- `consultar_tarjeta` con el id de una **tarjeta de débito** la devolvía como de crédito
+  (límite 0, tasa 0 → "saludable"). Se rechaza con motivo.
+- El plan era por persona, no por tarjeta: `aplicar_plan_pago` rechazaba una segunda
+  tarjeta. Ahora `planAplicado(usuarioId, tarjetaId)`.
+- La escritura del estado no era atómica: ahora temporal + `rename`.
+- `comparar_periodos` sin `periodo` tomaba el **mes en curso a medias** (12 días contra
+  meses completos: todo "bajaba"). Default: el último mes cerrado.
+- `sumarMeses` con meses negativos daba un mes negativo; `MCP_HOY` con un typo se usaba
+  tal cual; `desde > hasta` devolvía vacío en silencio; `crear_apartado` aceptaba una
+  `cuentaOrigenId` **de otra persona**. Los cuatro, cerrados. Dos helpers muertos, fuera.
+
+**A2UI (obra de la otra sesión, ya en `main`)**: revisé `esquema.ts`, `validar.ts`,
+`procesar.ts`, `bindings.ts`, `Superficie.tsx` y la conformidad. Sólido. Un riesgo que
+no toqué por ser suyo y estar en vuelo: `Superficie` llama `alFallar` **durante el
+render**; si quien lo escuche hace `setState` con una referencia nueva, se cicla. Hoy
+nadie lo escucha (a propósito), así que no muerde; que lo tenga en cuenta quien lo conecte.
+
+**Nota de historia:** los cambios de esta auditoría entraron en `b2a19f8` (el commit de
+la otra sesión sobre el motor A2UI): su hook `Stop` hace `git add -A` y barrió mi árbol
+de trabajo a medio camino. El contenido es el descrito aquí; el mensaje de ese commit no
+lo menciona. 189 pruebas en verde.
+
 ### 01:20 · hecho — Backend completo: las 9 tools del MCP y el agente real
 
 Tomé el backend entero de un jalón, que es dominio de los roles `mcp` y `contrato`

@@ -34,4 +34,5 @@ El detalle por bloque está en `equipo/roadmap.md`; aquí solo el paso inmediato
 
 (se vacía cada día; lo importante ya quedó en `bitacora/equipo.md`)
 
+- Auditoría del backend, el MCP y el A2UI: 12 huecos cerrados con prueba (timeout mal reportado, petición sin validar, débito como crédito, mes a medias, cuenta ajena…). 189 pruebas en verde.
 - Backend completo del viaje del ADR 0004: 9 tools del MCP (7 lectura + 2 acción) con el ciclo `simular → aplicar → la lectura cambia` verificado por HTTP, y el agente real (Vercel AI SDK + MCP + A2UI validado). 63 pruebas en verde, sin llave de modelo.

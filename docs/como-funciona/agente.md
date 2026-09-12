@@ -45,7 +45,11 @@ Nunca se le pide al usuario que entienda un JSON roto.
 
 ### El turno, paso a paso
 
-1. `route.ts` recibe la petición y abre un stream JSONL. No hay estado en el servidor.
+1. `route.ts` valida el cuerpo con `esquemaPeticion` (Zod, en `tipos.ts`): un cuerpo mal
+   formado devuelve **400 con el detalle**, no un stream que muere a medias. Luego abre el
+   stream JSONL y le pasa `request.signal`: si la persona cierra la pestaña, el turno se
+   corta y no se siguen llamando tools (ni, peor, una acción) para nadie. No hay estado
+   en el servidor.
 2. `correrTurno` emite `estado: pensando` y, si **no hay llave de modelo**, sirve el turno
    de ejemplo (`mock.ts`) y termina: `main` arranca sin `.env` (regla 4 del repo).
 3. Abre una conexión MCP (`conectarMcp`) y traduce las tools del servidor a tools del AI
@@ -130,13 +134,20 @@ Sin llave, el agente sirve el turno de ejemplo y lo dice en el stream.
 | A2UI inválido | `error { codigo: "a2ui" }` y un reintento; al segundo fallo, `texto` en prosa |
 | El proveedor contestó mal | `error { codigo: "modelo" }` + `texto` + `fin` |
 | El turno pasó de 30 s | `error { codigo: "timeout" }` + `texto` + `fin` |
+| La persona cerró la pestaña | se corta sin inventar respuesta; solo `fin` |
+| No se pudo conectar al MCP | `error { codigo: "tool" }` con la URL + `texto` + `fin` |
 
 El stream **siempre** termina en `fin`: la interfaz nunca se queda esperando.
+
+Un detalle del AI SDK que costó un bug: cuando se dispara el `abortSignal`, `streamText`
+**no lanza**: emite una parte `abort` y cierra el stream. Sin un `case "abort"`, un
+timeout se reportaba como "el modelo no entregó pantalla", que manda a buscar el problema
+en el lugar equivocado. La prueba `cortes del turno` lo cubre con un modelo que se cuelga.
 
 ### Cómo probarlo
 
 ```bash
-pnpm --filter @maya/web test   # 18 pruebas del agente, sin llave y sin red
+pnpm --filter @maya/web test   # 26 pruebas del agente, sin llave y sin red
 ```
 
 - `__tests__/agente.spec.ts` corre el bucle completo con un modelo simulado del AI SDK

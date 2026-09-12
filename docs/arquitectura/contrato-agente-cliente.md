@@ -57,6 +57,9 @@ Reglas:
   que dispara el turno. Si vienen los dos, `accion` manda.
 - `superficie.dataModel` es lo que el cliente tiene ahora; el agente lo usa como
   contexto, no lo copia de vuelta.
+- El cuerpo se valida con `esquemaPeticion` (`apps/web/src/lib/agente/tipos.ts`); lo que
+  no cumple devuelve **400** con `{ error, detalle[] }` antes de abrir el stream. Topes:
+  40 mensajes, 4 000 caracteres por mensaje, `usuarioId` con el patrón `usr_…`.
 
 ### Respuesta (JSONL, en orden)
 

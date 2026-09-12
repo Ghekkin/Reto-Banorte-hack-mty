@@ -76,6 +76,10 @@ escribe en `apps/mcp/estado.json` (fuera de git), y las lecturas lo superponen:
   alguien, para que dos tools no contesten cosas distintas.
 - Con un plan aplicado: saldo revolvente `0`, uso del límite `0`, pago mínimo `0`, mora
   `0`, `planActivo` con la mensualidad, y `alerta: "plan_activo"`.
+- Toda escritura va a un temporal y se renombra encima (`escribirEstado`): el rename es
+  atómico, así que nadie lee jamás un JSON a medias.
+- Un plan es **por tarjeta** (`planAplicado(usuarioId, tarjetaId)`); `tarjetaConEstado`
+  solo superpone el plan de esa tarjeta.
 - `pnpm reiniciar-estado` vuelve el archivo a cero y **surte efecto en el servidor que ya
   está corriendo**: la capa de datos lee el archivo en cada llamada, sin caché en memoria.
   Con caché, el script decía "estado reiniciado" y el servidor seguía contestando con el
@@ -97,6 +101,17 @@ Los datos sintéticos terminan el 2026-09-12. Si "hoy" fuera el reloj del servid
 del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `hoy()` devuelve
 `MCP_HOY` si está puesta, y si no, la fecha del movimiento más reciente.
 
+### Lo que las tools rechazan (con un motivo que el agente puede leer)
+
+- Una `tarjetaId` que no es de la persona, o que es de **débito**: una tarjeta de débito
+  tiene límite 0 y tasa 0, y devolverla como si fuera de crédito diría "saludable" sobre
+  algo que no puede tener deuda.
+- Un rango `desde > hasta` en `consultar_movimientos`.
+- Una `cuentaOrigenId` de otra persona en `crear_apartado`.
+- Un segundo plan sobre la misma tarjeta, con cualquier llave.
+- `comparar_periodos` sin `periodo` usa el **último mes cerrado** (`ultimoMesCerrado`),
+  nunca el mes en curso a medias: contra meses completos, todo parecería bajar.
+
 ### Casos límite conocidos
 
 - **Ana no tiene tarjeta de crédito.** `consultar_tarjeta` devuelve `tarjeta: null` y
@@ -113,7 +128,7 @@ del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `ho
 ### Cómo probarlo
 
 ```bash
-pnpm --filter @maya/mcp test     # 31 pruebas: finanzas, lecturas y ciclo de acciones
+pnpm --filter @maya/mcp test     # 42 pruebas: finanzas, lecturas, ciclo de acciones y auditoría
 pnpm dev                         # levanta mcp (3100) y web (3000)
 pnpm humo                        # 9 tools, lecturas y el ciclo completo de la acción por HTTP
 pnpm reiniciar-estado            # después del humo, antes de un ensayo
