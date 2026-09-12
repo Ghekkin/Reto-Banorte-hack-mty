@@ -1,5 +1,30 @@
 # Bitácora de aldair
 
+## 2026-09-13
+
+- **00:00 · inicio** — Retomo rol `mcp`. El pedido: higiene documental del backend
+  MCP tras una evaluación de estado.
+- **00:00 · hecho** — Corregidos tres docs que quedaron mintiendo tras el `git pull`
+  de esta sesión (`luis` había sumado el Paquete Inversiones sin actualizarlos):
+  `CLAUDE.md` (15→18 tools, 92→103 pruebas), `docs/tablero.md` (mi fila y la línea
+  `mcp` de "Siguiente"), y `docs/arquitectura/roadmap-mcp.md` (frontmatter
+  `estado: propuesta` → `parcialmente ejecutado`, con nota de qué nivel está hecho y
+  cuál no: O3 prefetch y O2 `ejecutar_decision` siguen sin hacerse).
+- **00:00 · nota** — Al verificar encontré que las 3 tools de Inversiones
+  (`consultar_inversiones`, `consultar_catalogo_inversiones`,
+  `consultar_historico_inversion`) que agregó `luis` contradecían la enmienda del ADR
+  0004 ("Inversiones es una pantalla de consulta programada, no un flujo accionable
+  del agente"). Lo registré como issue
+  (`docs/issues/2026-09-13-tools-inversiones-contradicen-adr-0004.md`). El usuario
+  aclaró que es intencional: esas tools completan el viaje de Carmen, el agente debe
+  poder consultarlas para armar su pantalla de portafolio. Revertí mi lectura:
+  enmendé el ADR 0004 otra vez (2026-09-13), cerré el issue como resuelto y corregí
+  `roadmap-mcp.md` (Nivel 4) y el issue de alcance del 2026-09-12, que citaban la
+  restricción vieja.
+- **00:00 · nota** — Confirmé por conteo directo (`grep -c "it("` en
+  `apps/mcp/src/__tests__/`) que el número real hoy es 18 tools (14 lectura + 4
+  acción) y 103 pruebas, antes de escribirlo en los tres docs.
+
 ## 2026-09-12
 
 - **09:55 · hecho** — Paquete 1 del roadmap del MCP terminado: `panorama_inicial`,

@@ -1,9 +1,32 @@
 ---
-estado: propuesta
+estado: parcialmente ejecutado
 fecha: 2026-09-12 08:15
+actualizado: 2026-09-13 00:00
 ---
 
 # Roadmap de pulido del MCP — contraste entre lo que hay y lo que los datos permiten
+
+> **Actualización 2026-09-13.** Este documento describe un plan; se dejó marcado
+> `propuesta` mucho después de que buena parte se ejecutó. Estado real de cada nivel:
+>
+> - **Nivel 1** (O3 prefetch, O1 `panorama_inicial`): **`panorama_inicial` existe**
+>   (`apps/mcp/src/tools/panorama-inicial.ts`); el prefetch en `agente.ts` (O3) **no
+>   se hizo** — el agente sigue llamando tools por su cuenta, sin precarga.
+> - **Nivel 2** (`diagnostico_salud_financiera`, `crear_tope_gasto`): **hecho**.
+> - **Nivel 3** (`detectar_fugas`, `cancelar_suscripcion`, `consultar_creditos`):
+>   **hecho**. `O2 ejecutar_decision` **no se hizo** — el ciclo de acción sigue en 3
+>   pasos.
+> - **Nivel 4** (Inversiones, perfil de Carmen): la decisión escrita aquí era
+>   "después de la congelación, o nunca". Se **revirtió el 2026-09-13**: el ADR 0004
+>   se enmendó otra vez para admitir las 3 tools de Inversiones como parte del viaje
+>   del agente con Carmen (ver la sección "Nivel 4" más abajo, ya actualizada, y
+>   `docs/issues/2026-09-13-tools-inversiones-contradicen-adr-0004.md`, resuelto).
+> - **Sección 6** (pulido de bajo costo): ninguno de los cuatro puntos está hecho —
+>   `/health` sigue sin conteo de filas, no hay `resources` ni `prompts`, no hay
+>   prueba de humo del guion completo, el prompt no dice qué tools no existen.
+>
+> El texto original queda igual abajo: es el razonamiento que llevó a estas
+> decisiones y sigue siendo válido para lo que falta.
 
 > **Lectura de 30 segundos.** El MCP es la pieza **más terminada** del proyecto: las 9
 > tools del ADR 0004 existen, tienen pruebas y el ciclo de acción está verificado por
@@ -233,13 +256,17 @@ Corte: si a las 16:00 la fase 2 no está cerrada, el nivel 2 no empieza.
 
 Si entran 5 y 6, el número de tools llega a 13–14: **evaluar O4** antes de seguir.
 
-### Nivel 4 — después de la congelación, o nunca
+### Nivel 4 — decisión revertida el 2026-09-13
 
-`recomendar_producto`, las seis tablas de inversión y el perfil de Carmen. Son una cuarta
-intención y el ADR 0004 las excluyó por una razón que sigue siendo válida. La decisión
-pendiente del issue de alcance se resuelve así: **opción 1, dejarlo**, con la respuesta
-lista para el jurado —"el esquema modela un banco, no una demo; la demo usa el subconjunto
-que su caso de uso necesita"—. Recortar a estas alturas es riesgo sin premio.
+`recomendar_producto` sigue fuera. Pero **Inversiones ya no**: este roadmap decía
+"opción 1, dejarlo" para las tools de inversión y el perfil de Carmen; el equipo lo
+revirtió (enmienda del 2026-09-13 al ADR 0004) para que Carmen tenga un viaje
+completo — el agente necesita `consultar_inversiones`,
+`consultar_catalogo_inversiones` y `consultar_historico_inversion` para razonar sobre
+su portafolio y construir la pantalla, no solo una pestaña fija de Productos. Las
+tres ya están implementadas y registradas en `TOOLS`. Ver
+`docs/issues/2026-09-13-tools-inversiones-contradicen-adr-0004.md` (resuelto) y la
+enmienda del ADR.
 
 ### Nunca
 

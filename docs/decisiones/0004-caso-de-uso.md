@@ -43,6 +43,21 @@ Carmen (patrimonial, con portafolio). Ver skill `datos-mock`.
 > demo se cuenta con Beto. Carmen es contraste, no una cuarta intención. Inversiones es
 > una pantalla de consulta programada, no un flujo accionable del agente.
 
+> **Enmienda del 2026-09-13.** Se revierte el último punto de la enmienda anterior:
+> Inversiones **sí se expone al agente**, como tools de lectura del MCP
+> (`consultar_inversiones`, `consultar_catalogo_inversiones`,
+> `consultar_historico_inversion`, en `apps/mcp/src/tools/`). Motivo: para que el
+> viaje de Carmen quede completo — que el agente interprete su intención y arme la
+> pantalla de portafolio, igual que hace con Beto y Ana — Productos no puede ser una
+> pestaña fija sin agente de por medio; necesita las tools para poder razonar sobre
+> los datos de Carmen y construir la interfaz. Cierra el issue
+> `docs/issues/2026-09-13-tools-inversiones-contradicen-adr-0004.md`.
+>
+> **Lo que NO cambia**: las tools de Inversiones son de **lectura únicamente** (no
+> hay `comprar`/`vender`/`rebalancear`, no hay acción con cambio real sobre el
+> portafolio); Carmen sigue siendo contraste y no una cuarta intención con flujo de
+> acción propio; el orden estricto de construcción y la demo con Beto no se tocan.
+
 ### Orden de construcción (no negociable)
 
 > **Las horas vigentes son las de `docs/equipo/roadmap.md`** (fase 1 a H14 = sáb 10:00,
@@ -92,13 +107,21 @@ Lectura: `consultar_perfil`, `consultar_tarjeta`, `consultar_movimientos`,
 Acción: `aplicar_plan_pago` (fase 1), `crear_apartado` (fase 3).
 Opcional al final: `crear_tope_gasto`.
 
+Sumadas por las enmiendas (fuera del viaje de Beto/Ana, para el viaje de Carmen):
+`diagnostico_salud_financiera`, `consultar_creditos`, `detectar_fugas`,
+`cancelar_suscripcion`, `panorama_inicial` y, por la enmienda del 2026-09-13,
+`consultar_inversiones`, `consultar_catalogo_inversiones`,
+`consultar_historico_inversion` (las tres de solo lectura).
+
 ### Qué NO entra
 
-Tope de gasto salvo tiempo sobrante. Cualquier cuarta intención del agente.
+Tope de gasto salvo tiempo sobrante. Cualquier cuarta intención del agente con flujo
+de **acción** propio (comprar/vender/rebalancear un portafolio, por ejemplo).
 
 ~~Inversiones con rendimiento variable. Más de dos usuarios demo.~~ Admitidos por la
-enmienda del 2026-09-12 (ver arriba), con el límite de que Inversiones es **solo
-consulta**: el agente no genera flujos de inversión.
+enmienda del 2026-09-12. ~~Inversiones es solo consulta, el agente no genera flujos de
+inversión~~ revertido por la enmienda del 2026-09-13: el agente **sí** consulta
+Inversiones para Carmen, solo lectura.
 
 ## Alternativas descartadas
 

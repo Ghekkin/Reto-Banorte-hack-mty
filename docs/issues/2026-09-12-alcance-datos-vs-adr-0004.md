@@ -16,6 +16,13 @@ resuelto: 2026-09-12 11:40
 >
 > Implementado en `apps/web/src/lib/usuarios.ts` (tres perfiles) y
 > `apps/web/src/app/(app)/productos/page.tsx` (pestaña Inversiones).
+>
+> **Actualización 2026-09-13**: el límite de "el agente no genera flujos de
+> inversión" se mantiene (no hay acción sobre el portafolio), pero "Inversiones es
+> solo lectura, **no un flujo accionable del agente**" se revirtió — el agente sí
+> consulta Inversiones, vía tools de lectura del MCP, para completar el viaje de
+> Carmen. Ver la enmienda del 2026-09-13 en `docs/decisiones/0004-caso-de-uso.md` y
+> `docs/issues/2026-09-13-tools-inversiones-contradicen-adr-0004.md`.
 
 **Dónde:** `db/datos/` (22 CSV), `db/schema.sql`, `scripts/lib/perfiles.mjs` contra
 `docs/decisiones/0004-caso-de-uso.md` líneas 84–85.
