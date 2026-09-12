@@ -69,7 +69,8 @@ quien.
 - [La API REST de lectura](como-funciona/api-rest-lectura.md) — las cinco rutas `GET /api/*` para consumidores externos: parámetros, códigos de estado y por qué las páginas no las usan
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, las 22 tablas de `banorte` y las invariantes que sostienen la demo
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
-- [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI propios: qué tool llena cada uno, qué acción devuelve, cómo se prueban
+- [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI originales: qué tool llena cada uno, qué acción devuelve, cómo se prueban
+- [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 
 ### Algoritmos
@@ -80,6 +81,7 @@ quien.
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto
+- [Gráficas del catálogo](algoritmos/graficas-del-catalogo.md) — qué forma para cada dato, el orden de colores que pasa el validador de daltonismo, la serie calibrada del slider y las referencias de los pilares
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 
 ### Issues

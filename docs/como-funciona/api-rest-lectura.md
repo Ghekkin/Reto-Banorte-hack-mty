@@ -128,3 +128,8 @@ Comprobado contra el servidor de desarrollo: las cinco en `200`, `400` sin `usua
 `404` con `usr_inventado` y con `cat_no_existe`, y `?limite=999999` recortado a 1000 sobre
 un total de 683 movimientos de Beto. El portafolio de Beto sale `null`, que **no es un
 error**: no invierte, y está puesto así a propósito.
+
+Desde el 2026-09-12 13:00 cada elemento de `tarjetas` (en `/api/productos` y
+`/api/panorama`) trae además `cuentaId`, `tasaAnual`, `cat`, `fechaCorte`,
+`fechaLimitePago` y `pagoNoInteresesCentavos`, que la pantalla de Productos necesita. Es
+un cambio aditivo: nada de lo que había cambió de nombre ni de forma.

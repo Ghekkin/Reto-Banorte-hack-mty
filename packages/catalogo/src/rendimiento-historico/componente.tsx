@@ -1,28 +1,33 @@
 "use client";
 
-import { TrendingDown, TrendingUp } from "lucide-react";
+import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
+import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  formatearFecha,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { CLASES_GRAFICA, EJE, ETIQUETA, Grafica, SERIES, TooltipMonto, formatearFechaCorta, formatearMontoEntero } from "../graficas";
 import type { PropsRendimientoHistorico } from "./schema";
 
-export function RendimientoHistorico(
-  props: Partial<PropsRendimientoHistorico> & Pick<PropsComponente, "alAccionar">,
-) {
+/**
+ * Cómo le ha ido a un instrumento en el tiempo.
+ *
+ * **Es una curva, no barras.** La versión anterior pintaba barras cuya altura empezaba
+ * en el precio mínimo de la serie: entre $1,000 y $1,114 (+11 %) la última barra salía
+ * cinco veces más alta que la primera. Una barra dice "cuánto" desde cero; lo que aquí
+ * importa es el CAMBIO, y eso lo dice una línea (skill `dataviz`, "change over time").
+ *
+ * El número sigue mandando: el precio de cierre es el dato grande del encabezado, el
+ * punto final lleva su etiqueta directa dentro de la gráfica y el eje muestra fechas
+ * legibles (`20 jun`, no `06-20`). Nada vive solo en el tooltip.
+ */
+export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> & Pick<PropsComponente, "alAccionar">) {
   const {
     instrumentoId,
     nombre,
     clave,
-    tipo,
     periodo,
     precioInicialCentavos,
     precioFinalCentavos,
@@ -40,99 +45,100 @@ export function RendimientoHistorico(
     typeof rendimientoPeriodoPct !== "number"
   ) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-36" data-slot="skeleton" />
-          <Skeleton className="h-9 w-48" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando el rendimiento del instrumento">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo>
+          <Skeleton className={CLASES_GRAFICA} />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  const esPositivo = rendimientoPeriodoPct >= 0;
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
-
-  // Calcular mínimo y máximo para escalar las alturas de las barras
-  const precios = puntos.map((p) => p.precioCentavos);
-  const minPrecio = Math.min(...precios);
-  const maxPrecio = Math.max(...precios);
-  const rango = Math.max(1, maxPrecio - minPrecio);
+  const positivo = rendimientoPeriodoPct >= 0;
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const datos = puntos.map((p) => ({ fecha: p.fecha, precio: p.precioCentavos }));
+  const ultimo = datos[datos.length - 1]!;
+  const precios = datos.map((d) => d.precio);
+  // Aire arriba y abajo de la curva para que no toque los bordes de la caja.
+  const margen = Math.max(1, Math.round((Math.max(...precios) - Math.min(...precios)) * 0.25));
+  const dominio: [number, number] = [Math.min(...precios) - margen, Math.max(...precios) + margen];
+  const colorLinea = heroe ? "var(--primary-foreground)" : SERIES.principal;
+  const colorPunto = heroe ? "var(--primary-foreground)" : SERIES.acento;
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <span className="text-xs text-muted-foreground">
-          {tipo} · <span className="font-semibold">{clave}</span> · {periodo}
+        <span className={`text-xs ${suave}`}>
+          {nombre}
+          {clave ? ` · ${clave}` : ""}
         </span>
-        <h3 className="text-lg font-semibold">{nombre}</h3>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">{formatearMonto(precioFinalCentavos)}</span>
-          <span
-            className={`monto flex items-center gap-1 text-sm font-semibold ${
-              esPositivo ? "text-exito" : "text-destructive"
-            }`}
-          >
-            {esPositivo ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
-            {esPositivo ? "+" : "−"}
+        <span className="monto text-3xl font-semibold">{formatearMonto(precioFinalCentavos)}</span>
+        <span className={`flex flex-wrap items-center gap-x-1.5 text-sm ${suave}`}>
+          <span className={`monto flex items-center gap-1 font-semibold ${heroe ? "" : positivo ? "text-exito" : "text-foreground"}`}>
+            {positivo ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
+            {positivo ? "+" : "−"}
             {formatearPorcentaje(Math.abs(rendimientoPeriodoPct))}
           </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Inició en <span className="monto font-medium">{formatearMonto(precioInicialCentavos)}</span>
-        </p>
+          {periodo ? <span>en {periodo.toLowerCase()}</span> : null}
+          <span>
+            · inició en <span className="monto">{formatearMonto(precioInicialCentavos)}</span>
+          </span>
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Gráfica de barras de evolución temporal legible en móvil y proyector */}
-        <div className="rounded-xl border border-borde-sutil bg-muted/40 p-3">
-          <div className="flex items-end justify-between gap-1.5 h-28 pt-2">
-            {puntos.map((pt, idx) => {
-              const alturaPct = Math.max(15, Math.round(((pt.precioCentavos - minPrecio) / rango) * 85 + 15));
-              const esUltimo = idx === puntos.length - 1;
-              return (
-                <div key={pt.fecha} className="flex flex-1 flex-col items-center gap-1.5 h-full justify-end">
-                  <div
-                    style={{ height: `${alturaPct}%` }}
-                    className={`w-full max-w-7 rounded-t transition-all ${
-                      esUltimo
-                        ? "bg-primary"
-                        : esPositivo
-                        ? "bg-chart-1"
-                        : "bg-muted-foreground/50"
-                    }`}
-                    title={`${pt.fecha}: ${formatearMonto(pt.precioCentavos)}`}
-                  />
-                  <span className="text-[10px] text-muted-foreground truncate w-full text-center">
-                    {pt.fecha.slice(5)}
-                  </span>
-                </div>
-              );
-            })}
-          </div>
-          <div className="mt-2 flex justify-between text-xs text-muted-foreground pt-1 border-t border-borde-sutil">
-            <span>Inicio: {formatearFecha(puntos[0]?.fecha)}</span>
-            <span>Cierre: {formatearFecha(puntos[puntos.length - 1]?.fecha)}</span>
-          </div>
-        </div>
+      <CardContent>
+        <Grafica config={{ precio: { label: "Precio", color: colorLinea } }} etiqueta={`Precio de ${clave ?? nombre} en ${periodo}`}>
+          <AreaChart data={datos} margin={{ top: 20, right: 60, bottom: 0, left: 8 }}>
+            <XAxis
+              dataKey="fecha"
+              tickFormatter={formatearFechaCorta}
+              interval="preserveStartEnd"
+              minTickGap={24}
+              {...EJE}
+              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
+            />
+            <YAxis dataKey="precio" domain={dominio} hide />
+            <TooltipMonto etiquetaDe={(v) => formatearFechaCorta(String(v))} />
+            <Area
+              type="monotone"
+              dataKey="precio"
+              name="Precio"
+              stroke={colorLinea}
+              strokeWidth={2}
+              fill={colorLinea}
+              fillOpacity={heroe ? 0.15 : 0.06}
+              dot={false}
+              activeDot={{ r: 5, fill: colorPunto, stroke: "var(--card)", strokeWidth: 2 }}
+              isAnimationActive={false}
+            />
+            {/* El cierre, con su valor al lado: es el punto que la persona vino a ver. */}
+            <ReferenceDot
+              x={ultimo.fecha}
+              y={ultimo.precio}
+              r={5}
+              fill={colorPunto}
+              stroke="var(--card)"
+              strokeWidth={2}
+              label={{ value: formatearMontoEntero(ultimo.precio), position: "right", ...ETIQUETA, fill: heroe ? "var(--primary-foreground)" : ETIQUETA.fill }}
+            />
+          </AreaChart>
+        </Grafica>
+      </CardContent>
 
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
         {alAccionar ? (
           <Button
             variant="outline"
-            className="min-h-12 w-full rounded-xl"
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "border-white/40 bg-transparent text-primary-foreground hover:bg-white/10" : ""}`}
+            size="lg"
             onClick={() => alAccionar({ instrumentoId, clave, accion: "ver_detalle" })}
           >
-            Ver detalle del instrumento
+            Ver detalle del instrumento <ArrowRight />
           </Button>
         ) : null}
-      </CardContent>
-
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
 }

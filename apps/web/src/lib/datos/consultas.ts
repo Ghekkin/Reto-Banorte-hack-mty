@@ -25,15 +25,25 @@ export type Cuenta = {
 
 export type Tarjeta = {
   id: string;
+  /** La cuenta a la que esta ligada: en debito, de ahi sale el disponible que se muestra. */
+  cuentaId: string;
   producto: string;
   mascara: string;
-  marca: string;
+  marca: "visa" | "mastercard";
   tipo: "debito" | "credito";
   limiteCentavos: number;
   saldoCentavos: number;
   /** Fraccion del limite usada. 0 en debito. Es el numero que delata a Beto: 0.967. */
   utilizacion: number;
   pagoMinimoCentavos: number;
+  /** Lo que hay que pagar para no generar intereses. 0 en debito. */
+  pagoNoInteresesCentavos: number;
+  /** Fracciones anuales: 0.489 es 48.9 %. Ambas en 0 para debito. */
+  tasaAnual: number;
+  cat: number;
+  /** "AAAA-MM-DD". En debito traen la fecha del ultimo corte, sin significado. */
+  fechaCorte: string;
+  fechaLimitePago: string;
   diasMora: number;
 };
 
@@ -108,14 +118,20 @@ export async function tarjetasDe(usuarioId: string): Promise<Tarjeta[]> {
       const saldo = entero(f.saldo_centavos);
       return {
         id: f.id!,
+        cuentaId: f.cuenta_id!,
         producto: f.producto!,
         mascara: f.mascara!,
-        marca: f.marca!,
+        marca: f.marca as Tarjeta["marca"],
         tipo: f.tipo as Tarjeta["tipo"],
         limiteCentavos: limite,
         saldoCentavos: saldo,
         utilizacion: limite > 0 ? saldo / limite : 0,
         pagoMinimoCentavos: entero(f.pago_minimo_centavos),
+        pagoNoInteresesCentavos: entero(f.pago_no_intereses_centavos),
+        tasaAnual: fraccion(f.tasa_anual),
+        cat: fraccion(f.cat),
+        fechaCorte: f.fecha_corte!,
+        fechaLimitePago: f.fecha_limite_pago!,
         diasMora: entero(f.dias_mora),
       };
     });

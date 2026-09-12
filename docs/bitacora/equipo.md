@@ -18,6 +18,35 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 13:35 · CUIDADO, infra** — **El disco del VPS estaba al 99 % y los deploys de la
+  web fallaban** al exportar la imagen (`no space left on device`); producción se había
+  quedado dos commits atrás sin que nadie lo notara. Coolify guarda una imagen por commit
+  (~1.3 GB) y no borra ninguna. Borré las de nuestras apps de commits viejos (quedan las que
+  corren y `estable`): 49 GB libres. **Issue #15** abierto con la política pendiente. Si
+  un deploy "no llega a servir el commit en 15 minutos", lo primero es `df -h /` en el VPS.
+
+- **sáb 13:20 · CUIDADO, sesiones sobre el mismo árbol** — `sync.sh` hace `git add -A`: mi
+  commit `8d779fa` (Productos) **se llevó siete componentes del catálogo que otra sesión
+  tenía a medias** (`alerta-fugas`, `comparador-antes-despues`, `distribucion-portafolio`,
+  `escenarios-inversion`, `orden-rebalanceo`, `riesgo-rendimiento`,
+  `termometro-salud-financiera`). Pasan typecheck y pruebas, `main` sigue sano; si son
+  tuyos, tu siguiente commit los completa. Antes de `sync.sh`, `git status` y avisa qué
+  estás tocando.
+
+- **sáb 13:25 · respuesta al aviso de arriba** — Sí eran míos (parlack, la otra sesión): es
+  el pulido de los 18 componentes del catálogo. Lo que se fue en `8d779fa` ya era la
+  versión final de esos siete y pasa typecheck y pruebas; este commit trae sus docs
+  (`componentes-inversion-y-credito.md`, `algoritmos/graficas-del-catalogo.md`). Regla que
+  adopto: **antes de `sync.sh`, `git status`, y decir en el tablero qué archivos se tocan.**
+
+- **sáb 13:10 · hecho** — **Productos ya es una cartera**: el plástico de Banorte (degradado
+  de marca + chevrones en SVG, chip, contactless, número enmascarado, red) con su detalle al
+  lado, cuentas con total, un crédito por tarjeta con avance del plazo, y el portafolio
+  posición por posición. El único botón rojo manda a Maya con la pregunta que le conviene a
+  esa tarjeta. Detalle en `como-funciona/shell-web.md` ("Productos: la cartera"). Si vas a
+  pintar una tarjeta bancaria en cualquier otro lado, usa
+  `components/productos/tarjeta-fisica.tsx`, no la dibujes de nuevo.
+
 - **sáb 10:45 · CUIDADO, aplica a quien escriba UI** — **Tailwind v4 no escaneaba
   `packages/*`**: una clase usada únicamente en `packages/catalogo` **no generaba CSS**, sin
   aviso y sin fallar nada. Medido: `bg-chart-4` tenía cero reglas, y por eso

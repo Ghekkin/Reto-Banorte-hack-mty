@@ -2,6 +2,133 @@
 
 ## 2026-09-12
 
+### 13:15 · hecho — Los 18 componentes pulidos mirando el navegador; seis con gráfica de verdad
+
+El usuario pidió revisar todos los widgets: "en algunos ni siquiera muestra la gráfica,
+en otros se ve muy saturada la información". Capturé los 18 con Playwright a 1280 px y a
+390 px, anoté qué fallaba en cada uno y reescribí los diez de inversión, crédito y
+diagnóstico (los ocho originales ya estaban en el sistema). Todo se volvió a capturar
+después; sin errores de consola.
+
+**Lo que estaba mal, en tres familias:**
+
+1. **Sin gráfica donde el dato es una serie.** `RendimientoHistorico` pintaba barras
+   cuya base era el precio mínimo: entre $1,000 y $1,114 la última barra salía cinco
+   veces más alta que la primera. `ProyeccionCrecimiento` y `ProyeccionPagoCredito` no
+   tenían curva de tiempo; `DistribucionPortafolio` dibujaba la misma proporción dos
+   veces (barra apilada arriba, barras rojas por fila abajo).
+2. **Saturación.** Títulos en mayúsculas ("SUSCRIPCIONES ACTIVAS", "EVOLUCIÓN EN EL
+   TIEMPO"), cajas con borde dentro de la tarjeta (cuarta capa de superficie), iconos de
+   chispas y alerta, cajas rosas y verdes para una frase, montos en rojo (el rojo es de la
+   marca, no de "esto está mal"), badges rojos sólidos.
+3. **Números que se contradecían.** El slider de `ProyeccionCrecimiento` recalculaba el
+   encabezado pero no los hitos: $195,827 arriba, $189,456 en "Año 3".
+
+**Lo que hay ahora:**
+
+- `packages/catalogo/src/graficas.tsx`: el módulo compartido sobre `chart` de shadcn
+  (Recharts). Colores por token, ejes recesivos, altura fija (160 / 192 px), tooltip
+  como extra, `Ficha` para hitos y `Leyenda`. Todo trazo se declara explícito porque
+  Recharts mete `#3182bd` / `#ccc` / `#666` por omisión y la prueba "cero hex" truena.
+- Curva de área para el histórico (punto final rojo con su etiqueta), área apilada
+  aportado / rendimiento para la proyección, curva del saldo con fichas por hito para el
+  crédito, dona con el total al centro para el portafolio, medio arco para la salud, dos
+  barras en una escala para el comparador.
+- `RiesgoRendimiento` usa el mismo `RadioGroup` que `PlanDePago` y cinco puntos de
+  riesgo en vez de un cuadrito con "Riesgo" en 8 px. `AlertaFugas` en negro, con el botón
+  rojo solo en la suscripción sin uso. `EscenariosInversion` y `OrdenRebalanceo` sin
+  iconos ni mayúsculas. Todos con el pie del sistema: botón píldora + razón.
+- Esqueletos con los contenedores de `esqueletos.tsx`, del tamaño de la tarjeta final.
+
+**Tres cosas que costaron y conviene recordar:**
+
+- **La paleta de marca no pasa el validador de daltonismo entre rojo y rojo claro**
+  (ΔE 6.5 con visión normal). Las series van oscuro → rojo → gris → plata, nunca
+  `--chart-2` junto a `--chart-3`. Documentado en `docs/algoritmos/graficas-del-catalogo.md`.
+- **`Intl.NumberFormat` compacto no es determinista entre Node y Chrome** (`$86.0 k` vs
+  `$86 k`): error de hidratación en cada ficha. El formato corto se calcula a mano.
+- **`tailwind-merge` no quita `md:h-48` cuando pasas `h-24`** (variante distinta): el
+  medio arco crecía a 192 px en escritorio y se salía de su caja. `Grafica` usa la clase
+  fija solo cuando no le dan un tamaño propio.
+
+Verificado: `pnpm typecheck` en verde y 391 pruebas (112 A2UI, 120 MCP, 91 catálogo,
+68 web). Docs: `componentes-inversion-y-credito.md` reescrito en la parte visual,
+`catalogo.md` ya dice 18, índice de `docs/README.md` y el algoritmo nuevo.
+
+**Ideas de componentes nuevos que salieron de la revisión** (para el equipo; ninguna
+empezada): un `TopeDeGasto` que cierre el ciclo de `crear_tope_gasto` (hoy la tool
+existe y no tiene pantalla), una `TendenciaMensual` para `comparar_periodos` (barras de
+los últimos meses; hoy solo se ve un mes), un `ResumenCreditos` para `consultar_creditos`
+(hoy se salta a la proyección de un crédito), y un `Opciones` genérico para que el agente
+pregunte con chips en vez de con texto ("¿cuál tarjeta?").
+
+### 13:10 · hecho — Productos ya es una cartera: el plástico de Banorte y el detalle a un lado
+
+`/productos` eran cuatro pestañas con dos o tres tarjetas sueltas y el lienzo vacío; se veía
+como una tabla a medio llenar. Ahora es la vista de detalle de lo que Inicio resume:
+
+- **El plástico** (`components/productos/tarjeta-fisica.tsx`): degradado de marca, patrón
+  de chevrones en `<pattern>` SVG al 13 %, chip con tokens, `Nfc`, `LogoBanorte` en blanco,
+  tipo + producto, número enmascarado en `font-mono`, titular y la red en monocromo. Cero
+  hex, cero imágenes. Proporción ISO 1.586, así que en móvil ocupa el ancho y en escritorio
+  la mitad de la tarjeta blanca.
+- **`TarjetaEnMano`**: plástico + saldo por pagar, uso de la línea, pago mínimo, fecha
+  límite y tasa (débito: el disponible de la cuenta ligada). La primera es el héroe: único
+  plástico rojo y único botón primario, cuya pregunta a Maya depende de cómo está la
+  tarjeta (al límite o con atraso → bajar intereses; si no → en qué se va el dinero).
+- **`Cuentas`** con el total arriba; **un `CreditoEnCurso` por crédito** con el avance del
+  plazo en oscuro; **`Inversiones`** con cada posición, su riesgo en cinco puntos y su peso
+  como barra; **`SinInversiones`** manda a Maya en vez de dejar un hueco (Beto).
+- `Tarjeta` en `consultas.ts` creció con seis campos que ya estaban en la base (aditivo;
+  `/api/productos` y `/api/panorama` los traen también).
+
+Lo que vi en el navegador y corregí antes de dar por buena la pantalla: el número del
+plástico se partía en dos líneas junto a la marca (ahora va en su fila); las celdas de tres
+datos truncaban `14 de septiembre` y `$1,650,000.00` (ahora `flex-wrap` +
+`formatearFechaCorta`); el alias largo de Carmen se comía el badge "Principal" (ahora la
+segunda línea cruza por debajo del monto); el héroe quedaba pegado arriba con hueco cuando
+su fila era más alta (`my-auto`). Medido con Playwright en 390 y 1280 px con los tres
+perfiles: sin scroll horizontal, sin errores de consola; el esqueleto de
+`productos/loading.tsx` mide lo que llega.
+
+Typecheck y las 391 pruebas del monorepo en verde. Doc en `como-funciona/shell-web.md`
+(sección "Productos: la cartera") y nota en `api-rest-lectura.md`.
+
+De paso: el árbol traía sin commitear las gráficas del catálogo de mi sesión anterior
+(`graficas.tsx` y las tres proyecciones sobre Recharts). Pasan typecheck y pruebas; las
+subí en su propio commit para que el historial diga qué es qué. **Les falta su doc.**
+
+**Y una cosa que no quise y que hay que saber:** entre que revisé el árbol y corrí
+`sync.sh`, otra sesión modificó **siete componentes más del catálogo** (`alerta-fugas`,
+`comparador-antes-despues`, `distribucion-portafolio`, `escenarios-inversion`,
+`orden-rebalanceo`, `riesgo-rendimiento`, `termometro-salud-financiera`). `sync.sh` hace
+`git add -A`, así que se fueron dentro de mi commit `8d779fa` con mi mensaje de Productos.
+Los volví a verificar después del push: typecheck y las 91 pruebas del catálogo pasan, así
+que `main` no se rompió. Quien los esté trabajando: su siguiente commit los completa; el
+historial dirá que salieron conmigo, y no es cierto. Mientras compartamos un solo árbol de
+trabajo, antes de correr `sync.sh` mira `git status` y avisa.
+
+### 13:35 · arreglado a medias — el disco del VPS estaba al 99 % y los deploys de la web fallaban (#15)
+
+Fui a ver por qué producción seguía sirviendo la web en `0a31335` con `main` dos commits
+adelante. El run de `6162bb2` construyó bien y murió exportando la imagen: `no space left
+on device`. `df` daba 242 GB de 242. La causa: **Coolify etiqueta una imagen por commit y
+no borra ninguna**; había ~40 de `maya-web` (1.35 GB) y ~45 de `maya-mcp` (1.14 GB), una
+por cada push del día. El journal ya se había quedado sin disco para escribir y los health
+checks de **todo** el servidor (también los de otros proyectos) fallaban con ENOSPC.
+
+Lo que borré, y solo eso: las imágenes de nuestras dos apps de commits viejos, conservando
+las dos que corren y la de `estable` (`737f0a1`); `pnpm store prune` (2.6 GB); el journal
+a 300 MB. Nada de volúmenes ni de imágenes ajenas. De 1.1 GB libres a **49 GB** mientras
+el borrado seguía. Justo a tiempo: el run de `1c8b7b8` (que trae Productos) desplegó bien y
+producción ya sirve ese commit; lo verifiqué con capturas de `/productos` contra la URL
+pública, tres perfiles, 390 y 1280 px.
+
+Queda **abierto como #15** porque falta la política para que no vuelva a pasar (limpieza
+de imágenes en Coolify o un cron con `docker image prune --filter until=6h`, y un `df`
+con aviso en `scripts/deploy.sh`). Con cuatro personas empujando cada diez minutos, el
+disco se vuelve a llenar en unas horas.
+
 ### 12:05 · hecho — `estable` existe, y lo que costo llegar: tres bugs y un `main` roto
 
 El corte H14 pedia fase 1 completa y `estable` marcado. Esta hecho: **`estable` apunta a

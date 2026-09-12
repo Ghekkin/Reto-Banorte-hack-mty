@@ -1,25 +1,26 @@
 "use client";
 
 import { useState } from "react";
-import { CheckCircle2, Flame, ShieldAlert, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_FILA_TOCABLE, CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsEscenariosInversion } from "./schema";
 
 type TipoEscenario = "pesimista" | "esperado" | "optimista";
+const ORDEN: TipoEscenario[] = ["pesimista", "esperado", "optimista"];
+const TITULO: Record<TipoEscenario, string> = { pesimista: "Pesimista", esperado: "Esperado", optimista: "Optimista" };
 
-export function EscenariosInversion(
-  props: Partial<PropsEscenariosInversion> & Pick<PropsComponente, "alAccionar">,
-) {
+/**
+ * Qué pasaría con una inversión en el peor, el probable y el mejor caso.
+ *
+ * Tres opciones tocables y un número grande que cambia con la que se elige. Sin iconos
+ * de escudo o llama ni colores por escenario: el nombre y la tasa ya lo dicen, y el
+ * único color de la tarjeta es el de la opción elegida y el botón.
+ */
+export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & Pick<PropsComponente, "alAccionar">) {
   const {
     montoInvertidoCentavos,
     horizonteMeses,
@@ -34,118 +35,96 @@ export function EscenariosInversion(
 
   const [seleccionado, setSeleccionado] = useState<TipoEscenario>(escenarioInicial ?? "esperado");
 
-  if (
-    typeof montoInvertidoCentavos !== "number" ||
-    typeof horizonteMeses !== "number" ||
-    !escenarioPesimista ||
-    !escenarioEsperado ||
-    !escenarioOptimista
-  ) {
+  if (typeof montoInvertidoCentavos !== "number" || typeof horizonteMeses !== "number" || !escenarioPesimista || !escenarioEsperado || !escenarioOptimista) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-32 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Calculando los escenarios">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            {[0, 1, 2].map((i) => (
+              <div key={i} className="flex min-h-12 flex-col justify-center gap-1 rounded-xl border border-borde-sutil px-3 py-2">
+                <Linea tamano="xs" ancho="w-20" />
+                <Linea tamano="base" ancho="w-24" />
+              </div>
+            ))}
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  const mapaEscenarios = {
-    pesimista: { ...escenarioPesimista, titulo: "Pesimista", icono: ShieldAlert, colorBadge: "text-muted-foreground" },
-    esperado: { ...escenarioEsperado, titulo: "Esperado", icono: CheckCircle2, colorBadge: "text-primary" },
-    optimista: { ...escenarioOptimista, titulo: "Optimista", icono: Flame, colorBadge: "text-exito" },
+  const escenarios: Record<TipoEscenario, typeof escenarioEsperado> = {
+    pesimista: escenarioPesimista,
+    esperado: escenarioEsperado,
+    optimista: escenarioOptimista,
   };
-
-  const actual = mapaEscenarios[seleccionado];
-  const IconoActual = actual.icono;
+  const actual = escenarios[seleccionado];
   const anios = Math.round(horizonteMeses / 12);
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <div className="flex justify-between items-center">
-          <span className="text-xs text-muted-foreground">
-            Escenarios de inversión a {horizonteMeses} meses ({anios} {anios === 1 ? "año" : "años"})
-          </span>
-          <span className="text-xs bg-tinte text-primary font-medium px-2 py-0.5 rounded-full">
-            Inversión: {formatearMonto(montoInvertidoCentavos)}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">{formatearMonto(actual.valorFinalCentavos)}</span>
-          <span className="monto flex items-center gap-1 text-sm font-semibold text-exito">
-            <Sparkles className="size-4" />+{formatearMonto(actual.rendimientoCentavos)}
-            <span className="text-xs text-muted-foreground font-normal">
-              ({formatearPorcentaje(actual.tasaAnualPct)} anual)
-            </span>
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground mt-1">{actual.descripcion}</p>
+        <span className={`text-xs ${suave}`}>
+          Escenario {TITULO[seleccionado].toLowerCase()} a {horizonteMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} ·
+          inviertes <span className="monto">{formatearMonto(montoInvertidoCentavos)}</span>
+        </span>
+        <span className="monto text-3xl font-semibold">{formatearMonto(actual.valorFinalCentavos)}</span>
+        <span className={`text-sm ${suave}`}>
+          <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(actual.rendimientoCentavos)}</span> ·{" "}
+          <span className="monto">{formatearPorcentaje(actual.tasaAnualPct)}</span> anual
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Selector de los 3 escenarios con tarjetas táctiles min-h-12 */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          {(["pesimista", "esperado", "optimista"] as const).map((tipo) => {
-            const esc = mapaEscenarios[tipo];
+      <CardContent className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Escenario">
+          {ORDEN.map((tipo) => {
+            const esc = escenarios[tipo];
             const activo = seleccionado === tipo;
-            const Icono = esc.icono;
             return (
               <button
                 key={tipo}
                 type="button"
+                role="radio"
+                aria-checked={activo}
                 onClick={() => setSeleccionado(tipo)}
-                className={`min-h-12 rounded-xl p-3 flex flex-col justify-between text-left transition-all border ${
-                  activo
-                    ? "border-primary bg-tinte/50 shadow-xs"
-                    : "border-borde-sutil bg-card hover:bg-muted/40"
+                className={`flex min-h-12 flex-row items-baseline justify-between gap-2 border px-3 py-2 text-left sm:flex-col sm:gap-0.5 ${CLASES_FILA_TOCABLE} ${
+                  heroe
+                    ? activo
+                      ? "border-white bg-white/15"
+                      : "border-white/30"
+                    : activo
+                      ? "border-primary bg-tinte"
+                      : "border-borde-sutil"
                 }`}
               >
-                <div className="flex items-center justify-between w-full">
-                  <span className={`text-xs font-semibold flex items-center gap-1 ${esc.colorBadge}`}>
-                    <Icono className="size-3.5" />
-                    {esc.titulo}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-medium">
-                    {formatearPorcentaje(esc.tasaAnualPct)}
-                  </span>
-                </div>
-                <div className="mt-2">
-                  <span className="monto text-sm font-semibold text-foreground">
-                    {formatearMonto(esc.valorFinalCentavos)}
-                  </span>
-                </div>
+                <span className="flex items-baseline gap-2 text-sm">
+                  <span className="font-medium">{TITULO[tipo]}</span>
+                  <span className={`monto text-xs ${suave}`}>{formatearPorcentaje(esc.tasaAnualPct)}</span>
+                </span>
+                <span className="monto text-base font-semibold">{formatearMonto(esc.valorFinalCentavos)}</span>
               </button>
             );
           })}
         </div>
-
-        {alAccionar ? (
-          <Button
-            className="min-h-12 w-full rounded-xl"
-            onClick={() =>
-              alAccionar({
-                accion: "elegir_escenario",
-                escenario: seleccionado,
-                valorFinalCentavos: actual.valorFinalCentavos,
-                tasaAnualPct: actual.tasaAnualPct,
-              })
-            }
-          >
-            Elegir escenario {actual.titulo}
-          </Button>
-        ) : null}
+        {actual.descripcion ? <p className={`text-sm ${suave}`}>{actual.descripcion}</p> : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+        {alAccionar ? (
+          <Button
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            onClick={() =>
+              alAccionar({ accion: "elegir_escenario", escenario: seleccionado, valorFinalCentavos: actual.valorFinalCentavos, tasaAnualPct: actual.tasaAnualPct })
+            }
+          >
+            Elegir escenario {TITULO[seleccionado].toLowerCase()} <ArrowRight />
+          </Button>
+        ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
 }

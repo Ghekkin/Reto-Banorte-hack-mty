@@ -1,166 +1,156 @@
 "use client";
 
-import { PieChart, RefreshCw, TrendingUp } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { Cell, Pie, PieChart } from "recharts";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  CLASES_FILA_TOCABLE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { Grafica, SEPARADOR, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsDistribucionPortafolio } from "./schema";
 
-const COLORES_CLASES = [
-  "bg-chart-1",
-  "bg-chart-2",
-  "bg-chart-3",
-  "bg-chart-4",
-  "bg-muted-foreground",
-];
+/**
+ * En qué está invertido el dinero.
+ *
+ * **Una dona con el total al centro y la lista al lado** (skill `diseno-banorte`,
+ * "Gráficas"). La versión anterior dibujaba la distribución dos veces —una barra apilada
+ * arriba y una barra roja por fila abajo— y ninguna de las dos decía más que la otra.
+ * La lista lleva el monto y el peso de cada clase, así que ningún número depende de la
+ * dona ni del tooltip.
+ *
+ * Los colores van por entidad en orden fijo: oscuro, rojo, gris, plata. Nunca rojo junto
+ * a rojo claro (ver `graficas.tsx`).
+ */
+const COLORES = [SERIES.principal, SERIES.acento, SERIES.tercera, SERIES.resto, SERIES.tinte];
 
-export function DistribucionPortafolio(
-  props: Partial<PropsDistribucionPortafolio> & Pick<PropsComponente, "alAccionar">,
-) {
-  const {
-    valorTotalCentavos,
-    aportadoCentavos,
-    rendimientoTotalPct,
-    desviacionModeloPct,
-    clases,
-    heroe = false,
-    razon,
-    alAccionar,
-  } = props;
+/** Debajo de esto la desviación respecto al modelo es ruido y no se anuncia. */
+const DESVIACION_MINIMA = 0.05;
 
-  if (
-    typeof valorTotalCentavos !== "number" ||
-    typeof rendimientoTotalPct !== "number" ||
-    !clases ||
-    clases.length === 0
-  ) {
+export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafolio> & Pick<PropsComponente, "alAccionar">) {
+  const { valorTotalCentavos, aportadoCentavos, rendimientoTotalPct, desviacionModeloPct, clases, heroe = false, razon, alAccionar } = props;
+
+  if (typeof valorTotalCentavos !== "number" || typeof rendimientoTotalPct !== "number" || !clases || clases.length === 0) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando la distribución de tu portafolio">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <Skeleton className="mx-auto size-40 shrink-0 rounded-full" />
+          <div className="flex-1">
+            <EsqueletoFilas filas={4} />
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const positivo = rendimientoTotalPct >= 0;
+  const datos = clases.map((c, i) => ({ nombre: c.nombre, monto: c.montoCentavos, color: heroe ? `rgb(255 255 255 / ${1 - i * 0.2})` : COLORES[i % COLORES.length]! }));
+  const config = Object.fromEntries(datos.map((d) => [d.nombre, { label: d.nombre, color: d.color }]));
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <PieChart className="size-3.5" /> Asignación de activos · {clases.length} clases
+        <div className="flex items-start justify-between gap-2">
+          <span className={`text-xs ${suave}`}>
+            Tu portafolio · {clases.length} {clases.length === 1 ? "clase de activo" : "clases de activo"}
           </span>
-          {typeof desviacionModeloPct === "number" && desviacionModeloPct > 0.05 ? (
-            <span className="text-[11px] bg-tinte text-primary font-medium px-2 py-0.5 rounded-full">
-              Desviación {formatearPorcentaje(desviacionModeloPct)}
-            </span>
+          {typeof desviacionModeloPct === "number" && desviacionModeloPct >= DESVIACION_MINIMA ? (
+            <Badge variant="secondary" className={`monto shrink-0 ${heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}`}>
+              {formatearPorcentaje(desviacionModeloPct)} fuera del modelo
+            </Badge>
           ) : null}
         </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
-          <span className="monto flex items-center gap-1 text-sm font-semibold text-exito">
-            <TrendingUp className="size-4" />+{formatearPorcentaje(rendimientoTotalPct)}
-            <span className="text-xs text-muted-foreground font-normal">rendimiento global</span>
-          </span>
-        </div>
-        {typeof aportadoCentavos === "number" ? (
-          <p className="text-xs text-muted-foreground">
-            Aportado acumulado: <span className="monto font-medium">{formatearMonto(aportadoCentavos)}</span>
-          </p>
-        ) : null}
+        <span className="monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
+        <span className={`text-sm ${suave}`}>
+          <span className={`monto font-semibold ${heroe ? "" : positivo ? "text-exito" : "text-foreground"}`}>
+            {positivo ? "+" : "−"}
+            {formatearPorcentaje(Math.abs(rendimientoTotalPct))}
+          </span>{" "}
+          de rendimiento
+          {typeof aportadoCentavos === "number" ? (
+            <>
+              {" "}
+              sobre <span className="monto">{formatearMonto(aportadoCentavos)}</span> aportados
+            </>
+          ) : null}
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Barra compuesta segmentada */}
-        <div className="flex flex-col gap-1.5">
-          <div className="h-3.5 w-full overflow-hidden rounded-full bg-muted flex">
-            {clases.map((c, i) => (
-              <div
-                key={c.claseId}
-                style={{ width: `${Math.max(2, Math.round(c.pesoPct * 100))}%` }}
-                className={`${COLORES_CLASES[i % COLORES_CLASES.length]} transition-all`}
-                title={`${c.nombre}: ${formatearPorcentaje(c.pesoPct)}`}
-              />
-            ))}
+      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+        <div className="relative mx-auto size-40 shrink-0">
+          <Grafica config={config} className="size-40 h-40" etiqueta={`Distribución del portafolio en ${clases.length} clases`}>
+            <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
+              <TooltipMonto />
+              <Pie
+                data={datos}
+                dataKey="monto"
+                nameKey="nombre"
+                innerRadius="72%"
+                outerRadius="100%"
+                paddingAngle={2}
+                stroke={SEPARADOR}
+                strokeWidth={2}
+                startAngle={90}
+                endAngle={-270}
+                isAnimationActive={false}
+              >
+                {datos.map((d) => (
+                  <Cell key={d.nombre} fill={d.color} />
+                ))}
+              </Pie>
+            </PieChart>
+          </Grafica>
+          <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
+            <span className={`text-xs ${suave}`}>total</span>
+            <span className="monto text-lg font-semibold">{formatearMontoCorto(valorTotalCentavos)}</span>
           </div>
         </div>
 
-        {/* Lista de clases de activo con proporción y montos legibles en móvil */}
-        <div className="flex flex-col">
+        <ul className="flex min-w-0 flex-1 flex-col">
           {clases.map((c, i) => {
-            const colorClase = COLORES_CLASES[i % COLORES_CLASES.length];
-            const Fila = alAccionar ? "button" : "div";
+            const desviada = typeof c.pesoObjetivoPct === "number" && Math.abs(c.pesoPct - c.pesoObjetivoPct) >= 0.03;
             return (
-              <Fila
+              <li
                 key={c.claseId}
-                {...(alAccionar
-                  ? {
-                      type: "button" as const,
-                      onClick: () => alAccionar({ claseId: c.claseId, nombre: c.nombre }),
-                    }
-                  : {})}
-                className={`flex w-full flex-col justify-center gap-1.5 px-2 py-2 text-left ${CLASES_FILA_TOCABLE}`}
+                className={`flex items-center gap-3 border-b py-2 last:border-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`}
               >
-                <div className="flex items-baseline justify-between gap-2">
-                  <span className="flex items-center gap-2 min-w-0">
-                    <span className={`size-2.5 rounded-full shrink-0 ${colorClase}`} />
-                    <span className="truncate text-sm font-medium text-foreground">{c.nombre}</span>
+                <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: datos[i]!.color }} aria-hidden />
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.nombre}</span>
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="monto text-sm font-semibold">{formatearMonto(c.montoCentavos)}</span>
+                  <span className={`monto text-xs ${suave}`}>
+                    {formatearPorcentaje(c.pesoPct)}
                     {typeof c.pesoObjetivoPct === "number" ? (
-                      <span className="text-xs text-muted-foreground shrink-0">
-                        (Obj: {formatearPorcentaje(c.pesoObjetivoPct)})
-                      </span>
+                      <>
+                        {" "}
+                        · <span className={desviada && !heroe ? "text-foreground" : ""}>objetivo {formatearPorcentaje(c.pesoObjetivoPct)}</span>
+                      </>
                     ) : null}
                   </span>
-                  <div className="flex items-baseline gap-2 shrink-0">
-                    <span className="text-xs font-semibold text-muted-foreground">
-                      {formatearPorcentaje(c.pesoPct)}
-                    </span>
-                    <span className="monto text-sm font-semibold text-foreground">
-                      {formatearMonto(c.montoCentavos)}
-                    </span>
-                  </div>
-                </div>
-                <Progress
-                  value={Math.round(c.pesoPct * 100)}
-                  className="h-1.5"
-                  aria-label={`${c.nombre}: ${formatearMonto(c.montoCentavos)}`}
-                />
-              </Fila>
+                </span>
+              </li>
             );
           })}
-        </div>
-
-        {alAccionar ? (
-          <Button
-            variant="outline"
-            className="min-h-12 w-full rounded-xl"
-            onClick={() => alAccionar({ accion: "rebalancear_portafolio", valorTotalCentavos })}
-          >
-            <RefreshCw className="mr-1.5 size-4" /> Rebalancear al modelo recomendado
-          </Button>
-        ) : null}
+        </ul>
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+        {alAccionar ? (
+          <Button
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            onClick={() => alAccionar({ accion: "rebalancear_portafolio", valorTotalCentavos })}
+          >
+            Rebalancear al modelo <ArrowRight />
+          </Button>
+        ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
 }

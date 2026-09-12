@@ -1,23 +1,27 @@
 "use client";
 
-import { AlertCircle, CalendarCheck, PiggyBank, Sparkles } from "lucide-react";
+import { ArrowRight, PiggyBank } from "lucide-react";
+import { Area, AreaChart, XAxis, YAxis } from "recharts";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  CLASES_FILA_TOCABLE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { CLASES_GRAFICA, EJE, Ficha, Grafica, Leyenda, SERIES, TooltipMonto } from "../graficas";
 import type { PropsProyeccionPagoCredito } from "./schema";
 
-export function ProyeccionPagoCredito(
-  props: Partial<PropsProyeccionPagoCredito> & Pick<PropsComponente, "alAccionar">,
-) {
+/**
+ * Cuánto falta para terminar de pagar un crédito, y cuánto de eso son intereses.
+ *
+ * Una sola gráfica: el saldo bajando pago a pago hasta cero. Los hitos que manda la tool
+ * son sus puntos, y debajo van como fichas con el monto completo (en móvil no hay hover).
+ * El desglose capital / intereses es una barra fina de dos segmentos, porque es la
+ * respuesta a "¿cuánto pagaré de puros intereses?", y la oportunidad de ahorro es una
+ * frase, no una caja de color: el rojo es de la marca y el verde ya lo lleva el monto.
+ */
+export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito> & Pick<PropsComponente, "alAccionar">) {
   const {
     creditoId,
     alias,
@@ -43,133 +47,123 @@ export function ProyeccionPagoCredito(
     amortizacionResumen.length === 0
   ) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-36" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando la proyección de tu crédito">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <Skeleton className={CLASES_GRAFICA} />
+          <Skeleton className="h-2 w-full rounded-full" />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  const costoTotalCentavos = saldoInsolutoCentavos + totalInteresesEstimadosCentavos;
-  const pctCapital = Math.round((saldoInsolutoCentavos / costoTotalCentavos) * 100);
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const hitos = [...amortizacionResumen].sort((a, b) => a.numeroPago - b.numeroPago);
+  const serie = [{ pago: 0, saldo: saldoInsolutoCentavos }, ...hitos.map((h) => ({ pago: h.numeroPago, saldo: h.saldoFinalCentavos }))];
+  const costoTotal = saldoInsolutoCentavos + totalInteresesEstimadosCentavos;
+  const pctCapital = costoTotal > 0 ? (saldoInsolutoCentavos / costoTotal) * 100 : 100;
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const colores = heroe
+    ? { saldo: "var(--primary-foreground)", capital: "var(--primary-foreground)", intereses: "var(--oscuro)" }
+    : { saldo: SERIES.principal, capital: SERIES.principal, intereses: SERIES.acento };
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <CalendarCheck className="size-3.5" /> {alias} · {plazoRestanteMeses} meses restantes
+        <div className="flex items-start justify-between gap-2">
+          <span className={`text-xs ${suave}`}>
+            {alias} · {plazoRestanteMeses} {plazoRestanteMeses === 1 ? "mes restante" : "meses restantes"}
           </span>
-          <span className="text-xs bg-tinte text-primary font-medium px-2 py-0.5 rounded-full">
-            Tasa {formatearPorcentaje(tasaAnualPct)} anual
-          </span>
+          <Badge variant="secondary" className={`monto shrink-0 ${heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}`}>
+            {formatearPorcentaje(tasaAnualPct)} anual
+          </Badge>
         </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
-          <span className="text-sm text-muted-foreground font-medium">
-            de saldo insoluto pendiente
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Mensualidad regular: <span className="monto font-semibold text-foreground">{formatearMonto(mensualidadCentavos)}</span>
-        </p>
+        <span className="monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
+        <span className={`text-sm ${suave}`}>
+          de saldo · pagas <span className="monto font-medium">{formatearMonto(mensualidadCentavos)}</span> al mes
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Desglose de Deuda: Capital vs Intereses */}
-        <div className="flex flex-col gap-2 rounded-xl border border-borde-sutil bg-muted/30 p-3">
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>Capital a liquidar: <strong className="text-foreground monto">{formatearMonto(saldoInsolutoCentavos)}</strong></span>
-            <span>Intereses futuros: <strong className="text-destructive monto">{formatearMonto(totalInteresesEstimadosCentavos)}</strong></span>
-          </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-muted flex">
-            <div
-              style={{ width: `${pctCapital}%` }}
-              className="bg-chart-1 transition-all"
-              title={`Capital: ${formatearMonto(saldoInsolutoCentavos)}`}
+      <CardContent className="flex flex-col gap-3">
+        <Grafica config={{ saldo: { label: "Saldo", color: colores.saldo } }} etiqueta={`Saldo del crédito ${alias} pago a pago`}>
+          <AreaChart data={serie} margin={{ top: 8, right: 28, bottom: 0, left: 12 }}>
+            <XAxis
+              dataKey="pago"
+              type="number"
+              domain={[0, "dataMax"]}
+              ticks={hitos.map((h) => h.numeroPago)}
+              interval={0}
+              tickFormatter={(p: number) => `Pago ${p}`}
+              {...EJE}
+              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
             />
-            <div
-              style={{ width: `${100 - pctCapital}%` }}
-              className="bg-primary transition-all"
-              title={`Intereses: ${formatearMonto(totalInteresesEstimadosCentavos)}`}
+            <YAxis hide domain={[0, "dataMax"]} />
+            <TooltipMonto etiquetaDe={(p) => (Number(p) === 0 ? "Hoy" : `Después del pago ${String(p)}`)} />
+            <Area
+              type="monotone"
+              dataKey="saldo"
+              name="Saldo restante"
+              stroke={colores.saldo}
+              strokeWidth={2}
+              fill={colores.saldo}
+              fillOpacity={heroe ? 0.2 : 0.06}
+              dot={{ r: 4, fill: colores.saldo, stroke: "var(--card)", strokeWidth: 2 }}
+              activeDot={{ r: 5, fill: colores.intereses, stroke: "var(--card)", strokeWidth: 2 }}
+              isAnimationActive={false}
             />
-          </div>
-          <div className="flex justify-between text-[11px] text-muted-foreground">
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-chart-1 inline-block" /> Capital ({pctCapital}%)
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="size-2 rounded-full bg-primary inline-block" /> Intereses proyectados ({100 - pctCapital}%)
-            </span>
-          </div>
-        </div>
+          </AreaChart>
+        </Grafica>
 
-        {/* Notificación de oportunidad de ahorro por abono a capital */}
-        {typeof ahorroConAbonoCapitalCentavos === "number" && ahorroConAbonoCapitalCentavos > 0 ? (
-          <div className="flex items-start gap-2.5 rounded-xl border border-exito/30 bg-emerald-50 dark:bg-emerald-950/20 p-3 text-xs">
-            <PiggyBank className="size-4 text-exito shrink-0 mt-0.5" />
-            <div>
-              <strong className="text-exito font-semibold">Oportunidad de ahorro: </strong>
-              <span>
-                Un abono extraordinario puede ahorrarte hasta{" "}
-                <strong className="monto font-semibold text-exito">{formatearMonto(ahorroConAbonoCapitalCentavos)}</strong> en intereses.
-              </span>
-            </div>
-          </div>
-        ) : null}
-
-        {/* Hitos cronológicos de amortización */}
-        <div className="flex flex-col gap-1.5 border-t border-borde-sutil pt-3">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Evolución del saldo por periodo
-          </span>
-          {amortizacionResumen.map((hito) => (
-            <div
-              key={hito.numeroPago}
-              className={`flex items-center justify-between py-1.5 px-1 border-b border-borde-sutil last:border-0 text-xs ${CLASES_FILA_TOCABLE}`}
-            >
-              <div className="flex flex-col">
-                <span className="font-medium text-foreground">{hito.periodo}</span>
-                <span className="text-[11px] text-muted-foreground">
-                  Pago #{hito.numeroPago} (Int: {formatearMonto(hito.interesCentavos)})
-                </span>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className="monto font-semibold text-foreground">
-                  {formatearMonto(hito.saldoFinalCentavos)}
-                </span>
-                <span className="text-[10px] text-muted-foreground">Saldo restante</span>
-              </div>
-            </div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {hitos.slice(0, 4).map((h, i) => (
+            <Ficha
+              key={h.numeroPago}
+              etiqueta={h.periodo}
+              valor={formatearMonto(h.saldoFinalCentavos)}
+              detalle={`interés ${formatearMonto(h.interesCentavos)}`}
+              detalleSoloEscritorio
+              acento={i === Math.min(hitos.length, 4) - 1}
+            />
           ))}
         </div>
 
-        {alAccionar ? (
-          <Button
-            className="min-h-12 w-full rounded-xl"
-            onClick={() =>
-              alAccionar({
-                accion: "simular_abono_capital",
-                creditoId,
-                saldoInsolutoCentavos,
-              })
-            }
-          >
-            <Sparkles className="mr-1.5 size-4" /> Simular abono a capital
-          </Button>
+        {/* Lo que falta pagar, partido en capital e intereses: dos segmentos, una barra. */}
+        <div className={`flex flex-col gap-2 border-t pt-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
+          <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
+            <div className="h-full rounded-l-full" style={{ width: `${pctCapital}%`, background: colores.capital }} />
+            <div className="h-full flex-1 rounded-r-full" style={{ background: colores.intereses }} />
+          </div>
+          <Leyenda
+            series={[
+              { nombre: `Capital ${formatearMonto(saldoInsolutoCentavos)}`, color: colores.capital },
+              { nombre: `Intereses ${formatearMonto(totalInteresesEstimadosCentavos)}`, color: colores.intereses },
+            ]}
+          />
+        </div>
+
+        {typeof ahorroConAbonoCapitalCentavos === "number" && ahorroConAbonoCapitalCentavos > 0 ? (
+          <p className="flex items-start gap-2 text-sm">
+            <PiggyBank className={`mt-0.5 size-4 shrink-0 ${heroe ? "" : "text-exito"}`} aria-hidden />
+            <span>
+              Un abono extraordinario a capital te ahorraría hasta{" "}
+              <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>{formatearMonto(ahorroConAbonoCapitalCentavos)}</span> en intereses.
+            </span>
+          </p>
         ) : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+        {alAccionar ? (
+          <Button
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            onClick={() => alAccionar({ accion: "simular_abono_capital", creditoId, saldoInsolutoCentavos })}
+          >
+            Simular abono a capital <ArrowRight />
+          </Button>
+        ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
 }

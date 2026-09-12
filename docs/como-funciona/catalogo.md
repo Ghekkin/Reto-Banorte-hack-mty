@@ -3,7 +3,12 @@ verificado: 2026-09-12 04:10
 estado: construido
 ---
 
-# El catálogo: los 8 componentes que el agente puede invocar
+# El catálogo: los 8 componentes originales que el agente puede invocar
+
+> Al 2026-09-12 13:10 el catálogo tiene **18 componentes**: los ocho de este documento (fases
+> 1, 2 y 4 del guion) y los diez de inversión, crédito y diagnóstico, documentados en
+> [componentes-inversion-y-credito.md](componentes-inversion-y-credito.md). Las reglas de
+> abajo (dónde vive cada pieza, cómo se registra, cómo se prueba) aplican a los 18.
 
 ## Para cualquiera
 

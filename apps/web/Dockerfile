@@ -20,9 +20,17 @@ COPY packages/schemas/package.json packages/schemas/
 RUN pnpm install --frozen-lockfile
 
 # 2. El codigo y el build.
+#
+# `rm -rf .next/cache` en la MISMA capa que el build: ese cache (Turbopack) solo sirve
+# para recompilar mas rapido y `next start` no lo necesita. Como la imagen es de una sola
+# etapa, se quedaba dentro de cada imagen. El 2026-09-12 el disco del VPS llego al 99 %
+# (38 imagenes de esta app, ~1.4 GB cada una, una por push a main) y el deploy fallo
+# justo escribiendo `.next/cache/turbopack`. En una capa aparte no serviria: la capa del
+# build ya lo habria guardado.
 COPY . .
 RUN pnpm --filter @maya/catalogo generar \
- && pnpm --filter @maya/web build
+ && pnpm --filter @maya/web build \
+ && rm -rf apps/web/.next/cache
 
 ENV NODE_ENV=production
 ENV PORT=3000
