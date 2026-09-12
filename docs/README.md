@@ -57,6 +57,7 @@ quien.
 - [Contrato agente ↔ cliente](arquitectura/contrato-agente-cliente.md) — el endpoint, la petición, el stream JSONL, la convención de acciones
 - [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Roadmap del MCP](arquitectura/roadmap-mcp.md) — contraste entre las tools que hay y los datos sin puerta, propuestas de orquestación, y el orden en que conviene pulirlo
+- [Orquestadores](arquitectura/orquestadores.md) — plan en 2 bloques paralelos (MCP: `analizar_gasto`/`analizar_ahorro`/`ejecutar_decision`; agente: prefetch y ciclo de acción de 2 pasos) que concreta las propuestas O1-O4 del roadmap del MCP
 - [Paquete 2 — gasto, fugas y control](arquitectura/paquete-2-gasto-fugas-y-control.md) — encargo autocontenido de las 3 tools de suscripciones y topes de gasto
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)
 
