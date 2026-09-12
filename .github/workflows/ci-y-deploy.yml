@@ -49,11 +49,11 @@ jobs:
       - run: pnpm test
       - run: pnpm --filter @maya/web build
 
-      - name: humo del MCP
-        run: |
-          pnpm --filter @maya/mcp start &
-          for _ in $(seq 1 30); do curl -fsS localhost:3100/health >/dev/null 2>&1 && break; sleep 1; done
-          scripts/humo.sh
+      # `scripts/humo.sh` NO corre aqui a proposito. Desde el ADR 0010 el MCP necesita
+      # la base para arrancar, y el humo aplica una accion: correrlo en cada push
+      # escribiria en la base de la demo y podria ensuciar un ensayo en curso. Lo que
+      # cubre ese hueco: las 288 pruebas (que usan el volcado, sin red) y el paso de
+      # abajo, que pregunta a la URL publica y exige mensajes A2UI de vuelta.
 
   desplegar:
     name: deploy a Coolify

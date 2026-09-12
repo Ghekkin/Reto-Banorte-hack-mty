@@ -1,4 +1,3 @@
-import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   SalidaAplicarPlanPago,
@@ -6,7 +5,7 @@ import {
   SalidaConsultarPlan,
   SalidaConsultarTarjeta,
 } from "@maya/schemas";
-import { reiniciarEstado, rutaDelEstado } from "../datos/index.js";
+import { accionesDe, reiniciarEstado } from "../datos/index.js";
 import { planAplicado, tarjetaDeCredito } from "../dominio/consultas.js";
 import { sumarMeses, ultimoMesCerrado } from "../dominio/tiempo.js";
 import { aplicarPlanPago } from "../tools/aplicar-plan-pago.js";
@@ -48,16 +47,20 @@ describe("el plan es por tarjeta", () => {
   });
 });
 
-describe("el estado se escribe entero o no se escribe", () => {
-  it("nunca deja un temporal ni un JSON a medias al lado", async () => {
-    await aplicarPlanPago.manejar({
+describe("una accion se aplica una vez o ninguna", () => {
+  it("la misma llave de idempotencia no aplica dos veces, aunque la tool se llame dos veces", async () => {
+    const llamada = {
       usuarioId: "usr_beto",
       tarjetaId: "tar_beto_clasica",
       plazoMeses: 18,
       idempotencyKey: "auditoria:0002",
-    });
-    const texto = readFileSync(rutaDelEstado(), "utf8");
-    expect(() => JSON.parse(texto)).not.toThrow();
+    };
+    await aplicarPlanPago.manejar(llamada);
+    await aplicarPlanPago.manejar(llamada);
+
+    // En produccion esto lo garantiza el indice UNICO de `idempotency_key`, no el
+    // codigo: dos inserts con la misma llave dejan una sola fila.
+    expect(accionesDe("usr_beto", "aplicar_plan_pago")).toHaveLength(1);
     expect(SalidaConsultarPlan.parse(await consultarPlan.manejar({ usuarioId: "usr_beto" })).hayPlan).toBe(true);
   });
 });

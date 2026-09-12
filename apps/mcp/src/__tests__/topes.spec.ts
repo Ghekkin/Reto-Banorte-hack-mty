@@ -29,8 +29,8 @@ describe("crear_tope_gasto", () => {
     expect(["dentro", "cerca", "excedido"]).toContain(res.tope.estatus);
   });
 
-  it("trampa 1: calcula gastado en vivo y no lee el 0 del CSV en topes existentes", async () => {
-    // Ana ya tiene un tope base de restaurantes en el CSV con límite de $4,500 (450000 centavos)
+  it("trampa 1: calcula gastado en vivo y no lee el 0 de los datos de partida en topes existentes", async () => {
+    // Ana ya tiene un tope base de restaurantes en los datos con límite de $4,500 (450000 centavos)
     const res = SalidaCrearTopeGasto.parse(
       await crearTopeGasto.manejar({
         usuarioId: "usr_ana",

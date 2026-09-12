@@ -29,7 +29,7 @@ export const crearTopeGasto: DefinicionDeTool = {
     "controlar sus gastos en una categoría específica y pasa siempre `idempotencyKey`.",
   clase: "accion",
   entrada: EntradaCrearTopeGasto.shape,
-  manejar: (argumentos) => {
+  manejar: async (argumentos) => {
     const entrada = EntradaCrearTopeGasto.parse(argumentos);
 
     // 1. Validar existencia del usuario
@@ -56,7 +56,7 @@ export const crearTopeGasto: DefinicionDeTool = {
     const gastadoActualCentavos = calcularGastadoCategoriaPeriodo(entrada.usuarioId, entrada.categoriaId);
     const promedioHistoricoCentavos = calcularPromedioHistorico(entrada.usuarioId, entrada.categoriaId);
 
-    // 4. Verificar duplicados (en CSV o en estado mutable)
+    // 4. Verificar duplicados (en los datos de partida o en el estado mutable)
     const existente = buscarTopeExistente(entrada.usuarioId, entrada.categoriaId);
     if (existente) {
       const evalExistente = evaluarEstatusTope(
@@ -90,7 +90,7 @@ export const crearTopeGasto: DefinicionDeTool = {
     const nuevoId = `tope_${entrada.usuarioId.replace("usr_", "")}_${entrada.categoriaId.replace("cat_", "")}_${Date.now()}`;
     const fechaCreacion = hoy();
 
-    const resultado = aplicarAccion({
+    const resultado = await aplicarAccion({
       id: `acc_${nuevoId}`,
       tipo: "crear_tope_gasto",
       usuarioId: entrada.usuarioId,

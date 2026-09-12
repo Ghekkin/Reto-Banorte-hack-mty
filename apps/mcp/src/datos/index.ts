@@ -1,25 +1,46 @@
-import { config } from "../config.js";
-import { cargarTablas, type Tablas } from "./memoria.js";
-import type { Fila } from "./csv.js";
+import { cargarTablasDesdePostgres } from "./postgres.js";
+import { refrescarAcciones } from "./estado.js";
+import type { Fila } from "./fila.js";
 
 /**
- * La puerta unica a los datos. **Ninguna tool escribe SQL ni lee un CSV a mano**
- * (skill `tool-mcp`): todas piden aqui.
+ * La puerta unica a los datos. **Ninguna tool escribe SQL** (skill `tool-mcp`):
+ * todas piden aqui.
  *
- * Origen `memoria` (default): los CSV cargados al arrancar.
- * Origen `postgres` (FEATURE_POSTGRES=true): la misma consulta contra Coolify.
- * Si Postgres no responde, se cae a memoria y la demo sigue (ADR 0007, punto 4).
+ * El origen es **PostgreSQL** (ADR 0010): el esquema `banorte` de la base del
+ * proyecto. Se carga entero a memoria al arrancar —son ~3,700 filas— y a partir de
+ * ahi las lecturas son sincronas, que es lo que permite que el dominio y las 15
+ * tools se lean como codigo normal en vez de como una cascada de `await`.
+ *
+ * Las escrituras (tools de accion) SI van a la base en el momento, y las acciones
+ * se refrescan antes de cada llamada a una tool.
  */
+export type Tablas = Map<string, Fila[]>;
+
 let tablas: Tablas | undefined;
+
+/**
+ * Carga los datos. La llama `server.ts` **antes de escuchar**: si la base no
+ * responde, el proceso no arranca y se sabe en ese momento, no a media demo.
+ */
+export async function inicializarDatos(): Promise<Tablas> {
+  tablas = await cargarTablasDesdePostgres();
+  await refrescarAcciones();
+  return tablas;
+}
 
 export function datos(): Tablas {
   if (!tablas) {
-    if (config.origenDatos === "postgres") {
-      console.warn("[mcp] FEATURE_POSTGRES=true pero el origen postgres aun no existe; uso memoria");
-    }
-    tablas = cargarTablas();
+    throw new Error(
+      "los datos no se han cargado: llama a `inicializarDatos()` antes de usar las tools " +
+        "(lo hace `server.ts` al arrancar; en una prueba, llamalo tu)",
+    );
   }
   return tablas;
+}
+
+/** Para las pruebas: datos en memoria, sin tocar la base. */
+export function usarTablasDePrueba(nuevas: Tablas): void {
+  tablas = nuevas;
 }
 
 /** Todas las filas de una tabla: `tabla("usuarios")`. */
@@ -39,5 +60,6 @@ export function filtrar(nombre: string, campo: string, valor: string): Fila[] {
   return tabla(nombre).filter((f) => f[campo] === valor);
 }
 
-export * from "./csv.js";
+export * from "./fila.js";
 export * from "./estado.js";
+export { cerrarPool, obtenerPool } from "./postgres.js";

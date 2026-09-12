@@ -9,7 +9,7 @@ import { cuentasDe, movimientosRecientes, resumenDe, tarjetasDe } from "@/lib/da
 import { usuarioActivo } from "@/lib/usuario-activo";
 
 /**
- * Inicio. Componente de servidor: lee los CSV de `db/datos` directo, sin pasar por una
+ * Inicio. Componente de servidor: lee los datos de `la base` directo, sin pasar por una
  * API ni por el agente. Es la pantalla programada del producto.
  *
  * La rejilla es la misma que usa el lienzo de Maya, para que las dos se sientan la misma

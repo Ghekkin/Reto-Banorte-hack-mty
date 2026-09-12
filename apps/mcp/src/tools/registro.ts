@@ -1,5 +1,6 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { ZodRawShape } from "zod";
+import { refrescarAcciones } from "../datos/estado.js";
 
 /**
  * Como se registra una tool en este repo. Dos clases y las dos cuentan para el
@@ -40,6 +41,10 @@ export function registrarTool(server: McpServer, tool: DefinicionDeTool): void {
     (async (argumentos: Record<string, unknown>) => {
       const inicio = Date.now();
       try {
+        // Las acciones se releen aqui, no en cada consulta del dominio: `pnpm
+        // reiniciar-estado` corre en otro proceso y el servidor tiene que enterarse
+        // sin reiniciarse (si no, un ensayo arranca con el plan de la corrida anterior).
+        await refrescarAcciones();
         const resultado = await tool.manejar(argumentos ?? {});
         console.log(JSON.stringify({ tool: tool.nombre, clase: tool.clase, ms: Date.now() - inicio, ok: true }));
         return { content: [{ type: "text" as const, text: JSON.stringify(resultado) }] };

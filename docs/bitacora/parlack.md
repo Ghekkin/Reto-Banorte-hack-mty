@@ -614,3 +614,46 @@ Nota de coordinación: somos al menos tres sesiones sobre el mismo árbol. El is
 había documentado otra sesión con el arreglo equivocado (la URL pública); corregí esa
 parte del archivo con la medición, dejando intacto su análisis de la causa, que era
 bueno. Conviene decir siempre quién toca qué antes de tocarlo.
+
+## sáb 13 · 15:00–16:30 — Los datos salen de Postgres; los CSV se van (ADR 0010)
+
+El usuario notó lo que nadie había visto: **las tools no leían la base, leían los CSV**.
+Era cierto y llevaba así desde el principio: el ADR 0007 dejó los CSV como fuente y
+Postgres detrás de `FEATURE_POSTGRES`, apagado por omisión. Resultado: una base cargada
+que ningún flujo tocaba, y "tenemos Postgres" era una media verdad ante el jurado.
+
+Lo que cambió:
+
+- **El MCP lee de `banorte` al arrancar** y carga el esquema a memoria (~3,700 filas).
+  Las lecturas siguen síncronas a propósito: las 15 tools y el dominio no se tocaron.
+  Lo único que sabe de Postgres es `datos/postgres.ts`.
+- **El estado mutable pasó de `estado.json` a `banorte.acciones_aplicadas`.** La
+  idempotencia ahora la garantiza un **índice único** sobre `idempotency_key`, no el
+  código: dos llamadas con la misma llave dejan una sola fila aunque lleguen a la vez.
+  Migración `0001`, que además amplió los `CHECK` —no contemplaban
+  `cancelar_suscripcion`, y esa tool existía desde hace horas—.
+- **La web también lee de la base**, con la misma firma que tenía el lector de CSV, así
+  que `consultas.ts` y los componentes no cambiaron ni una línea.
+- **Los 22 CSV y sus scripts se borraron.**
+
+Tres cosas que me importa dejar escritas:
+
+1. **Las pruebas no pueden pegarle a la base.** `reiniciarEstado` la trunca: un
+   `pnpm test` a las 4 am habría borrado el estado de un ensayo. Corren contra un
+   volcado (`datos-de-prueba.json`) cargado en un `setupFiles`. 103 pruebas del MCP en
+   verde sin abrir una conexión.
+2. **Lo mismo vale para el CI**: quité el paso `humo del MCP` del workflow, porque el
+   humo aplica una acción y ahora eso escribe en la base de la demo.
+3. **Perdimos la demo sin red, y eso hay que ensayarlo.** Antes `pnpm dev` funcionaba en
+   un avión. Ahora si la base no responde, el MCP no arranca —a propósito—. El plan B es
+   un Postgres local y `pnpm datos:restaurar`; está en el ADR 0010 y en el checklist,
+   **pero nadie lo ha probado todavía**. Es el riesgo abierto de este cambio.
+
+De paso: `pnpm typecheck` llevaba roto desde el commit `9d5351e` por un destructuring sin
+guarda en `packages/catalogo`, y eso **bloqueaba todos los deploys** (el CI corta antes
+del deploy). Issue #7, arreglado.
+
+`.env` local creado con la base y la llave de Gemini; `.env.example` reescrito con el
+mínimo para arrancar y de dónde sale cada valor. `scripts/dev.sh` ahora carga el `.env`
+de la raíz y lo exporta: Next buscaba `apps/web/.env` y no lo encontraba, así que el
+agente decía "sin llave" con la llave puesta.

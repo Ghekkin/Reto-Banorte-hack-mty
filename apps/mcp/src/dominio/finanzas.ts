@@ -3,9 +3,9 @@
  * "seguir pagando el minimo". Documentado en `docs/algoritmos/amortizacion.md`.
  *
  * Es el puerto a TypeScript de `scripts/lib/finanzas.mjs`, el modulo con el que se
- * generaron los CSV. **Las dos implementaciones tienen que dar el mismo numero**: el
+ * generaron los datos. **Las dos implementaciones tienen que dar el mismo numero**: el
  * test `simular-reestructura.spec.ts` compara la salida de la tool contra las filas
- * de `db/datos/planes_reestructura.csv`, que salieron del generador. Si alguien cambia
+ * de la tabla `banorte.planes_reestructura`. Si alguien cambia
  * una formula aqui, ese test truena, y eso es exactamente lo que debe pasar.
  *
  * Todo en CENTAVOS ENTEROS. Las divisiones se redondean con Math.round y el ultimo
@@ -227,7 +227,7 @@ export function ofertaReestructura(entrada: {
 
 /**
  * Tasa de RESPALDO por plazo. La oferta real de cada tarjeta vive en
- * `db/datos/planes_reestructura.csv` (es un dato del banco, no una formula), y la tool
+ * `banorte.planes_reestructura` (es un dato del banco, no una formula), y la tool
  * la usa cuando existe. Esto es lo que se cotiza cuando alguien pide un plazo que no
  * esta en esa tabla: a mayor plazo, mayor tasa, y nunca por encima de la tasa de la
  * propia tarjeta menos 5 puntos, porque una reestructura mas cara que el revolvente no

@@ -26,7 +26,7 @@ export const cancelarSuscripcion: DefinicionDeTool = {
     "pasa siempre `idempotencyKey`. Muestra de inmediato el ahorro mensual y anual generado.",
   clase: "accion",
   entrada: EntradaCancelarSuscripcion.shape,
-  manejar: (argumentos) => {
+  manejar: async (argumentos) => {
     const entrada = EntradaCancelarSuscripcion.parse(argumentos);
 
     // 1. Validar que la suscripción exista
@@ -45,7 +45,7 @@ export const cancelarSuscripcion: DefinicionDeTool = {
     const ahorroMensualCentavos = montoCentavos;
     const ahorroAnualCentavos = ahorroMensualCentavos * 12;
 
-    // 3. Si ya estaba cancelada (en CSV o en estado mutable), devuelve yaEstaba: true sin error
+    // 3. Si ya estaba cancelada (en los datos o en el estado mutable), devuelve yaEstaba: true sin error
     if (esSuscripcionCancelada(sub, entrada.usuarioId)) {
       const restantes = suscripcionesActivasDe(entrada.usuarioId);
       const nuevoTotalMensualCentavos = restantes.reduce((acc, s) => acc + s.montoCentavos, 0);
@@ -71,7 +71,7 @@ export const cancelarSuscripcion: DefinicionDeTool = {
 
     // 4. Aplicar acción mutable
     const fechaCancelacion = hoy();
-    const resultado = aplicarAccion({
+    const resultado = await aplicarAccion({
       id: `acc_cancelar_${sub.id}_${Date.now()}`,
       tipo: "cancelar_suscripcion",
       usuarioId: entrada.usuarioId,

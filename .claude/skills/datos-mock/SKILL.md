@@ -1,6 +1,6 @@
 ---
 name: datos-mock
-description: Cómo se generan y mantienen los datos financieros simulados - tres perfiles demo con contexto opuesto, CSV commiteados como fuente y PostgreSQL como copia cargable, estado mutable que las acciones cambian y se reinicia, ids estables, comercios y categorías mexicanas plausibles, montos en centavos, generación determinista, integridad entre archivos. Invocar antes de crear o modificar cualquier dato en db/datos.
+description: Los datos financieros simulados viven en PostgreSQL (esquema banorte), no en el repo - tres perfiles demo con contexto opuesto, estado mutable que las acciones cambian y se reinicia, ids estables, comercios y categorias mexicanas plausibles, montos en centavos, integridad entre tablas. Invocar antes de tocar los datos o el esquema.
 ---
 
 # Datos mock
@@ -14,14 +14,16 @@ cree que es real.
 - **Tres perfiles demo** con nombres inventados (no de una persona real ni del equipo),
   2–4 cuentas cada uno (nómina, ahorro, inversión, crédito) y tarjetas enmascaradas
   `•••• 4821`. Ver "Tres perfiles" abajo.
-- **La fuente son CSV commiteados en `db/datos/`; PostgreSQL es una copia cargable.**
-  Nunca se commitea un dump ni el estado de la base. Detalle en ADR 0007.
+- **La fuente es PostgreSQL, esquema `banorte`** (ADR 0010). No hay CSV ni datos en el
+  repo, y el MCP no arranca sin `DATABASE_URL`. Lo único versionado es el **volcado para
+  pruebas** (`apps/mcp/src/__tests__/datos-de-prueba.json`), que además sirve de respaldo:
+  `pnpm datos:restaurar` devuelve la base a su punto de partida.
 - **Ids estables y legibles**: `usr_ana`, `cta_ana_nomina`, `mov_000123`, `cred_beto_tdc`.
   Nunca UUIDs aleatorios: en la demo se leen en voz alta y en los logs.
 - **Montos en centavos enteros** (`BIGINT`), columna `moneda` = `MXN` explícita. Fechas
   `YYYY-MM-DD`, timestamps ISO 8601 con offset `-06:00`. Porcentajes en decimal
   (`0.3690` = 36.90 %), nunca como texto con `%`.
-- **Comercios y categorías fijas**, en `categorias.csv` y `comercios.csv`: Super
+- **Comercios y categorías fijas**, en las tablas `categorias` y `comercios`: Super
   (Soriana, HEB, Walmart), Conveniencia (OXXO, 7-Eleven), Servicios (CFE, Telmex, Agua
   y Drenaje), Transporte (Uber, Didi, gasolina), Suscripciones (Netflix, Spotify),
   Restaurantes, Salud, Transferencias, Nómina, Retiros. Cada movimiento referencia una
@@ -31,15 +33,16 @@ cree que es real.
   mexicana (aguinaldo en diciembre, Buen Fin en noviembre, regreso a clases en agosto) y
   gastos atípicos marcados con `es_atipico` para que "detectar anomalías" tenga qué
   detectar.
-- **Generación determinista**: `scripts/generar-datos.mjs` con semilla fija, Node puro
-  sin dependencias. Se regenera con `node scripts/generar-datos.mjs`; los CSV generados
-  **sí se commitean** (la demo no depende de correr el script).
+- **Los datos ya están generados y viven en la base.** Se produjeron una vez con un
+  generador determinista que se retiró con el ADR 0010. Si hay que cambiarlos, se cambian
+  en la base —con una migración en `db/migraciones/` si toca el esquema— y se regenera el
+  volcado con `pnpm datos:fixture`.
 - **CLABE y tarjetas falsas a la vista**: CLABE de 18 dígitos que empiece en `000`,
   tarjetas enmascaradas, RFC/CURP con patrón visiblemente inventado. Nunca datos
   bancarios reales, ni "de prueba" de alguien.
-- **Integridad**: `scripts/validar-datos.mjs` valida que todo id referenciado exista, que
-  los montos sean enteros, que cada movimiento tenga categoría válida, que cada tabla de
-  amortización cierre en saldo cero y que los pesos de cada portafolio sumen 100.
+- **Integridad**: la sostienen las 32 FKs y los `CHECK` del esquema, y las pruebas del
+  dominio en `apps/mcp/src/__tests__/` (que cada amortización cierre en saldo cero, que
+  los pesos de cada portafolio sumen 100, que los montos sean enteros).
 
 ## Tres perfiles demo, no uno
 
@@ -55,10 +58,12 @@ en mora, y cliente patrimonial con portafolio. Por eso hay tres:
 
 ## Estado mutable
 
-Las tools de acción **cambian datos**. La tabla `acciones_aplicadas` empieza vacía (el
-CSV trae solo el encabezado) y es donde escriben `aplicar_plan_pago`, `crear_tope_gasto`,
-`crear_apartado` y `rebalancear`. `db/reiniciar.sql` la trunca y restaura los saldos; se
-corre antes de cada ensayo. Los datos base nunca se mutan.
+Las tools de acción **cambian datos**. `banorte.acciones_aplicadas` empieza vacía y es
+donde escriben `aplicar_plan_pago`, `crear_tope_gasto`, `crear_apartado` y
+`cancelar_suscripcion`. La **idempotencia la garantiza la base**: índice único sobre
+`idempotency_key`, así que dos llamadas con la misma llave dejan una sola fila.
+`pnpm reiniciar-estado` la trunca; se corre antes de cada ensayo, y el servidor que ya
+esté corriendo lo nota sin reiniciarse. Los datos base nunca se mutan.
 
 ## Territorios cubiertos
 
@@ -70,29 +75,30 @@ un caso de uso que las pida, no antes. Razones en ADR 0007.
 
 ```
 db/
-  schema.sql        DDL de las tablas, FKs, CHECK e índices
-  cargar.sql        los \copy en orden de dependencia (necesita psql)
-  cargar-completo.sql  generado: esquema + INSERTs en un archivo, sin psql ni red
-  reiniciar.sql     deja la demo limpia entre ensayos
-  datos/            22 CSV: la fuente de verdad, commiteada
+  schema.sql        DDL de las tablas, FKs, CHECK e indices
+  migraciones/      cambios al esquema, en orden y idempotentes
+  reiniciar.sql     equivalente SQL de `pnpm reiniciar-estado`
+apps/mcp/src/datos/
+  postgres.ts       lo unico que habla con la base
+  estado.ts         el estado mutable: banorte.acciones_aplicadas
+  index.ts          la puerta unica: tabla(), buscar(), filtrar()
+apps/mcp/src/__tests__/datos-de-prueba.json   volcado: pruebas y respaldo
 scripts/
-  generar-datos.mjs            determinista, semilla fija
-  validar-datos.mjs            integridad referencial y de negocio
-  verificar-orden-columnas.mjs orden de columnas del CSV vs. schema.sql
-  cargar-postgres.mjs          crea el esquema y sube los CSV con el driver pg
-  generar-sql-completo.mjs     produce db/cargar-completo.sql
-  lib/                         catalogos.mjs, perfiles.mjs, finanzas.mjs
+  migrar.mjs        aplica db/migraciones/*.sql
+  volcar-fixture.mjs  regenera el volcado desde la base
+  restaurar.mjs     repuebla la base desde el volcado
 ```
 
-**Tres rutas para cargar, equivalentes.** `cargar-postgres.mjs` (Node, no necesita psql,
-carga en una transacción y verifica contra el CSV), `cargar.sql` (psql) y
-`cargar-completo.sql` (un archivo, para cuando no puedes alcanzar el puerto). La conexión
-sale de `POSTGRE_BANORTE_URL`.
+```bash
+pnpm datos:migrar      # tras escribir una migracion
+pnpm datos:fixture     # tras cambiar datos, para que las pruebas lo vean
+pnpm datos:restaurar   # si la base quedo vacia (--recrear la vacia antes)
+pnpm reiniciar-estado  # antes de cada ensayo
+```
 
-**El orden de columnas de cada CSV tiene que coincidir con el de su tabla.** `\copy` con
-`HEADER true` ignora los nombres del encabezado y mapea **por posición**, así que un orden
-distinto no da error: mete los datos en la columna equivocada. Si agregas una columna,
-corre `verificar-orden-columnas.mjs`.
+La conexión sale de `DATABASE_URL`. **Las pruebas nunca tocan la base**: cargan el
+volcado en un `setupFiles` de vitest, así que un `pnpm test` no puede truncar el estado
+de un ensayo ni depender de la red.
 
 ## Doc
 

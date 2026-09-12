@@ -25,11 +25,12 @@ Referencia de patrón (no copiar lógica): `/root/yolani/mcp-tenant/src/server.t
 1. **Schema primero, en `packages/schemas`.** Input y output en Zod, con `.describe()`
    en cada campo del input: es lo que el modelo lee para decidir cómo llamar la tool.
    Exporta los tipos inferidos.
-2. **Mock antes que real.** Toda lectura y escritura pasa por la capa de datos única
-   (ADR 0007): implementación `memoria` que carga los CSV de `db/datos/` al arrancar
-   (default) y `postgres` detrás de `FEATURE_POSTGRES`. Ninguna tool escribe SQL.
-   Las tools de acción escriben en el **estado mutable** (`estado.json`, con script
-   `reiniciar-estado` para volver al punto de partida antes de cada demo).
+2. **Toda lectura y escritura pasa por la capa de datos única** (`apps/mcp/src/datos/`,
+   ADR 0010). El origen es PostgreSQL, esquema `banorte`, cargado a memoria al arrancar;
+   **ninguna tool escribe SQL ni abre conexión**. Las tools de acción llaman
+   `aplicarAccion`, que inserta en `banorte.acciones_aplicadas` (`await`: es async) y
+   cuya idempotencia garantiza un índice único sobre `idempotency_key`.
+   `pnpm reiniciar-estado` vacía esa tabla antes de cada ensayo.
 3. **Registro** con `registerTool`: `title`, `description` (qué hace y cuándo usarla,
    pensada para el modelo), `inputSchema`, `annotations`. Toda tool captura errores y
    devuelve error de tool; nunca lanza.
@@ -57,5 +58,7 @@ Referencia de patrón (no copiar lógica): `/root/yolani/mcp-tenant/src/server.t
 - [ ] `description` de tool y de cada campo de input escritas para el modelo.
 - [ ] Anotaciones correctas (lectura vs. acción).
 - [ ] Tests pasan; para acciones, el test de cambio de estado. `pnpm typecheck` limpio.
+      Las pruebas corren contra el volcado (`datos-de-prueba.json`), **nunca contra la
+      base**: un `pnpm test` no puede truncar el estado de un ensayo.
 - [ ] `scripts/humo.sh` lista la tool y la llama con éxito.
 - [ ] Doc en `docs/como-funciona/` y enlace en `docs/README.md`. Entrada en tu bitácora.

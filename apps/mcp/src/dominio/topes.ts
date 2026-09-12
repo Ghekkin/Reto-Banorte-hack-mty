@@ -14,7 +14,7 @@ export type TopeInfo = {
 
 /**
  * Busca si ya existe un tope de gasto para ese usuario y categoría,
- * revisando primero el estado mutable y luego la tabla CSV `topes_gasto`.
+ * revisando primero el estado mutable y luego la tabla `topes_gasto`.
  */
 export function buscarTopeExistente(usuarioId: string, categoriaId: string): TopeInfo | undefined {
   // 1. Revisar estado mutable
@@ -33,7 +33,7 @@ export function buscarTopeExistente(usuarioId: string, categoriaId: string): Top
     }
   }
 
-  // 2. Revisar CSV topes_gasto
+  // 2. Revisar la tabla topes_gasto
   const filas = filtrar("topes_gasto", "usuario_id", usuarioId);
   const fila = filas.find((f) => f.categoria_id === categoriaId);
   if (fila) {
@@ -52,7 +52,7 @@ export function buscarTopeExistente(usuarioId: string, categoriaId: string): Top
 
 /**
  * Calcula en vivo el gasto real de cargos de una categoría para un periodo (AAAA-MM).
- * Trampa 1: nunca leer `topes_gasto.gastado_actual_centavos` (viene en 0 en CSV).
+ * Trampa 1: nunca leer `topes_gasto.gastado_actual_centavos` (viene en 0 en los datos de partida).
  */
 export function calcularGastadoCategoriaPeriodo(
   usuarioId: string,

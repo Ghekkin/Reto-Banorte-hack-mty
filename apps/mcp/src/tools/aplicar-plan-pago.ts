@@ -29,7 +29,7 @@ export const aplicarPlanPago: DefinicionDeTool = {
     "`consultar_plan` o `consultar_tarjeta` y pinta el resultado: ahi se cierra el ciclo.",
   clase: "accion",
   entrada: EntradaAplicarPlanPago.shape,
-  manejar: (argumentos) => {
+  manejar: async (argumentos) => {
     const entrada = EntradaAplicarPlanPago.parse(argumentos);
     const conEstado = tarjetaConEstado(entrada.usuarioId, entrada.tarjetaId);
     if (!conEstado) throw new Error(`${entrada.usuarioId} no tiene tarjeta de credito que reestructurar`);
@@ -70,7 +70,7 @@ export const aplicarPlanPago: DefinicionDeTool = {
       primerPagoFecha: primerPagoDesde(hoy()),
     };
 
-    const resultado = aplicarAccion({
+    const resultado = await aplicarAccion({
       id: `acc_${entrada.usuarioId}_${entrada.plazoMeses}m_${Date.now()}`,
       tipo: "aplicar_plan_pago",
       usuarioId: entrada.usuarioId,

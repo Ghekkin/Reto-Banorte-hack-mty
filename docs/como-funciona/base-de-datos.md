@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 10:40
+verificado: 2026-09-13 15:55 (hora de Monterrey)
 estado: construido
 ---
 
@@ -10,7 +10,7 @@ relaciones, los índices, las restricciones de negocio y cómo se carga y se ope
 
 Documentos hermanos: `datos-mock.md` explica **qué historia cuentan** los datos y quiénes
 son los tres perfiles; este documento explica **cómo están guardados**. La decisión de usar
-PostgreSQL está en el ADR 0007.
+PostgreSQL **como única fuente** está en el ADR 0010 (reemplaza el mecanismo del 0007).
 
 > **Alcance en disputa con el ADR 0004.** El ADR 0004 cierra su sección "Qué NO entra" con
 > *"Inversiones con rendimiento variable. Más de dos usuarios demo."* Este esquema tiene un
@@ -62,7 +62,7 @@ con seguridad.
 |---|---|
 | Motor | PostgreSQL |
 | Esquema | `banorte` (no `public`) |
-| Variable de entorno | `POSTGRE_BANORTE_URL` en `.env` (plantilla en `.env.example`) |
+| Variable de entorno | `DATABASE_URL` en `.env` (plantilla en `.env.example`) |
 | Codificación esperada | UTF-8 |
 | Zona horaria del dominio | `America/Monterrey` (−06:00) |
 
@@ -582,7 +582,7 @@ La **única** tabla que el agente escribe. Índice `ix_acciones_usuario (usuario
 
 | Columna | Tipo | Restricciones y notas |
 |---|---|---|
-| `id` | `BIGSERIAL` | PK. **No viene en el CSV**: la genera Postgres |
+| `id` | `BIGSERIAL` | PK. La genera Postgres |
 | `usuario_id` | `TEXT` | FK → `usuarios(id)` |
 | `accion` | `TEXT` | `aplicar_plan_pago` \| `crear_tope_gasto` \| `crear_apartado` \| `rebalancear` |
 | `objeto_tipo` | `TEXT` | `tarjeta` \| `credito` \| `categoria` \| `meta` \| `portafolio` |
@@ -609,85 +609,29 @@ una pantalla apareciera vacía en la demo.
 
 ## Cargar y operar
 
-### Las tres rutas
+La conexión sale de **`DATABASE_URL`** en `.env` (plantilla en `.env.example`).
 
-Equivalentes; se usa la que el entorno permita. La conexión sale de `POSTGRE_BANORTE_URL`.
-
-**1. Node con el driver `pg`** — la ruta por omisión, no necesita psql:
-
-```bash
-npm install
-node scripts/cargar-postgres.mjs --inspeccionar   # solo reporta, no toca nada
-node scripts/cargar-postgres.mjs                  # crea el esquema y carga
-node scripts/cargar-postgres.mjs --recrear        # DESTRUCTIVO: tira el esquema y lo rehace
-node scripts/cargar-postgres.mjs --reiniciar      # antes de cada ensayo
-```
-
-Lo que hace bien y por qué importa:
-
-- **Aborta si el esquema `banorte` ya existe** y no se le pasa `--recrear`. `schema.sql`
-  empieza con `DROP SCHEMA ... CASCADE`, así que sin este guard un segundo `npm run
-  datos:cargar` borraría silenciosamente cualquier trabajo que hubiera ahí.
-- **Carga en una sola transacción.** Si una FK falla en el archivo 19, hace `ROLLBACK`: no
-  queda una base a medias que *parezca* cargada.
-- **Verifica contra el CSV**, no contra un número escrito a mano: cuenta las filas de cada
-  tabla en la base y las compara con su archivo. Si el generador cambia, la comprobación
-  sigue valiendo.
-- **Nunca imprime la URL de conexión**, que lleva la contraseña. Solo host, puerto, base y
-  usuario.
-- Usa `INSERT` con **lista explícita de columnas** tomada del encabezado del CSV, así que el
-  orden de columnas no importa por esta vía.
-
-**2. psql**, desde la raíz del repo:
-
-```bash
-psql "$POSTGRE_BANORTE_URL" -f db/schema.sql
-psql "$POSTGRE_BANORTE_URL" -f db/cargar.sql
-psql "$POSTGRE_BANORTE_URL" -f db/reiniciar.sql
-```
-
-**3. Un solo archivo SQL**, para cuando no se puede alcanzar el puerto desde donde trabajas.
-Se corre desde el propio servidor o se pega en una consola SQL web:
-
-```bash
-node scripts/generar-sql-completo.mjs    # regenera db/cargar-completo.sql (641 KB)
-psql "$POSTGRE_BANORTE_URL" -f db/cargar-completo.sql
-```
-
-Trae el esquema y los 3 690 `INSERT` en 37 lotes, todo entre `BEGIN` y `COMMIT`, y termina
-con un `SELECT` que imprime el conteo por tabla.
-
-### La trampa de `\copy`
-
-La ruta 2 usa `\copy ... WITH (FORMAT csv, HEADER true)`, que **ignora los nombres del
-encabezado y mapea por posición**. Un orden de columnas distinto al de la tabla no produce
-un error de "columna desconocida": mete los datos en la columna equivocada, y solo se nota
-cuando revienta un `CHECK` o un tipo. O peor, cuando no revienta.
-
-Por eso existe `scripts/verificar-orden-columnas.mjs`, que compara el encabezado de cada CSV
-contra el orden declarado en `schema.sql`. **Córrelo siempre que agregues una columna.** Las
-rutas 1 y 3 no tienen este riesgo porque escriben la lista de columnas explícita.
+Ya no hay "cargar": desde el ADR 0010 la base **es** la fuente y está cargada. Lo que
+queda es cómo cambiarla y cómo recuperarla si alguien la vacía.
 
 ### Runbook
 
 | Cuándo | Comando |
 |---|---|
-| Cambié el generador | `node scripts/generar-datos.mjs && node scripts/validar-datos.mjs` |
-| Agregué una columna | `node scripts/verificar-orden-columnas.mjs` |
-| Primera carga | `node scripts/cargar-postgres.mjs` |
-| Ver qué hay en la base | `node scripts/cargar-postgres.mjs --inspeccionar` |
-| Recargar desde cero | `node scripts/cargar-postgres.mjs --recrear` |
-| **Antes de cada ensayo de demo** | `node scripts/cargar-postgres.mjs --reiniciar` |
+| Cambié el esquema | Escribe `db/migraciones/NNNN-loquesea.sql` y corre `pnpm datos:migrar` |
+| Ver qué hay en la base | `psql "$DATABASE_URL" -c '\dt banorte.*'` |
+| La base quedó vacía o a medias | `pnpm datos:restaurar` (o `--recrear` para vaciar y rellenar) |
+| Cambié los datos y quiero que las pruebas lo vean | `pnpm datos:fixture` |
+| **Antes de cada ensayo de demo** | `pnpm reiniciar-estado` |
 
-Los mismos, como scripts de npm: `datos:generar`, `datos:validar`, `datos:columnas`,
-`datos:cargar`, `datos:reiniciar`.
+Las migraciones son **idempotentes** (`IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`):
+correrlas dos veces no hace daño, que es lo que uno necesita a las 3 am.
 
 ### TLS
 
-Si `POSTGRE_BANORTE_URL` trae `sslmode` distinto de `disable`, el cargador habilita TLS con
-`rejectUnauthorized: false`. Es una concesión consciente: los Postgres gestionados suelen
-presentar un certificado que no cadena con una CA pública, y son datos ficticios en un
-hackathon. **No copies este patrón a nada que maneje datos reales.**
+La instancia del proyecto habla en claro dentro de la red del VPS y por el puerto 5437
+hacia fuera. Si algún día se pone detrás de TLS con certificado propio, hay que decidir
+qué hace `pg` con la verificación; hoy no se desactiva en ningún sitio.
 
 ---
 
@@ -709,15 +653,14 @@ hackathon. **No copies este patrón a nada que maneje datos reales.**
 
 ### Lo que este esquema NO tiene
 
-- **Sin `apps/` que lo consuma todavía.** No hay capa de datos, ni tools MCP, ni el fallback
-  a CSV en memoria que el ADR 0007 exige. Hoy el esquema y los CSV existen; el código que
-  los lee, no.
+- **Sin fallback.** Es deliberado (ADR 0010): si la base no responde, el MCP no arranca.
+  Un servidor que contesta sin datos se descubre en la demo.
 - **Sin Pagos ni Seguros.** Nada de transferencias a terceros, cobros, conciliación,
   cotizaciones, coberturas ni siniestros. Sus tablas no existen y no se diseñaron: se
   agregan cuando haya un caso de uso que las pida (ADR 0007).
-- **Sin migraciones.** No hay historial de versiones del esquema ni herramienta de migración.
-  El esquema se rehace completo; en 36 horas eso es correcto y en producción sería
-  inaceptable.
+- **Migraciones mínimas.** `db/migraciones/` se aplica en orden con `pnpm datos:migrar` y
+  cada archivo es idempotente, pero no hay tabla de versiones aplicadas ni rollback: se
+  releen todas cada vez. Para 36 horas alcanza; en producción no.
 - **Sin usuarios ni roles de base de datos.** Todo corre con el usuario de la cadena de
   conexión. Sin RLS, sin permisos por tabla, sin usuario de solo lectura para el MCP.
 - **Sin auditoría de lectura.** `acciones_aplicadas` registra escrituras; nadie registra
@@ -729,15 +672,15 @@ hackathon. **No copies este patrón a nada que maneje datos reales.**
 
 ## Cómo se probó
 
-| Comprobación | Herramienta | Resultado al 2026-09-12 10:40 |
+| Comprobación | Herramienta | Resultado al 2026-09-13 15:55 |
 |---|---|---|
-| 32 FKs, ids únicos, montos enteros, invariantes de negocio | `scripts/validar-datos.mjs` | OK, 22 archivos, 3 690 filas |
-| Orden de columnas CSV ↔ `schema.sql` | `scripts/verificar-orden-columnas.mjs` | OK, 22 de 22 |
-| Determinismo del generador | dos corridas + SHA-256 de `movimientos.csv` | Mismo hash |
-| Estructura de `cargar-completo.sql` | 22 `CREATE TABLE`, 37 `INSERT`, comillas y paréntesis balanceados, cero meta-comandos de psql | OK |
-| **Carga real contra PostgreSQL** | `scripts/cargar-postgres.mjs` | **No ejecutada**: puerto inalcanzable, ver `docs/issues/2026-09-12-postgres-remoto-inalcanzable.md` |
+| El esquema existe y tiene datos | `psql` / `pnpm datos:restaurar` | 22 tablas, 3 690 filas |
+| El MCP arranca contra la base | `pnpm --filter @maya/mcp start` | `22 tablas desde postgres`, 15 tools |
+| Las tools leen de la base | `pnpm humo` | Verde, incluido el ciclo de acción completo |
+| Una acción se persiste | `aplicar_plan_pago` + `select` en `acciones_aplicadas` | 1 fila con su `idempotency_key` |
+| El reinicio surte efecto sin reiniciar el servidor | `pnpm reiniciar-estado` + `consultar_plan` | `hayPlan: false` |
+| 103 pruebas del MCP sin tocar la base | `pnpm --filter @maya/mcp test` | Verde, contra el volcado |
 
-La última fila es la importante: el esquema **no se ha ejecutado nunca contra un PostgreSQL
 real**. Está verificado estructuralmente y los datos cumplen todas las restricciones que
 declara, pero hasta que alguien corra `schema.sql` contra una base viva, un error de sintaxis
 o un tipo mal elegido siguen siendo posibles.

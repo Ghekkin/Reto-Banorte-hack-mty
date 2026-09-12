@@ -19,13 +19,19 @@ Node 22 y pnpm 10.
 ```bash
 git clone https://github.com/Ghekkin/Reto-Banorte-hack-mty.git
 cd Reto-Banorte-hack-mty
-cp .env.example .env          # opcional: sin llave de modelo la web abre igual
+cp .env.example .env          # y llena DATABASE_URL (obligatoria) y la llave de Gemini
 pnpm install
 pnpm dev                      # MCP en :3100, web en :3000; espera los /health
 ```
 
-Abre http://localhost:3000. Sin llave de modelo, el agente responde con una pantalla de
-ejemplo y lo dice en el stream; todo lo demás funciona.
+Abre http://localhost:3000.
+
+**`DATABASE_URL` es obligatoria**: los datos viven en PostgreSQL y el MCP no arranca sin
+base (ADR 0010). El password está en el panel de Coolify o en `/opt/reto/.env` del VPS.
+Si la base quedara vacía, `pnpm datos:restaurar` la repuebla desde el volcado del repo.
+
+Sin llave de modelo la web abre igual, pero el agente responde con una pantalla de
+ejemplo y lo dice en el stream.
 
 | Comando | Qué hace |
 |---|---|
@@ -33,7 +39,8 @@ ejemplo y lo dice en el stream; todo lo demás funciona.
 | `pnpm typecheck` · `pnpm test` | TypeScript y vitest en los 5 paquetes |
 | `pnpm humo` | Prueba de humo del MCP: lista las tools y llama una |
 | `pnpm catalogo` | Regenera `packages/catalogo/catalogo.json` desde los schemas |
-| `pnpm reiniciar-estado` | Devuelve el estado mutable al punto de partida |
+| `pnpm reiniciar-estado` | Vacía `banorte.acciones_aplicadas`: antes de cada ensayo |
+| `pnpm datos:migrar` · `datos:fixture` · `datos:restaurar` | Migraciones, volcado para pruebas, y repoblar la base |
 
 El catálogo de componentes que el agente puede invocar se sirve en
 http://localhost:3000/catalogo/v1.json — es el `catalogId` de cada superficie A2UI.
@@ -51,7 +58,7 @@ Usuario → Agente/LLM → MCP → A2UI → Componentes → (la acción regresa 
 | Renderer A2UI | `packages/a2ui/` | Nuestro renderer conforme a la spec v0.9.1, validado con sus JSON Schema |
 | Catálogo A2UI | `packages/catalogo/` | Componentes financieros propios, con schema y ejemplos |
 | Contratos de tools | `packages/schemas/` | Zod de entrada/salida de cada tool |
-| Datos | `db/datos/` | Tres perfiles demo: 22 CSV sintéticos y el estado que las acciones cambian |
+| Datos | PostgreSQL, esquema `banorte` | Tres perfiles demo sintéticos y el estado que las acciones cambian. Esquema y migraciones en `db/` |
 
 Cómo se levanta y qué pasa en una vuelta completa del ciclo:
 [`docs/como-funciona/scaffold-y-arranque.md`](docs/como-funciona/scaffold-y-arranque.md).

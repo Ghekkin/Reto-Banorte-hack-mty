@@ -4,7 +4,7 @@ import { consultarPerfil } from "../tools/consultar-perfil.js";
 import { buscar, tabla } from "../datos/index.js";
 
 describe("datos en memoria", () => {
-  it("carga los CSV de db/datos", () => {
+  it("carga las tablas del esquema banorte", () => {
     expect(tabla("usuarios").length).toBeGreaterThan(0);
     expect(buscar("usuarios", "id", "usr_beto")?.nombre).toContain("Alberto");
   });

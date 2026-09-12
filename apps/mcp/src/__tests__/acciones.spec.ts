@@ -1,4 +1,3 @@
-import { writeFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   SalidaAplicarPlanPago,
@@ -8,7 +7,7 @@ import {
   SalidaCrearApartado,
   SalidaProyectarAhorro,
 } from "@maya/schemas";
-import { reiniciarEstado, rutaDelEstado } from "../datos/index.js";
+import { reiniciarEstado } from "../datos/index.js";
 import { aplicarPlanPago } from "../tools/aplicar-plan-pago.js";
 import { compararPeriodos } from "../tools/comparar-periodos.js";
 import { consultarPlan } from "../tools/consultar-plan.js";
@@ -146,10 +145,10 @@ describe("el estado vive en el disco, no en memoria", () => {
     });
     expect(SalidaConsultarPlan.parse(await consultarPlan.manejar({ usuarioId: "usr_beto" })).hayPlan).toBe(true);
 
-    // Lo que hace `pnpm reiniciar-estado`: escribir el archivo desde OTRO proceso. Si la
-    // capa de datos cachea, el servidor sigue contestando con el plan viejo y el ensayo
-    // arranca sucio (paso a paso en docs/como-funciona/tools-mcp.md).
-    writeFileSync(rutaDelEstado(), JSON.stringify({ acciones: [] }, null, 2) + "\n");
+    // Lo que hace `pnpm reiniciar-estado`: vaciar las acciones. Si la capa de datos se
+    // quedara con su copia, el servidor seguiria contestando con el plan viejo y el
+    // ensayo arrancaria sucio (paso a paso en docs/como-funciona/tools-mcp.md).
+    await reiniciarEstado();
 
     expect(SalidaConsultarPlan.parse(await consultarPlan.manejar({ usuarioId: "usr_beto" })).hayPlan).toBe(false);
   });

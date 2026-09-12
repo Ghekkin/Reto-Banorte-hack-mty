@@ -22,7 +22,7 @@ export const crearApartado: DefinicionDeTool = {
     "confirmacion con la fecha en que llegara a su meta.",
   clase: "accion",
   entrada: EntradaCrearApartado.shape,
-  manejar: (argumentos) => {
+  manejar: async (argumentos) => {
     const entrada = EntradaCrearApartado.parse(argumentos);
     const frecuencia = entrada.frecuencia ?? "mensual";
 
@@ -68,7 +68,7 @@ export const crearApartado: DefinicionDeTool = {
       creadoEn,
     };
 
-    const resultado = aplicarAccion({
+    const resultado = await aplicarAccion({
       id: `acc_${meta.id}`,
       tipo: "crear_apartado",
       usuarioId: entrada.usuarioId,

@@ -1,13 +1,12 @@
 import { defineConfig } from "vitest/config";
 
 /**
- * Las tools de accion escriben en el estado mutable. En las pruebas ese estado va a un
- * archivo aparte (`estado.pruebas.json`, fuera de git) para no pisar el que usa la demo,
- * y los archivos corren en serie porque todos comparten ese archivo.
+ * `setupFiles` carga el volcado de datos antes de cada archivo de pruebas: asi
+ * ninguna prueba abre conexion a PostgreSQL ni depende de la red (ver
+ * `src/__tests__/preparar.ts`).
  */
 export default defineConfig({
   test: {
-    env: { MCP_ESTADO: "apps/mcp/estado.pruebas.json" },
-    fileParallelism: false,
+    setupFiles: ["./src/__tests__/preparar.ts"],
   },
 });

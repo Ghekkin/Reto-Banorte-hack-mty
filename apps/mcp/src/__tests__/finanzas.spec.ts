@@ -11,7 +11,7 @@ import {
 
 /**
  * El puerto a TypeScript de `scripts/lib/finanzas.mjs` tiene que dar EXACTAMENTE los
- * mismos numeros que el generador de datos. Si no, la pantalla diria una cosa y el CSV
+ * mismos numeros que el generador de datos. Si no, la pantalla diria una cosa y la base
  * otra, y el primero en notarlo seria un juez.
  */
 describe("finanzas contra los datos generados", () => {
@@ -19,7 +19,7 @@ describe("finanzas contra los datos generados", () => {
   const saldo = aEntero(tarjeta.saldo_centavos);
   const tasaTarjeta = aDecimal(tarjeta.tasa_anual);
 
-  it("el pago minimo de la tarjeta reproduce el del CSV (tolerancia: un peso)", () => {
+  it("el pago minimo de la tarjeta reproduce el de la base (tolerancia: un peso)", () => {
     const calculado = pagoMinimoTarjeta(saldo, tasaTarjeta);
     expect(Math.abs(calculado - aEntero(tarjeta.pago_minimo_centavos))).toBeLessThanOrEqual(100);
   });

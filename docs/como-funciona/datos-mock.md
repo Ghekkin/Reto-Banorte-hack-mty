@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 09:40
+verificado: 2026-09-13 15:50 (hora de Monterrey)
 estado: construido
 ---
 
@@ -42,21 +42,22 @@ que nadie va a ver cifras distintas a las del ensayo.
 
 ### Dónde vive
 
+**Los datos viven en PostgreSQL** (esquema `banorte`), no en el repo. Desde el
+ADR 0010 no hay CSV: la base es la única fuente, y el MCP no arranca sin ella.
+
 | Ruta | Qué es |
 |---|---|
-| `db/datos/*.csv` | Los 22 archivos. **Son la fuente de verdad** y se commitean |
+| PostgreSQL, esquema `banorte` | **Las 22 tablas con los datos.** La fuente de verdad |
 | `db/schema.sql` | DDL: 22 tablas, FKs, `CHECK` de negocio, índices |
-| `db/cargar.sql` | Los 22 `\copy` en orden de dependencia + conteo final (**necesita psql**) |
-| `db/cargar-completo.sql` | Generado: esquema + 3 690 `INSERT` en un solo archivo, 641 KB |
-| `db/reiniciar.sql` | Deja la demo limpia entre ensayos |
-| `scripts/cargar-postgres.mjs` | Cargador con el driver `pg`: crea el esquema y sube los CSV |
-| `scripts/generar-sql-completo.mjs` | Produce `db/cargar-completo.sql` |
-| `scripts/generar-datos.mjs` | Generador determinista |
-| `scripts/lib/catalogos.mjs` | Catálogos escritos a mano (categorías, comercios, productos, instrumentos, modelos) |
-| `scripts/lib/perfiles.mjs` | Los tres perfiles, sus cuentas, tarjetas y patrones de gasto |
-| `scripts/lib/finanzas.mjs` | Amortización, CAT, pago mínimo, ofertas de reestructura |
-| `scripts/validar-datos.mjs` | Integridad referencial y de negocio |
-| `scripts/verificar-orden-columnas.mjs` | Orden de columnas del CSV contra `schema.sql` |
+| `db/migraciones/*.sql` | Cambios al esquema, en orden y idempotentes (`pnpm datos:migrar`) |
+| `db/reiniciar.sql` | Deja la demo limpia entre ensayos (equivalente SQL de `pnpm reiniciar-estado`) |
+| `apps/mcp/src/datos/postgres.ts` | Lo único que habla con la base: carga el esquema a memoria al arrancar |
+| `apps/mcp/src/datos/estado.ts` | El estado mutable: `banorte.acciones_aplicadas` |
+| `apps/web/src/lib/datos/tablas.ts` | El lector de la web, contra la misma base |
+| `apps/mcp/src/__tests__/datos-de-prueba.json` | Volcado para las pruebas. **No es la fuente**: es material de prueba y respaldo |
+| `scripts/volcar-fixture.mjs` | Regenera ese volcado desde la base (`pnpm datos:fixture`) |
+| `scripts/restaurar.mjs` | Repuebla la base desde el volcado (`pnpm datos:restaurar`) |
+| `scripts/migrar.mjs` | Aplica las migraciones |
 
 ### Los 22 archivos
 
@@ -92,10 +93,8 @@ tiene asignada una ejecutiva, Ana y Beto son autoservicio (`NULL`).
 Beto tiene perfil de inversión pero **no tiene portafolio**, a propósito: es el caso en
 que el agente debe decir "primero salgamos de la deuda" en lugar de ofrecer un producto.
 
-### Convenciones de los CSV
+### Convenciones de los datos
 
-- UTF-8 sin BOM, encabezado en la primera línea, separador `,`, comillas dobles solo
-  cuando el valor las necesita, `NULL` como campo vacío, booleanos `true`/`false`.
 - **Montos enteros en centavos** (`BIGINT`), columna `moneda` = `MXN`.
 - Porcentajes `NUMERIC(7,4)` en decimal: `0.4890` es 48.90 %.
 - Fechas `YYYY-MM-DD`. Los ids son legibles y estables (`usr_ana`, `mov_001869`,
@@ -105,7 +104,8 @@ que el agente debe decir "primero salgamos de la deuda" en lugar de ofrecer un p
 
 ### Invariantes que sostienen la demo
 
-Cada una la verifica `scripts/validar-datos.mjs`, y varias además el `CHECK` del schema:
+Varias las sostiene el `CHECK` del propio esquema; las que no, viven como pruebas del
+dominio en `apps/mcp/src/__tests__/`:
 
 1. **El saldo de cada cuenta cuadra con sus movimientos.** `saldo_posterior_centavos`
    encadena movimiento a movimiento y el último coincide con `cuentas.saldo_centavos`.
@@ -129,66 +129,40 @@ Cada una la verifica `scripts/validar-datos.mjs`, y varias además el `CHECK` de
 ### Cómo se usa
 
 ```bash
-node scripts/generar-datos.mjs             # regenera los 22 CSV (determinista)
-node scripts/validar-datos.mjs             # integridad; sale con codigo 1 si algo falla
-node scripts/verificar-orden-columnas.mjs  # orden de columnas vs. schema.sql
+pnpm datos:migrar      # aplica db/migraciones/*.sql; idempotente, se puede repetir
+pnpm datos:fixture     # regenera el volcado de pruebas desde la base
+pnpm datos:restaurar   # repuebla la base desde el volcado si quedara vacia
+pnpm reiniciar-estado  # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
 ```
 
-### Las tres rutas para cargar a PostgreSQL
+La conexión sale de `DATABASE_URL` en `.env` (ver `.env.example`). Ninguno de estos
+scripts imprime la URL de conexión.
 
-Son equivalentes; se usa la que el entorno permita. La conexión sale de
-`POSTGRE_BANORTE_URL` en `.env`.
+### El generador ya no existe
 
-**1. Node con el driver `pg`** — no necesita psql. Es la ruta por omisión:
+Los datos se generaron una vez con un script determinista y hoy viven en la base. El
+generador y los validadores de CSV se retiraron con el ADR 0010: mantener dos fuentes
+—archivos y base— fue justo lo que hizo que durante un día entero nadie notara que el
+producto no estaba leyendo la base.
 
-```bash
-npm install
-node scripts/cargar-postgres.mjs --inspeccionar   # solo reporta, no toca nada
-node scripts/cargar-postgres.mjs                 # crea el esquema y carga
-node scripts/cargar-postgres.mjs --recrear       # DESTRUCTIVO: tira el esquema y lo rehace
-node scripts/cargar-postgres.mjs --reiniciar     # antes de cada ensayo
-```
+Lo que queda en su lugar: el volcado del repo es el respaldo del contenido, y
+`pnpm datos:restaurar` lo devuelve a la base. Si algún día hay que **cambiar** los datos,
+se cambian en la base (con una migración si toca el esquema) y se regenera el volcado.
 
-Aborta si el esquema `banorte` ya existe y no le pasas `--recrear`, carga los 22 archivos
-en **una sola transacción** (o entran todos o ninguno) y al final compara el conteo de cada
-tabla contra su CSV. Nunca imprime la URL de conexión.
+### Lo que esto cuesta, dicho claro
 
-**2. psql**, si lo tienes instalado. Correr desde la raíz del repo:
-
-```bash
-psql "$POSTGRE_BANORTE_URL" -f db/schema.sql
-psql "$POSTGRE_BANORTE_URL" -f db/cargar.sql
-psql "$POSTGRE_BANORTE_URL" -f db/reiniciar.sql
-```
-
-**3. Un solo archivo SQL**, cuando no puedes alcanzar el puerto desde donde trabajas. Es la
-ruta de escape: se corre desde el propio servidor o se pega en una consola SQL web.
-
-```bash
-node scripts/generar-sql-completo.mjs        # regenera db/cargar-completo.sql
-psql "$POSTGRE_BANORTE_URL" -f db/cargar-completo.sql
-```
-
-La demo **no depende** de correr el generador: los CSV están commiteados. Y no depende del
-Postgres: con `FEATURE_POSTGRES` apagado la capa de datos lee los mismos CSV en memoria
-(ADR 0007).
-
-**Cuidado al agregar una columna.** La ruta 2 usa `\copy` con `HEADER true`, que ignora los
-nombres del encabezado y mapea **por posición**: si el orden del CSV y el de la tabla no
-coinciden, no hay error de "columna desconocida", los datos entran en la columna
-equivocada. Por eso existe `verificar-orden-columnas.mjs`. Las rutas 1 y 3 no tienen ese
-riesgo porque escriben la lista de columnas explícita.
-
-La demo **no depende** de correr el generador: los CSV están commiteados. Y no depende
-del Postgres: con `FEATURE_POSTGRES` apagado la capa de datos lee los mismos CSV en
-memoria (ADR 0007).
+**Ya no hay demo sin red.** Con los CSV en el repo, `pnpm dev` funcionaba en un avión;
+ahora, si la base no responde, el MCP no levanta —a propósito, porque un servidor que
+contesta sin datos se descubre en la demo—. El plan si el stand no tiene red fiable es
+levantar un Postgres local y `pnpm datos:restaurar`, **y eso hay que ensayarlo antes**,
+no descubrirlo el domingo. Está en el ADR 0010 y en el checklist de demo.
 
 ### Casos límite conocidos
 
-- **Al 2026-09-12 10:15 los datos no están cargados en el PostgreSQL remoto.** El puerto
-  5437 de `157.173.204.174` no acepta conexión desde la máquina de desarrollo (timeout de
-  red, no de autenticación). Ver `docs/issues/2026-09-12-postgres-remoto-inalcanzable.md`.
-  Los 22 CSV y `db/cargar-completo.sql` sí están listos.
+- **La base es una dependencia dura.** Sin `DATABASE_URL` alcanzable no arranca el MCP
+  ni la web muestra datos. Verificado el 2026-09-13: 22 tablas y 3 690 filas en el
+  esquema `banorte`, y el ciclo completo (lectura, acción y reinicio) contra esa base.
+  El respaldo es el volcado del repo: `pnpm datos:restaurar`.
 - **El mes en curso está a medias.** La demo corre con `HOY = 2026-09-12`, así que
   septiembre solo tiene movimientos hasta el día 12. `diagnostico_habitos` cubre los 11
   meses cerrados y **excluye el mes en curso** a propósito: con medio mes de ingreso, el

@@ -3,7 +3,7 @@ import { tabla } from "../datos/index.js";
 
 /**
  * El tiempo del dominio. **Los datos sinteticos terminan en una fecha fija**
- * (`db/datos/movimientos.csv` llega hasta 2026-09-12), asi que "hoy" no puede ser
+ * (`banorte.movimientos` llega hasta 2026-09-12), asi que "hoy" no puede ser
  * `new Date()`: el dia del pitch, "los ultimos 30 dias" devolveria cero movimientos y
  * la demo se veria vacia.
  *

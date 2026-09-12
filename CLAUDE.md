@@ -100,6 +100,10 @@ el campo nuevo es opcional.
 - **Python solo detrás de una tool, nunca en el contrato tool → UI.** Si hace falta ML
   pesado, va en un FastAPI mínimo que llama una tool MCP, con mock/fallback en TS.
   Ningún flujo de la demo puede tener a Python como única ruta. ADR 0002.
+- **Los datos salen de PostgreSQL y de ningún otro lado** (ADR 0010). No hay CSV ni
+  fallback: sin `DATABASE_URL` el MCP no arranca, a propósito. El estado que las
+  acciones mutan vive en `banorte.acciones_aplicadas`, con índice único sobre
+  `idempotency_key`. Las pruebas usan un volcado y no tocan la base.
 - **Contrato primero, mock primero.** Cada tool MCP nace con su schema Zod y una
   implementación mock con datos plausibles. La UI y el agente se desarrollan contra el
   mock; el "real" se conecta después si hay tiempo.
@@ -115,8 +119,8 @@ el campo nuevo es opcional.
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
-| `db/` | Datos sintéticos: 22 CSV (fuente), `schema.sql`, `cargar.sql`, `reiniciar.sql` (ADR 0007) | existe |
-| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh` (prueba del MCP), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh`, generadores de datos | existe |
+| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010) | existe |
+| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
 | `apps/*/Dockerfile` | Imágenes de web y mcp; se construyen desde la raíz del repo | existe |
@@ -141,7 +145,10 @@ pnpm typecheck                 # tsc en los 5 paquetes
 pnpm test                      # vitest en los 5 paquetes
 pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` corriendo)
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
-pnpm reiniciar-estado          # el estado mutable vuelve a cero: ANTES de cada ensayo
+pnpm reiniciar-estado          # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
+pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)
+pnpm datos:fixture             # regenera el volcado que usan las pruebas, desde la base
+pnpm datos:restaurar           # repuebla la base desde el volcado (--recrear la vacia antes)
 
 scripts/deploy.sh              # dispara el deploy en Coolify y espera los /health
 scripts/sync.sh "mensaje"      # commit con nombre + pull --rebase + push (lo automático usa --auto)

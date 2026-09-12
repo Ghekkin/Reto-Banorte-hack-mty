@@ -2,7 +2,7 @@ import cors from "cors";
 import express from "express";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { config } from "./config.js";
-import { datos } from "./datos/index.js";
+import { inicializarDatos } from "./datos/index.js";
 import { construirServidor } from "./servidor.js";
 import { TOOLS } from "./tools/index.js";
 
@@ -56,8 +56,10 @@ app.post("/mcp", async (req, res) => {
   }
 });
 
-// Los datos se cargan al arrancar: si un CSV falta, se sabe ahora y no a media demo.
-const tablas = datos();
+// Los datos se cargan al arrancar: si la base no responde, se sabe AHORA y no a
+// media demo. Sin datos no se levanta el servidor: un MCP que contesta sin datos es
+// peor que uno que no contesta.
+const tablas = await inicializarDatos();
 app.listen(config.puerto, () => {
   console.log(
     `[mcp] escuchando en http://localhost:${config.puerto}/mcp — ${TOOLS.length} tool(s), ` +

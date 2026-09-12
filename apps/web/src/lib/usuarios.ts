@@ -5,7 +5,7 @@
  *
  * Son TRES desde el 2026-09-12 (enmienda al ADR 0004): Carmen sostiene el escenario
  * de inversiones y el angulo de ejecutivo de cuenta, que es una audiencia distinta al
- * usuario retail. Los ids coinciden con `db/datos/usuarios.csv`.
+ * usuario retail. Los ids coinciden con `la base/usuarios.csv`.
  */
 export type UsuarioDemo = {
   id: string;

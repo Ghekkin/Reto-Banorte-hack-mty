@@ -41,7 +41,7 @@ nada.
 | Deuda a plazo fijo | `apps/mcp/src/dominio/creditos.ts` |
 | Matemática de crédito | `apps/mcp/src/dominio/finanzas.ts` |
 | El tiempo del dominio | `apps/mcp/src/dominio/tiempo.ts` |
-| Datos | `db/datos/*.csv` (22 tablas) + `apps/mcp/estado.json` (mutable) |
+| Datos | PostgreSQL, esquema `banorte`: 22 tablas + `acciones_aplicadas` (lo mutable) |
 
 ### Las tools
 
@@ -65,7 +65,7 @@ nada.
 
 Las nueve primeras son las del ADR 0004. Las seis siguientes son los **Paquetes 1 y 2** del
 [roadmap del MCP](../arquitectura/roadmap-mcp.md), y ninguna inventa un dato nuevo: abren
-tablas que ya estaban en `db/datos/` y que ninguna tool podía ver.
+tablas que ya estaban en la base y que ninguna tool podía ver.
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
@@ -95,8 +95,8 @@ ahí salen las anotaciones MCP (`readOnlyHint`, `idempotentHint`). El envoltorio
 
 ### El estado mutable, y por qué el ciclo se cierra
 
-Los CSV son la foto de partida y **no se tocan nunca**. Lo que una acción aplica se
-escribe en `apps/mcp/estado.json` (fuera de git), y las lecturas lo superponen:
+Los datos de partida **no se tocan nunca**. Lo que una acción aplica se inserta en
+`banorte.acciones_aplicadas`, y las lecturas lo superponen:
 
 - `dominio/consultas.ts` → `planAplicado(usuarioId)` y `apartadosCreados(usuarioId)` leen
   el estado; `tarjetaConEstado(usuarioId)` es la **única** función que decide cuánto debe
@@ -162,7 +162,7 @@ pnpm reiniciar-estado            # después del humo, antes de un ensayo
 ```
 
 `apps/mcp/src/__tests__/finanzas.spec.ts` compara la matemática contra
-`db/datos/planes_reestructura.csv`: si alguien cambia una fórmula, el test truena, porque
+la tabla `banorte.planes_reestructura`: si alguien cambia una fórmula, el test truena, porque
 la pantalla y los datos tienen que decir lo mismo.
 
 ### Algoritmos involucrados

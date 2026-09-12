@@ -1,9 +1,9 @@
 import "server-only";
 
-import { booleano, entero, fraccion, leerTabla } from "./leer-csv";
+import { booleano, entero, fraccion, leerTabla } from "./tablas";
 
 /**
- * Consultas tipadas sobre los CSV. Es la capa que separa "como estan guardados los
+ * Consultas tipadas sobre las tablas. Es la capa que separa "como estan guardados los
  * datos" de "que necesita la pantalla": si manana esto lee de Postgres, los
  * componentes no cambian una linea.
  *
@@ -118,7 +118,7 @@ export async function tarjetasDe(usuarioId: string): Promise<Tarjeta[]> {
 }
 
 /**
- * Los ultimos `cuantos` movimientos, mas recientes primero. El CSV ya viene en orden
+ * Los ultimos `cuantos` movimientos, mas recientes primero. La tabla ya viene en orden
  * cronologico, asi que basta invertir el final en vez de ordenar 2 265 filas.
  */
 export async function movimientosRecientes(usuarioId: string, cuantos = 6): Promise<Movimiento[]> {

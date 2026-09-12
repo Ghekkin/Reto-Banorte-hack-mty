@@ -51,7 +51,7 @@ export function suscripcionesCanceladasEnEstado(usuarioId: string): Set<string> 
   return canceladas;
 }
 
-/** Verifica si una suscripción ya está cancelada (en CSV o en estado mutable). */
+/** Verifica si una suscripción ya está cancelada (en los datos de partida o en el estado mutable). */
 export function esSuscripcionCancelada(suscripcion: Fila, usuarioId: string): boolean {
   if (!aBooleano(suscripcion.activa)) return true;
   return suscripcionesCanceladasEnEstado(usuarioId).has(suscripcion.id!);

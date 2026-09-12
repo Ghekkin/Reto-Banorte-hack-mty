@@ -1,7 +1,13 @@
 ---
-estado: aceptada
+estado: reemplazada
 fecha: 2026-09-12
+reemplazada-por: 0010
 ---
+
+> **Reemplazada por el [ADR 0010](0010-postgres-unica-fuente-de-datos.md)** el
+> 2026-09-13: los CSV se retiraron y PostgreSQL pasó a ser la única fuente. Lo que este
+> ADR decidió sobre **qué** datos existen (tres perfiles, doce meses, los territorios de
+> negocio) sigue vigente; lo que cambió es de dónde salen y dónde vive el estado mutable.
 
 # 0007 — PostgreSQL como fuente de los datos mock, con CSV commiteados y fallback en memoria
 

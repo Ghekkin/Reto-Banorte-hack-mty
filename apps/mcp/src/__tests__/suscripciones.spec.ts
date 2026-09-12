@@ -35,7 +35,7 @@ describe("detectar_fugas", () => {
     expect(comercios).toContain("Telcel");
   });
 
-  it("Beto: SmartFit ya cancelada en CSV no aparece en suscripciones activas", async () => {
+  it("Beto: SmartFit ya cancelada en los datos no aparece en suscripciones activas", async () => {
     const res = SalidaDetectarFugas.parse(await detectarFugas.manejar({ usuarioId: "usr_beto" }));
 
     expect(res.suscripciones).toHaveLength(2);
@@ -100,7 +100,7 @@ describe("cancelar_suscripcion y el ciclo real", () => {
     expect(segunda.yaEstaba).toBe(true);
   });
 
-  it("si ya estaba cancelada (en CSV o estado), devuelve yaEstaba: true sin error", async () => {
+  it("si ya estaba cancelada (en los datos o en el estado), devuelve yaEstaba: true sin error", async () => {
     const res = SalidaCancelarSuscripcion.parse(
       await cancelarSuscripcion.manejar({
         usuarioId: "usr_beto",

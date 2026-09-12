@@ -8,7 +8,22 @@ MCP_PUERTO="${MCP_PUERTO:-3100}"
 WEB_PUERTO="${WEB_PUERTO:-3000}"
 
 if [ ! -f .env ]; then
-  echo "  aviso: no hay .env. Copia .env.example y llena las llaves (el scaffold corre sin ellas)."
+  echo "  FALTA .env. Copia .env.example a .env y llena DATABASE_URL (obligatoria) y la"
+  echo "  llave de Gemini. Sin base, el MCP no arranca (ADR 0010)."
+  exit 1
+fi
+
+# El .env vive en la raiz, pero cada app corre con su propio cwd: Next busca
+# apps/web/.env y no lo encuentra. Se cargan aqui y se exportan, asi los dos procesos
+# heredan las mismas variables y hay un solo archivo que mantener.
+set -a
+# shellcheck disable=SC1091
+. ./.env
+set +a
+
+if [ -z "${DATABASE_URL:-}" ]; then
+  echo "  FALTA DATABASE_URL en .env: los datos viven en PostgreSQL (ADR 0010)." >&2
+  exit 1
 fi
 
 if [ ! -d node_modules ]; then

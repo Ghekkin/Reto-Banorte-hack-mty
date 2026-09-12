@@ -6,7 +6,7 @@ import { sumarMeses } from "./tiempo.js";
  * Las consultas que mas de una tool necesita. Vive aqui y no en cada tool para que
  * dos tools nunca contesten cosas distintas sobre el mismo dato (skill `tool-mcp`).
  *
- * Nada de esto habla con el modelo: son funciones sobre los CSV y el estado mutable.
+ * Nada de esto habla con el modelo: son funciones sobre las tablas y el estado mutable.
  */
 
 export function usuario(usuarioId: string): Fila {
@@ -99,7 +99,7 @@ export type PlanAplicado = {
 
 /**
  * El plan de pago que la persona YA aplico, si aplico uno. Es la superposicion del
- * estado sobre los CSV: los datos de partida nunca tienen plan, y esto es lo que hace
+ * estado sobre los datos de partida: nunca tienen plan, y esto es lo que hace
  * que una lectura posterior a la accion devuelva algo distinto.
  *
  * Un plan es por TARJETA: con `tarjetaId` se busca el de esa; sin el, el ultimo de la

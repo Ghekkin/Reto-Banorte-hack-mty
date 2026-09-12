@@ -43,7 +43,7 @@ describe("consultar_tarjeta", () => {
 });
 
 describe("simular_reestructura", () => {
-  it("Beto: cuatro plazos, el de 18 meses recomendado y el ahorro del CSV", async () => {
+  it("Beto: cuatro plazos, el de 18 meses recomendado y el ahorro de la tabla", async () => {
     const salida = SalidaSimularReestructura.parse(await simularReestructura.manejar({ usuarioId: "usr_beto" }));
     expect(salida.opciones.map((o) => o.plazoMeses)).toEqual([12, 18, 24, 36]);
     expect(salida.plazoRecomendado).toBe(18);

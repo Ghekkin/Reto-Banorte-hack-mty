@@ -28,7 +28,7 @@ flowchart LR
   A -->|mensajes A2UI<br/>createSurface / updateComponents / updateDataModel| R[Renderer A2UI propio<br/>packages/a2ui]
   R -->|catálogo propio| C[Componentes financieros<br/>packages/catalogo]
   C -->|action { name, context }| A
-  M --> D[(datos sintéticos<br/>PostgreSQL o CSV en memoria)]
+  M --> D[(datos sintéticos<br/>PostgreSQL, esquema banorte)]
   M -. opcional, ADR 0002 .-> P[services/ml]
 ```
 
@@ -41,7 +41,7 @@ flowchart LR
 | Renderer A2UI (`packages/a2ui`) | Valida con los schemas oficiales, procesa los mensajes, resuelve bindings, pinta con el registro; enruta `action` al agente (ADR 0008) | No decide qué mostrar | `contrato` |
 | Catálogo (`packages/catalogo/`) | Componentes React propios con schema de props; registrados en el registro de `packages/a2ui` | No llama al MCP ni fetch propio | `web` |
 | Schemas de tools (`packages/schemas/`) | Zod de entrada/salida de cada tool | — | `contrato` |
-| Datos (`db/datos/` → PostgreSQL) | Tres perfiles demo, movimientos, créditos, portafolios; **estado mutable** en `acciones_aplicadas` | — | `mcp` |
+| Datos (PostgreSQL, esquema `banorte`) | Tres perfiles demo, movimientos, créditos, portafolios; **estado mutable** en `acciones_aplicadas` (ADR 0010) | — | `mcp` |
 
 ### Flujo de una vuelta completa del ciclo
 
