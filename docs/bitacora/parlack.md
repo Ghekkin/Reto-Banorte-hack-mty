@@ -2,6 +2,54 @@
 
 ## 2026-09-12
 
+### 06:10 · hecho — Los 8 componentes a móvil de verdad, y un error propio en `main`
+
+**Lo que se pidió:** `GastoPorCategoria` no gustaba. El problema no era estético: **los
+montos vivían en el tooltip de Recharts, y un tooltip no existe en móvil.** Una tarjeta
+financiera donde no se puede leer una cifra sin pasar el mouse rompe la regla central del
+sistema ("el número manda") justo en el dispositivo donde se va a ver. Y el área tocable
+era la barra —unos píxeles de alto—, de donde sale la acción `ver_categoria`.
+
+Ahora es una lista: cada fila con su monto siempre visible, su variación cuando pasa del
+5 %, una barra (`progress` de shadcn) medida **contra la categoría más grande** —no contra
+el total, o con seis categorías todas salen cortas— y la fila completa como botón de 48 px.
+
+De paso, los ocho a móvil de verdad. Lo que encontré revisando contra la skill:
+
+- **`Card` de shadcn ya trae su propio padding** (`--card-spacing`) y mis `p-5` lo estaban
+  **duplicando**. Ahora `CLASES_TARJETA` mueve esa variable (`p-4` móvil, `p-5` escritorio)
+  en un solo lugar y apaga el `ring` por defecto.
+- **`Calendario` y `DetalleCategoria` tenían tablas de 4 columnas**: a 360 px eso obliga a
+  scroll horizontal, que es justo lo que el sistema prohíbe. Pasaron a 2.
+- **`PlanDePago` no tenía número grande.** Ahora es el **ahorro** del plazo elegido, que es
+  el dato que decide la conversación y cambia al mover la selección. En `SimuladorMeta`, la
+  **fecha**, que es lo que cambia al arrastrar.
+
+Cinco pruebas nuevas verifican las reglas sobre el HTML, no la intención: los seis montos
+de `GastoPorCategoria` están en el HTML (el bug del tooltip no puede volver), ninguna tabla
+pasa de dos columnas, todo `<button>`/`<label>` lleva `min-h-12`, cero hex, y las ocho
+tarjetas comparten densidad.
+
+**Y el error, que importa más que lo anterior:** mi `git commit` se llevó **35 archivos que
+no eran míos** y dejó `main` sin arrancar. Hice `git add packages/catalogo/src` creyendo
+que eso aislaba mi trabajo. No aísla: las cuatro sesiones comparten el árbol **y el
+`.git/index`**, y `git commit` commitea el índice completo. Otra sesión tenía los CSV de
+`db/datos/`, los generadores de `scripts/` y `datos/{csv,memoria}.ts` **borrados y ya en el
+índice** para su migración a PostgreSQL; el `postgres.ts` que los reemplaza no estaba. Se
+publicó a medias: typecheck, build y el arranque del MCP, los tres roto.
+
+Lo arreglé en `ee11afc` restaurando los 35 archivos como estaban (`git checkout 8cdaabc --
+<rutas>`), sin `--force` sobre `main` y sin tocar el trabajo de nadie; la migración vuelve
+a ser de quien la está haciendo. Verificado: `origin/main` typechequea limpio en un árbol
+aislado.
+
+Queda el issue **#8** con el detalle. Lo corto: en este repo **un commit manual va por
+rutas** (`git commit -- <rutas>`), y para publicar sin tocar el árbol compartido,
+`git worktree` + `cherry-pick` + `push origin HEAD:main`, que es lo que usé al final y
+funciona bien. Mi guardia de marcadores de conflicto de `255c3ff` tapaba otro caso, no
+este.
+
+
 ### 05:30 · hecho — Prod estaba caído; los tres pasos del guion ya corren con el modelo real
 
 El CI quedó verde en `typecheck, tests y build` (mi arreglo del humo), el deploy se publicó

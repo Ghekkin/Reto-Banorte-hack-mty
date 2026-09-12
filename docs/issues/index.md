@@ -90,3 +90,4 @@ gh issue create \
 | 2026-09-13 | alta | docs | [`CLAUDE.md` tiene marcadores de conflicto commiteados](2026-09-13-claude-md-conflicto-commiteado.md) | [#4](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/4) | resuelto |
 | 2026-09-13 | crítica | infra | [En producción el agente no alcanzaba el MCP: `MCP_URL` a un hostname que no resuelve](2026-09-13-mcp-url-interna-no-resuelve.md) | [#5](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/5) | resuelto |
 | 2026-09-13 | media | mcp | [Las tools de Inversiones contradicen la enmienda del ADR 0004](2026-09-13-tools-inversiones-contradicen-adr-0004.md) | pendiente (sin `gh`) | resuelto |
+| 2026-09-13 | alta | infra | [El índice de git es compartido: un `git commit` se lleva el trabajo a medio hacer de otra sesión](2026-09-13-indice-de-git-compartido.md) | [#8](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/8) | abierto |
