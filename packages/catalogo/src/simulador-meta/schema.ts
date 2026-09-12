@@ -29,7 +29,7 @@ export type PropsSimuladorMeta = z.infer<typeof schemaSimuladorMeta>;
 export const entradaSimuladorMeta = {
   nombre: "SimuladorMeta",
   cuandoUsarlo:
-    "La persona no tiene deuda (o ya la resolvio) y quiere ahorrar: ya llamaste proyectar_ahorro. Deja que mueva la aportacion y vea cuando llega; el boton dispara crear_apartado con { nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }.",
+    "La persona no tiene deuda de TARJETA (o ya la resolvio) y le sobra dinero al mes: ya llamaste proyectar_ahorro. Puede tener un credito a plazo al corriente; en ese caso va junto a ProyeccionPagoCredito, no en su lugar. Deja que mueva la aportacion y vea cuando llega; el boton dispara crear_apartado con { nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }.",
   schema: schemaSimuladorMeta,
   acciones: ["crear_apartado"],
 };

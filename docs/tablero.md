@@ -16,7 +16,7 @@ vez sin conflictos de git.
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Bloque A de `docs/arquitectura/orquestadores.md`: `analizar_gasto` + `analizar_ahorro` (O4, fachadas de lectura) y `ejecutar_decision` (O2, ciclo de acción de 3 pasos a 2). 21 tools en total, 117 pruebas | sáb 11:15 |
 | contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |
-| demo | parlack | Productos rediseñada como cartera: el plástico de Banorte con su detalle, cuentas, créditos e inversiones; verificada en navegador (3 perfiles, 390/1280 px). Sigue: doc de las gráficas del catálogo que quedaron de la sesión anterior, y las preguntas del stand | sáb 13:10 |
+| demo | parlack | Productos rediseñada como cartera (plástico de Banorte + detalle, cuentas, créditos, inversiones), verificada en navegador y **ya en producción**. Disco del VPS liberado (99 % → 80 %) para que los deploys vuelvan a pasar; #15 abierto con la política pendiente. Sigue: doc de las gráficas del catálogo y las preguntas del stand | sáb 13:35 |
 
 ## Bloqueos
 

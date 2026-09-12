@@ -108,6 +108,27 @@ que `main` no se rompió. Quien los esté trabajando: su siguiente commit los co
 historial dirá que salieron conmigo, y no es cierto. Mientras compartamos un solo árbol de
 trabajo, antes de correr `sync.sh` mira `git status` y avisa.
 
+### 13:35 · arreglado a medias — el disco del VPS estaba al 99 % y los deploys de la web fallaban (#15)
+
+Fui a ver por qué producción seguía sirviendo la web en `0a31335` con `main` dos commits
+adelante. El run de `6162bb2` construyó bien y murió exportando la imagen: `no space left
+on device`. `df` daba 242 GB de 242. La causa: **Coolify etiqueta una imagen por commit y
+no borra ninguna**; había ~40 de `maya-web` (1.35 GB) y ~45 de `maya-mcp` (1.14 GB), una
+por cada push del día. El journal ya se había quedado sin disco para escribir y los health
+checks de **todo** el servidor (también los de otros proyectos) fallaban con ENOSPC.
+
+Lo que borré, y solo eso: las imágenes de nuestras dos apps de commits viejos, conservando
+las dos que corren y la de `estable` (`737f0a1`); `pnpm store prune` (2.6 GB); el journal
+a 300 MB. Nada de volúmenes ni de imágenes ajenas. De 1.1 GB libres a **49 GB** mientras
+el borrado seguía. Justo a tiempo: el run de `1c8b7b8` (que trae Productos) desplegó bien y
+producción ya sirve ese commit; lo verifiqué con capturas de `/productos` contra la URL
+pública, tres perfiles, 390 y 1280 px.
+
+Queda **abierto como #15** porque falta la política para que no vuelva a pasar (limpieza
+de imágenes en Coolify o un cron con `docker image prune --filter until=6h`, y un `df`
+con aviso en `scripts/deploy.sh`). Con cuatro personas empujando cada diez minutos, el
+disco se vuelve a llenar en unas horas.
+
 ### 12:05 · hecho — `estable` existe, y lo que costo llegar: tres bugs y un `main` roto
 
 El corte H14 pedia fase 1 completa y `estable` marcado. Esta hecho: **`estable` apunta a

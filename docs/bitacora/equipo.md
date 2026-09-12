@@ -18,6 +18,13 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 13:35 · CUIDADO, infra** — **El disco del VPS estaba al 99 % y los deploys de la
+  web fallaban** al exportar la imagen (`no space left on device`); producción se había
+  quedado dos commits atrás sin que nadie lo notara. Coolify guarda una imagen por commit
+  (~1.3 GB) y no borra ninguna. Borré las de nuestras apps de commits viejos (quedan las que
+  corren y `estable`): 49 GB libres. **Issue #15** abierto con la política pendiente. Si
+  un deploy "no llega a servir el commit en 15 minutos", lo primero es `df -h /` en el VPS.
+
 - **sáb 13:20 · CUIDADO, sesiones sobre el mismo árbol** — `sync.sh` hace `git add -A`: mi
   commit `8d779fa` (Productos) **se llevó siete componentes del catálogo que otra sesión
   tenía a medias** (`alerta-fugas`, `comparador-antes-despues`, `distribucion-portafolio`,

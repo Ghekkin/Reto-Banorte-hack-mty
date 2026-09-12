@@ -1544,7 +1544,7 @@
     },
     "SimuladorMeta": {
       "type": "object",
-      "description": "La persona no tiene deuda (o ya la resolvio) y quiere ahorrar: ya llamaste proyectar_ahorro. Deja que mueva la aportacion y vea cuando llega; el boton dispara crear_apartado con { nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }.",
+      "description": "La persona no tiene deuda de TARJETA (o ya la resolvio) y le sobra dinero al mes: ya llamaste proyectar_ahorro. Puede tener un credito a plazo al corriente; en ese caso va junto a ProyeccionPagoCredito, no en su lugar. Deja que mueva la aportacion y vea cuando llega; el boton dispara crear_apartado con { nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3196,7 +3196,7 @@
     },
     "ProyeccionPagoCredito": {
       "type": "object",
-      "description": "La persona pregunta '¿Cuánto me falta para terminar de pagar mi crédito?', '¿Cuánto pagaré de puros intereses?' o busca simular abonos extraordinarios a capital. Dispara simular_abono_capital.",
+      "description": "La persona pregunta '¿Cuánto me falta para terminar de pagar mi crédito?' o '¿Cuánto pagaré de puros intereses?', o pregunta por intereses y su deuda es un crédito a plazo (no una tarjeta). Los datos salen de `consultar_creditos` con `incluirAmortizacion: true` y `proximosPagos: 12`: la tabla da los hitos. `totalInteresesEstimadosCentavos` = `mensualidadCentavos` × `pagosRestantes` − `saldoInsolutoCentavos` (lo que falta pagar de puros intereses). No lleva boton: todavia no hay tool que simule un abono a capital.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3336,7 +3336,7 @@
               ]
             },
             "ahorroConAbonoCapitalCentavos": {
-              "description": "Ahorro estimado en intereses con un abono extraordinario a capital",
+              "description": "Ahorro en intereses con un abono extraordinario a capital. SOLO si una tool lo calculo; hoy ninguna lo hace, asi que dejalo fuera en vez de estimarlo",
               "anyOf": [
                 {
                   "type": "integer",
@@ -3397,29 +3397,6 @@
                 },
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: simular_abono_capital.",
-              "allOf": [
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
-                },
-                {
-                  "type": "object",
-                  "properties": {
-                    "event": {
-                      "type": "object",
-                      "properties": {
-                        "name": {
-                          "enum": [
-                            "simular_abono_capital"
-                          ]
-                        }
-                      }
-                    }
-                  }
                 }
               ]
             }
