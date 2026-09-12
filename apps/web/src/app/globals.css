@@ -306,11 +306,12 @@
 
      - `animar-lista`: los hijos NO se animan solos (las tarjetas de Inicio,
        Productos, Mas). El contenedor les pone la animacion y el retraso.
-     - `animar-cascada`: los hijos YA traen `animar-entrada` (los componentes del
-       catalogo A2UI, ver `packages/catalogo/src/comunes.ts`). Aqui solo se pone el
+     - `animar-cascada`: los hijos YA traen `animar-entrada`. Aqui solo se pone el
        RETRASO. Si se usara `animar-lista`, las dos reglas escribirian el shorthand
        `animation` con la misma especificidad y quien gana dependeria del orden en
-       que Tailwind emita el CSS: el retraso se perderia sin aviso. */
+       que Tailwind emita el CSS: el retraso se perderia sin aviso.
+       (Desde el 2026-09-12 el lienzo de Maya usa `animar-lista`: cada tarjeta va en su
+       hueco de la rejilla, y ese hueco es el hijo directo, no la tarjeta.) */
   .animar-lista > * {
     animation: entrada-superficie var(--motion-rapida) var(--motion-salida) both;
   }
