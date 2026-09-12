@@ -18,6 +18,29 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **09:55 · hecho (aldair/mcp)** — El MCP pasa de 9 a **12 tools**. Las tres nuevas
+  (`panorama_inicial`, `diagnostico_salud_financiera`, `consultar_creditos`) no agregan
+  datos: abren tablas que ya estaban en `db/datos/` y que ninguna tool podía ver. Dos
+  consecuencias para el resto del equipo: **(1)** el agente ya no decide la pantalla con
+  "tiene deuda / no tiene deuda", ahora tiene puntaje 0-100, tendencia y la deuda total —
+  Beto sale en 39 y estancado, Ana en 74 cayendo, Carmen en 85 subiendo; **(2)**
+  `panorama_inicial` reemplaza tres llamadas por una, así que el turno típico baja un
+  paso. Como el agente lista las tools en tiempo de ejecución, **nadie tiene que tocar
+  `apps/web`**: se registran solas. Detalle en `como-funciona/tools-mcp.md`.
+
+- **09:50 · decisión (aldair/mcp)** — `panorama_inicial` devuelve un campo `situacion`
+  (`deuda_critica`, `plan_activo`, `deuda_alta`, `sin_margen`, `estable_con_capacidad`).
+  Es una clasificación sobre umbrales fijos, **no** una instrucción de interfaz: no nombra
+  ningún componente. La frontera que defendemos ante el jurado es que el MCP clasifica la
+  *situación financiera* (dato, con pruebas) y el modelo interpreta la *intención* y elige
+  la pantalla (juicio). Si alguien va a hacer que el prompt dependa de `situacion`, que lo
+  hable primero.
+
+- **09:45 · nota (aldair/mcp)** — En los datos, la tarjeta de Beto existe **también** como
+  fila de `creditos` (`cred_beto_tdc`, con `tarjeta_id` lleno). Quien sume esa tabla
+  completa y además lea `consultar_tarjeta` cuenta su deuda dos veces. `consultar_creditos`
+  ya la separa; si alguien toca `creditos` desde otro lado, que lo tenga presente.
+
 - **sáb 01:45 · hecho** — **El motor A2UI quedó.** `packages/a2ui` ya valida con los JSON
   Schema **oficiales** de la spec y pasa sus **76 casos de conformidad** (109 pruebas en el
   paquete). Era el último pendiente del rol `contrato`. Lo que esto compra, más allá de los

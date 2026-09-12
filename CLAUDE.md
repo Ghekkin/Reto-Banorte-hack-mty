@@ -131,10 +131,10 @@ el campo nuevo es opcional.
 | `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **9 de 9** |
 =======
 | `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell de 5 secciones (Inicio, Productos, Maya, Movimientos, Más), `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/`, `src/lib/datos/` (lee los CSV) | shell construido; el lienzo de Maya es placeholder |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | scaffold listo; 1 de 9 tools |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | 12 tools (10 lectura + 2 acción), 78 pruebas |
 | `packages/a2ui/` (`@maya/a2ui`) | Renderer A2UI propio: `validar`, `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008). `spec/` con los schemas oficiales | construido; falta ajv contra `spec/` |
 | `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio y `catalogo.json` generado desde los schemas | 1 de 8 componentes; los 7 con su encargo escrito |
-| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | 1 de 9 |
+| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | 12 de 12 |
 >>>>>>> Stashed changes
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 

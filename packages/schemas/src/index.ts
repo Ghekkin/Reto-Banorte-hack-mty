@@ -8,6 +8,9 @@
  *   lectura  consultar_perfil · consultar_tarjeta · consultar_movimientos ·
  *            simular_reestructura · consultar_plan · comparar_periodos · proyectar_ahorro
  *   accion   aplicar_plan_pago · crear_apartado
+ *
+ * Paquete 1 (deuda y salud, `docs/arquitectura/roadmap-mcp.md`):
+ *   lectura  diagnostico_salud_financiera · consultar_creditos · panorama_inicial
  */
 export * from "./comunes.js";
 export * from "./tools/consultar-perfil.js";
@@ -22,3 +25,6 @@ export * from "./tools/crear-apartado.js";
 export * from "./tools/detectar-fugas.js";
 export * from "./tools/cancelar-suscripcion.js";
 export * from "./tools/crear-tope-gasto.js";
+export * from "./tools/diagnostico-salud-financiera.js";
+export * from "./tools/consultar-creditos.js";
+export * from "./tools/panorama-inicial.js";
