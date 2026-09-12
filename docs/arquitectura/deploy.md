@@ -19,13 +19,19 @@ se agregan al mismo proyecto y Coolify los construye desde GitHub.
 La demo se sigue presentando desde la máquina del equipo. La versión publicada es el
 respaldo y la prueba de que el servidor MCP es real.
 
+Cada deploy deja en el servidor una imagen nueva de la web y otra del MCP, una por
+commit. Con cuatro personas empujando, el sábado el disco se llenó y los deploys de la
+web dejaron de llegar (issue #15). Desde entonces Coolify revisa **cada hora** y, si el
+disco pasa del 80 %, borra las imágenes viejas: de cada app deja la que está corriendo
+y las dos anteriores. No toca datos ni volúmenes.
+
 ## Técnico
 
 | Dato | Valor |
 |---|---|
 | Proveedor | VPS propio del equipo (no Vultr todavía; ver premios) |
 | IP pública | `157.173.204.174` |
-| Panel | Coolify 4.3.18, `https://panel.yolani.co` → proyecto **reto-banorte**, ambiente `production` |
+| Panel | Coolify 4.3.19, `https://panel.yolani.co` → proyecto **reto-banorte**, ambiente `production` |
 | Dominio | `sslip.io` mientras no haya `.tech` (resuelve a la IP sin comprar nada, y no imita a Banorte) |
 | URL web | `https://maya.157.173.204.174.sslip.io` |
 | URL MCP | `https://maya-mcp.157.173.204.174.sslip.io/mcp` (health en `/health`) |
@@ -95,6 +101,62 @@ El MCP lleva `db/datos` dentro de la imagen y arranca con el origen `memoria`
 (ADR 0007): **el MCP publicado no depende de que Postgres esté arriba**. Su estado
 mutable vive en `/datos/estado.json`, fuera del árbol del repo, para que un redeploy
 no lo arrastre.
+
+### El disco: limpieza automática de imágenes (issue #15)
+
+Coolify etiqueta una imagen por commit (`<uuid>:<sha>`) y no borra la anterior al
+desplegar. El sábado 12:45 el disco (242 GB) llegó a 99 % y la web dejó de desplegarse
+(`no space left on device` al exportar la imagen). Tras borrar a mano las imágenes
+viejas de las dos apps quedó en 75 %, y desde el **12-sep 13:45** el servidor
+`localhost` tiene esta configuración (panel: Servers → localhost → Docker Cleanup):
+
+| Ajuste (`server_settings`) | Antes | Ahora | Por qué |
+|---|---|---|---|
+| `force_docker_cleanup` | `true` (limpia siempre) | `false` (solo sobre el umbral) | limpiar cuando hace falta, no a ciegas |
+| `docker_cleanup_frequency` | `0 0 * * *` (una vez al día) | `0 * * * *` (cada hora) | un día de pushes llenó el disco entre dos limpiezas |
+| `docker_cleanup_threshold` | 80 | 80 | con 242 GB, el 80 % deja ~48 GB libres |
+| `delete_unused_volumes` | `false` | `false` | en los volúmenes viven datos, también de otros proyectos |
+| `delete_unused_networks` | `false` | `false` | |
+
+Cuando le toca y el disco está en 80 % o más, la acción
+`App\Actions\Server\CleanupDocker` de Coolify:
+
+- **por aplicación** (`maya-web`, `maya-mcp` y las demás del servidor) conserva la
+  imagen que corre y las **2** más recientes (`docker_images_to_keep`, default 2), y
+  borra el resto;
+- borra imágenes sin usar que no sean de ninguna app de Coolify ni lleven la etiqueta
+  `coolify.managed`; una imagen que usa un contenedor no se puede borrar;
+- vacía la caché de build (`docker builder prune -af`): **el deploy siguiente a una
+  limpieza tarda más**, porque reinstala dependencias sin caché de capas;
+- no toca contenedores en marcha, volúmenes ni redes.
+
+Lo que eso implica:
+
+- El rollback desde el panel (Deployments → Redeploy) reusa la imagen solo para las dos
+  builds anteriores. A una más vieja, como la del tag `estable`, es **build completa**
+  de ese commit: cuenta el tiempo de un deploy entero.
+- Cada revisión queda en la tabla `docker_cleanup_executions` (en el panel, la lista de
+  ejecuciones debajo del formulario). `No cleanup needed` quiere decir que revisó y el
+  disco estaba bajo el umbral.
+
+**Leerla, cambiarla o correrla a mano, por la API** (con el token de `/opt/reto/.env`;
+`PATCH /servers/{uuid}` no acepta estos campos, tienen su propia ruta):
+
+```bash
+set -a; . /opt/reto/.env; set +a
+L="$COOLIFY_URL/api/v1/servers/$COOLIFY_SERVER_UUID/docker-cleanup"
+curl -s -H "Authorization: Bearer $COOLIFY_TOKEN" "$L" | jq .                  # ajustes
+curl -s -H "Authorization: Bearer $COOLIFY_TOKEN" "$L/executions" | jq '.[:5]' # historial
+# revertir a como estaba: una vez al día y siempre
+curl -s -X PATCH -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: application/json" \
+  -d '{"force_docker_cleanup":true,"docker_cleanup_frequency":"0 0 * * *"}' "$L"
+```
+
+`POST "$L/run"` la corre en el momento, **sin mirar el umbral**; ese `POST` acepta
+`delete_unused_volumes` en el cuerpo y **nunca se le pasa**. El job tiene tope de
+10 minutos: la del 10-sep se cortó por tiempo. (El cambio del 12-sep se aplicó con
+`php artisan tinker` dentro del contenedor `coolify`, con la misma validación del
+formulario, antes de dar con esta ruta; el resultado es el mismo.)
 
 ### Cómo se hablan la web y el MCP (y por qué no por la URL pública)
 

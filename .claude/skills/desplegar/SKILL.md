@@ -59,6 +59,13 @@ por API, eso se hace desde el VPS con el token root, nunca desde Actions.
   responden, falla ruidosamente y **no hace rollback solo**: la versión anterior sigue
   sirviendo hasta que el contenedor nuevo pase su healthcheck, y el rollback a una
   build anterior se hace desde el panel (Deployments → la que funcionaba → Redeploy).
+- **Si un deploy falla con `no space left on device`** o `failed to extract layer`, es
+  el disco del VPS, no el código: `df -h /`. Coolify revisa cada hora y, arriba del
+  80 %, borra imágenes viejas dejando la que corre y las dos anteriores de cada app
+  (issue #15; ajustes, historial y cómo correrla en el momento en
+  `docs/arquitectura/deploy.md`). Por lo mismo, un rollback a una build más vieja que
+  esas dos reconstruye desde cero. Nunca `docker system prune` a mano: el VPS es
+  compartido con otros proyectos.
 - **Se despliega lo que entra a `main`**, porque el workflow corre ahí. La etiqueta
   `estable` sigue siendo la que se presenta en la demo local; si `main` se rompe
   después de la hora 30, se redespliega desde el panel la build que funcionaba.
