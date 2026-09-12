@@ -96,3 +96,4 @@ gh issue create \
 | 2026-09-12 | alta | mcp | [El aislamiento de las pruebas depende de que `DATABASE_URL` esté vacía: cargar el `.env` hace que `pnpm test` escriba en la base de la demo](2026-09-12-pruebas-escriben-en-la-base-real.md) | pendiente (sin `gh`) | mitigado |
 | 2026-09-12 | crítica | web | [`main` roto: marcadores de conflicto commiteados en el prompt del agente](2026-09-12-prompt-con-marcadores-de-conflicto.md) | [#11](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/11) | resuelto |
 | 2026-09-12 | media | web | [`lienzo-pinta.spec.ts` no arranca en Windows: `.pathname` de una `file://` URL no es una ruta válida](2026-09-12-jsonl-de-ejemplo-con-pathname-en-windows.md) | pendiente (sin `gh`) | resuelto |
+| 2026-09-12 | crítica | infra | [La demo está caída: el proyecto de Gemini pasó su tope de gasto mensual](2026-09-12-gemini-sin-cuota.md) | [#12](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/12) | **abierto** |
