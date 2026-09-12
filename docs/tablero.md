@@ -15,7 +15,7 @@ vez sin conflictos de git.
 | web | — | — | — |
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Higiene documental: `CLAUDE.md`, `roadmap-mcp.md` y este tablero decían 12-15 tools/78-92 pruebas; el código ya tiene 18 tools (14 lectura + 4 acción) y 103 pruebas desde que `luis` sumó Inversiones. Enmendado el ADR 0004 (2026-09-13): las 3 tools de Inversiones sí se exponen al agente, a propósito, para completar el viaje de Carmen | dom 00:00 |
-| contrato | — | — | — |
+| contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |
 | demo | parlack | Primer ensayo completo del guion contra producción: **los 5 pasos pasan**, incluidos los dos que nunca se habían verificado (segundo turno de Beto y el apartado de Ana). Issue #9 abierto: `pnpm reiniciar-estado` no borraba nada | sáb 08:55 |
 
 ## Bloqueos

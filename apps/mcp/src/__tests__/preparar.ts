@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { usarTablasDePrueba, type Tablas } from "../datos/index.js";
+import { usarTablasDePrueba, type Tablas, marcarBaseNoDisponible } from "../datos/index.js";
 import type { Fila } from "../datos/fila.js";
 
 /**
@@ -14,6 +14,7 @@ import type { Fila } from "../datos/fila.js";
 const VOLCADO = join(import.meta.dirname, "datos-de-prueba.json");
 
 export function prepararDatos(): Tablas {
+  marcarBaseNoDisponible();
   const crudo = JSON.parse(readFileSync(VOLCADO, "utf8")) as Record<string, Fila[]>;
   const tablas: Tablas = new Map(Object.entries(crudo));
   usarTablasDePrueba(tablas);
