@@ -37,6 +37,17 @@ export type OpcionesDeGeneracion = {
   datos?: DatosDeLaPortada;
   nombreDelModelo?: string;
   timeoutMs?: number;
+  /**
+   * Lo que la persona escribio en Inicio. Con esto la pantalla deja de ser la portada de
+   * "como estoy hoy" y pasa a contestar ESA pregunta, con el mismo motor y el mismo
+   * catalogo: sigue siendo un dashboard, no un chat.
+   *
+   * Cambia solo el encargo (`encargoDeConsulta` en vez de `encargoDePortada`). Todo lo
+   * demas —prefetch de datos, tools de apoyo, cero tools de accion, los tres pasos, el
+   * reintento— es identico a proposito: dos caminos de generacion serian dos veces la
+   * superficie de fallo, y el que se usa menos es el que nadie prueba.
+   */
+  pregunta?: string;
 };
 
 export type PortadaGenerada =
@@ -181,7 +192,12 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
           content: systemPrompt(),
           providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
         },
-        { role: "user", content: encargoDePortada(usuarioId, datos) },
+        {
+          role: "user",
+          content: opciones.pregunta
+            ? encargoDeConsulta(usuarioId, datos, opciones.pregunta)
+            : encargoDePortada(usuarioId, datos),
+        },
       ],
       allowSystemInMessages: true,
       tools,
@@ -306,6 +322,54 @@ export function encargoDePortada(usuarioId: string, datos: DatosDeLaPortada): st
     "   recomiendas, con el numero que lo sostiene. Empieza por lo de la tarjeta heroe: es lo",
     "   importante, no lo ultimo. `sugerencias`: 3 preguntas que le convendria hacerle a Maya con",
     "   estos datos.",
+    "",
+    "datos ya calculados (lo que devolvio cada tool del MCP):",
+    ...lineasDeDatos,
+    "",
+    "Termina llamando `pintar_pantalla` exactamente una vez.",
+  ].join("\n");
+}
+
+/**
+ * El encargo cuando la persona PREGUNTO algo desde Inicio.
+ *
+ * La diferencia con `encargoDePortada` no es de tono, es de forma: la respuesta sigue
+ * siendo un **dashboard**, no un mensaje. La persona no abrio un chat: escribio en su
+ * pantalla de inicio y espera que su pantalla cambie.
+ *
+ * Por eso se le insiste en dos cosas que el modelo tiende a romper cuando ve una pregunta:
+ * que la conteste con TARJETAS (no con `Text`) y que la primera sea `Conclusion`, que es
+ * donde vive la frase que antes hubiera escrito como parrafo. Sin la primera regla el
+ * modelo cae en prosa; sin la segunda, la respuesta queda sin veredicto y son tarjetas
+ * sueltas.
+ */
+export function encargoDeConsulta(usuarioId: string, datos: DatosDeLaPortada, pregunta: string): string {
+  const lineasDeDatos = Object.entries(datos).map(([tool, valor]) => `${tool}: ${JSON.stringify(valor)}`);
+  return [
+    "--- contexto del turno ---",
+    `usuarioId: ${usuarioId}`,
+    "pantalla actual: (se va a reemplazar por completo con la que armes ahora)",
+    "",
+    "MODO CONSULTA. La persona escribio esto en su pantalla de Inicio:",
+    "",
+    `  «${pregunta}»`,
+    "",
+    "Reglas de la consulta:",
+    "1. La respuesta es una PANTALLA, no un mensaje. La persona no abrio un chat: escribio en su",
+    "   dashboard y espera que su dashboard cambie. De 2 a 4 tarjetas del catalogo.",
+    "2. La PRIMERA tarjeta es `Conclusion`, siempre: ahi va tu lectura en una frase (`titular`), el",
+    "   porque y la recomendacion (`detalle`), hasta 3 cifras de apoyo (`datos`, las MISMAS que estan",
+    "   en las otras tarjetas y con centavos si son dinero) y 3 preguntas de seguimiento",
+    "   (`sugerencias`). Es la que contesta; las demas la sostienen.",
+    "3. Despues de `Conclusion`, las tarjetas que respondan la pregunta con datos: el gasto si pregunto",
+    "   por su gasto, el credito si pregunto por su deuda, el portafolio si pregunto por sus",
+    "   inversiones. Si la pregunta no aplica a su situacion, NO contestes con texto: arma la pantalla",
+    "   de lo que si le sirve y explicalo en la `razon`.",
+    "4. Nada de `Text` ni de `Confirmacion`: no hubo accion y no estas escribiendo un parrafo.",
+    "5. Una sola tarjeta con `heroe: true`, o ninguna. `Conclusion` no lleva `heroe`.",
+    "6. Todo numero sale de los datos de abajo o de una tool. Si te falta algo para una tarjeta, pide",
+    "   esas tools AHORA, todas en este mismo paso: en el siguiente solo vas a poder pintar.",
+    "7. `texto`: una frase corta, porque el veredicto ya va en `Conclusion` y no se repite.",
     "",
     "datos ya calculados (lo que devolvio cada tool del MCP):",
     ...lineasDeDatos,

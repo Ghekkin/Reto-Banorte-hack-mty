@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { ArrowRight, ArrowUp, Mic } from "lucide-react";
+import { useState, useTransition } from "react";
+import { ArrowRight, ArrowUp } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { Spinner } from "@/components/ui/spinner";
+import { preguntarEnInicio } from "@/app/(app)/acciones";
 import { formatearFecha, formatearMonto, formatearPorcentaje } from "@/lib/dinero";
 import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
 
@@ -199,43 +202,80 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
 
 /**
  * Barra flotante de entrada de Maya en Inicio.
- * Es la pura barra de input (con texto, micrófono de voz y botón de envío)
- * flotando en la parte inferior de la pantalla.
+ *
+ * **Estaba muerta.** Era una maqueta: el `onKeyDown` hacia `e.preventDefault()` en Enter y
+ * nada mas, y los dos botones decian `aria-label="… (pendiente)"` sin `onClick`. Escribir y
+ * dar Enter no hacia absolutamente nada, que es exactamente lo que se reporto.
+ *
+ * Ahora llama a `preguntarEnInicio`, que corre el turno en el servidor y **reemplaza la
+ * portada completa** con la pantalla que contesta. No se abre un chat ni se agrega una
+ * burbuja: el dashboard se borra y aparece otro, que es lo que la persona espera al
+ * escribir en su pantalla de inicio.
+ *
+ * El envio va con `useTransition` y no con `useState` + `fetch` porque el trabajo lo hace
+ * una server action que termina en `revalidatePath`: `isPending` cubre el turno completo
+ * (los ~8 s del modelo) Y el re-render del servidor. Con un estado propio, la barra se
+ * habilitaba en cuanto la accion resolvia y la pantalla vieja seguia ahi medio segundo.
  */
 export function BarraFlotanteMaya() {
+  const [texto, setTexto] = useState("");
+  const [fallo, setFallo] = useState<string>();
+  const [enviando, iniciar] = useTransition();
+
+  function enviar() {
+    const limpio = texto.trim();
+    if (!limpio || enviando) return;
+    setFallo(undefined);
+    iniciar(async () => {
+      const r = await preguntarEnInicio(limpio);
+      if (r.ok) setTexto("");
+      else setFallo(r.motivo);
+    });
+  }
+
   return (
     <aside
-      aria-label="Chat flotante con Maya"
-      className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4 pointer-events-none md:bottom-6 md:left-[var(--sidebar-width,16rem)]"
+      aria-label="Pregúntale a Maya"
+      className="fixed inset-x-0 bottom-20 z-30 flex flex-col items-center gap-2 px-4 pointer-events-none md:bottom-6 md:left-[var(--sidebar-width,16rem)]"
     >
-      <div className="flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-borde-sutil bg-card/95 p-2 shadow-xl backdrop-blur-md ring-1 ring-black/5 pointer-events-auto transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+      {fallo && (
+        <p
+          role="status"
+          className="animar-entrada pointer-events-auto max-w-2xl rounded-xl border border-oscuro bg-card px-3 py-2 text-xs text-foreground shadow-md"
+        >
+          {fallo}
+        </p>
+      )}
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          enviar();
+        }}
+        className="flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-borde-sutil bg-card/95 p-2 shadow-md ring-1 ring-black/5 pointer-events-auto backdrop-blur-md transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"
+      >
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground shadow-xs">
           <IconoBanorte className="size-4" />
         </span>
         <input
           type="text"
-          placeholder="Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          disabled={enviando}
+          placeholder={
+            enviando ? "Maya está armando tu pantalla…" : "Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
+          }
           aria-label="Pregúntale a Maya"
-          onKeyDown={(e) => {
-            if (e.key === "Enter") e.preventDefault();
-          }}
-          className="flex-1 bg-transparent px-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+          className="min-w-0 flex-1 bg-transparent px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-70"
         />
         <button
-          type="button"
-          aria-label="Entrada de voz (pendiente)"
-          className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-primary active:scale-95"
+          type="submit"
+          aria-label="Enviar"
+          disabled={enviando || texto.trim() === ""}
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform hover:bg-primary/90 active:scale-95 disabled:opacity-50"
         >
-          <Mic className="size-4.5" />
+          {enviando ? <Spinner /> : <ArrowUp className="size-4.5" />}
         </button>
-        <button
-          type="button"
-          aria-label="Enviar mensaje (pendiente)"
-          className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform hover:bg-primary/90 active:scale-95"
-        >
-          <ArrowUp className="size-4.5" />
-        </button>
-      </div>
+      </form>
     </aside>
   );
 }

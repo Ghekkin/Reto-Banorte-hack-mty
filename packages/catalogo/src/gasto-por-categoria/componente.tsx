@@ -27,6 +27,21 @@ import type { PropsGastoPorCategoria } from "./schema";
 /** Debajo de esto, la variacion es ruido y no se pinta. */
 const VARIACION_MINIMA = 0.05;
 
+/**
+ * Cuantas filas se ven sin desplazar. El resto queda a un scroll de distancia.
+ *
+ * Antes la lista llegaba recortada a 6 categorias desde el modelo y el total era el del
+ * periodo COMPLETO: la tarjeta decia "$33,349.50" y listaba $28,034.00. El hueco de
+ * $5,315.50 eran las otras cinco categorias, invisibles. Ahora llegan todas (lo exige el
+ * schema) y lo que se acota es el ALTO, que es un problema de presentacion y no de datos:
+ * la suma cuadra por construccion y nadie tiene que confiar en que el modelo recorto bien.
+ *
+ * 6 filas y no 8 porque a 360 px la tarjeta ya mide 420 px de alto con 6.
+ */
+const FILAS_VISIBLES = 6;
+/** Alto de una fila: monto + barra + el padding vertical de `py-2`. */
+const ALTO_DE_FILA_REM = 3.75;
+
 export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<PropsComponente, "alAccionar">) {
   const { periodo, totalCentavos, variacionPct, categorias, categoriaAtipica, razon, alAccionar } = props;
 
@@ -46,6 +61,12 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
   // La barra se mide contra la categoria mas grande, no contra el total: con seis
   // categorias todas las barras saldrian cortas y no se compararia nada.
   const mayor = categorias.reduce((max, c) => Math.max(max, c.montoCentavos), 0) || 1;
+  const hayQueDesplazar = categorias.length > FILAS_VISIBLES;
+  // La suma de lo que se lista contra el total que dice el encabezado. Si no cuadra, el
+  // modelo recorto la lista pese al schema: se avisa en el pie en vez de callarlo, porque
+  // un total que no cuadra con sus renglones es lo que hace que nadie crea la pantalla.
+  const sumaListada = categorias.reduce((s, c) => s + c.montoCentavos, 0);
+  const faltante = totalCentavos - sumaListada;
 
   return (
     <Tarjeta>
@@ -65,8 +86,17 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
       </CardHeader>
 
       {/* Desde 42rem de TARJETA las categorías van en dos columnas: una lista de seis
-          filas estirada a 900 px dejaba la mitad derecha de cada fila vacía. */}
-      <CardContent className="grid @2xl/tarjeta:grid-cols-2 @2xl/tarjeta:gap-x-6">
+          filas estirada a 900 px dejaba la mitad derecha de cada fila vacía.
+
+          El alto se acota a `FILAS_VISIBLES` y el resto se desplaza. `overflow-y-auto` y
+          no un `ScrollArea`: adentro de una tarjeta con container queries, el scroll
+          nativo no necesita que nadie le calcule una altura, y la barra ya viene
+          delgada y neutra desde `globals.css`. En dos columnas el mismo alto muestra el
+          doble de filas, que es justo lo que se quiere cuando hay espacio. */}
+      <CardContent
+        className="grid overflow-y-auto overscroll-contain @2xl/tarjeta:grid-cols-2 @2xl/tarjeta:gap-x-6"
+        style={hayQueDesplazar ? { maxHeight: `${FILAS_VISIBLES * ALTO_DE_FILA_REM}rem` } : undefined}
+      >
         {categorias.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay gasto registrado en este periodo.</p>
         ) : (
@@ -118,7 +148,21 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
         )}
       </CardContent>
 
-      <PieTarjeta razon={razon} />
+      <PieTarjeta razon={razon}>
+        {categorias.length > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {categorias.length} {categorias.length === 1 ? "categoría" : "categorías"}
+            {hayQueDesplazar && " · desplázate para ver todas"}
+            {/* El aviso solo aparece si el modelo desobedeció el schema y recortó. Es feo a
+                propósito: es un dato faltante, no una decisión de diseño. */}
+            {faltante > 0 && (
+              <span className="block text-advertencia">
+                Faltan {formatearMonto(faltante)} sin desglosar
+              </span>
+            )}
+          </span>
+        )}
+      </PieTarjeta>
     </Tarjeta>
   );
 }

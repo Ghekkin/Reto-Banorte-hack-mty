@@ -7,6 +7,8 @@ import { ComparadorAntesDespues } from "./comparador-antes-despues/componente";
 import { entradaComparadorAntesDespues } from "./comparador-antes-despues/schema";
 import { Confirmacion } from "./confirmacion/componente";
 import { entradaConfirmacion } from "./confirmacion/schema";
+import { Conclusion } from "./conclusion/componente";
+import { entradaConclusion } from "./conclusion/schema";
 import { DetalleCategoria } from "./detalle-categoria/componente";
 import { entradaDetalleCategoria } from "./detalle-categoria/schema";
 import { DistribucionPortafolio } from "./distribucion-portafolio/componente";
@@ -54,6 +56,8 @@ import type { EntradaCatalogo } from "./comunes";
  * dicen exactamente que falta si se olvida un paso.
  */
 export const CATALOGO: EntradaCatalogo[] = [
+  // La lectura de la situacion: primera tarjeta de cualquier pantalla
+  entradaConclusion,
   // Fase 1: salir de la deuda
   entradaResumenTarjeta,
   entradaPlanDePago,
@@ -87,6 +91,7 @@ export function registrarCatalogo(): void {
   registrar("ResumenTarjeta", ResumenTarjeta as never);
   registrar("PlanDePago", PlanDePago as never);
   registrar("Confirmacion", Confirmacion as never);
+  registrar("Conclusion", Conclusion as never);
   registrar("Calendario", Calendario as never);
   registrar("GastoPorCategoria", GastoPorCategoria as never);
   registrar("DetalleCategoria", DetalleCategoria as never);
@@ -136,6 +141,7 @@ export {
   AlertaFugas,
   Calendario,
   ComparadorAntesDespues,
+  Conclusion,
   Confirmacion,
   DetalleCategoria,
   DistribucionPortafolio,

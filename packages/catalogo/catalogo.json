@@ -7,6 +7,171 @@
   "a2uiVersion": "v0.9.1",
   "generadoPor": "pnpm catalogo",
   "components": {
+    "Conclusion": {
+      "type": "object",
+      "description": "SIEMPRE la primera tarjeta de una pantalla: es tu lectura de la situacion en una frase grande, con hasta 3 cifras que la sostienen y las preguntas de seguimiento. Sustituye al parrafo de texto: si pones Conclusion, el `texto` del turno puede ir vacio. No la uses para reportar un dato suelto (para eso esta la tarjeta de ese dato) ni para confirmar una accion (eso es Confirmacion).",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "Conclusion"
+            },
+            "ancho": {
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
+              "default": "amplio",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "saludo": {
+              "description": "Una linea corta antes del titular: 'Hola, Alberto'. Sin ella el componente arranca en el titular",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "titular": {
+              "description": "LA frase. Una sola oracion, en segunda persona, con el veredicto: 'Tu plan ya esta activo y tus retiros se dispararon'. Va en el tamano mas grande de la tarjeta, asi que si no cabe en dos renglones esta muy larga",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "detalle": {
+              "description": "De una a tres frases con el porque y la recomendacion. Es el texto del turno; aqui va completo",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "datos": {
+              "description": "Hasta 3 cifras que sostienen el titular. Son las MISMAS que ya estan en las tarjetas, no nuevas",
+              "anyOf": [
+                {
+                  "maxItems": 3,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "etiqueta": {
+                        "type": "string",
+                        "description": "Que es: 'Mensualidad', 'Retiros de efectivo', 'Salud financiera'"
+                      },
+                      "valor": {
+                        "type": "string",
+                        "description": "Ya formateado y corto: '$3,193.35', '+74%', '39/100'. Si es dinero, va con centavos y EXACTAMENTE igual que en la tarjeta que lo reporta: dos cifras distintas para el mismo monto en la misma pantalla es lo que hace que nadie crea ninguna"
+                      },
+                      "tono": {
+                        "default": "neutro",
+                        "description": "`bueno` lo pinta verde, `alerta` en ambar. Usa `neutro` salvo que el dato sea la buena o la mala noticia",
+                        "type": "string",
+                        "enum": [
+                          "neutro",
+                          "bueno",
+                          "alerta"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "etiqueta",
+                      "valor"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "sugerencias": {
+              "description": "Hasta 3 preguntas de seguimiento, tal cual las diria la persona. Tocarlas dispara preguntar",
+              "anyOf": [
+                {
+                  "maxItems": 3,
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: preguntar.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "preguntar"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "titular"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "ResumenTarjeta": {
       "type": "object",
       "description": "La persona pregunta por su tarjeta, su deuda o sus intereses y hace falta poner su situacion en una sola cifra. Casi siempre es la tarjeta heroe de la pantalla de deuda; despues de aplicar un plan, la misma tarjeta muestra 'Plan activo' con el saldo en cero.",
@@ -605,7 +770,7 @@
     },
     "GastoPorCategoria": {
       "type": "object",
-      "description": "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa las categorias y cual es la atipica. Tocar una barra dispara ver_categoria con { categoriaId, categoria }.",
+      "description": "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -695,7 +860,7 @@
               ]
             },
             "categorias": {
-              "description": "De mayor a menor; 6 u 8 es un buen numero",
+              "description": "TODAS las categorias del periodo que devolvio la tool, de mayor a menor. La suma de montoCentavos TIENE que dar exactamente totalCentavos: si recortas la lista, la tarjeta muestra un total que no cuadra con lo que lista. No la recortes; la tarjeta se encarga de acotar su alto y dejar el resto scrollable.",
               "anyOf": [
                 {
                   "minItems": 1,
@@ -4091,6 +4256,9 @@
     },
     "anyComponent": {
       "oneOf": [
+        {
+          "$ref": "#/components/Conclusion"
+        },
         {
           "$ref": "#/components/ResumenTarjeta"
         },

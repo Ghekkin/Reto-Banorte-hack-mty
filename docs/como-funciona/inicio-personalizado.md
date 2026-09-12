@@ -28,6 +28,12 @@ está armando; en cuanto está, entra sola.
 Los botones de la portada funcionan: tocar "Aplicar plan" en Inicio manda a la persona a
 Maya con esa acción ya disparada, y ahí se ejecuta de verdad.
 
+**Y puedes preguntarle desde ahí mismo.** La barra de abajo no es un chat: escribes "¿en
+qué se me fue el dinero?", y tu pantalla de inicio **se borra y se vuelve a armar** para
+contestar eso, con tarjetas, como un pizarrón que se limpia. No aparece una burbuja ni una
+conversación: aparece otro dashboard. Y se queda: si recargas, sigue lo que preguntaste,
+hasta que tus datos cambien de verdad.
+
 ## Técnico
 
 ### Dónde vive
@@ -44,6 +50,7 @@ Maya con esa acción ya disparada, y ahí se ejecuta de verdad.
 | La ruta `GET`/`POST /api/inicio` | `apps/web/src/app/api/inicio/route.ts` |
 | La página | `apps/web/src/app/(app)/page.tsx` |
 | La portada pintada, y el aviso mientras se arma | `apps/web/src/components/inicio/inicio-de-maya.tsx`, `refresco-del-inicio.tsx` |
+| La consulta desde Inicio (la barra de abajo) | `components/inicio/tarjetas-inicio.tsx` (`BarraFlotanteMaya`) → `app/(app)/acciones.ts` (`preguntarEnInicio`) |
 | El gancho "acabo de aplicar una acción" | `lib/agente/agente.ts` (`alMutar`), conectado en `app/api/agente/route.ts` |
 | La entrada a Maya con un botón ya tocado | `app/(app)/maya/page.tsx` (`?accion=`), `components/maya/consola-maya.tsx` |
 | El ensayo con el modelo real | `scripts/probar-inicio.mjs` (`pnpm probar-inicio`) |
@@ -147,6 +154,60 @@ Cuando ese turno termina con una tool de acción aplicada, el agente llama `alMu
 ruta lo convierte en `after(() => regenerarSiCambio(usuarioId, "accion"))`: la portada se
 rearma en segundo plano mientras la persona sigue en Maya. Al volver a Inicio, o ya está la
 nueva, o se ve llegar.
+
+### La conclusión es una tarjeta del catálogo, no un párrafo
+
+El `texto` del turno se pintaba arriba del lienzo como un párrafo `text-sm
+text-muted-foreground` con un avatar a la izquierda y los chips de evidencia debajo: la
+forma de un mensaje de chat. Dos costos, y el segundo es el que importaba.
+
+El consejo —lo único que un banco no te da hoy— era el elemento con **menos** peso visual
+de la pantalla, por debajo de cualquier monto de cualquier tarjeta. Y con forma de burbuja,
+la pantalla se leía como "un chat con tarjetas pegadas" en lugar de un dashboard.
+
+Ahora es **`Conclusion`** (`packages/catalogo/src/conclusion/`), una tarjeta del catálogo
+como las demás: titular en `text-2xl`, detalle, hasta 3 cifras de apoyo y las sugerencias
+como botones. La evidencia (modelo, tools, tiempo) bajó a una línea de `text-xs` **debajo**
+del dashboard: es información para el jurado, no para la persona.
+
+**La pinta el host, no el modelo.** `InicioDeMaya` la arma con el `texto` y la `razon` que
+la portada ya trae, partiendo el texto en titular (primera frase) y detalle
+(`partirEnTitular`). Es deliberado: si dependiera de que el modelo emitiera el componente,
+una omisión suya dejaría la pantalla sin veredicto, y este documento ya registra que el
+modelo chico omitió props obligatorias dos corridas seguidas teniendo la regla escrita. El
+componente **sí** está en el catálogo, así que el agente de `/maya` puede emitirlo —y en
+modo consulta se le pide que lo haga.
+
+### La consulta desde Inicio: el pizarrón que se borra
+
+La barra de abajo (`BarraFlotanteMaya`) **era una maqueta**: el `onKeyDown` hacía
+`e.preventDefault()` en Enter y nada más, y los dos botones decían `aria-label="…
+(pendiente)"` sin `onClick`. Escribir y dar Enter no hacía absolutamente nada.
+
+Ahora llama a la server action `preguntarEnInicio(pregunta)`, que:
+
+1. valida la pregunta (3 a 300 caracteres) y que el Inicio personalizado esté activo;
+2. corre `generarPortada(usuarioId, { pregunta })` —**el mismo motor** que la portada, con
+   el mismo prefetch de datos, las mismas tools de apoyo y **cero tools de acción**; lo
+   único distinto es el encargo (`encargoDeConsulta` en vez de `encargoDePortada`);
+3. **reemplaza** la fila de `banorte.pantallas_inicio` con esa pantalla;
+4. `revalidatePath("/")`, y el servidor vuelve a renderizar Inicio con el dashboard nuevo.
+
+Dos decisiones que vale la pena entender:
+
+- **Es una server action y no un `fetch` desde el navegador.** El resultado se guarda en la
+  base, así que alguien tiene que decidir qué A2UI entra. Si el navegador armara la
+  pantalla y la mandara a guardar, la base confiaría en entrada del cliente; aquí el turno
+  corre en el servidor, pasa por las cuatro validaciones de `pintar_pantalla`, y el
+  navegador solo manda el texto de la pregunta.
+- **Se guarda con la huella de HOY.** Es lo que evita que el reloj borre tu consulta en el
+  siguiente tick: mientras la cuenta no se mueva, la pantalla que pediste se queda. En
+  cuanto se mueva de verdad (una acción, movimientos nuevos), el reloj rearma la portada de
+  perfil —que es correcto: los datos que sostenían tu consulta ya cambiaron.
+
+El encargo de consulta insiste en dos cosas que el modelo tiende a romper cuando ve una
+pregunta: que conteste con **tarjetas** (no con `Text`) y que la primera sea `Conclusion`.
+Sin la primera regla cae en prosa; sin la segunda, la respuesta queda sin veredicto.
 
 ### Variables de entorno
 

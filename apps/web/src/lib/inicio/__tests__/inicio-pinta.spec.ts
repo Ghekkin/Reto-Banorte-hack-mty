@@ -8,9 +8,9 @@ import type { PantallaDeInicio } from "../almacen";
 
 /**
  * Que el Inicio que armo Maya PINTE de verdad, con el mismo `.jsonl` que valida el
- * catalogo: las tarjetas, lo que Maya dice, la evidencia (modelo, tools) y el
- * "¿Por que veo esto?". Sin DOM: `renderToStaticMarkup` basta para ver si salio la
- * tarjeta o el cartel de "Componente desconocido".
+ * catalogo: las tarjetas, la `Conclusion` con la lectura, y la evidencia (modelo, tools).
+ * Sin DOM: `renderToStaticMarkup` basta para ver si salio la tarjeta o el cartel de
+ * "Componente desconocido".
  *
  * `next/navigation` y `next/link` se simulan porque fuera del App Router no hay router
  * montado; aqui no se navega, se pinta.
@@ -21,7 +21,7 @@ vi.mock("next/link", () => ({
     createElement("a", { href, ...resto }, children),
 }));
 
-const { InicioDeMaya, haceCuanto } = await import("@/components/inicio/inicio-de-maya");
+const { InicioDeMaya, haceCuanto, partirEnTitular } = await import("@/components/inicio/inicio-de-maya");
 
 const EJEMPLO = fileURLToPath(new URL("../../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url));
 
@@ -56,9 +56,20 @@ describe("el Inicio que armo Maya", () => {
     expect(html).toContain("47,386");
   });
 
-  it("dice lo que Maya ve hoy y cuando lo armo", () => {
-    expect(html).toContain("Hola, Alberto.");
+  /**
+   * El texto ya NO se pinta como un parrafo con avatar (eso era la forma de una burbuja de
+   * chat): va en la tarjeta `Conclusion`, partido en titular y detalle.
+   */
+  it("pinta la lectura de Maya en la tarjeta Conclusion, no como parrafo de chat", () => {
+    expect(html).toContain("Hola, Alberto");
+    // La primera frase es el titular, en el tamano mas grande de la tarjeta.
+    expect(html).toContain("Hoy lo urgente es la tarjeta");
+    expect(html).toContain("text-2xl");
+    // Y el resto queda como detalle.
     expect(html).toContain("bajas la mensualidad a $3,193");
+  });
+
+  it("la evidencia va debajo y con el tiempo, no arriba con un avatar", () => {
     expect(html).toContain("hace 4 min");
   });
 
@@ -69,8 +80,33 @@ describe("el Inicio que armo Maya", () => {
     expect(html).toContain("¿Por qué veo esto?");
   });
 
-  it("ofrece las sugerencias como entradas a Maya", () => {
-    expect(html).toContain(`/maya?intencion=${encodeURIComponent("¿Cuanto me ahorro con el plan?")}`);
+  /**
+   * Las sugerencias pasaron de `<Link>` a botones de `Conclusion` que disparan la accion
+   * `preguntar`: es el componente del catalogo el que las ofrece, y el host decide que
+   * hacer con ellas (aqui, navegar a Maya). Se comprueba que se pinten y que sean
+   * tocables; a donde llevan es cosa del `alAccionar`, que necesita un DOM.
+   */
+  it("ofrece las sugerencias como botones de la Conclusion", () => {
+    expect(html).toContain("¿Cuanto me ahorro con el plan?");
+    expect(html).toContain("¿En que se me fue el dinero?");
+    expect(html).toContain("<button");
+  });
+});
+
+describe("partirEnTitular", () => {
+  it("la primera frase es el titular y el resto el detalle", () => {
+    expect(partirEnTitular("Tu plan ya esta activo. La mensualidad quedo en $3,193.")).toEqual({
+      titular: "Tu plan ya esta activo.",
+      detalle: "La mensualidad quedo en $3,193.",
+    });
+  });
+
+  it("sin punto, todo es titular y no hay detalle", () => {
+    expect(partirEnTitular("Tu plan ya esta activo")).toEqual({ titular: "Tu plan ya esta activo" });
+  });
+
+  it("una sola frase con punto final no deja un detalle vacio", () => {
+    expect(partirEnTitular("Tu plan ya esta activo.")).toEqual({ titular: "Tu plan ya esta activo." });
   });
 });
 

@@ -18,7 +18,15 @@ export const schemaGastoPorCategoria = PropsBase.extend({
   periodo: z.string().describe("El periodo, AAAA-MM o ya en palabras: '2026-08' o 'agosto de 2026'"),
   totalCentavos: Centavos.describe("El gasto total del periodo"),
   variacionPct: z.number().optional().describe("Variacion del total contra el periodo anterior, como fraccion"),
-  categorias: z.array(CategoriaDeGasto).min(1).describe("De mayor a menor; 6 u 8 es un buen numero"),
+  categorias: z
+    .array(CategoriaDeGasto)
+    .min(1)
+    .describe(
+      "TODAS las categorias del periodo que devolvio la tool, de mayor a menor. La suma de " +
+        "montoCentavos TIENE que dar exactamente totalCentavos: si recortas la lista, la tarjeta " +
+        "muestra un total que no cuadra con lo que lista. No la recortes; la tarjeta se encarga " +
+        "de acotar su alto y dejar el resto scrollable.",
+    ),
   categoriaAtipica: z.string().optional().describe("El nombre de la que se salio de su patron; se pinta en rojo"),
 });
 
@@ -27,7 +35,7 @@ export type PropsGastoPorCategoria = z.infer<typeof schemaGastoPorCategoria>;
 export const entradaGastoPorCategoria = {
   nombre: "GastoPorCategoria",
   cuandoUsarlo:
-    "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa las categorias y cual es la atipica. Tocar una barra dispara ver_categoria con { categoriaId, categoria }.",
+    "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }.",
   schema: schemaGastoPorCategoria,
   acciones: ["ver_categoria"],
 };

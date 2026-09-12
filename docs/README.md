@@ -71,8 +71,10 @@ quien.
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI originales: qué tool llena cada uno, qué acción devuelve, cómo se prueban
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
+- [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
-- [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción y los botones que llevan a Maya
+- [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard
+- [El bug del gasto que no cuadraba](como-funciona/bug-gasto-total-no-cuadra.md) — un total contra seis de once categorías, por qué el culpable era el ejemplo del few-shot y no el código, y las pruebas que ahora lo cazan
 
 ### Algoritmos
 - [Reglas y plantilla](algoritmos/README.md)
