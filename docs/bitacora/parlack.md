@@ -6,6 +6,19 @@
 > están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
 > adelante, hora de Monterrey como manda el repo.
 
+### 03:55 — Conflicto con el rediseño de la interfaz al subir lo anterior
+
+`sync.sh` reportó CONFLICTO: el rediseño movió la shell (`components/shell/lienzo.tsx` →
+`components/maya/lienzo.tsx`, `app/page.tsx` → `app/(app)/...` con `consola-maya.tsx`,
+`usar-agente` → `lib/agente/`). Dominio `web`, así que ganó GitHub: borré mis dos archivos
+viejos y reapliqué solo la prop `alFallar` en el lienzo nuevo y en la consola. Git detectó
+el rename de `usar-agente.ts` solo.
+
+Trampa al verificar: `pnpm typecheck` de `web` falló por `.next/types/validator.ts`, un
+archivo **generado** que aún apuntaba a la página vieja. No es código de nadie: `npx next
+typegen` lo regenera. Para que no le pase al siguiente, el script `typecheck` de `web`
+ahora corre `next typegen` antes de `tsc`.
+
 ### 03:40 · hecho — El ciclo de error A2UI cerrado y una frontera de error por componente
 
 Retomé el árbol con cambios sin commitear de la sesión anterior (el canal
