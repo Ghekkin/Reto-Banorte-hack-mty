@@ -1,5 +1,7 @@
+import { readdirSync, readFileSync } from "node:fs";
+import { join } from "node:path";
 import { z } from "zod";
-import { NOMBRES_DE_LAYOUT } from "@maya/a2ui";
+import { NOMBRES_DE_LAYOUT, type MensajeA2UI } from "@maya/a2ui";
 import { CATALOGO } from "@maya/catalogo";
 import { config } from "./config";
 
@@ -69,6 +71,13 @@ export function systemPrompt(): string {
     "",
     `El catalogo completo, con el schema de cada componente, esta publicado en ${config.urlCatalogo}.`,
     "",
+    "## Ejemplos de pantallas bien armadas",
+    "",
+    "Asi se ven `componentesJson` y `datosJson` de pantallas reales, una por componente. Copia la",
+    "forma (ids, `children`, enlaces `{ \"path\" }`, `action`), no los numeros: los tuyos salen de las tools.",
+    "",
+    ejemplosEnTexto(),
+    "",
     "## Reglas que no se negocian",
     "",
     "- `razon` es obligatoria en cada componente del catalogo: una frase en segunda persona que",
@@ -102,4 +111,47 @@ function catalogoEnTexto(): string {
     const acciones = entrada.acciones?.length ? `  acciones que devuelve: ${entrada.acciones.join(", ")}\n` : "";
     return `- **${entrada.nombre}** — ${entrada.cuandoUsarlo}\n${acciones}  props:\n${props.join("\n")}`;
   }).join("\n\n");
+}
+
+/**
+ * Los `.jsonl` de `packages/catalogo/ejemplos/`, como few-shot. Un ejemplo real de cada
+ * componente ensena la forma exacta mejor que cualquier regla escrita, y son los mismos
+ * archivos que las pruebas del catalogo validan contra los schemas oficiales: si un
+ * ejemplo esta mal, truena una prueba antes de que el modelo lo aprenda.
+ *
+ * Se leen una vez por proceso (el prompt es prefijo estable, y el disco no cambia en
+ * medio de la demo). Solo entran los ejemplos cuyos componentes estan TODOS en el
+ * catalogo: un ejemplo con un componente que no existe le ensenaria al modelo a fallar.
+ */
+let cacheEjemplos: string | undefined;
+
+function ejemplosEnTexto(): string {
+  if (cacheEjemplos !== undefined) return cacheEjemplos;
+  const permitidos = new Set<string>([...NOMBRES_DE_LAYOUT, ...CATALOGO.map((c) => c.nombre)]);
+  const carpeta = join(process.cwd(), "..", "..", "packages", "catalogo", "ejemplos");
+  const bloques: string[] = [];
+  let archivos: string[] = [];
+  try {
+    archivos = readdirSync(carpeta).filter((a) => a.endsWith(".jsonl")).sort();
+  } catch {
+    cacheEjemplos = "(sin ejemplos disponibles)";
+    return cacheEjemplos;
+  }
+  for (const archivo of archivos) {
+    const mensajes = readFileSync(join(carpeta, archivo), "utf8")
+      .split("\n")
+      .filter((l) => l.trim() !== "")
+      .map((l) => JSON.parse(l) as MensajeA2UI);
+    const componentes = mensajes.find((m): m is Extract<MensajeA2UI, { updateComponents: unknown }> => "updateComponents" in m)
+      ?.updateComponents.components;
+    const datos = mensajes.find((m): m is Extract<MensajeA2UI, { updateDataModel: unknown }> => "updateDataModel" in m)
+      ?.updateDataModel.value;
+    if (!componentes || !componentes.every((c) => permitidos.has(c.component))) continue;
+    const nombre = archivo.replace(/\.jsonl$/, "");
+    bloques.push(
+      `### ${nombre}\ncomponentesJson: ${JSON.stringify(componentes)}\ndatosJson: ${JSON.stringify(datos ?? {})}`,
+    );
+  }
+  cacheEjemplos = bloques.length ? bloques.join("\n\n") : "(sin ejemplos disponibles)";
+  return cacheEjemplos;
 }
