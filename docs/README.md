@@ -65,7 +65,7 @@ quien.
 - [Base de datos](como-funciona/base-de-datos.md) — referencia del esquema `banorte`: las 22 tablas columna por columna, relaciones, índices, restricciones, las tres rutas de carga y los trade-offs
 - [Shell web](como-funciona/shell-web.md) — las cinco secciones, la navegación en móvil y escritorio, el usuario activo en cookie y la capa de datos sobre los CSV
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, los 22 CSV y las invariantes que sostienen la demo
-- [Las 9 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
+- [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 
 ### Algoritmos
@@ -75,6 +75,7 @@ quien.
 - [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
+- [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 
 ### Issues

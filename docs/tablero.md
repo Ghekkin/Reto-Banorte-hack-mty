@@ -13,7 +13,7 @@ vez sin conflictos de git.
 | Rol | Quién | En qué | Desde |
 |---|---|---|---|
 | web | — | — | — |
-| mcp | — | — | — |
+| mcp | aldair | Paquete 1 del roadmap del MCP terminado: `panorama_inicial`, `diagnostico_salud_financiera` y `consultar_creditos`. 12 tools, 78 pruebas | sáb 08:45 |
 | contrato | — | — | — |
 | demo | parlack | Motor A2UI terminado (ajv + 76 casos de conformidad) y catálogo publicado como JSON Schema A2UI. Sigue: el guion con llave de modelo | sáb 01:45 |
 
@@ -26,7 +26,7 @@ vez sin conflictos de git.
 El detalle por bloque está en `equipo/roadmap.md`; aquí solo el paso inmediato.
 
 - web: **el scaffold ya tiene shadcn, tokens y shell listos** → los 4 componentes de fase 1 (`ResumenTarjeta`, `PlanDePago`, `Calendario`; `Confirmacion` ya está de referencia). Cada carpeta en `packages/catalogo/src/` trae su encargo escrito. **Es lo que falta para que el agente pueda pintar algo más que `Confirmacion`**: en cuanto un componente entra a `CATALOGO`, el prompt y la validación del agente lo toman solos
-- mcp: **las 9 tools están, con 31 pruebas y el ciclo de acción verificado por HTTP** (`pnpm humo`) → lo que queda es opcional: `crear_tope_gasto` y el origen Postgres detrás de `FEATURE_POSTGRES`
+- mcp: **12 tools con 78 pruebas y el ciclo de acción verificado por HTTP** (`pnpm humo`). Con el Paquete 1 el agente ya no decide solo con "tiene deuda / no tiene deuda": tiene puntaje, tendencia y la deuda completa → lo que queda es el **Paquete 2** (`crear_tope_gasto`, `detectar_fugas`, `cancelar_suscripcion`, encargo en `arquitectura/paquete-2-gasto-fugas-y-control.md`) y el origen Postgres detrás de `FEATURE_POSTGRES`
 - contrato: **el motor A2UI está terminado** — valida con los JSON Schema oficiales y pasa los **76 casos de conformidad** de la spec (109 pruebas), y el agente real ya corre (18 pruebas sin llave). Lo único abierto, opcional: conectar el canal `VALIDATION_FAILED` de vuelta al agente para que se corrija solo (`<Superficie alFallar>` ya lo emite, nadie lo escucha)
 - demo: **falta una llave de modelo en el `.env`** (`GOOGLE_GENERATIVE_AI_API_KEY`) para correr el nivel 4 de `probar` con los prompts del guion; sin ella el agente sirve la pantalla de ejemplo
 

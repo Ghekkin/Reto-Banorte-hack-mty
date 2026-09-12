@@ -1,9 +1,9 @@
 ---
-verificado: 2026-09-12 01:19
+verificado: 2026-09-12 09:40
 estado: construido
 ---
 
-# Las 9 tools del servidor MCP
+# Las 12 tools del servidor MCP
 
 ## Para cualquiera
 
@@ -19,8 +19,12 @@ tarjeta ya no aparece al 97 % del límite: aparece en cero, con una mensualidad 
 pantalla que el agente construye después de la acción es otra porque **los datos son
 otros**, no porque se lo hayamos dicho.
 
-Las nueve tools cubren el viaje completo de la demo: primero saber con quién hablas,
-luego salir de la deuda, luego entender el gasto, luego empezar a ahorrar.
+Las doce tools cubren el viaje completo de la demo: primero saber con quién hablas,
+luego salir de la deuda, luego entender el gasto, luego empezar a ahorrar. Tres de ellas
+no miran solo la tarjeta: una le pone una calificación de 0 a 100 a cómo va la persona,
+otra suma **toda** su deuda y no nada más la del plástico, y una tercera junta todo eso en
+una sola respuesta para que el agente no tenga que preguntar tres veces antes de dibujar
+nada.
 
 ## Técnico
 
@@ -33,6 +37,8 @@ luego salir de la deuda, luego entender el gasto, luego empezar a ahorrar.
 | Una tool | `apps/mcp/src/tools/<nombre>.ts` |
 | Contratos (Zod) | `packages/schemas/src/tools/<nombre>.ts` → `EntradaX` / `SalidaX` |
 | Consultas compartidas | `apps/mcp/src/dominio/consultas.ts` |
+| Diagnóstico de hábitos | `apps/mcp/src/dominio/salud.ts` |
+| Deuda a plazo fijo | `apps/mcp/src/dominio/creditos.ts` |
 | Matemática de crédito | `apps/mcp/src/dominio/finanzas.ts` |
 | El tiempo del dominio | `apps/mcp/src/dominio/tiempo.ts` |
 | Datos | `db/datos/*.csv` (22 tablas) + `apps/mcp/estado.json` (mutable) |
@@ -50,9 +56,23 @@ luego salir de la deuda, luego entender el gasto, luego empezar a ahorrar.
 | `comparar_periodos` | lectura | gasto por categoría de dos meses, categoría atípica, efecto del plan | "¿en qué se me va el dinero?" |
 | `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios | cuando no hay deuda que resolver |
 | `crear_apartado` | **acción** | la meta creada con su fecha objetivo | solo cuando llega la acción A2UI del mismo nombre |
+| `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
+| `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito y `serie` para graficar | "¿cómo voy?", o antes de proponer un plan |
+| `consultar_creditos` | lectura | toda la deuda (créditos + tarjeta), mensualidad total, ratio, el más caro por CAT | "¿cuánto debo en total?", y antes de comprometer capacidad de pago |
 
-Las tres que faltan del ADR 0004 (`crear_tope_gasto` y compañía) están declaradas como
-fuera de alcance en ese ADR hasta que sobre tiempo.
+Las nueve primeras son las del ADR 0004. Las tres últimas son el **Paquete 1** del
+[roadmap del MCP](../arquitectura/roadmap-mcp.md), y ninguna inventa un dato nuevo: abren
+tablas que ya estaban en `db/datos/` y que ninguna tool podía ver. Siguen fuera de alcance
+`crear_tope_gasto`, `detectar_fugas` y `cancelar_suscripcion` (Paquete 2).
+
+#### Por qué `panorama_inicial` no decide la pantalla
+
+Devuelve un campo `situacion` (`deuda_critica`, `plan_activo`, `deuda_alta`, `sin_margen`,
+`estable_con_capacidad`) y un `porQue` con el dato que lo produjo. Es una clasificación
+sobre umbrales fijos —un dato, con pruebas—, **no** una instrucción de interfaz: no nombra
+ningún componente. Quien interpreta la intención y elige qué construir sigue siendo el
+modelo. Esa frontera es la respuesta cuando un juez pregunte si el MCP está decidiendo la
+UI.
 
 ### Cómo se registra una tool
 
@@ -128,9 +148,9 @@ del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `ho
 ### Cómo probarlo
 
 ```bash
-pnpm --filter @maya/mcp test     # 42 pruebas: finanzas, lecturas, ciclo de acciones y auditoría
+pnpm --filter @maya/mcp test     # 78 pruebas: finanzas, lecturas, salud, créditos, panorama, acciones y auditoría
 pnpm dev                         # levanta mcp (3100) y web (3000)
-pnpm humo                        # 9 tools, lecturas y el ciclo completo de la acción por HTTP
+pnpm humo                        # 12 tools, lecturas y el ciclo completo de la acción por HTTP
 pnpm reiniciar-estado            # después del humo, antes de un ensayo
 ```
 
@@ -144,3 +164,5 @@ la pantalla y los datos tienen que decir lo mismo.
 - `docs/algoritmos/oferta-de-reestructura.md` — qué tasa, qué plazo se recomienda.
 - `docs/algoritmos/categoria-atipica.md` — qué cuenta como gasto y cuál se resalta.
 - `docs/algoritmos/proyeccion-de-ahorro.md` — capacidad de ahorro y fecha estimada.
+- `docs/algoritmos/puntaje-de-salud.md` — calificación, tendencia, y cuándo el hábito
+  detectado deja de ser cierto.

@@ -48,11 +48,25 @@ curl -fsS "$SALUD" | jq -c '{ok, origenDatos, tools: (.tools | length)}'
 
 echo "==> tools/list"
 TOOLS=$(llamar '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | solo_json | jq -r '.result.tools | length')
-comprobar "tools publicadas" "9" "$TOOLS"
+comprobar "tools publicadas" "12" "$TOOLS"
 
 echo "==> lecturas"
 PERFIL=$(tool consultar_perfil '{"usuarioId":"usr_beto"}')
 comprobar "perfil de Beto" "Alberto Ramírez Solís" "$(echo "$PERFIL" | jq -r .nombre)"
+
+PANORAMA=$(tool panorama_inicial '{"usuarioId":"usr_beto"}')
+comprobar "situacion de Beto" "deuda_critica" "$(echo "$PANORAMA" | jq -r .situacion)"
+echo "    porque: $(echo "$PANORAMA" | jq -r .porQue)"
+
+SALUD_BETO=$(tool diagnostico_salud_financiera '{"usuarioId":"usr_beto"}')
+comprobar "puntaje de salud de Beto" "39" "$(echo "$SALUD_BETO" | jq -r .puntajeSalud)"
+comprobar "calificacion de Beto" "critica" "$(echo "$SALUD_BETO" | jq -r .calificacion)"
+
+# La deuda total tiene que cuadrar con buro: si la tarjeta se contara dos veces
+# (aparece tambien como fila de `creditos`), aqui saldrian 12,431,265.
+CREDITOS=$(tool consultar_creditos '{"usuarioId":"usr_beto"}')
+comprobar "deuda total de Beto" "7692665" "$(echo "$CREDITOS" | jq -r .deudaTotalCentavos)"
+comprobar "la deuda mas cara" "tar_beto_clasica" "$(echo "$CREDITOS" | jq -r .creditoMasCaroId)"
 
 TARJETA=$(tool consultar_tarjeta '{"usuarioId":"usr_beto"}')
 comprobar "alerta de la tarjeta" "mora" "$(echo "$TARJETA" | jq -r .alerta)"
@@ -89,7 +103,14 @@ PLAN=$(tool consultar_plan '{"usuarioId":"usr_carmen"}')
 comprobar "pagos en el calendario" "12" "$(echo "$PLAN" | jq -r '.calendario | length')"
 comprobar "el calendario cierra en cero" "0" "$(echo "$PLAN" | jq -r '.calendario[-1].saldoFinalCentavos')"
 
+# La accion tambien mueve la lectura compuesta, y la deuda NO desaparece por
+# reestructurar: cambia de revolvente a diferida.
+PANORAMA_DESPUES=$(tool panorama_inicial '{"usuarioId":"usr_carmen"}')
+comprobar "situacion despues del plan" "plan_activo" "$(echo "$PANORAMA_DESPUES" | jq -r .situacion)"
+comprobar "la deuda de la tarjeta sigue ahi" "2841500" \
+  "$(tool consultar_creditos '{"usuarioId":"usr_carmen"}' | jq -r .deudaTarjetaCentavos)"
+
 echo ""
-echo "humo ok — 9 tools, lecturas y ciclo de accion completo."
+echo "humo ok — 12 tools, lecturas y ciclo de accion completo."
 echo "   aviso: el estado quedo con un plan aplicado a usr_carmen."
 echo "   antes de un ensayo: pnpm reiniciar-estado"
