@@ -14,6 +14,13 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **05:25 · decisión** — El producto vive en el VPS del equipo, administrado con
+  Coolify (proyecto `reto-banorte`), no en una VM nueva de Vultr por ahora. Ya está
+  arriba un Postgres 17 con TimescaleDB, público en `157.173.204.174:5437` para que
+  cualquiera cargue datos desde su máquina; el password está en el panel de Coolify y
+  en `/opt/reto/.env` del servidor. Detalle y pendientes en
+  `docs/arquitectura/deploy.md`. Vultr queda como premio lateral, no como ruta crítica.
+
 - **05:30 · hecho** — `docs/reto/casos-de-uso.md`: cinco candidatos puntuados contra
   la rúbrica con flujo, componentes y tools; recomendación: reestructura de tarjeta
   como flujo principal + gasto por categoría como segunda intención, adaptabilidad con

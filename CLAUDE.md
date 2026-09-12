@@ -104,6 +104,7 @@ el campo nuevo es opcional.
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
 | `scripts/` | `sesion-inicio.sh` (hook de inicio), `sync.sh` (commit+pull+push), `marcar-estable.sh` | existe |
+| `.env.example` | Todas las variables de entorno con comentario; hoy solo `DATABASE_URL` (Postgres en Coolify) | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
