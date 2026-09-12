@@ -83,8 +83,18 @@ export async function herramientasDelMcp(cliente: Client, opciones: OpcionesDeHe
       execute: async (entrada) => {
         const argumentos = { ...((entrada ?? {}) as Record<string, unknown>) };
         if ("usuarioId" in propiedades) argumentos.usuarioId = opciones.usuarioId;
-        if (!esLectura && "idempotencyKey" in propiedades && !argumentos.idempotencyKey && opciones.idempotencyKey) {
-          argumentos.idempotencyKey = opciones.idempotencyKey;
+        if (!esLectura) {
+          if ("idempotencyKey" in propiedades && !argumentos.idempotencyKey && opciones.idempotencyKey) {
+            argumentos.idempotencyKey = opciones.idempotencyKey;
+          }
+          if (
+            argumentos.context &&
+            typeof argumentos.context === "object" &&
+            !("idempotencyKey" in (argumentos.context as Record<string, unknown>)) &&
+            opciones.idempotencyKey
+          ) {
+            (argumentos.context as Record<string, unknown>).idempotencyKey = opciones.idempotencyKey;
+          }
         }
         const { resultado, ms, ok } = await llamarTool(cliente, tool.name, argumentos);
         opciones.alTerminar?.({ nombre: tool.name, ms, ok });

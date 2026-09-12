@@ -161,6 +161,105 @@ describe("correrTurno", () => {
     expect(fin.tipo).toBe("fin");
     expect(fin.pasos).toBeLessThanOrEqual(8);
   });
+
+  it("hace prefetch determinista de panorama_inicial en el primer turno y lo emite en el stream", async () => {
+    const espiaPanorama = vi.fn();
+    const toolsConPanorama: ToolSet = {
+      panorama_inicial: tool({
+        description: "Panorama inicial",
+        inputSchema: z.object({ usuarioId: z.string() }),
+        execute: (entrada) => {
+          espiaPanorama(entrada);
+          return { situacion: "deuda_urgente", usuario: { nombre: "Beto" } };
+        },
+      }),
+    };
+
+    const lineas = await recolectar(
+      correrTurno(peticion(), {
+        modelo: modeloGuionizado([
+          pasoConTool("pintar_pantalla", {
+            razon: "Tu tarjeta esta al 97 % de su limite",
+            texto: "Aqui tienes tu panorama.",
+            componentesJson: PANTALLA_VALIDA,
+            datosJson: JSON.stringify({}),
+          }),
+        ]),
+        herramientas: toolsConPanorama,
+      }),
+    );
+
+    expect(espiaPanorama).toHaveBeenCalledWith({ usuarioId: "usr_beto" });
+    const llamadaTool = lineas.find((l) => l.tipo === "tool" && l.nombre === "panorama_inicial");
+    expect(llamadaTool).toBeDefined();
+    expect(llamadaTool).toMatchObject({ nombre: "panorama_inicial", ok: true });
+  });
+
+  it("no hace prefetch de panorama_inicial si ya hay superficie (turno >= 2)", async () => {
+    const espiaPanorama = vi.fn();
+    const toolsConPanorama: ToolSet = {
+      panorama_inicial: tool({
+        description: "Panorama inicial",
+        inputSchema: z.object({ usuarioId: z.string() }),
+        execute: (entrada) => {
+          espiaPanorama(entrada);
+          return { situacion: "deuda_urgente" };
+        },
+      }),
+    };
+
+    const lineas = await recolectar(
+      correrTurno(
+        peticion({
+          superficie: { surfaceId: "principal", componentes: ["PlanDePago"], dataModel: {} },
+        }),
+        {
+          modelo: modeloGuionizado([
+            pasoConTool("pintar_pantalla", {
+              razon: "Tu tarjeta esta al 97 % de su limite",
+              texto: "Actualizada.",
+              componentesJson: PANTALLA_VALIDA,
+              datosJson: JSON.stringify({}),
+            }),
+          ]),
+          herramientas: toolsConPanorama,
+        },
+      ),
+    );
+
+    expect(espiaPanorama).not.toHaveBeenCalled();
+    const llamadaTool = lineas.find((l) => l.tipo === "tool" && l.nombre === "panorama_inicial");
+    expect(llamadaTool).toBeUndefined();
+  });
+
+  it("cuando falla el prefetch de panorama_inicial, no tumba el turno y continua", async () => {
+    const toolsFallida: ToolSet = {
+      panorama_inicial: tool({
+        description: "Panorama inicial",
+        inputSchema: z.object({ usuarioId: z.string() }),
+        execute: async (): Promise<{ error: string }> => {
+          throw new Error("fallo mcp");
+        },
+      }),
+    };
+
+    const lineas = await recolectar(
+      correrTurno(peticion(), {
+        modelo: modeloGuionizado([
+          pasoConTool("pintar_pantalla", {
+            razon: "Tu tarjeta esta al 97 % de su limite",
+            texto: "Sin panorama.",
+            componentesJson: PANTALLA_VALIDA,
+            datosJson: JSON.stringify({}),
+          }),
+        ]),
+        herramientas: toolsFallida,
+      }),
+    );
+
+    expect(lineas.find((l) => l.tipo === "a2ui")).toBeDefined();
+    expect(lineas.at(-1)?.tipo).toBe("fin");
+  });
 });
 
 describe("cortes del turno", () => {
@@ -279,6 +378,51 @@ describe("herramientasDelMcp", () => {
       plazoMeses: 18,
       usuarioId: "usr_beto",
       idempotencyKey: "c_prueba:2026-09-13T01:00:00Z",
+    });
+  });
+
+  it("le pone la llave de idempotencia al context de ejecutar_decision si falta", async () => {
+    const registro: Array<{ nombre: string; argumentos: unknown }> = [];
+    const clienteDecision = {
+      listTools: async () => ({
+        tools: [
+          {
+            name: "ejecutar_decision",
+            description: "ejecuta decision",
+            inputSchema: {
+              type: "object",
+              properties: {
+                usuarioId: { type: "string" },
+                accion: { type: "string" },
+                context: { type: "object" },
+              },
+              required: ["usuarioId", "accion", "context"],
+            },
+            annotations: { readOnlyHint: false },
+          },
+        ],
+      }),
+      callTool: async ({ name, arguments: argumentos }: { name: string; arguments: unknown }) => {
+        registro.push({ nombre: name, argumentos });
+        return { content: [{ type: "text", text: JSON.stringify({ ok: true }) }] };
+      },
+    } as unknown as Client;
+
+    const herramientas = await herramientasDelMcp(clienteDecision, {
+      usuarioId: "usr_beto",
+      idempotencyKey: "c_prueba:2026-09-13T01:00:00Z",
+    });
+    await herramientas.ejecutar_decision!.execute!(
+      { accion: "aplicar_plan_pago", context: { plazoMeses: 18 } },
+      { toolCallId: "1", messages: [] },
+    );
+    expect(registro[0]!.argumentos).toEqual({
+      accion: "aplicar_plan_pago",
+      context: {
+        plazoMeses: 18,
+        idempotencyKey: "c_prueba:2026-09-13T01:00:00Z",
+      },
+      usuarioId: "usr_beto",
     });
   });
 
@@ -404,7 +548,15 @@ describe("mensajesDelTurno", () => {
     expect(String(mensajes.at(-1)!.content)).toContain("primer turno");
   });
 
-  it("cuando viene una accion de mutacion, le dice que llame la tool del mismo nombre", () => {
+  it("inyecta el panorama ya calculado en el contexto del primer turno", () => {
+    const panorama = { situacion: "deuda_urgente", tarjeta: { saldoCentavos: 4738600 } };
+    const mensajes = mensajesDelTurno(peticion(), panorama);
+    const contexto = String(mensajes.at(-1)!.content);
+    expect(contexto).toContain("panorama ya calculado: {");
+    expect(contexto).toContain("deuda_urgente");
+  });
+
+  it("cuando viene una accion de mutacion, le dice que llame a ejecutar_decision", () => {
     const mensajes = mensajesDelTurno(
       peticion({
         mensajes: [{ rol: "accion", texto: "aplicar_plan_pago {...}" }],
@@ -419,7 +571,7 @@ describe("mensajesDelTurno", () => {
       }),
     );
     const contexto = String(mensajes.at(-1)!.content);
-    expect(contexto).toContain('la tool "aplicar_plan_pago"');
+    expect(contexto).toContain('la tool "ejecutar_decision" con accion: "aplicar_plan_pago"');
     expect(contexto).toContain("idempotencyKey");
     expect(contexto).toContain("PlanDePago");
     expect(String(mensajes[0]!.content)).toContain("toco la interfaz");
@@ -438,5 +590,21 @@ describe("mensajesDelTurno", () => {
       }),
     );
     expect(String(mensajes.at(-1)!.content)).toContain("solo cambia la vista");
+  });
+
+  it("cuando la interfaz reporta un error de render, instruye repintar sin el componente", () => {
+    const mensajes = mensajesDelTurno(
+      peticion({
+        error: {
+          code: "VALIDATION_FAILED",
+          surfaceId: "principal",
+          path: "/componentes/0",
+          message: "componente Inventado no existe",
+        },
+      }),
+    );
+    const contexto = String(mensajes.at(-1)!.content);
+    expect(contexto).toContain("La interfaz NO pudo pintar lo que mandaste en el turno anterior (/componentes/0): componente Inventado no existe");
+    expect(contexto).toContain("Vuelve a pintar la misma pantalla sin ese componente");
   });
 });

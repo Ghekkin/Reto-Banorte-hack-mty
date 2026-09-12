@@ -1,6 +1,7 @@
 import "server-only";
 
 import { cache } from "react";
+// @ts-ignore
 import pg from "pg";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -76,7 +77,7 @@ export const leerTabla = cache(async (tabla: string): Promise<Fila[]> => {
   }
   try {
     const { rows } = await obtenerPool().query<Record<string, unknown>>(`select * from ${ESQUEMA}."${tabla}"`);
-    return rows.map((fila) => {
+    return rows.map((fila: Record<string, unknown>) => {
       const salida: Fila = {};
       for (const [columna, valor] of Object.entries(fila)) {
         salida[columna] =

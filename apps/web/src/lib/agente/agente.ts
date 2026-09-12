@@ -2,7 +2,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
 import { config } from "./config";
 import { mensajesDelTurno } from "./historial";
-import { conectarMcp, herramientasDelMcp, type LlamadaRegistrada } from "./mcp-cliente";
+import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
 import { crearPintor, type ResultadoPintar } from "./pantalla";
@@ -81,6 +81,40 @@ export async function* correrTurno(
       }
     }
 
+    // Prefetch determinista (O3): solo en el primer turno (sin superficie previa),
+    // se consulta panorama_inicial antes del bucle del modelo para ahorrar un round trip.
+    let panorama: unknown = undefined;
+    if (!peticion.superficie) {
+      if (cliente) {
+        try {
+          const res = await llamarTool(cliente, "panorama_inicial", { usuarioId: peticion.usuarioId });
+          if (res.ok && res.resultado && typeof res.resultado === "object" && !("error" in (res.resultado as Record<string, unknown>))) {
+            panorama = res.resultado;
+            usadas.push({ nombre: "panorama_inicial", ms: res.ms, ok: true });
+            yield { tipo: "tool", nombre: "panorama_inicial", ms: res.ms, ok: true };
+          }
+        } catch {
+          // Si el prefetch falla, no tumba el turno: cae a como esta hoy
+        }
+      } else if (herramientas && "panorama_inicial" in herramientas) {
+        try {
+          const toolPanorama = herramientas["panorama_inicial"];
+          if (toolPanorama && "execute" in toolPanorama && typeof toolPanorama.execute === "function") {
+            const inicioTool = Date.now();
+            const res = await toolPanorama.execute({ usuarioId: peticion.usuarioId }, { toolCallId: "prefetch", messages: [] });
+            if (res && typeof res === "object" && !("error" in (res as Record<string, unknown>))) {
+              panorama = res;
+              const ms = Date.now() - inicioTool;
+              usadas.push({ nombre: "panorama_inicial", ms, ok: true });
+              yield { tipo: "tool", nombre: "panorama_inicial", ms, ok: true };
+            }
+          }
+        } catch {
+          // degradacion suave
+        }
+      }
+    }
+
     // Dos razones para cortar: el tope del turno, y que la persona haya cerrado la
     // pestana. Cualquiera de las dos aborta la llamada al proveedor y las tools en vuelo.
     const porTiempo = AbortSignal.timeout(timeoutMs);
@@ -90,7 +124,7 @@ export async function* correrTurno(
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
       system: systemPrompt(),
-      messages: mensajesDelTurno(peticion),
+      messages: mensajesDelTurno(peticion, panorama),
       tools: { ...herramientas, pintar_pantalla: pintor.herramienta },
       stopWhen: [
         stepCountIs(config.maxPasos),
