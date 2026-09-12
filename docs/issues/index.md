@@ -82,4 +82,4 @@ gh issue create \
 
 | Fecha | Sev. | Área | Título | GitHub | Estado |
 |---|---|---|---|---|---|
-| 2026-09-12 | crítica | infra | [El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo](2026-09-12-postgres-remoto-inalcanzable.md) | pendiente (sin `gh`) | abierto |
+| 2026-09-12 | crítica | infra | [El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo](2026-09-12-postgres-remoto-inalcanzable.md) | [#1](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/1) | resuelto |

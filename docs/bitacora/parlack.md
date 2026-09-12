@@ -2,6 +2,10 @@
 
 ## 2026-09-12
 
+- **05:50 · hecho** — Verificada la carga de `db/` en el Postgres de Coolify: 22 tablas
+  del esquema `banorte`, 3 690 filas, y cada tabla comparada fila a fila contra los CSV
+  del repo (cero diferencias); tipos de columna iguales a `db/schema.sql`;
+  `scripts/validar-datos.mjs` en verde. Issue #1 (puerto 5437) subido a GitHub y cerrado.
 - **05:35 · hecho** — El 5437 no entraba desde fuera: el VPS tiene un cortafuegos
   para Docker (`yolani-docker-firewall.service`) con lista blanca de puertos. Agregado
   el 5437 al script y reiniciado el servicio. Nota en `docs/arquitectura/deploy.md`.
