@@ -1,6 +1,6 @@
 ---
 name: datos-mock
-description: Cómo se generan y mantienen los datos financieros simulados - dos usuarios demo con contexto opuesto, estado mutable que las acciones cambian y se reinicia, ids estables, comercios y categorías mexicanas plausibles, montos en centavos, generación determinista, integridad entre archivos. Invocar antes de crear o modificar cualquier dato en apps/mcp/data.
+description: Cómo se generan y mantienen los datos financieros simulados - tres perfiles demo con contexto opuesto, CSV commiteados como fuente y PostgreSQL como copia cargable, estado mutable que las acciones cambian y se reinicia, ids estables, comercios y categorías mexicanas plausibles, montos en centavos, generación determinista, integridad entre archivos. Invocar antes de crear o modificar cualquier dato en db/datos.
 ---
 
 # Datos mock
@@ -11,56 +11,92 @@ cree que es real.
 
 ## Reglas
 
-- **Un solo usuario demo**, con nombre inventado (no de una persona real ni del
-  equipo), 2–3 cuentas (nómina, ahorro, crédito) y una tarjeta enmascarada `•••• 4821`.
-- **Ids estables y legibles**: `cta_nomina`, `cta_ahorro`, `mov_000123`, `cred_001`.
+- **Tres perfiles demo** con nombres inventados (no de una persona real ni del equipo),
+  2–4 cuentas cada uno (nómina, ahorro, inversión, crédito) y tarjetas enmascaradas
+  `•••• 4821`. Ver "Tres perfiles" abajo.
+- **La fuente son CSV commiteados en `db/datos/`; PostgreSQL es una copia cargable.**
+  Nunca se commitea un dump ni el estado de la base. Detalle en ADR 0005.
+- **Ids estables y legibles**: `usr_ana`, `cta_ana_nomina`, `mov_000123`, `cred_beto_tdc`.
   Nunca UUIDs aleatorios: en la demo se leen en voz alta y en los logs.
-- **Montos en centavos enteros**, campo `moneda: "MXN"` explícito. Fechas ISO 8601.
-- **Comercios y categorías fijas**, en un solo archivo `categorias.json`: Super
+- **Montos en centavos enteros** (`BIGINT`), columna `moneda` = `MXN` explícita. Fechas
+  `YYYY-MM-DD`, timestamps ISO 8601 con offset `-06:00`. Porcentajes en decimal
+  (`0.3690` = 36.90 %), nunca como texto con `%`.
+- **Comercios y categorías fijas**, en `categorias.csv` y `comercios.csv`: Super
   (Soriana, HEB, Walmart), Conveniencia (OXXO, 7-Eleven), Servicios (CFE, Telmex, Agua
   y Drenaje), Transporte (Uber, Didi, gasolina), Suscripciones (Netflix, Spotify),
   Restaurantes, Salud, Transferencias, Nómina, Retiros. Cada movimiento referencia una
-  categoría existente.
-- **Seis meses de historial**, 40–80 movimientos/mes, con patrones reales: nómina
-  quincenal, renta el día 1, suscripciones el mismo día cada mes, un par de gastos
-  atípicos para que "detectar anomalías" tenga qué detectar.
-- **Generación determinista**: `apps/mcp/scripts/generar-datos.ts` con semilla fija.
-  Se regenera con `pnpm --filter mcp generar-datos`; los JSON generados **sí se
-  commitean** (la demo no depende de correr el script).
+  categoría existente, y los comercios llevan sucursal ("OXXO Garza Sada").
+- **Doce meses de historial**, 40–80 movimientos/mes por usuario, con patrones reales:
+  nómina quincenal, renta el día 1, suscripciones el mismo día cada mes, estacionalidad
+  mexicana (aguinaldo en diciembre, Buen Fin en noviembre, regreso a clases en agosto) y
+  gastos atípicos marcados con `es_atipico` para que "detectar anomalías" tenga qué
+  detectar.
+- **Generación determinista**: `scripts/generar-datos.mjs` con semilla fija, Node puro
+  sin dependencias. Se regenera con `node scripts/generar-datos.mjs`; los CSV generados
+  **sí se commitean** (la demo no depende de correr el script).
 - **CLABE y tarjetas falsas a la vista**: CLABE de 18 dígitos que empiece en `000`,
-  tarjetas enmascaradas. Nunca datos bancarios reales, ni "de prueba" de alguien.
-- **Integridad**: un test (`apps/mcp/src/__tests__/datos.spec.ts`) valida que todo id
-  referenciado existe, que los montos son enteros, que cada movimiento tiene categoría
-  válida y que los JSON pasan los schemas de `packages/schemas`.
+  tarjetas enmascaradas, RFC/CURP con patrón visiblemente inventado. Nunca datos
+  bancarios reales, ni "de prueba" de alguien.
+- **Integridad**: `scripts/validar-datos.mjs` valida que todo id referenciado exista, que
+  los montos sean enteros, que cada movimiento tenga categoría válida, que cada tabla de
+  amortización cierre en saldo cero y que los pesos de cada portafolio sumen 100.
 
-## Dos usuarios demo, no uno
+## Tres perfiles demo, no uno
 
 La adaptabilidad (20% de la rúbrica) se demuestra con **la misma pregunta y otro
-contexto**. Por eso hay dos usuarios demo con perfiles opuestos (p. ej. uno con saldo
-holgado y sin deuda, otro con tarjeta al límite y un pago atrasado). Mismos archivos,
-dos ids: `usr_ana`, `usr_beto`.
+contexto**. Un solo usuario no puede ser a la vez creíblemente precalificable a crédito,
+en mora, y cliente patrimonial con portafolio. Por eso hay tres:
+
+| Id | Quién es | Qué escenarios habilita |
+|---|---|---|
+| `usr_ana` | Ana Sofía Treviño Cantú, 28, asalariada, ingreso fijo | Gasto por categoría, topes, metas, hábitos, precalificación positiva |
+| `usr_beto` | Alberto Ramírez Solís, 41, tarjeta al límite, en mora | Reestructura, amortización, buró castigado, gasto dominado por costo financiero |
+| `usr_carmen` | Carmen Elizondo Wong, 52, ingresos variables altos | Perfilamiento de riesgo, portafolio, rebalanceo: el ángulo del **ejecutivo de cuenta** |
 
 ## Estado mutable
 
-Las tools de acción **cambian datos**: `estado.json` guarda lo que las acciones
-modifican (planes aplicados, transferencias programadas, productos contratados).
-`apps/mcp/scripts/reiniciar-estado.ts` lo regresa al punto de partida; se corre antes
-de cada ensayo. Los datos base (`usuario.json`, `movimientos.json`) nunca se mutan.
+Las tools de acción **cambian datos**. La tabla `acciones_aplicadas` empieza vacía (el
+CSV trae solo el encabezado) y es donde escriben `aplicar_plan_pago`, `crear_tope_gasto`,
+`crear_apartado` y `rebalancear`. `db/reiniciar.sql` la trunca y restaura los saldos; se
+corre antes de cada ensayo. Los datos base nunca se mutan.
+
+## Territorios cubiertos
+
+Esta tanda cubre **Crédito**, **Banca personal + Educación financiera** e **Inversiones**.
+**Pagos y Seguros quedan fuera** y sus tablas no existen todavía: se agregan cuando haya
+un caso de uso que las pida, no antes. Razones en ADR 0005.
 
 ## Archivos
 
 ```
-apps/mcp/data/
-  usuarios.json       los dos usuarios demo y sus cuentas
-  movimientos.json    generado, para ambos
-  categorias.json     fijo, a mano
-  productos.json      créditos/planes/inversiones ofertables
-  estado.json         mutable; lo escriben las tools de acción
-  estado.inicial.json el punto de partida al que vuelve reiniciar-estado
+db/
+  schema.sql        DDL de las tablas, FKs, CHECK e índices
+  cargar.sql        los \copy en orden de dependencia (necesita psql)
+  cargar-completo.sql  generado: esquema + INSERTs en un archivo, sin psql ni red
+  reiniciar.sql     deja la demo limpia entre ensayos
+  datos/            22 CSV: la fuente de verdad, commiteada
+scripts/
+  generar-datos.mjs            determinista, semilla fija
+  validar-datos.mjs            integridad referencial y de negocio
+  verificar-orden-columnas.mjs orden de columnas del CSV vs. schema.sql
+  cargar-postgres.mjs          crea el esquema y sube los CSV con el driver pg
+  generar-sql-completo.mjs     produce db/cargar-completo.sql
+  lib/                         catalogos.mjs, perfiles.mjs, finanzas.mjs
 ```
+
+**Tres rutas para cargar, equivalentes.** `cargar-postgres.mjs` (Node, no necesita psql,
+carga en una transacción y verifica contra el CSV), `cargar.sql` (psql) y
+`cargar-completo.sql` (un archivo, para cuando no puedes alcanzar el puerto). La conexión
+sale de `POSTGRE_BANORTE_URL`.
+
+**El orden de columnas de cada CSV tiene que coincidir con el de su tabla.** `\copy` con
+`HEADER true` ignora los nombres del encabezado y mapea **por posición**, así que un orden
+distinto no da error: mete los datos en la columna equivocada. Si agregas una columna,
+corre `verificar-orden-columnas.mjs`.
 
 ## Doc
 
-`docs/como-funciona/datos-mock.md`, dos niveles. En "Para cualquiera": quién es el
-usuario demo y qué historia cuentan sus movimientos. Si el generador tiene lógica
-(patrones, anomalías), también `docs/algoritmos/generacion-de-datos.md`.
+`docs/como-funciona/datos-mock.md`, dos niveles. En "Para cualquiera": quiénes son los
+tres perfiles demo y qué historia cuentan sus movimientos. La lógica del generador
+(patrones, estacionalidad, anomalías) va en `docs/algoritmos/generacion-de-datos.md`, y
+la amortización con CAT en `docs/algoritmos/amortizacion.md`.

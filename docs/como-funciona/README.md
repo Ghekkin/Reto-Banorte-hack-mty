@@ -37,7 +37,7 @@ Tres párrafos máximo.
 - Tool: `apps/mcp/src/tools/<archivo>.ts` → `<nombreTool>`
 - Schema: `packages/schemas/src/<archivo>.ts` → `<NombreSchema>`
 - Componente: `apps/web/src/components/generated/<archivo>.tsx`
-- Datos mock: `apps/mcp/data/<archivo>.json`
+- Datos mock: `db/datos/<archivo>.csv`
 
 ### Flujo paso a paso
 1. ...

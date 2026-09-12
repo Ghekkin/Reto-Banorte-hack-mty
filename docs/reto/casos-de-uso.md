@@ -8,7 +8,7 @@ estado: decidido         # los tres primeros, en orden estricto: ver decisiones/
 Material para la decisión de 45 minutos (skill `elegir-caso-de-uso`). Cinco candidatos,
 cada uno con lo que la rúbrica exige: **un flujo accionable con cambio real**, los
 componentes del catálogo que implica, las tools, y cómo se demuestra la adaptabilidad
-con dos usuarios demo. La decisión final va al ADR 0004; esto es el insumo.
+con tres perfiles demo. La decisión final va al ADR 0004; esto es el insumo.
 
 ## Cómo se puntúan
 

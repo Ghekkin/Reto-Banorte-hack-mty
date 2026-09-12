@@ -82,4 +82,4 @@ gh issue create \
 
 | Fecha | Sev. | Área | Título | GitHub | Estado |
 |---|---|---|---|---|---|
-| — | — | — | (sin hallazgos aún) | — | — |
+| 2026-09-12 | crítica | infra | [El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo](2026-09-12-postgres-remoto-inalcanzable.md) | pendiente (sin `gh`) | abierto |

@@ -1,0 +1,19 @@
+id,nombre,grupo,es_esencial,es_ingreso,color,icono
+cat_nomina,Nómina,ingreso,true,true,#0F7B6C,briefcase
+cat_honorarios,Honorarios,ingreso,true,true,#1B9E8F,receipt
+cat_rendimientos,Rendimientos,ingreso,false,true,#3CB4A6,trending-up
+cat_vivienda,Vivienda,vivienda,true,false,#8C4A2F,home
+cat_super,Supermercado,alimentacion,true,false,#C77D2E,shopping-cart
+cat_conveniencia,Conveniencia,alimentacion,false,false,#E0A458,store
+cat_restaurantes,Restaurantes,alimentacion,false,false,#D9534F,utensils
+cat_transporte,Transporte,transporte,true,false,#4A6FA5,car
+cat_servicios,Servicios del hogar,servicios,true,false,#5B6C7F,bolt
+cat_suscripciones,Suscripciones,entretenimiento,false,false,#7B5EA7,repeat
+cat_entretenimiento,Entretenimiento,entretenimiento,false,false,#9B72CF,ticket
+cat_salud,Salud,salud,true,false,#2E8B9B,heart-pulse
+cat_ropa,Ropa y hogar,otros,false,false,#B5838D,shirt
+cat_educacion,Educación,otros,true,false,#3D7EA6,graduation-cap
+cat_financiero,Intereses y comisiones,financiero,true,false,#8B1A1A,percent
+cat_transferencias,Transferencias,otros,false,false,#6B7280,arrow-right-left
+cat_retiros,Retiros de efectivo,otros,false,false,#9CA3AF,banknote
+cat_inversion,Aportaciones a inversión,otros,false,false,#166534,piggy-bank

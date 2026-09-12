@@ -28,7 +28,7 @@ flowchart LR
   A -->|mensajes A2UI<br/>createSurface / updateComponents / updateDataModel| R[Renderer A2UI<br/>@a2ui/react en apps/web]
   R -->|catálogo propio| C[Componentes financieros<br/>packages/catalogo]
   C -->|action { name, context }| A
-  M --> D[(datos sintéticos<br/>apps/mcp/data + estado mutable)]
+  M --> D[(datos sintéticos<br/>PostgreSQL o CSV en memoria)]
   M -. opcional, ADR 0002 .-> P[services/ml]
 ```
 
@@ -41,7 +41,7 @@ flowchart LR
 | Renderer A2UI (`apps/web`) | `MessageProcessor` + `A2uiSurface` de `@a2ui/react`; enruta `action` al agente | No decide qué mostrar | `contrato` |
 | Catálogo (`packages/catalogo/`) | Componentes React propios con schema de props; registrados en un `Catalog` A2UI | No llama al MCP ni fetch propio | `web` |
 | Schemas de tools (`packages/schemas/`) | Zod de entrada/salida de cada tool | — | `contrato` |
-| Datos (`apps/mcp/data/`) | Usuario demo, movimientos, productos; **estado mutable** que las acciones cambian | — | `mcp` |
+| Datos (`db/datos/` → PostgreSQL) | Tres perfiles demo, movimientos, créditos, portafolios; **estado mutable** en `acciones_aplicadas` | — | `mcp` |
 
 ### Flujo de una vuelta completa del ciclo
 
@@ -60,7 +60,7 @@ flowchart LR
 El mismo intent con contexto distinto debe producir UI distinta. El agente recibe
 contexto del usuario (perfil, saldos, historial) vía tools **antes** de decidir la
 interfaz; el system prompt le pide explícitamente elegir componentes según ese
-contexto. Se demuestra en el guion con dos usuarios demo.
+contexto. Se demuestra en el guion con tres perfiles demo.
 
 ### Decisiones abiertas
 

@@ -1,0 +1,16 @@
+{
+  "name": "reto-banorte-hack-mty",
+  "private": true,
+  "type": "module",
+  "description": "Reto Banorte — Hack Monterrey 2026. Raiz del repo; el scaffold del monorepo (apps/, packages/) va aparte.",
+  "scripts": {
+    "datos:generar": "node scripts/generar-datos.mjs",
+    "datos:validar": "node scripts/validar-datos.mjs",
+    "datos:columnas": "node scripts/verificar-orden-columnas.mjs",
+    "datos:cargar": "node scripts/cargar-postgres.mjs",
+    "datos:reiniciar": "node scripts/cargar-postgres.mjs --reiniciar"
+  },
+  "devDependencies": {
+    "pg": "^8.13.1"
+  }
+}

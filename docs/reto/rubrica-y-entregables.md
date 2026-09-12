@@ -40,7 +40,7 @@ nosotros con cada punto. Es el documento que el rol `demo` revisa cada 6 horas.
 |---|---|---|---|---|
 | 01 · Demo | **Corrida en vivo** | "El flujo completo: intención, UI generada, interacción y la acción que dispara" | `docs/demo/guion-demo.md`, `checklist-previa.md` | plan |
 | 02 · Código | **Repositorio** | "Componentes, servidor MCP y capa A2UI, con instrucciones para correrlo" | `apps/web` (componentes + capa A2UI), `apps/mcp`, `README.md` raíz con instrucciones | plan |
-| 03 · Datos | **APIs y datasets** | "Los servicios creados por el equipo, aunque los datos sean sintéticos" | `apps/mcp/data/`, `docs/como-funciona/datos-mock.md` | plan |
+| 03 · Datos | **APIs y datasets** | "Los servicios creados por el equipo, aunque los datos sean sintéticos" | `db/datos/` (22 CSV), `db/schema.sql`, `docs/como-funciona/datos-mock.md` | construido |
 | 04 · Técnico | **Decisiones** | "Diagrama de arquitectura y los trade-offs: modelo, protocolo, infraestructura" | `docs/arquitectura/vision-general.md` + `docs/arquitectura/trade-offs.md` + `docs/decisiones/` | plan |
 
 ### Lo que el repo tiene que tener el domingo, sin excepción
