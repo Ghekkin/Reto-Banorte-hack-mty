@@ -3417,6 +3417,474 @@
       ],
       "unevaluatedProperties": false
     },
+    "AvisoConsultaNoValida": {
+      "type": "object",
+      "description": "El usuario solicita una acción que no aplica (ej. reestructura sin tarjeta), inviable financieramente (ej. invertir teniendo deuda crítica con intereses altos) o fuera del catálogo regulado Banorte. Orienta con alternativas seguras y accionables.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "AvisoConsultaNoValida"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "amplio",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "tipoInvalidez": {
+              "description": "Tipo de invalidez o inviabilidad financiera de la consulta",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "producto_no_aplica",
+                    "deuda_prioritaria",
+                    "fuera_de_alcance",
+                    "sin_datos_suficientes"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "titulo": {
+              "description": "Título claro de la orientación",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "explicacion": {
+              "description": "Explicación pedagógica y cuantitativa",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "datoClave": {
+              "description": "Métrica o dato clave detectado (ej. '62.1% CAT en tarjeta')",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "montoReferenciaCentavos": {
+              "description": "Monto financiero en centavos asociado al caso (saldo deudor, capacidad de ahorro o $0)",
+              "default": 0,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaMonto": {
+              "description": "Etiqueta para el monto de referencia",
+              "default": "Monto de referencia",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "alternativasSugeridas": {
+              "description": "Opciones o preguntas viables que el usuario puede elegir en su lugar",
+              "anyOf": [
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "accionSugerida": {
+              "description": "Acción principal sugerida para resolver la situación",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "nombre": {
+                      "type": "string",
+                      "description": "Nombre de la acción"
+                    },
+                    "etiqueta": {
+                      "type": "string",
+                      "description": "Texto del botón de acción"
+                    },
+                    "context": {
+                      "description": "Contexto para la acción",
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  },
+                  "required": [
+                    "nombre",
+                    "etiqueta"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: simular_plan, simular_meta, consultar_movimientos.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "simular_plan",
+                            "simular_meta",
+                            "consultar_movimientos"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "tipoInvalidez",
+            "titulo",
+            "explicacion",
+            "alternativasSugeridas"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "SugerenciasInversion": {
+      "type": "object",
+      "description": "El cliente pregunta en qué invertir, qué hacer con su aguinaldo o ahorro libre, o cómo rentabilizar su dinero. Muestra instrumentos acordes a su perfil o redirige a saldar deuda si está en mora.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "SugerenciasInversion"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "amplio",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "estadoFinanciero": {
+              "description": "Diagnóstico de preparación financiera para invertir",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "deuda_prioritaria",
+                    "requiere_fondo_emergencia",
+                    "listo_para_invertir"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "perfilInversionista": {
+              "description": "Perfil de inversión detectado en su cuestionario o comportamiento",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "conservador",
+                    "moderado",
+                    "agresivo",
+                    "sin_perfil"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "capacidadMensualCentavos": {
+              "description": "Capacidad de ahorro libre mensual estimada del cliente en centavos",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "montoRecomendadoCentavos": {
+              "description": "Monto sugerido para destinar a la inversión en centavos",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "motivo": {
+              "description": "Razón de fondo de las recomendaciones mostradas",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "sugerencias": {
+              "description": "Lista de instrumentos o estrategias recomendadas",
+              "anyOf": [
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string",
+                        "description": "Identificador de la sugerencia"
+                      },
+                      "titulo": {
+                        "type": "string",
+                        "description": "Título o nombre del instrumento / estrategia"
+                      },
+                      "tipo": {
+                        "type": "string",
+                        "enum": [
+                          "instrumento",
+                          "estrategia",
+                          "meta",
+                          "advertencia"
+                        ],
+                        "description": "Tipo de recomendación"
+                      },
+                      "descripcion": {
+                        "type": "string",
+                        "description": "Explicación de por qué conviene y cómo funciona"
+                      },
+                      "rendimientoEstimadoAnualPct": {
+                        "description": "Tasa anual estimada en fracción (ej. 0.108 para 10.8%)",
+                        "type": "number"
+                      },
+                      "plazoMinimo": {
+                        "description": "Plazo mínimo sugerido (ej. '28 días')",
+                        "type": "string"
+                      },
+                      "nivelRiesgo": {
+                        "description": "Nivel de riesgo del instrumento",
+                        "type": "string",
+                        "enum": [
+                          "muy_bajo",
+                          "bajo",
+                          "medio",
+                          "alto",
+                          "muy_alto"
+                        ]
+                      },
+                      "badge": {
+                        "description": "Etiqueta destacada (ej. 'Ideal para iniciar')",
+                        "type": "string"
+                      },
+                      "recomendado": {
+                        "description": "true si es la opción prioritaria recomendada",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "titulo",
+                      "tipo",
+                      "descripcion"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "siguientePaso": {
+              "description": "Próximo paso sugerido para ejecutar",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: simular_meta, simular_plan, orden_rebalanceo.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "simular_meta",
+                            "simular_plan",
+                            "orden_rebalanceo"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "estadoFinanciero",
+            "perfilInversionista",
+            "capacidadMensualCentavos",
+            "montoRecomendadoCentavos",
+            "motivo",
+            "sugerencias",
+            "siguientePaso"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "Column": {
       "type": "object",
       "allOf": [
@@ -3676,6 +4144,12 @@
         },
         {
           "$ref": "#/components/ProyeccionPagoCredito"
+        },
+        {
+          "$ref": "#/components/AvisoConsultaNoValida"
+        },
+        {
+          "$ref": "#/components/SugerenciasInversion"
         },
         {
           "$ref": "#/components/Column"

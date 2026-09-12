@@ -36,6 +36,10 @@ import { entradaSimuladorMeta } from "./simulador-meta/schema";
 import { TermometroSaludFinanciera } from "./termometro-salud-financiera/componente";
 import { entradaTermometroSaludFinanciera } from "./termometro-salud-financiera/schema";
 import type { z } from "zod";
+import { AvisoConsultaNoValida } from "./aviso-consulta-no-valida/componente";
+import { entradaAvisoConsultaNoValida } from "./aviso-consulta-no-valida/schema";
+import { SugerenciasInversion } from "./sugerencias-inversion/componente";
+import { entradaSugerenciasInversion } from "./sugerencias-inversion/schema";
 import type { EntradaCatalogo } from "./comunes";
 
 /**
@@ -74,6 +78,9 @@ export const CATALOGO: EntradaCatalogo[] = [
   entradaRiesgoRendimiento,
   // Fase 6: proyección de créditos
   entradaProyeccionPagoCredito,
+  // Consultas no válidas y sugerencias adaptativas
+  entradaAvisoConsultaNoValida,
+  entradaSugerenciasInversion,
 ];
 
 export function registrarCatalogo(): void {
@@ -95,6 +102,8 @@ export function registrarCatalogo(): void {
   registrar("OrdenRebalanceo", OrdenRebalanceo as never);
   registrar("RiesgoRendimiento", RiesgoRendimiento as never);
   registrar("ProyeccionPagoCredito", ProyeccionPagoCredito as never);
+  registrar("AvisoConsultaNoValida", AvisoConsultaNoValida as never);
+  registrar("SugerenciasInversion", SugerenciasInversion as never);
 }
 
 /**
@@ -142,6 +151,8 @@ export {
   RiesgoRendimiento,
   SimuladorMeta,
   TermometroSaludFinanciera,
+  AvisoConsultaNoValida,
+  SugerenciasInversion,
 };
 export * from "./comunes";
 export { PieTarjeta, Tarjeta } from "./tarjeta";
