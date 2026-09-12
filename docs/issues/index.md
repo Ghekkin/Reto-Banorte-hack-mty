@@ -92,3 +92,4 @@ gh issue create \
 | 2026-09-13 | media | mcp | [Las tools de Inversiones contradicen la enmienda del ADR 0004](2026-09-13-tools-inversiones-contradicen-adr-0004.md) | pendiente (sin `gh`) | resuelto |
 | 2026-09-13 | alta | infra | [El índice de git es compartido: un `git commit` se lleva el trabajo a medio hacer de otra sesión](2026-09-13-indice-de-git-compartido.md) | [#8](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/8) | abierto |
 | 2026-09-12 | crítica | mcp | [`pnpm reiniciar-estado` dice que vació la tabla y no borró nada](2026-09-12-reiniciar-estado-no-borra-nada.md) | [#9](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/9) | resuelto |
+| 2026-09-12 | alta | infra | [`pnpm datos:restaurar` no puede repoblar una base vacía: el orden de tablas viola una llave foránea](2026-09-12-restaurar-orden-de-tablas.md) | [#10](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/10) | resuelto |

@@ -61,5 +61,5 @@ llave de idempotencia, así que un reintento no aplica el plan dos veces.
 | El modelo inventa componentes fuera del catálogo | `pintar_pantalla` es una tool: un JSON inválido vuelve como error de tool y el modelo se corrige solo | cerrado |
 | Un reintento aplica una acción dos veces | `idempotencyKey` + índice único en la base | cerrado |
 | La API del modelo cae en la demo | Grabación desde `estable`, hecha en la hora 30 | pendiente |
-| **Sin red no hay demo** (el MCP exige base) | Postgres local y `pnpm datos:restaurar` | **pendiente de ensayar** |
+| **Sin red no hay demo** (el MCP exige base) | Postgres local y `pnpm datos:restaurar` | **cerrado**: ensayado de punta a punta el 2026-09-12 (3,690 filas, MCP arriba con 18 tools). Arreglar el orden de tablas fue el issue #10 |
 | El mismo prompt pinta distinto entre turnos | El prompt fija lo que no puede faltar (la tarjeta que cambió); el resto se acepta como precio de que decida el modelo | mitigado |
