@@ -135,6 +135,12 @@ export async function* correrTurno(
       // como prefijo cacheable (ver `mensajesDelTurno`). En Gemini termina igual en
       // `systemInstruction`; en Claude lleva el `cache_control`.
       messages: mensajesDelTurno(peticion, panorama),
+      // El SDK avisa de esto en cada turno y tiene razon en general: un mensaje `system`
+      // dentro de `messages` es un vector de inyeccion SI puede venir de la persona. Aqui
+      // no puede: lo arma `systemPrompt()`, es una constante nuestra, y lo que escribe la
+      // persona entra como `user`. Va explicito para que la decision se lea en el codigo y
+      // no como un warning que todos aprenden a ignorar.
+      allowSystemInMessages: true,
       tools: { ...herramientas, pintar_pantalla: pintor.herramienta },
       stopWhen: [
         stepCountIs(config.maxPasos),
@@ -249,6 +255,11 @@ export async function* correrTurno(
       };
     }
 
+    // `entrada` y `cache` no son decoracion: el prompt caching es invisible cuando NO
+    // funciona —el turno solo sale mas caro y mas lento—, y el 2026-09-12 el proyecto se
+    // quedo sin cuota sin que nadie supiera cuanto costaba un turno. Con estos dos
+    // numeros, UNA llamada real dice si el caché pega y cuanto se reenvia por peticion.
+    const consumo = await resultado.usage.catch(() => undefined);
     console.log(
       JSON.stringify({
         agente: nombreDelModelo(),
@@ -257,6 +268,10 @@ export async function* correrTurno(
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
         pintada: pintor.pintada(),
         corte: corte ?? null,
+        entrada: consumo?.inputTokens ?? null,
+        salida: consumo?.outputTokens ?? null,
+        // null = el proveedor no reporto nada; 0 = reporto que no cacheo nada.
+        cache: consumo?.cachedInputTokens ?? null,
         ms: Date.now() - inicio,
       }),
     );

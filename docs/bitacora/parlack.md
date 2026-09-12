@@ -352,6 +352,49 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 11:45 · investigado y fijado — El caché: nuestro lado está probado, el de Gemini no depende de nosotros
+
+"Arregla el caché" resultó ser primero un problema de saber **de qué lado está el fallo**,
+y eso sí se puede resolver sin cuota.
+
+**Primero descarté mi propia medición.** Si el SDK perdiera los tokens cacheados al sumar
+los pasos, yo estaría viendo cero donde hay caché. Fui a leer `addTokenCounts`: trata el
+ausente como 0 y solo devuelve `undefined` si los dos lo son. Y `@ai-sdk/google` sí mapea
+`cachedContentTokenCount`. Así que el cero de los 55 turnos es real.
+
+**Después probé nuestro lado, sobre los bytes que salen.** Intercepté el `doStream` del
+modelo en un turno de dos pasos y comparé los prompts: el system prompt es byte por byte
+el mismo, las tools van en el mismo orden, y **la segunda petición arranca con la primera
+completa**. Esa última es *la* propiedad del caché y ahora tiene prueba; antes solo estaba
+probado `mensajesDelTurno`, que es un nivel más arriba —entre eso y el proveedor están el
+bucle de pasos y el propio SDK—.
+
+**Y probé el camino de Claude hasta el cuerpo HTTP**, que es el que de verdad se puede
+arreglar: creé el proveedor con un `fetch` propio que captura el cuerpo, y comprobé que el
+`cache_control: ephemeral` sale sobre el bloque del system prompt y que `usr_beto` NO está
+dentro del prefijo cacheado. Sin llamar a la API y sin gastar un token. O sea: **el día que
+haya una llave de Anthropic, el caché funciona**, y eso ya no es una esperanza.
+
+**Lo que NO hice, y por qué:** caching explícito de Gemini (`cachedContent`). Crear el
+recurso exige una llamada a la API —o sea cuota, que es justo lo que no hay—, así que sería
+maquinaria nueva sin una sola ejecución real, a horas de un pitch, en la ruta crítica del
+producto. El mismo dinero rinde más subiendo el tope. Queda anotado como opción, no como
+pendiente olvidado.
+
+**Lo que sí queda para que la próxima llamada real cierre el tema:** el log de cada turno
+ahora trae `entrada`, `salida` y `cache`. `cache: null` = el proveedor no reporta nada;
+`cache: 0` = reporta que no cacheó; `cache: 12000` = está pegando. Una llamada y se sabe.
+
+De paso: el SDK avisaba en cada turno de que un `system` dentro de `messages` es un vector
+de inyección. Tiene razón en general y no aquí —lo arma `systemPrompt()`, es una constante
+nuestra, y lo que escribe la persona entra como `user`—, así que puse
+`allowSystemInMessages: true` **con el por qué en un comentario**: una decisión explícita
+vale más que un warning que todos aprenden a ignorar.
+
+Y un tropiezo: llamé `uso` a una variable que ya existía en esa función. `const` sobre un
+`let` del mismo scope es SyntaxError, el módulo dejó de cargar y 11 pruebas se cayeron de
+golpe. Dos minutos, pero es la tercera vez hoy que el typecheck me habría ahorrado el susto.
+
 ### 11:20 · arreglado — El CI vuelve a servir de señal
 
 El único paso rojo era "un prompt del guion contra la URL publica", y no por un bug: el

@@ -131,9 +131,31 @@ invalida todo lo que sigue. De ahí el orden que arma `mensajesDelTurno`:
    pantalla, el data model), al final y por eso fuera del prefijo cacheado.
 
 Si alguien mete la fecha, el `usuarioId` o el data model arriba, el caché deja de pegar
-y **nadie se entera**: el turno solo sale más caro y más lento. Dos cosas lo cuidan: una
-prueba que exige que el prefijo sea byte por byte idéntico para otra persona y otro
-turno, y el `cacheLeido` que el stream reporta en su línea `fin`.
+y **nadie se entera**: el turno solo sale más caro y más lento.
+
+### Qué está probado del caché, y qué no se puede saber sin cuota
+
+Cinco pruebas en `apps/web/src/lib/__tests__/cache-prefijo.spec.ts` miran **los bytes que
+salen**, no la intención:
+
+| Lo que se exige | Por qué |
+|---|---|
+| El system prompt es byte por byte el mismo en las dos peticiones del turno | es el 45 % del prefijo |
+| Las tools van en el **mismo orden** | el orden es parte del prefijo; un `Object.keys` inestable lo rompe |
+| La segunda petición **arranca con la primera completa** | es *la* propiedad del caché: lo nuevo va al final |
+| El prefijo es idéntico **para otra persona y otro turno** | si no, el caché se invalida en cada turno |
+| El `cache_control` de Claude sale **en el cuerpo HTTP**, sobre el system prompt y con lo volátil fuera | el caché de Anthropic es explícito: sin eso no cachea nada. Se comprueba interceptando el `fetch` del proveedor, sin llamar a la API |
+
+Con eso, **nuestro lado es correcto y está fijado**. Lo que no se puede resolver desde
+aquí es el lado del proveedor: al 2026-09-12, con 55 turnos medidos, **Gemini reportó cero
+tokens cacheados en todos**. El SDK suma bien (`addTokenCounts` trata el ausente como 0) y
+`@ai-sdk/google` sí mapea `cachedContentTokenCount`, así que el cero es real: o el caché
+implícito no aplica en este modelo/tier, o hace falta caching **explícito** (crear un
+recurso `cachedContent`, que requiere una llamada a la API y por tanto cuota).
+
+El log de cada turno ahora trae `entrada`, `salida` y `cache`, así que **una** llamada
+real lo resuelve: `cache: null` = el proveedor no reporta nada; `cache: 0` = reporta que no
+cacheó; `cache: 12000` = está pegando.
 
 ### El texto que acompaña la pantalla es un consejo, no una etiqueta
 
