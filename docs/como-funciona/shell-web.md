@@ -76,6 +76,7 @@ apps/web/src/
       lienzo.tsx                rejilla bento y el PLACEHOLDER
       barra-conversacion.tsx    input y chips
     movimientos/lista-movimientos.tsx   buscador y filtro por categoria
+    marca/logo-banorte.tsx      LogoBanorte (completo) e IconoBanorte (isotipo)
   lib/
     marca.ts                    nombre, tagline, aviso legal: un solo lugar
     usuario-activo.ts           lee la cookie (server-only)
@@ -122,7 +123,17 @@ flota permanente y la barra de pestañas desaparece con `md:hidden`.
 
 **El FAB de Maya** es `absolute -top-5 size-14` con el degradado de marca, elevado sobre la
 barra. Patrón de bottom app bar con FAB anclado de Material. Resuelve una tensión real:
-navegación de app bancaria sin que el asistente quede como "una pestaña más".
+navegación de app bancaria sin que el asistente quede como "una pestaña más". Dentro del
+círculo va el isotipo de Banorte en blanco.
+
+**El logotipo** (`components/marca/logo-banorte.tsx`) va en dos lugares: el completo en el
+header del sidebar —donde antes había una insignia con la inicial y la palabra "Maya"— y el
+isotipo en todo lo que representa a Maya (item del sidebar, FAB, avatar del saludo, atajo de
+Inicio). Son SVG en línea con `fill="currentColor"`, no `<img>`: el isotipo tiene que salir
+blanco sobre el degradado rojo y un `<img>` no se recolorea. Los archivos fuente están en
+`public/marca/`. Usar el logotipo oficial es una decisión con riesgo de marca: se levantó la
+prohibición del ADR 0009 el 2026-09-12 y hay que confirmarlo con los mentores antes del
+pitch (ver la enmienda del ADR).
 
 ### La capa de datos
 
@@ -141,16 +152,41 @@ funciona, porque el Postgres remoto no es alcanzable
 
 Las tres se encontraron midiendo el DOM en el navegador, no leyendo el código:
 
-1. **`data-active:` gana por especificidad.** El ítem activo de Maya salía rojo sobre rojo:
-   `text-primary-foreground` (0,1,0) pierde contra el
-   `data-active:text-sidebar-accent-foreground` del componente `sidebar` (0,2,0). Se
-   arregla usando **el mismo variant**: `data-active:text-primary-foreground`. El degradado
-   sí se veía porque es `background-image` y no compite con `background-color`.
+1. **`data-active:` y `data-[size=...]:` ganan por especificidad.** Pasó dos veces. El ítem
+   activo de Maya salía rojo sobre rojo porque `text-primary-foreground` (0,1,0) pierde
+   contra `data-active:text-sidebar-accent-foreground` (0,2,0); y el trigger del selector
+   de usuario se quedaba en 32 px porque `h-auto` pierde contra
+   `data-[size=default]:h-8`. **La regla: para pisar un estilo de shadcn hay que usar el
+   mismo variant** (`data-active:text-...`, `data-[size=default]:h-auto`).
 2. **`overflow-x-auto` dentro de un flex necesita `min-w-0`.** El filtro de categorías de
    Movimientos tiene un `ToggleGroup` con `w-max`; sin `min-w-0`, ese ancho se vuelve el
    min-content del flex y **estiraba el layout 256 px fuera de la pantalla**.
 3. **`SidebarInset` ya es un `<main>`.** Meterle otro `<main>` dentro daba dos por
    documento. El contenido va en `div`.
+
+Y una cuarta, del mismo tipo: **el `Avatar` de Base UI es un `<div>`**, así que meterlo
+dentro del `<span>` de un `SelectValue` producía HTML inválido y un desajuste de
+hidratación silencioso. Se resuelve con `render={<span />}`, que es la forma de Base UI de
+cambiar el elemento.
+
+### Rendimiento: de dónde venía la sensación de lentitud
+
+Medido con los tiempos del servidor de desarrollo y con `Measure-Command`. Cuatro causas,
+tres arregladas:
+
+| Causa | Efecto | Estado |
+|---|---|---|
+| Cada navegación re-leía y re-parseaba los 365 KB de `movimientos.csv` | 100–300 ms por ruta | **Arreglado**: memoria a nivel de proceso en `leer-csv.ts` |
+| `/movimientos` mandaba los ~700 movimientos del usuario al navegador | ~1 200 ms → **~250 ms** | **Arreglado**: `TOPE_MOVIMIENTOS = 300` |
+| Sin `loading.tsx` no pasaba nada al tocar una pestaña | Se sentía trabado aunque tardara poco | **Arreglado**: skeletons del tamaño del contenido |
+| Modo desarrollo: Turbopack compila cada ruta en su primera visita y **`<Link>` no hace prefetch** | Picos de 1,5 a 2,9 s | **No se arregla**: es así por diseño. En producción el prefetch está activo y la ruta ya está compilada |
+
+La última fila importa para el ensayo: **la demo debe correr con `pnpm build` y
+`pnpm start`, no con `pnpm dev`**. En desarrollo los saltos de dos segundos son del
+compilador, no de la app.
+
+Contrapartida del cache de proceso: si regeneras los datos con
+`node scripts/generar-datos.mjs`, hay que **reiniciar el servidor** para verlos.
 
 ### Base UI, no Radix
 

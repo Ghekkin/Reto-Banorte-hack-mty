@@ -26,6 +26,7 @@ quien.
 
 ### Coordinación
 - [Tablero](tablero.md) — quién está en qué, bloqueos, siguiente
+- [Arranque](equipo/arranque.md) — clonar, `.env` y `pnpm dev` en cinco minutos. **Empieza aquí**
 - [Roles](equipo/roles.md) — los cuatro roles y cómo tocar dominio ajeno
 - [Roadmap](equipo/roadmap.md) — las horas que quedan, bloque por bloque y rol por rol, con los cortes que deciden
 - [Bitácoras](bitacora/README.md) — cómo funcionan · [Equipo](bitacora/equipo.md)

@@ -2,6 +2,57 @@
 
 ## 2026-09-12
 
+### 08:55 · hecho — Primer ensayo completo del guion contra producción, y el reinicio que mentía
+
+Corrí los cinco pasos del viaje contra `https://maya.157.173.204.174.sslip.io` con el
+modelo real, encadenando el estado de la superficie como lo hace el cliente (mensajes,
+`superficie`, `dataModel` y la acción con su `idempotencyKey`). **Pasan los cinco.** Dos
+de ellos nunca se habían verificado.
+
+| Paso | Tools | Pinta | Tiempo |
+|---|---|---|---|
+| Beto: "Quiero pagar menos intereses de mi tarjeta" | `panorama_inicial` → `simular_reestructura` | `ResumenTarjeta` + `PlanDePago` | 10.5 s |
+| Beto aplica 18 meses | `aplicar_plan_pago` → `consultar_plan` | `Confirmacion` + **`ResumenTarjeta` con `planActivo: true` y saldo 0** + `Calendario` | 5.8 s |
+| **Beto: "¿y en qué se me está yendo el dinero?"** (nuevo) | `comparar_periodos` | `GastoPorCategoria` | 3.6 s |
+| Ana, la misma primera frase | `panorama_inicial` → `consultar_tarjeta` → `consultar_creditos` → `proyectar_ahorro` | `SimuladorMeta` | 5.8 s |
+| **Ana crea el apartado** (nunca verificado) | `crear_apartado` | `Confirmacion` + `MetaActiva` | 2.9 s |
+
+Tres cosas que corrigen lo que yo mismo había escrito:
+
+- **La tarjeta sí vuelve cambiada.** Yo había dado por hecho que tras aplicar el plan el
+  agente solo repinta `Confirmacion` + `Calendario`, porque así salió en la corrida de
+  las 05:30. En esta vino también `ResumenTarjeta` con `planActivo: true`, saldo cero y
+  sin el chip de atraso. **No está roto: es no determinista.** Es el momento más fuerte
+  del guion y hoy sale o no sale según el turno. Vale fijarlo en el prompt.
+- **El segundo ciclo de Beto refleja el plan**, pero solo en la línea `razon` del stream
+  ("intereses que ahora comenzarán a bajar con tu plan"). La `razon` de la propia tarjeta
+  no lo menciona, y `GastoPorCategoria` no tiene campo donde poner esa nota. El guion la
+  promete "en la misma tarjeta".
+- **El viaje de Ana cierra entero.** Crear el apartado devuelve `MetaActiva` con su avance
+  y la fecha objetivo. Es la segunda acción con cambio real del ADR 0004.
+
+**Lo que encontré de paso, y es lo más grave del día: `pnpm reiniciar-estado` no borra
+nada y dice que sí.** Sin `DATABASE_URL` exportada en el shell, `reiniciarEstado()` se
+salta el `truncate` y solo limpia una copia en memoria del proceso que está a punto de
+morir; el script imprime igual "quedo vacia" y sale con 0. `pnpm` no carga el `.env`, y
+este script —al revés que `migrar.mjs`, `restaurar.mjs` y `volcar-fixture.mjs`— tampoco
+lo lee a mano. Lo reproduje contra producción: mismo comando, dos filas antes y dos filas
+después; con `set -a; . ./.env; set +a` delante, cero. Es el **primer paso del checklist
+previo a cada ensayo y al pitch**: un ensayo que arranca sin reiniciar de verdad le da a
+Beto el plan ya aplicado, y la primera pantalla del guion deja de ser `PlanDePago`.
+Issue #9, severidad crítica.
+
+Dejé el estado de producción limpio y verificado por HTTP: `consultar_plan` devuelve
+`hayPlan: false` para Beto y para Ana.
+
+**Dos cosas más que vi y no toqué** (son de `web` y de `contrato`, y el frontend lo
+rediseña otra sesión): el hook `usarAgente` no atiende las líneas `estado` ni `tool` del
+stream —los badges LLM · MCP · A2UI y el "pensando" del guion no existen, y el turno más
+lento son 10.5 s sin más señal que el spinner del botón—; y la `razon` sale en tercera
+persona ("Alberto tiene la tarjeta al 96.7 %", "Ana no tiene tarjeta") en tres de cuatro
+turnos, contra la regla de tutear del propio prompt.
+
+
 ### 06:10 · hecho — Los 8 componentes a móvil de verdad, y un error propio en `main`
 
 **Lo que se pidió:** `GastoPorCategoria` no gustaba. El problema no era estético: **los
@@ -657,3 +708,12 @@ del deploy). Issue #7, arreglado.
 mínimo para arrancar y de dónde sale cada valor. `scripts/dev.sh` ahora carga el `.env`
 de la raíz y lo exporta: Next buscaba `apps/web/.env` y no lo encontraba, así que el
 agente decía "sin llave" con la llave puesta.
+
+### 08:04 — El favicon de Banorte, tomado del repo de Open Innovation
+
+`apps/web` traía el favicon genérico de create-next-app. Se tomó el logo circular de
+Banorte que usa `Ghekkin/Open-innovation-hack-mty` (`frontend/app/favicon.ico`, que
+en realidad es un PNG de 1043×1043) y entró como `src/app/icon.png` y
+`src/app/apple-icon.png`, que es la convención de Next 16 para PNG; el `.ico` viejo
+se fue. Verificado en la web corriendo: `<link rel="icon">` y `apple-touch-icon`
+responden 200 con `image/png`.

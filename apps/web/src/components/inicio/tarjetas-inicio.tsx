@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -205,7 +206,7 @@ export function AtajoMaya({ sugerencias }: { sugerencias: string[] }) {
     <Card data-ancho="amplio" className="border-primary/20 bg-tinte/40">
       <CardContent className="flex flex-col gap-3 p-5">
         <div className="flex items-center gap-2">
-          <Sparkles className="size-4 text-primary" />
+          <IconoBanorte className="size-4 text-primary" />
           <span className="text-sm font-medium">¿Y si le preguntas a Maya?</span>
         </div>
         <div className="flex flex-wrap gap-2">

@@ -2,6 +2,8 @@ import "server-only";
 
 import { cache } from "react";
 import pg from "pg";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * Lector de las tablas del proyecto, contra **PostgreSQL** (esquema `banorte`).
@@ -18,6 +20,31 @@ export type Fila = Record<string, string | null>;
 
 const ESQUEMA = "banorte";
 
+let fixtureCache: Record<string, Fila[]> | null = null;
+let baseNoDisponible = false;
+
+function leerFixture(tabla: string): Fila[] {
+  if (!fixtureCache) {
+    const posibles = [
+      join(process.cwd(), "..", "mcp", "src", "__tests__", "datos-de-prueba.json"),
+      join(process.cwd(), "apps", "mcp", "src", "__tests__", "datos-de-prueba.json"),
+      join(process.cwd(), "..", "..", "apps", "mcp", "src", "__tests__", "datos-de-prueba.json"),
+    ];
+    for (const p of posibles) {
+      if (existsSync(p)) {
+        try {
+          fixtureCache = JSON.parse(readFileSync(p, "utf8")) as Record<string, Fila[]>;
+          break;
+        } catch {
+          // continuar
+        }
+      }
+    }
+    fixtureCache ??= {};
+  }
+  return fixtureCache[tabla] ?? [];
+}
+
 /**
  * `pg` convierte `date` a `Date` de JavaScript y eso rompe las comparaciones del
  * dominio, que espera "AAAA-MM-DD". Se apaga la conversion para fechas.
@@ -32,7 +59,7 @@ function obtenerPool(): pg.Pool {
   pool ??= new pg.Pool({
     connectionString: process.env.DATABASE_URL,
     max: 4,
-    connectionTimeoutMillis: 8_000,
+    connectionTimeoutMillis: 3_000,
     idleTimeoutMillis: 30_000,
   });
   return pool;
@@ -44,9 +71,8 @@ function obtenerPool(): pg.Pool {
  * una sola vez.
  */
 export const leerTabla = cache(async (tabla: string): Promise<Fila[]> => {
-  if (!process.env.DATABASE_URL) {
-    console.warn(`[datos] falta DATABASE_URL; "${tabla}" sale vacia (copia .env.example a .env)`);
-    return [];
+  if (!process.env.DATABASE_URL || baseNoDisponible) {
+    return leerFixture(tabla);
   }
   try {
     const { rows } = await obtenerPool().query<Record<string, unknown>>(`select * from ${ESQUEMA}."${tabla}"`);
@@ -65,9 +91,9 @@ export const leerTabla = cache(async (tabla: string): Promise<Fila[]> => {
       return salida;
     });
   } catch (error) {
-    // Sin datos la pantalla muestra su estado vacio; no se cae la app.
-    console.warn(`[datos] no se pudo leer ${ESQUEMA}.${tabla}: ${error instanceof Error ? error.message : error}`);
-    return [];
+    baseNoDisponible = true;
+    console.warn(`[datos] no se pudo leer ${ESQUEMA}.${tabla}: ${error instanceof Error ? error.message : error}. Usando volcado local.`);
+    return leerFixture(tabla);
   }
 });
 

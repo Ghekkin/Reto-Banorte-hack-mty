@@ -223,9 +223,25 @@ export async function resumenDe(usuarioId: string): Promise<{
   };
 }
 
-/** Todos los movimientos del usuario, mas recientes primero. Para la seccion Movimientos. */
-export async function movimientosDe(usuarioId: string): Promise<Movimiento[]> {
-  return movimientosRecientes(usuarioId, Number.MAX_SAFE_INTEGER);
+/**
+ * Los movimientos que se mandan al cliente para filtrar.
+ *
+ * El tope existe por peso: mandar los ~700 movimientos de un usuario hacia el navegador en
+ * cada navegacion era la razon por la que esta seccion se sentia mas lenta que las otras.
+ * 300 cubren cerca de cinco meses, que es mas de lo que alguien revisa a mano; si algun dia
+ * hace falta el historial completo, el filtro se mueve al servidor con `searchParams`.
+ */
+export const TOPE_MOVIMIENTOS = 300;
+
+/** Los movimientos del usuario, mas recientes primero. Para la seccion Movimientos. */
+export async function movimientosDe(usuarioId: string, cuantos = TOPE_MOVIMIENTOS): Promise<Movimiento[]> {
+  return movimientosRecientes(usuarioId, cuantos);
+}
+
+/** Cuantos movimientos tiene en total, para poder decir "300 de 683". */
+export async function totalMovimientosDe(usuarioId: string): Promise<number> {
+  const filas = await leerTabla("movimientos");
+  return filas.filter((f) => f.usuario_id === usuarioId).length;
 }
 
 /** Las categorias que el usuario usa de verdad, para los filtros. */

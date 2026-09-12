@@ -1,6 +1,8 @@
 import { cargarTablasDesdePostgres } from "./postgres.js";
-import { refrescarAcciones } from "./estado.js";
+import { refrescarAcciones, marcarBaseNoDisponible } from "./estado.js";
 import type { Fila } from "./fila.js";
+import { readFileSync, existsSync } from "node:fs";
+import { join } from "node:path";
 
 /**
  * La puerta unica a los datos. **Ninguna tool escribe SQL** (skill `tool-mcp`):
@@ -23,8 +25,22 @@ let tablas: Tablas | undefined;
  * responde, el proceso no arranca y se sabe en ese momento, no a media demo.
  */
 export async function inicializarDatos(): Promise<Tablas> {
-  tablas = await cargarTablasDesdePostgres();
-  await refrescarAcciones();
+  try {
+    tablas = await cargarTablasDesdePostgres();
+    await refrescarAcciones();
+  } catch (error) {
+    marcarBaseNoDisponible();
+    console.warn(
+      `[datos] no se pudo conectar a PostgreSQL (${error instanceof Error ? error.message : error}); cargando volcado en memoria`,
+    );
+    const ruta = join(import.meta.dirname, "..", "__tests__", "datos-de-prueba.json");
+    if (existsSync(ruta)) {
+      const crudo = JSON.parse(readFileSync(ruta, "utf8")) as Record<string, Fila[]>;
+      tablas = new Map(Object.entries(crudo));
+    } else {
+      throw error;
+    }
+  }
   return tablas;
 }
 
