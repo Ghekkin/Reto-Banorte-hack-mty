@@ -25,9 +25,23 @@ ahorrar*.
 **Historia de usuario**: "Soy Beto, tengo la tarjeta al límite; quiero pagar menos
 intereses, entender en qué se me va el dinero y, cuando pueda, empezar a ahorrar."
 
-**Dos usuarios demo, mismos datos base**: Beto (tarjeta al 94%, un pago atrasado,
-gasto alto en intereses y restaurantes) y Ana (sin deuda, saldo holgado, gasto
-estable). Ver skill `datos-mock`.
+**Tres usuarios demo, mismos datos base**: Beto (tarjeta al 97%, doce días de atraso,
+gasto alto en intereses), Ana (sin deuda, saldo holgado, sin fondo de emergencia) y
+Carmen (patrimonial, con portafolio). Ver skill `datos-mock`.
+
+> **Enmienda del 2026-09-12.** Este ADR decía "dos usuarios demo" y excluía
+> explícitamente "Inversiones con rendimiento variable" y "más de dos usuarios demo".
+> Se enmienda por decisión del equipo al construir el shell web: **entra Carmen como
+> tercer perfil y entra Inversiones como pestaña de la sección Productos**.
+>
+> El motivo: Carmen sostiene el ángulo de **ejecutivo de cuenta**, una audiencia que no
+> es el usuario retail, y sus datos ya existían (16 instrumentos, 848 precios semanales,
+> un portafolio agresivo). Cerraba el issue
+> `docs/issues/2026-09-12-alcance-datos-vs-adr-0004.md`.
+>
+> **Lo que NO cambia**: el orden estricto de construcción de las tres fases, y que la
+> demo se cuenta con Beto. Carmen es contraste, no una cuarta intención. Inversiones es
+> una pantalla de consulta programada, no un flujo accionable del agente.
 
 ### Orden de construcción (no negociable)
 
@@ -80,8 +94,11 @@ Opcional al final: `crear_tope_gasto`.
 
 ### Qué NO entra
 
-Tope de gasto salvo tiempo sobrante. Inversiones con rendimiento variable. Más de dos
-usuarios demo. Cualquier cuarta intención.
+Tope de gasto salvo tiempo sobrante. Cualquier cuarta intención del agente.
+
+~~Inversiones con rendimiento variable. Más de dos usuarios demo.~~ Admitidos por la
+enmienda del 2026-09-12 (ver arriba), con el límite de que Inversiones es **solo
+consulta**: el agente no genera flujos de inversión.
 
 ## Alternativas descartadas
 

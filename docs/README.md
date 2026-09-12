@@ -61,6 +61,7 @@ quien.
 ### Cómo funciona
 - [Reglas y plantilla](como-funciona/README.md)
 - [Base de datos](como-funciona/base-de-datos.md) — referencia del esquema `banorte`: las 22 tablas columna por columna, relaciones, índices, restricciones, las tres rutas de carga y los trade-offs
+- [Shell web](como-funciona/shell-web.md) — las cinco secciones, la navegación en móvil y escritorio, el usuario activo en cookie y la capa de datos sobre los CSV
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, los 22 CSV y las invariantes que sostienen la demo
 - [Las 9 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
