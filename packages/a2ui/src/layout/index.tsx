@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { registrarVarios, type PropsComponente } from "../registro";
+import { NOMBRES_DE_LAYOUT } from "./nombres";
 
 /**
  * Los cuatro de layout del catalogo basico de A2UI, con nuestros tokens.
@@ -33,7 +34,14 @@ export function Divider(): ReactNode {
   return <hr className="border-borde-sutil" />;
 }
 
-/** Se registran al importar el modulo. `apps/web` lo importa una vez. */
+/**
+ * Se registran al importar el modulo. `apps/web` lo importa una vez. El mapa se arma
+ * desde `NOMBRES_DE_LAYOUT` para que la lista que ve el agente y la que se registra de
+ * verdad no puedan separarse.
+ */
 export function registrarLayout(): void {
-  registrarVarios({ Column, Row, Text, Divider });
+  const componentes = { Column, Row, Text, Divider };
+  registrarVarios(Object.fromEntries(NOMBRES_DE_LAYOUT.map((n) => [n, componentes[n]])));
 }
+
+export { NOMBRES_DE_LAYOUT };

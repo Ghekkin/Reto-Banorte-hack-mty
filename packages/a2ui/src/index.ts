@@ -8,5 +8,6 @@ export * from "./validar";
 export * from "./procesar";
 export * from "./arbol";
 export * from "./registro";
+export * from "./layout/nombres";
 export * from "./acciones";
 export { Superficie } from "./Superficie";
