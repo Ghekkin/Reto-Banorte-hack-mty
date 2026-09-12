@@ -179,7 +179,7 @@ escribir un componente nuevo:
 
 | Llave | Qué hace `Superficie.tsx` |
 |---|---|
-| `ancho` (`"normal" \| "amplio"`) | `data-ancho` en la envoltura, que es lo que la rejilla bento lee para dar dos columnas |
+| `ancho` (`"normal" \| "amplio"`) | `data-ancho` en la envoltura, y va resuelto en cada pieza que entrega `disponer` |
 | `weight` | `flex-grow` dentro de un `Row`/`Column`: así se arma una rejilla en A2UI |
 | `accessibility` | `aria-label` / `aria-description` y `role="group"` |
 | `theme.primaryColor` | `variablesDelTema()` lo entrega como variable CSS; la shell decide dónde aplicarlo |
@@ -188,10 +188,20 @@ La envoltura solo aparece si hay algo que poner en ella, y es un `grid` para que
 componente siga estirándose al alto de su fila.
 
 **Nota de layout, para quien arme pantallas**: la spec exige una sola raíz, así que una
-pantalla de varias tarjetas necesita un contenedor. Un `Column` raíz ocupa una sola
-celda de la rejilla bento y apila todo en vertical; para el efecto bento, la forma
-A2UI-nativa es un `Row` raíz con `weight` por tarjeta, o `Row`s anidados dentro de un
-`Column` (es literalmente lo que recomienda la descripción oficial de `Column`).
+pantalla de varias tarjetas necesita un contenedor, y el agente casi siempre manda un
+`Column`. Pintado tal cual, un `Column` apila: en la consola eso dejaba las tarjetas una
+encima de otra en una franja angosta (medido el 2026-09-12: 245 px de ancho a 1,440 px).
+
+Por eso `<Superficie>` acepta **`disponer`** (opcional): si la raíz es un `Column` o un
+`Row`, en vez de pintar el contenedor entrega sus hijos **ya pintados** como
+`PiezaDeRaiz[]` (`id`, `clave`, `componente`, `ancho` resuelto, `nodo`) y quien aloja la
+superficie decide el acomodo; una raíz suelta llega como única pieza. Solo se reparte la
+raíz: un contenedor anidado se pinta como siempre. El lienzo de Maya lo usa para poner las
+tarjetas lado a lado según su ancho (`docs/algoritmos/acomodo-del-lienzo.md`); la galería,
+al usar el mismo lienzo, también. Sin `disponer`, todo funciona como antes.
+
+`Row` le da a cada hijo una base de 18rem y lo deja crecer: las tarjetas del catálogo son
+contenedores (`@container`) y, sin base, en un `flex-row` medían 0 px.
 
 ### Acciones: el ciclo se cierra
 

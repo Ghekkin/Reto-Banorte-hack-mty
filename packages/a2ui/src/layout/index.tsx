@@ -17,9 +17,18 @@ export function Column({ children, separacion = "normal" }: PropsComponente & { 
   return <div className={`flex flex-col ${SEPARACION[separacion] ?? SEPARACION.normal}`}>{children}</div>;
 }
 
+/**
+ * Cada hijo parte de 18rem y crece para llenar la fila; si no caben, saltan de linea.
+ *
+ * La base no es adorno: las tarjetas del catalogo son contenedores (`@container`) para
+ * poder adaptarse a SU ancho, y la contencion de tamano hace que su contenido no cuente al
+ * medirlas. Sin una base explicita, en un `flex-row` median 0 px.
+ */
 export function Row({ children, separacion = "normal" }: PropsComponente & { separacion?: Separacion }): ReactNode {
   return (
-    <div className={`flex flex-row flex-wrap items-center ${SEPARACION[separacion] ?? SEPARACION.normal}`}>
+    <div
+      className={`flex flex-row flex-wrap items-stretch [&>*]:min-w-[min(100%,18rem)] [&>*]:flex-[1_1_18rem] ${SEPARACION[separacion] ?? SEPARACION.normal}`}
+    >
       {children}
     </div>
   );

@@ -20,6 +20,25 @@ export type FalloDeRender = {
 };
 
 /**
+ * Una pieza de primer nivel de la superficie, ya pintada, para que quien la aloje decida
+ * donde ponerla (ver `disponer`).
+ */
+export type PiezaDeRaiz = {
+  /** El id del componente en la superficie. */
+  id: string;
+  /** Unica aunque el id se repita por una plantilla: sirve de `key`. */
+  clave: string;
+  /** El nombre en el catalogo: `ResumenTarjeta`, `Text`, `Row`… */
+  componente: string;
+  /** La prop `ancho` ya resuelta contra el data model, si el agente la puso. */
+  ancho?: "normal" | "amplio";
+  nodo: ReactNode;
+};
+
+/** Los contenedores cuyo acomodo se le puede delegar a quien aloja la superficie. */
+const CONTENEDORES = new Set(["Column", "Row"]);
+
+/**
  * Pinta una superficie. Recorre el arbol, busca cada nombre en el registro y le
  * pasa las props YA resueltas contra el data model.
  *
@@ -37,6 +56,7 @@ export function Superficie({
   conversacionId,
   alAccionar,
   alFallar,
+  disponer,
 }: {
   superficie: EstadoSuperficie | undefined;
   conversacionId: string;
@@ -52,6 +72,19 @@ export function Superficie({
    * entre la interfaz y el agente.
    */
   alFallar?: (error: FalloDeRender) => void;
+  /**
+   * Quien aloja la superficie decide COMO se acomodan sus piezas de primer nivel.
+   *
+   * El agente no sabe en que pantalla se va a ver lo que construye: arma un `Column` con
+   * sus tarjetas, y un `Column` apila. En un celular eso es justo lo correcto; en un lienzo
+   * de 1,000 px deja las tarjetas una encima de otra con media pantalla vacia. Con esta
+   * prop, si la raiz es un `Column` o un `Row`, sus hijos se entregan ya pintados y quien
+   * aloja la superficie los reparte (el lienzo de Maya los pone en filas segun su ancho).
+   * Si la raiz es un componente suelto, llega como unica pieza.
+   *
+   * Sin la prop, la raiz se pinta tal cual, como siempre.
+   */
+  disponer?: (piezas: PiezaDeRaiz[]) => ReactNode;
 }): ReactNode {
   /* Se llena durante el render y se vacia en el efecto. Mutar un ref al pintar no
      dispara renders ni sale del proceso: el efecto de verdad vive en el useEffect. */
@@ -82,6 +115,25 @@ export function Superficie({
   if (!superficie) return null;
   const raiz = arbol(superficie, (m) => console.warn(`[a2ui] ${m}`));
   if (!raiz) return null;
+
+  if (disponer) {
+    const delegable = CONTENEDORES.has(raiz.componente.component) && raiz.hijos.length > 0;
+    const nodos = delegable ? raiz.hijos : [raiz];
+    return (
+      <>
+        {disponer(
+          nodos.map((nodo) => ({
+            id: nodo.componente.id,
+            clave: nodo.clave,
+            componente: nodo.componente.component,
+            ancho: anchoDe(resolver(propsDe(nodo.componente), superficie.dataModel, nodo.item)),
+            nodo: pintar(nodo),
+          })),
+        )}
+      </>
+    );
+  }
+
   return <>{pintar(raiz)}</>;
 
   function pintar(nodo: Nodo): ReactNode {
@@ -131,6 +183,11 @@ export function Superficie({
  * `grid` en el div y no `block`: asi el componente sigue estirandose al alto de su fila
  * en la rejilla bento, igual que cuando era el hijo directo.
  */
+/** `ancho` solo cuenta si es uno de los dos valores del catalogo. */
+function anchoDe(props: Record<string, unknown>): "normal" | "amplio" | undefined {
+  return props.ancho === "amplio" || props.ancho === "normal" ? props.ancho : undefined;
+}
+
 function envolver(
   pintado: ReactNode,
   id: string,
@@ -139,7 +196,7 @@ function envolver(
   accessibility: unknown,
   clave: string,
 ): ReactNode {
-  const ancho = props.ancho === "amplio" || props.ancho === "normal" ? props.ancho : undefined;
+  const ancho = anchoDe(props);
   const peso = typeof weight === "number" && Number.isFinite(weight) ? weight : undefined;
   const a11y = (accessibility ?? {}) as { label?: unknown; description?: unknown };
   const etiqueta = typeof a11y.label === "string" ? a11y.label : undefined;

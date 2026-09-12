@@ -15,4 +15,4 @@ export * from "./registro";
 export * from "./layout/nombres";
 export * from "./layout/esquemas";
 export * from "./acciones";
-export { Superficie, variablesDelTema, type FalloDeRender } from "./Superficie";
+export { Superficie, variablesDelTema, type FalloDeRender, type PiezaDeRaiz } from "./Superficie";
