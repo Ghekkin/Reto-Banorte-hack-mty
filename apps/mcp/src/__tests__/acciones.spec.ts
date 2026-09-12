@@ -166,7 +166,7 @@ describe("proyectar_ahorro: la aportacion en cero", () => {
       await proyectarAhorro.manejar({ usuarioId: "usr_ana", aportacionCentavos: 0 }),
     );
     const sinNada = SalidaProyectarAhorro.parse(await proyectarAhorro.manejar({ usuarioId: "usr_ana" }));
-    expect(conCero.aportacionSugeridaCentavos).toBe(sinNada.aportacionSugeridaCentavos);
+    expect(conCero.aportacionCentavos).toBe(sinNada.aportacionCentavos);
     expect(conCero.mesesEstimados).toBe(sinNada.mesesEstimados);
     expect(conCero.mesesEstimados).toBeGreaterThan(0);
   });
@@ -178,9 +178,12 @@ describe("proyectar_ahorro: la aportacion en cero", () => {
     expect(salida.mesesEstimados).toBeGreaterThan(0);
   });
 
-  it("sigue exigiendo saber contra que proyectar", async () => {
-    const salida = await proyectarAhorro.manejar({ usuarioId: "usr_beto" });
-    expect(JSON.stringify(salida)).toContain("montoObjetivoCentavos");
+  it("sigue exigiendo saber contra que proyectar", () => {
+    // Beto no tiene meta creada: sin objetivo no hay nada que proyectar. La tool lanza y
+    // la capa de registro lo convierte en error de tool, que es lo que el modelo lee.
+    // `manejar` de esta tool es sincrona y LANZA; la capa de registro del servidor es la
+    // que lo convierte en error de tool, que es lo que el modelo termina leyendo.
+    expect(() => proyectarAhorro.manejar({ usuarioId: "usr_beto" })).toThrow(/montoObjetivoCentavos/);
   });
 });
 
