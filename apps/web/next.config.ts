@@ -1,7 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  /** Los paquetes del workspace se publican en TypeScript, sin build propio. */
+  transpilePackages: ["@maya/a2ui", "@maya/catalogo", "@maya/schemas"],
 };
 
 export default nextConfig;

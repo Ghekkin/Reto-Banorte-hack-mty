@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+# Levanta todo lo que la demo necesita, en orden, y espera a que responda.
+# Puertos fijos: web 3000, mcp 3100 (skill `scaffold`). Ctrl-C baja los dos.
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+MCP_PUERTO="${MCP_PUERTO:-3100}"
+WEB_PUERTO="${WEB_PUERTO:-3000}"
+
+if [ ! -f .env ]; then
+  echo "  aviso: no hay .env. Copia .env.example y llena las llaves (el scaffold corre sin ellas)."
+fi
+
+if [ ! -d node_modules ]; then
+  echo "==> pnpm install (primera vez)"
+  pnpm install
+fi
+
+# El catalogo que el agente lee y que apps/web sirve en /catalogo/v1.json
+pnpm --filter @maya/catalogo generar >/dev/null
+
+limpiar() {
+  echo ""
+  echo "==> bajando servicios"
+  kill 0 2>/dev/null || true
+}
+trap limpiar EXIT INT TERM
+
+echo "==> MCP en :$MCP_PUERTO"
+MCP_PUERTO="$MCP_PUERTO" pnpm --filter @maya/mcp dev &
+
+for _ in $(seq 1 30); do
+  if curl -fsS "http://localhost:$MCP_PUERTO/health" >/dev/null 2>&1; then
+    echo "    /health responde"
+    break
+  fi
+  sleep 1
+done
+
+echo "==> web en :$WEB_PUERTO"
+pnpm --filter @maya/web dev &
+
+echo ""
+echo "  web      http://localhost:$WEB_PUERTO"
+echo "  mcp      http://localhost:$MCP_PUERTO/mcp   (health: /health)"
+echo "  catalogo http://localhost:$WEB_PUERTO/catalogo/v1.json"
+echo ""
+wait

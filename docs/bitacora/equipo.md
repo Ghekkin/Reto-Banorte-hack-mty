@@ -146,3 +146,26 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   obligatorios, algoritmos explicados, `main` siempre demostrable, sin push sin pedir.
 - **22:40 · hecho** — Creados `CLAUDE.md`, estructura de `docs/` y skills del repo.
   Sin código todavía; el reto empieza mañana y faltan los detalles oficiales.
+
+## sáb 13 · 07:45 — El scaffold está arriba y `main` arranca
+
+`pnpm install && pnpm dev` levanta el MCP (3100) y la web (3000). `pnpm typecheck`,
+`pnpm test` (19) y `pnpm humo` pasan. Los cinco paquetes se llaman `@maya/*`.
+
+Lo que esto desbloquea, por rol:
+
+- **`web`**: `apps/web` con shadcn inicializado (23 componentes) y los tokens de Banorte
+  aplicados. El shell flotante (sidebar + lienzo bento + barra de conversación) ya está
+  y funciona. Cada componente del catálogo tiene su carpeta con el encargo escrito:
+  intención, props previstas, acciones y qué primitivas usar.
+- **`mcp`**: `apps/mcp` con la capa de datos sobre los 22 CSV, el estado mutable con
+  idempotencia y `consultar_perfil` como plantilla. Una tool nueva son tres archivos.
+- **`contrato`**: `packages/a2ui` con reducer, bindings, árbol, registro, acciones y
+  `<Superficie>`, **fiel al formato de la spec vendoreada** (props planas, raíz `root`,
+  plantillas de hijos), 15 tests en verde. Falta ajv contra `spec/` y los 8 casos de
+  conformidad. El agente es un mock con el stream ya conectado de punta a punta.
+- **`demo`**: `README.md` con comandos reales y el disclaimer de prototipo no oficial.
+
+Dos cosas que van a morder si no se leen: **los imports internos van sin extensión**
+(Turbopack no mapea `.js`→`.ts`, y el typecheck no lo detecta) y **los tokens propios se
+usan como `bg-lienzo`, no `bg-[--lienzo]`** (Tailwind v4; la skill ya está corregida).

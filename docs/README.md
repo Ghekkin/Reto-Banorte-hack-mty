@@ -60,6 +60,9 @@ quien.
 
 ### Cómo funciona
 - [Reglas y plantilla](como-funciona/README.md)
+- [Scaffold y arranque](como-funciona/scaffold-y-arranque.md) — las cinco piezas, qué pasa con `pnpm dev`, una vuelta completa del ciclo
+- [Datos mock](como-funciona/datos-mock.md) — los tres perfiles demo y cómo se generan
+- [Base de datos](como-funciona/base-de-datos.md) — el esquema y la carga en Postgres
 
 ### Algoritmos
 - [Reglas y plantilla](algoritmos/README.md)

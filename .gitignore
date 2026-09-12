@@ -24,6 +24,9 @@ service-account*.json
 .sesion
 .claude/settings.local.json
 
+# estado mutable del MCP: lo cambian las acciones y se reinicia antes de cada ensayo
+apps/mcp/estado.json
+
 # ruido
 *.log
 .DS_Store

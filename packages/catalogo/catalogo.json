@@ -1,0 +1,69 @@
+{
+  "version": "v1",
+  "a2uiVersion": "v0.9.1",
+  "nombre": "Catalogo Maya — componentes financieros",
+  "generadoPor": "pnpm --filter @maya/catalogo generar",
+  "componentes": [
+    {
+      "nombre": "Confirmacion",
+      "cuandoUsarlo": "Justo despues de que una tool de accion cambio el estado: el plan quedo aplicado, el apartado quedo creado. Nunca antes de que la accion ocurra.",
+      "acciones": [],
+      "props": {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {
+          "ancho": {
+            "default": "normal",
+            "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+            "type": "string",
+            "enum": [
+              "normal",
+              "amplio"
+            ]
+          },
+          "razon": {
+            "type": "string",
+            "minLength": 10,
+            "description": "Una frase en segunda persona que explica por que esta pantalla y no otra"
+          },
+          "titulo": {
+            "type": "string",
+            "description": "Lo que acaba de pasar, en pasado: 'Tu plan quedo activo'"
+          },
+          "detalle": {
+            "type": "string",
+            "description": "Una linea con el dato que lo prueba: monto, plazo, fecha"
+          },
+          "montoCentavos": {
+            "description": "El numero grande, si la confirmacion tiene uno",
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "etiquetaMonto": {
+            "description": "Que es ese monto: 'Pago mensual'",
+            "type": "string"
+          },
+          "siguientePaso": {
+            "description": "Que puede hacer ahora la persona",
+            "type": "string"
+          },
+          "tono": {
+            "default": "exito",
+            "description": "exito tras una accion que cambio estado; informativo para un aviso",
+            "type": "string",
+            "enum": [
+              "exito",
+              "informativo"
+            ]
+          }
+        },
+        "required": [
+          "razon",
+          "titulo",
+          "detalle"
+        ]
+      }
+    }
+  ]
+}

@@ -4,6 +4,10 @@
 
 @custom-variant dark (&:is(.dark *));
 
+/* Tokens -> utilidades de Tailwind v4.
+   Los de shadcn no se renombran. Los propios del proyecto (lienzo, tinte,
+   oscuro, exito…) se declaran aqui para poder escribir bg-lienzo, text-exito,
+   border-borde-sutil. Nunca un hex suelto en un .tsx: skill diseno-banorte. */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -39,6 +43,18 @@
   --color-popover: var(--popover);
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+
+  /* Propios del proyecto */
+  --color-exito: var(--exito);
+  --color-advertencia: var(--advertencia);
+  --color-marca-claro: var(--marca-claro);
+  --color-marca-oscuro: var(--marca-oscuro);
+  --color-lienzo: var(--lienzo);
+  --color-tinte: var(--tinte);
+  --color-tinte-fuerte: var(--tinte-fuerte);
+  --color-oscuro: var(--oscuro);
+  --color-borde-sutil: var(--borde-sutil);
+
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -48,73 +64,116 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Paleta de Banorte. Tabla y equivalencias en la skill diseno-banorte. */
 :root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+
+  --background: oklch(1 0 89.88);
+  --foreground: oklch(0.2046 0 89.88);
+
+  --card: oklch(1 0 89.88);
+  --card-foreground: oklch(0.2046 0 89.88);
+  --popover: oklch(1 0 89.88);
+  --popover-foreground: oklch(0.2046 0 89.88);
+
+  --primary: oklch(0.5943 0.2407 24.68);          /* #EC0029 */
+  --primary-foreground: oklch(1 0 89.88);
+
+  --secondary: oklch(0.9702 0 89.88);             /* #F5F5F5 */
+  --secondary-foreground: oklch(0.2046 0 89.88);
+
+  --muted: oklch(0.9702 0 89.88);
+  --muted-foreground: oklch(0.5188 0.003 48.68);  /* #6A6867 */
+
+  --accent: oklch(0.9702 0 89.88);
+  --accent-foreground: oklch(0.5943 0.2407 24.68);
+
+  --destructive: oklch(0.5091 0.2061 24.53);      /* #C00020 */
+  --destructive-foreground: oklch(1 0 89.88);
+
+  --border: oklch(0.8343 0.0022 197.11);          /* #C7C9C9 */
+  --input: oklch(0.8343 0.0022 197.11);
+  --ring: oklch(0.5943 0.2407 24.68);
+
+  /* Propios del dominio financiero */
+  --exito: oklch(0.4764 0.1047 159.51);           /* #0C6E47 */
+  --advertencia: oklch(0.5028 0.1128 65.01);      /* #8F5400 */
+  --marca-claro: oklch(0.6533 0.2345 18.56);      /* #FF3355 */
+  --marca-oscuro: oklch(0.5091 0.2061 24.53);     /* #C00020 */
+
+  /* Forma: lienzo flotante */
+  --lienzo: oklch(0.9614 0.0013 286.38);          /* #F2F2F3 fondo de la app */
+  --tinte: oklch(0.9506 0.0256 5.65);             /* #FFE8EC chips y fondos suaves */
+  --tinte-fuerte: oklch(0.9026 0.0529 5.02);      /* #FFD1DA hover de chips */
+  --oscuro: oklch(0.2114 0.0088 351.77);          /* #1C1719 tarjeta oscura, barras */
+  --borde-sutil: oklch(0.9265 0.0022 17.2);       /* #E8E6E6 bordes de tarjeta */
+
+  /* Graficas: el rojo primero, despues neutros. Nunca arcoiris. */
+  --chart-1: oklch(0.2114 0.0088 351.77);         /* oscuro: ingresos / lo bueno */
+  --chart-2: oklch(0.5943 0.2407 24.68);          /* rojo: gasto / lo que duele */
+  --chart-3: oklch(0.6533 0.2345 18.56);          /* rojo claro: tercera serie */
+  --chart-4: oklch(0.8343 0.0022 197.11);         /* plata: resto */
+  --chart-5: oklch(0.9506 0.0256 5.65);           /* tinte: fondo de barra */
+
+  /* Sidebar flotante blanca; item activo = pildora de tinte con texto rojo */
+  --sidebar: oklch(1 0 89.88);
+  --sidebar-foreground: oklch(0.2046 0 89.88);
+  --sidebar-primary: oklch(0.5943 0.2407 24.68);
+  --sidebar-primary-foreground: oklch(1 0 89.88);
+  --sidebar-accent: oklch(0.9506 0.0256 5.65);
+  --sidebar-accent-foreground: oklch(0.5943 0.2407 24.68);
+  --sidebar-border: oklch(0.9265 0.0022 17.2);
+  --sidebar-ring: oklch(0.5943 0.2407 24.68);
 }
 
+/* El proyecto se presenta en modo claro. El oscuro existe para que la pagina
+   no se rompa si alguien lo tiene puesto. */
 .dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  --background: oklch(0.18 0.005 25);
+  --foreground: oklch(0.97 0 89.88);
+  --card: oklch(0.22 0.006 25);
+  --card-foreground: oklch(0.97 0 89.88);
+  --popover: oklch(0.22 0.006 25);
+  --popover-foreground: oklch(0.97 0 89.88);
+  --primary: oklch(0.6533 0.2345 18.56);
+  --primary-foreground: oklch(0.18 0.005 25);
+  --secondary: oklch(0.26 0.006 25);
+  --secondary-foreground: oklch(0.97 0 89.88);
+  --muted: oklch(0.26 0.006 25);
+  --muted-foreground: oklch(0.72 0.003 48.68);
+  --accent: oklch(0.26 0.006 25);
+  --accent-foreground: oklch(0.6533 0.2345 18.56);
+  --destructive: oklch(0.6533 0.2345 18.56);
+  --destructive-foreground: oklch(0.18 0.005 25);
+  --border: oklch(0.32 0.006 25);
+  --input: oklch(0.32 0.006 25);
+  --ring: oklch(0.6533 0.2345 18.56);
+
+  --exito: oklch(0.6 0.1047 159.51);
+  --advertencia: oklch(0.68 0.1128 65.01);
+  --marca-claro: oklch(0.6533 0.2345 18.56);
+  --marca-oscuro: oklch(0.5091 0.2061 24.53);
+
+  --lienzo: oklch(0.16 0.005 25);
+  --tinte: oklch(0.28 0.04 12);
+  --tinte-fuerte: oklch(0.34 0.06 12);
+  --oscuro: oklch(0.2114 0.0088 351.77);
+  --borde-sutil: oklch(0.32 0.006 25);
+
+  --chart-1: oklch(0.97 0 89.88);
+  --chart-2: oklch(0.6533 0.2345 18.56);
+  --chart-3: oklch(0.5943 0.2407 24.68);
+  --chart-4: oklch(0.45 0.006 25);
+  --chart-5: oklch(0.32 0.006 25);
+
+  --sidebar: oklch(0.22 0.006 25);
+  --sidebar-foreground: oklch(0.97 0 89.88);
+  --sidebar-primary: oklch(0.6533 0.2345 18.56);
+  --sidebar-primary-foreground: oklch(0.18 0.005 25);
+  --sidebar-accent: oklch(0.28 0.04 12);
+  --sidebar-accent-foreground: oklch(0.6533 0.2345 18.56);
+  --sidebar-border: oklch(0.32 0.006 25);
+  --sidebar-ring: oklch(0.6533 0.2345 18.56);
 }
 
 @layer base {
@@ -122,9 +181,30 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-lienzo text-foreground;
   }
   html {
     @apply font-sans;
+  }
+  /* Todo monto lleva tabular-nums: skill diseno-banorte */
+  .monto {
+    @apply tabular-nums;
+  }
+}
+
+/* Entrada de las superficies que el agente acaba de construir: 150 ms y nada mas. */
+@layer utilities {
+  @keyframes entrada-superficie {
+    from {
+      opacity: 0;
+      transform: translateY(0.25rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  .animar-entrada {
+    animation: entrada-superficie 150ms ease-out both;
   }
 }

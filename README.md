@@ -1,4 +1,4 @@
-# Reto Banorte — Interfaces que la IA construye en tiempo real
+# Maya — Interfaces que la IA construye en tiempo real
 
 Hack Monterrey 2026 · Reto Banorte × Tec de Monterrey.
 
@@ -8,20 +8,35 @@ acciones de un servidor MCP propio, describe la interfaz con **A2UI** y la pinta
 catálogo de componentes diseñado por el equipo. Lo que la persona toca vuelve al agente
 y cambia la experiencia.
 
-> Estado: **preparación**. El caso de uso se decide al arrancar (ADR 0004). Este README
-> se completa con los comandos reales en cuanto exista el scaffold.
+> **Prototipo de hackathon.** Es un concepto sobre el asistente Maya de Banorte,
+> construido para el reto; **no es oficial ni está afiliado a Banorte**. Los datos son
+> sintéticos y ninguna persona real aparece en ellos.
 
 ## Correr el proyecto
 
-Pendiente de scaffold. Quedará así (skill `scaffold`):
+Node 22 y pnpm 10.
 
 ```bash
 git clone https://github.com/Ghekkin/Reto-Banorte-hack-mty.git
 cd Reto-Banorte-hack-mty
-cp .env.example .env          # y poner la API key del modelo
+cp .env.example .env          # opcional: sin llave de modelo la web abre igual
 pnpm install
-scripts/dev.sh                # levanta MCP (3100) y web (3000), espera los /health
+pnpm dev                      # MCP en :3100, web en :3000; espera los /health
 ```
+
+Abre http://localhost:3000. Sin llave de modelo, el agente responde con una pantalla de
+ejemplo y lo dice en el stream; todo lo demás funciona.
+
+| Comando | Qué hace |
+|---|---|
+| `pnpm dev` | Levanta el MCP y la web, en ese orden |
+| `pnpm typecheck` · `pnpm test` | TypeScript y vitest en los 5 paquetes |
+| `pnpm humo` | Prueba de humo del MCP: lista las tools y llama una |
+| `pnpm catalogo` | Regenera `packages/catalogo/catalogo.json` desde los schemas |
+| `pnpm reiniciar-estado` | Devuelve el estado mutable al punto de partida |
+
+El catálogo de componentes que el agente puede invocar se sirve en
+http://localhost:3000/catalogo/v1.json — es el `catalogId` de cada superficie A2UI.
 
 ## Cómo está construido
 
@@ -33,10 +48,13 @@ Usuario → Agente/LLM → MCP → A2UI → Componentes → (la acción regresa 
 |---|---|---|
 | Agente | `apps/web/src/lib/agente/` | Interpreta intención, llama tools, emite A2UI, recibe acciones |
 | Servidor MCP | `apps/mcp/` | Tools de lectura y de acción sobre datos sintéticos |
+| Renderer A2UI | `packages/a2ui/` | Nuestro renderer conforme a la spec v0.9.1, validado con sus JSON Schema |
 | Catálogo A2UI | `packages/catalogo/` | Componentes financieros propios, con schema y ejemplos |
 | Contratos de tools | `packages/schemas/` | Zod de entrada/salida de cada tool |
-| Datos | `apps/mcp/data/` | Usuario demo, movimientos, productos, estado mutable |
+| Datos | `db/datos/` | Tres perfiles demo: 22 CSV sintéticos y el estado que las acciones cambian |
 
+Cómo se levanta y qué pasa en una vuelta completa del ciclo:
+[`docs/como-funciona/scaffold-y-arranque.md`](docs/como-funciona/scaffold-y-arranque.md).
 Detalle: `docs/arquitectura/vision-general.md`. Trade-offs: `docs/arquitectura/trade-offs.md`.
 
 ## Documentación

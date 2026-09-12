@@ -15,7 +15,7 @@ vez sin conflictos de git.
 | web | — | — | — |
 | mcp | — | — | — |
 | contrato | — | — | — |
-| demo | parlack | Coolify en el VPS: proyecto `reto-banorte` + Postgres arriba; siguen apps web/mcp y dominio | vie 21:20 |
+| demo | parlack | Scaffold del monorepo terminado y verificado (`pnpm dev` levanta todo); sigue guion y deploy | sáb 07:45 |
 
 ## Bloqueos
 
@@ -25,10 +25,10 @@ vez sin conflictos de git.
 
 El detalle por bloque está en `equipo/roadmap.md`; aquí solo el paso inmediato.
 
-- web: tokens → los 8 schemas del catálogo (ADR 0004) en la hora 1 → `ResumenTarjeta`, `PlanDePago`, `Confirmacion`, `Calendario` (fase 1) con sus `.jsonl`
-- mcp: datos de Beto y Ana completos para los tres casos + `estado.json` reiniciable → `consultar_perfil`, `consultar_tarjeta`, `simular_reestructura` → `aplicar_plan_pago` (fase 1)
-- contrato: `packages/a2ui` (renderer propio según `arquitectura/renderer-a2ui.md`, corte sáb 02:00) → schemas de tools → agente con structured output contra los 8 nombres del catálogo → prop `razon`
-- demo: guion literal del viaje (Beto 1 → Beto 2 → Ana 3) → `README.md` con comandos reales → modo transparencia y badges LLM·MCP·A2UI como tareas de hora 12+
+- web: **el scaffold ya tiene shadcn, tokens y shell listos** → los 4 componentes de fase 1 (`ResumenTarjeta`, `PlanDePago`, `Calendario`; `Confirmacion` ya está de referencia). Cada carpeta en `packages/catalogo/src/` trae su encargo escrito
+- mcp: **capa de datos y `estado.json` idempotente ya están**; `consultar_perfil` es la plantilla → `consultar_tarjeta`, `consultar_movimientos`, `simular_reestructura` → `aplicar_plan_pago` (fase 1)
+- contrato: **`packages/a2ui` ya procesa, resuelve bindings y pinta** (15 tests) → falta ajv contra `spec/v0_9_1/json/` y los 8 casos de conformidad → agente real en `apps/web/src/lib/agente/agente.ts` (hoy mock) con structured output contra el catálogo
+- demo: guion literal del viaje (Beto 1 → Beto 2 → Ana 3) → dominio y deploy → modo transparencia y badges LLM·MCP·A2UI como tareas de hora 12+ (`README.md` con comandos reales ya está)
 
 ## Hecho hoy
 
