@@ -27,6 +27,16 @@ salida() {
   fi
 }
 
+# `catalogo.json` se genera desde los schemas de `packages/catalogo/src`, y el CI truena si
+# no coincide ("catalogo.json al dia"). Paso cuatro veces el 2026-09-12: alguien cambia un
+# schema o `comunes.ts`, el commit automatico se lleva el cambio sin regenerar y `main`
+# queda en rojo hasta que otra persona lo nota. Regenerarlo aqui cuesta ~5 s y solo corre
+# cuando hay algo del catalogo pendiente. Si falla (dependencias sin instalar), no bloquea
+# el commit: el CI lo sigue cuidando.
+if git status --porcelain -- packages/catalogo/src | grep -q .; then
+  pnpm catalogo >/dev/null 2>&1 || true
+fi
+
 git add -A
 
 # Un conflicto a medio resolver NO se commitea. `CLAUDE.md` llego a `main` con los

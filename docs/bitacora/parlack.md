@@ -2,6 +2,19 @@
 
 ## 2026-09-12
 
+### 15:33 · hecho — CI en verde, y `sync.sh` ya no deja `catalogo.json` desfasado
+
+El CI estaba en rojo por `catalogo.json al dia`: el run `34719634607` falló porque el
+archivo no coincidía con los schemas. Otra sesión lo regeneró en `49f4d1c`, y el run
+`34719823500` pasó completo: typecheck, pruebas, build y deploy a Coolify.
+
+Revisé las fallas de los últimos 40 runs. Casi todas las metió un commit automático sin
+revisar: marcadores de conflicto, un typecheck roto, `catalogo.json` sin regenerar y el disco
+lleno (#15, ya con limpieza cada hora). La de `catalogo.json` es la que más se repite y la
+única que se arregla sola, así que `scripts/sync.sh` ahora corre `pnpm catalogo` antes del
+`git add` cuando hay cambios en `packages/catalogo/src` (unos 5 s, y si falla no bloquea el
+commit).
+
 ### 16:15 · arreglado — Las gráficas de las proyecciones ya explican algo
 
 El usuario mandó dos capturas: "siento que las gráficas así no explican nada, están muy
