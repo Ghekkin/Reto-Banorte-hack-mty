@@ -43,6 +43,11 @@ const OBJETO_DE: Record<string, string> = {
  * minutos antes del pitch.
  */
 let cache: AccionAplicada[] = [];
+let baseDisponible = true;
+
+export function marcarBaseNoDisponible(): void {
+  baseDisponible = false;
+}
 
 /**
  * Sin `DATABASE_URL` no hay base contra la que escribir, y eso **solo pasa en las
@@ -50,7 +55,7 @@ let cache: AccionAplicada[] = [];
  * acciones viven en esta copia y nada mas, que es justo lo que una prueba necesita.
  */
 function sinBase(): boolean {
-  return config.urlPostgres === "";
+  return config.urlPostgres === "" || !baseDisponible;
 }
 
 type FilaAccion = {
