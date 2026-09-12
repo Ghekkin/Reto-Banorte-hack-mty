@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 11:45
+verificado: 2026-09-12 13:10
 estado: construido
 ---
 
@@ -21,9 +21,16 @@ pagar menos intereses"— y ella **construye la pantalla** para resolverlo: el c
 plazos, la gráfica de gasto, el simulador de meta. Nadie programó esas pantallas una por
 una; el agente las arma con un catálogo de piezas financieras según lo que pediste.
 
-**Productos**, **Movimientos** y **Más** son consultas normales: qué tienes contratado, tu
-historial con filtros, y el resto de opciones. Están a propósito simples, porque el peso
-del proyecto está en Inicio y en Maya.
+**Productos** es la cartera: cada tarjeta se ve como el plástico de verdad (el rojo de
+Banorte con su patrón de chevrones, chip, contactless y los últimos cuatro dígitos), con
+a un lado lo que importa de ella: cuánto debes, qué tanto de tu línea usas, el pago mínimo
+y la fecha límite. Abajo, tus cuentas con su total, cada crédito con cuánto llevas pagado
+del plazo, y tu portafolio posición por posición. Desde la primera tarjeta se le puede
+preguntar a Maya, y la pregunta cambia según cómo esté: a quien la trae al límite se le
+ofrece bajar intereses; a quien no, ver en qué se le va el dinero.
+
+**Movimientos** y **Más** son consultas normales: tu historial con filtros y el resto de
+opciones. Están a propósito simples, porque el peso del proyecto está en Inicio y en Maya.
 
 En el celular se navega con una barra abajo de cuatro pestañas, y **Maya al centro, en un
 botón redondo elevado**. Eso no es capricho: si Maya fuera una pestaña más se perdería
@@ -59,7 +66,8 @@ apps/web/src/
     (app)/layout.tsx            el shell; server component, resuelve la cookie
     (app)/acciones.ts           server action: cambiar de usuario demo
     (app)/page.tsx              Inicio
-    (app)/productos/page.tsx    Productos, con tabs
+    (app)/productos/page.tsx    Productos: la cartera (plasticos, cuentas, creditos, portafolio)
+    (app)/productos/loading.tsx esqueleto con la forma de la cartera
     (app)/maya/page.tsx         Maya, resuelve ?intencion=
     (app)/movimientos/page.tsx  Movimientos
     (app)/mas/page.tsx          Mas
@@ -71,6 +79,9 @@ apps/web/src/
       barra-pestanas.tsx        movil: 4 pestanas + FAB de Maya
       selector-usuario.tsx      cambia de perfil demo
     inicio/tarjetas-inicio.tsx  heroe, cuentas, tarjetas, movimientos, atajo a Maya
+    productos/
+      tarjeta-fisica.tsx        el plastico: degradado de marca, chevrones, chip, red
+      tarjetas-productos.tsx    TarjetaEnMano, Cuentas, CreditoEnCurso, Inversiones, vacios
     maya/
       consola-maya.tsx          hilo + lienzo + barra de conversacion
       lienzo.tsx                rejilla bento y el PLACEHOLDER
@@ -85,6 +96,50 @@ apps/web/src/
     datos/consultas.ts          consultas tipadas para las pantallas
     agente/usar-agente.ts       cliente del streaming JSONL
 ```
+
+### Productos: la cartera
+
+Productos es la vista de detalle de lo que Inicio resume, y la única pantalla programada
+que muestra el producto como objeto: el plástico.
+
+**El plástico** (`components/productos/tarjeta-fisica.tsx`) no es una imagen. Es un `div`
+con proporción ISO ID-1 (1.586), el degradado de marca como fondo, un `<pattern>` SVG de
+chevrones tono sobre tono al 13 % (el del plástico real de Banorte), un chip dibujado con
+tokens (`muted` a `border`), el icono `Nfc` de Lucide, `LogoBanorte` en blanco, el tipo
+(CRÉDITO / DÉBITO) con el nombre del producto, el número enmascarado (`•••• •••• ••••
+4821`) en `font-mono`, el titular y la red en monocromo blanco (dos círculos para
+Mastercard, la palabra para Visa). Cero hex: el rojo es `--primary` y `--marca-oscuro`.
+
+Reglas de la skill `diseno-banorte` que la pantalla cumple, y dónde:
+
+| Regla | Cómo |
+|---|---|
+| El degradado de marca aparece **una vez** | Solo el primer plástico lleva `tono="marca"`; los demás van en `oscuro` (Carmen: Oro en rojo, Débito en negro) |
+| **Un solo botón primario** | Vive en la primera `TarjetaEnMano` (`heroe`). El resto son `outline` (el de "Todavía no inviertes") |
+| El monto es lo más grande de su tarjeta | `text-3xl` con `.monto-heroe` en las cuatro tarjetas; el plástico no lleva monto a propósito |
+| El rojo no es alarma | El atraso va en badge `bg-oscuro`; el avance de un crédito y el peso de una posición van en `bg-oscuro` (lo bueno); solo el uso de la línea va en rojo (lo que duele) |
+| Dato sensible enmascarado | Solo los últimos cuatro dígitos; la CLABE no se pinta |
+
+**Orden y rejilla.** Primero los plásticos (crédito antes que débito: es el que trae un
+saldo que decidir), luego `Cuentas`, un `CreditoEnCurso` por crédito y el portafolio (o
+`SinInversiones`, que lleva a Maya con la pregunta que le conviene a Beto). Es la rejilla
+bento de Inicio con `grid-flow-dense`: cuando hay dos plásticos anchos seguidos, las
+cuentas rellenan el hueco a la derecha del primero en vez de dejarlo vacío.
+
+**La pregunta a Maya depende de la tarjeta.** Con la línea al 80 % o con días de atraso,
+el botón manda `Quiero pagar menos intereses de mi tarjeta`; si no, `¿En qué se me está
+yendo el dinero?`. Son los dos prompts del guion, que ya producen una pantalla verificada.
+
+**Datos.** `Tarjeta` en `lib/datos/consultas.ts` creció con `cuentaId` (para el disponible
+del débito), `tasaAnual`, `cat`, `fechaCorte`, `fechaLimitePago` y `pagoNoInteresesCentavos`;
+todos salían ya de `banorte.tarjetas`. Las cuentas de tipo `credito` no entran en el total
+de `Cuentas`: esa deuda ya está en el plástico y en Créditos (mismo criterio que
+`resumenDe`). Las celdas de tres datos usan `formatearFechaCorta` (`14 sep`) porque
+`14 de septiembre` no cabe en 90 px sin truncarse.
+
+Verificado en el navegador (Chromium de Playwright, tres perfiles, 390 y 1280 px): sin
+scroll horizontal, sin errores de consola, y el esqueleto de `loading.tsx` mide lo que
+llega (475 px el héroe en móvil, 247 en escritorio).
 
 ### El hilo guarda las pantallas, no solo el texto
 

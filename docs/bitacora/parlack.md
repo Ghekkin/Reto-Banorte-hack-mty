@@ -2,6 +2,42 @@
 
 ## 2026-09-12
 
+### 13:10 · hecho — Productos ya es una cartera: el plástico de Banorte y el detalle a un lado
+
+`/productos` eran cuatro pestañas con dos o tres tarjetas sueltas y el lienzo vacío; se veía
+como una tabla a medio llenar. Ahora es la vista de detalle de lo que Inicio resume:
+
+- **El plástico** (`components/productos/tarjeta-fisica.tsx`): degradado de marca, patrón
+  de chevrones en `<pattern>` SVG al 13 %, chip con tokens, `Nfc`, `LogoBanorte` en blanco,
+  tipo + producto, número enmascarado en `font-mono`, titular y la red en monocromo. Cero
+  hex, cero imágenes. Proporción ISO 1.586, así que en móvil ocupa el ancho y en escritorio
+  la mitad de la tarjeta blanca.
+- **`TarjetaEnMano`**: plástico + saldo por pagar, uso de la línea, pago mínimo, fecha
+  límite y tasa (débito: el disponible de la cuenta ligada). La primera es el héroe: único
+  plástico rojo y único botón primario, cuya pregunta a Maya depende de cómo está la
+  tarjeta (al límite o con atraso → bajar intereses; si no → en qué se va el dinero).
+- **`Cuentas`** con el total arriba; **un `CreditoEnCurso` por crédito** con el avance del
+  plazo en oscuro; **`Inversiones`** con cada posición, su riesgo en cinco puntos y su peso
+  como barra; **`SinInversiones`** manda a Maya en vez de dejar un hueco (Beto).
+- `Tarjeta` en `consultas.ts` creció con seis campos que ya estaban en la base (aditivo;
+  `/api/productos` y `/api/panorama` los traen también).
+
+Lo que vi en el navegador y corregí antes de dar por buena la pantalla: el número del
+plástico se partía en dos líneas junto a la marca (ahora va en su fila); las celdas de tres
+datos truncaban `14 de septiembre` y `$1,650,000.00` (ahora `flex-wrap` +
+`formatearFechaCorta`); el alias largo de Carmen se comía el badge "Principal" (ahora la
+segunda línea cruza por debajo del monto); el héroe quedaba pegado arriba con hueco cuando
+su fila era más alta (`my-auto`). Medido con Playwright en 390 y 1280 px con los tres
+perfiles: sin scroll horizontal, sin errores de consola; el esqueleto de
+`productos/loading.tsx` mide lo que llega.
+
+Typecheck y las 391 pruebas del monorepo en verde. Doc en `como-funciona/shell-web.md`
+(sección "Productos: la cartera") y nota en `api-rest-lectura.md`.
+
+De paso: el árbol traía sin commitear las gráficas del catálogo de mi sesión anterior
+(`graficas.tsx` y las tres proyecciones sobre Recharts). Pasan typecheck y pruebas; las
+subí en su propio commit para que el historial diga qué es qué. **Les falta su doc.**
+
 ### 12:05 · hecho — `estable` existe, y lo que costo llegar: tres bugs y un `main` roto
 
 El corte H14 pedia fase 1 completa y `estable` marcado. Esta hecho: **`estable` apunta a

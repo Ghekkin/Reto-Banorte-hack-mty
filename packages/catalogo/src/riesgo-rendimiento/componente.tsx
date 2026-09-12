@@ -1,27 +1,31 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, Check, Gauge, Sparkles } from "lucide-react";
+import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  CLASES_FILA_TOCABLE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_FILA_TOCABLE, CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import type { PropsRiesgoRendimiento } from "./schema";
 
-const ETIQUETAS_RIESGO = ["", "Muy bajo", "Bajo", "Moderado", "Alto", "Muy alto"];
+const ETIQUETAS_RIESGO = ["", "muy bajo", "bajo", "moderado", "alto", "muy alto"];
 
-export function RiesgoRendimiento(
-  props: Partial<PropsRiesgoRendimiento> & Pick<PropsComponente, "alAccionar">,
-) {
+/**
+ * Opciones de inversión ordenadas por riesgo, y la que va con el perfil.
+ *
+ * **Mismo patrón que `PlanDePago`**: un grupo de radios donde cada opción es un `<label>`
+ * de 48 px, el número grande del encabezado cambia con la selección y el botón envía la
+ * elegida. Quien ya eligió un plazo sabe elegir un fondo.
+ *
+ * El riesgo se lee en cinco puntos, no en un cuadrito con "1 / Riesgo" en 8 px: cinco
+ * puntos se comparan de un vistazo entre filas y se ven proyectados. Una opción que supera
+ * la tolerancia del perfil lo dice en palabras ("supera tu perfil"), en el color de
+ * advertencia del sistema.
+ */
+export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<PropsComponente, "alAccionar">) {
   const {
     perfilInversionista,
     toleranciaRiesgoMax = 3,
@@ -37,111 +41,88 @@ export function RiesgoRendimiento(
     instrumentoSeleccionadoId ?? instrumentos?.find((i) => i.recomendado)?.id ?? instrumentos?.[0]?.id ?? "",
   );
 
-  if (
-    !perfilInversionista ||
-    typeof montoReferenciaCentavos !== "number" ||
-    !instrumentos ||
-    instrumentos.length === 0
-  ) {
+  if (!perfilInversionista || typeof montoReferenciaCentavos !== "number" || !instrumentos || instrumentos.length === 0) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-36" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Comparando opciones de inversión">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo>
+          <EsqueletoOpciones opciones={4} />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
   const seleccionado = instrumentos.find((i) => i.id === seleccionadoId) ?? instrumentos[0]!;
-  const gananciaAnualEstimada = Math.round(montoReferenciaCentavos * seleccionado.rendimientoAnualEsperado);
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const gananciaAnual = Math.round(montoReferenciaCentavos * seleccionado.rendimientoAnualEsperado);
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <Gauge className="size-3.5" /> Perfil: <strong className="text-foreground">{perfilInversionista}</strong> (hasta riesgo {toleranciaRiesgoMax}/5)
-          </span>
-          <span className="text-xs bg-tinte text-primary font-medium px-2 py-0.5 rounded-full">
-            Base: {formatearMonto(montoReferenciaCentavos)}
-          </span>
-        </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">
-            {formatearPorcentaje(seleccionado.rendimientoAnualEsperado)}
-          </span>
-          <span className="monto flex items-center gap-1 text-sm font-semibold text-exito">
-            <Sparkles className="size-4" />+{formatearMonto(gananciaAnualEstimada)}/año
-          </span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Opción: <strong className="text-foreground">{seleccionado.nombre}</strong> ({seleccionado.tipo}) · Riesgo {seleccionado.riesgo}/5 ({ETIQUETAS_RIESGO[seleccionado.riesgo]})
-        </p>
+        <span className={`text-xs ${suave}`}>
+          Perfil {perfilInversionista.toLowerCase()} · tolera riesgo hasta {toleranciaRiesgoMax} de 5
+        </span>
+        <span className="monto text-3xl font-semibold">{formatearPorcentaje(seleccionado.rendimientoAnualEsperado)}</span>
+        <span className={`text-sm ${suave}`}>
+          anual estimado con {seleccionado.nombre} ·{" "}
+          <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(gananciaAnual)}</span> al año sobre{" "}
+          <span className="monto">{formatearMonto(montoReferenciaCentavos)}</span>
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        {/* Espectro comparativo ordenado por riesgo */}
-        <div className="flex flex-col gap-1">
-          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-            Opciones disponibles
-          </span>
+      <CardContent>
+        <RadioGroup value={seleccionadoId} onValueChange={(v) => setSeleccionadoId(String(v))} aria-label="Instrumento de inversión" className="gap-2">
           {instrumentos.map((inst) => {
-            const activo = inst.id === seleccionadoId;
-            const superaTolerancia = inst.riesgo > toleranciaRiesgoMax;
+            const activa = inst.id === seleccionadoId;
+            const supera = inst.riesgo > toleranciaRiesgoMax;
             return (
-              <button
+              <label
                 key={inst.id}
-                type="button"
-                onClick={() => setSeleccionadoId(inst.id)}
-                className={`min-h-12 w-full rounded-xl p-2.5 flex items-center justify-between text-left transition-all border ${
-                  activo
-                    ? "border-primary bg-tinte/50 shadow-xs"
-                    : "border-borde-sutil bg-card hover:bg-muted/40"
-                } ${CLASES_FILA_TOCABLE}`}
+                className={`flex cursor-pointer items-center gap-3 border px-3 py-2 ${CLASES_FILA_TOCABLE} ${
+                  heroe
+                    ? activa
+                      ? "border-white bg-white/15"
+                      : "border-white/30"
+                    : activa
+                      ? "border-primary bg-tinte"
+                      : "border-borde-sutil"
+                }`}
               >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div className="flex flex-col items-center justify-center size-8 rounded-lg bg-muted text-foreground font-semibold text-xs shrink-0">
-                    <span>{inst.riesgo}</span>
-                    <span className="text-[8px] text-muted-foreground">Riesgo</span>
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-1.5 flex-wrap">
-                      <span className="truncate text-sm font-medium text-foreground">{inst.nombre}</span>
-                      {inst.recomendado ? (
-                        <Badge variant="secondary" className="bg-primary text-primary-foreground text-[10px] px-1.5 py-0 h-4">
-                          Sugerido
-                        </Badge>
-                      ) : null}
-                      {superaTolerancia ? (
-                        <span className="text-[10px] text-advertencia bg-amber-50 dark:bg-amber-950/40 px-1 rounded">
-                          Alto riesgo
-                        </span>
-                      ) : null}
-                    </div>
-                    <span className="text-[11px] text-muted-foreground">
-                      {inst.clave} · {inst.tipo}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end shrink-0 pl-2">
-                  <span className="monto text-sm font-semibold text-foreground">
-                    {formatearPorcentaje(inst.rendimientoAnualEsperado)}
+                <RadioGroupItem value={inst.id} className={heroe ? "border-white data-checked:bg-white [&_span]:bg-primary" : ""} />
+                <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-sm font-medium">
+                    <span className="truncate">{inst.nombre}</span>
+                    {inst.recomendado ? (
+                      <Badge variant="secondary" className={heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}>
+                        <Star /> Sugerido
+                      </Badge>
+                    ) : null}
                   </span>
-                  <span className="text-[10px] text-muted-foreground">anual est.</span>
-                </div>
-              </button>
+                  <span className={`flex flex-wrap items-center gap-x-2 text-xs ${suave}`}>
+                    <PuntosDeRiesgo nivel={inst.riesgo} supera={supera} heroe={heroe} />
+                    <span>
+                      riesgo {ETIQUETAS_RIESGO[inst.riesgo]}
+                      {supera ? <span className={heroe ? " font-medium" : " font-medium text-advertencia"}> · supera tu perfil</span> : null}
+                    </span>
+                    <span className="hidden sm:inline">· {inst.clave}</span>
+                  </span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="monto text-sm font-semibold">{formatearPorcentaje(inst.rendimientoAnualEsperado)}</span>
+                  <span className={`text-xs ${suave}`}>anual</span>
+                </span>
+              </label>
             );
           })}
-        </div>
+        </RadioGroup>
+      </CardContent>
 
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
         {alAccionar ? (
           <Button
-            className="min-h-12 w-full rounded-xl"
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
             onClick={() =>
               alAccionar({
                 accion: "seleccionar_instrumento",
@@ -151,16 +132,27 @@ export function RiesgoRendimiento(
               })
             }
           >
-            Invertir en {seleccionado.clave} <ArrowRight className="ml-1 size-4" />
+            Invertir en {seleccionado.clave} <ArrowRight />
           </Button>
         ) : null}
-      </CardContent>
-
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
+  );
+}
+
+/** Cinco puntos; los llenos son el nivel. Sobre el perfil, en el color de advertencia. */
+function PuntosDeRiesgo({ nivel, supera, heroe }: { nivel: number; supera: boolean; heroe: boolean }) {
+  return (
+    <span className="flex items-center gap-0.5" aria-label={`Riesgo ${nivel} de 5`} role="img">
+      {[1, 2, 3, 4, 5].map((n) => (
+        <span
+          key={n}
+          className={`size-1.5 rounded-full ${
+            n <= nivel ? (heroe ? "bg-white" : supera ? "bg-advertencia" : "bg-foreground") : heroe ? "bg-white/30" : "bg-chart-4"
+          }`}
+        />
+      ))}
+    </span>
   );
 }

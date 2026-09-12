@@ -17,3 +17,15 @@ export function formatearFecha(iso: string): string {
   if (!anio || !mes || !dia) return iso;
   return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long" }).format(new Date(anio, mes - 1, dia));
 }
+
+/**
+ * "2026-09-14" -> "14 sept". Para las celdas de tres columnas (pago minimo, fecha limite,
+ * tasa) donde "14 de septiembre" no cabe sin truncarse. Donde hay espacio, `formatearFecha`.
+ */
+export function formatearFechaCorta(iso: string): string {
+  const [anio, mes, dia] = iso.split("-").map(Number);
+  if (!anio || !mes || !dia) return iso;
+  return new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "short" })
+    .format(new Date(anio, mes - 1, dia))
+    .replace(".", "");
+}

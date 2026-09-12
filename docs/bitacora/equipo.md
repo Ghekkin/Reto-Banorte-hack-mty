@@ -18,6 +18,14 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 13:10 · hecho** — **Productos ya es una cartera**: el plástico de Banorte (degradado
+  de marca + chevrones en SVG, chip, contactless, número enmascarado, red) con su detalle al
+  lado, cuentas con total, un crédito por tarjeta con avance del plazo, y el portafolio
+  posición por posición. El único botón rojo manda a Maya con la pregunta que le conviene a
+  esa tarjeta. Detalle en `como-funciona/shell-web.md` ("Productos: la cartera"). Si vas a
+  pintar una tarjeta bancaria en cualquier otro lado, usa
+  `components/productos/tarjeta-fisica.tsx`, no la dibujes de nuevo.
+
 - **sáb 10:45 · CUIDADO, aplica a quien escriba UI** — **Tailwind v4 no escaneaba
   `packages/*`**: una clase usada únicamente en `packages/catalogo` **no generaba CSS**, sin
   aviso y sin fallar nada. Medido: `bg-chart-4` tenía cero reglas, y por eso

@@ -1,150 +1,103 @@
 "use client";
 
-import { ArrowDownRight, ArrowUpRight, Check, RefreshCw, ShieldCheck } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import {
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  CLASES_PIE_HEROE,
-  CLASES_FILA_TOCABLE,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import type { PropsOrdenRebalanceo } from "./schema";
 
-export function OrdenRebalanceo(
-  props: Partial<PropsOrdenRebalanceo> & Pick<PropsComponente, "alAccionar">,
-) {
-  const {
-    portafolioId,
-    nombrePortafolio,
-    valorTotalCentavos,
-    comisionTotalCentavos = 0,
-    movimientos,
-    heroe = false,
-    razon,
-    alAccionar,
-  } = props;
+/**
+ * Las operaciones que hacen falta para volver al modelo, antes de confirmarlas.
+ *
+ * Cada operación es una fila: qué se vende o compra (badge), el instrumento, y a la
+ * derecha el monto con el cambio de peso. Sin cuadros de icono ni título en mayúsculas:
+ * el badge ya dice compra o venta. La comisión va en el detalle del encabezado porque es
+ * la pregunta que sigue a "¿y esto cuánto me cuesta?".
+ */
+export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<PropsComponente, "alAccionar">) {
+  const { portafolioId, nombrePortafolio, valorTotalCentavos, comisionTotalCentavos = 0, movimientos, heroe = false, razon, alAccionar } = props;
 
-  if (
-    !nombrePortafolio ||
-    typeof valorTotalCentavos !== "number" ||
-    !movimientos ||
-    movimientos.length === 0
-  ) {
+  if (!nombrePortafolio || typeof valorTotalCentavos !== "number" || !movimientos || movimientos.length === 0) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-36" data-slot="skeleton" />
-          <Skeleton className="h-9 w-44" data-slot="skeleton" />
-          <Skeleton className="h-28 w-full" data-slot="skeleton" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Preparando la orden de rebalanceo">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo>
+          <EsqueletoFilas filas={2} />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} boton />
+      </EsqueletoTarjeta>
     );
   }
 
-  const clasesTarjeta = heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA;
-  const clasesPie = heroe ? CLASES_PIE_HEROE : "";
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={clasesTarjeta}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-muted-foreground flex items-center gap-1">
-            <RefreshCw className="size-3.5 text-primary" /> Orden de Rebalanceo · {nombrePortafolio}
-          </span>
-          <Badge variant="secondary" className="bg-tinte text-primary text-xs">
-            {movimientos.length} operaciones
+        <div className="flex items-start justify-between gap-2">
+          <span className={`text-xs ${suave}`}>Orden de rebalanceo · {nombrePortafolio}</span>
+          <Badge variant="secondary" className={`shrink-0 ${heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}`}>
+            {movimientos.length} {movimientos.length === 1 ? "operación" : "operaciones"}
           </Badge>
         </div>
-        <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className="monto text-3xl font-semibold">
-            {formatearMonto(valorTotalCentavos)}
-          </span>
-          <span className="text-sm text-muted-foreground font-medium">valor del portafolio</span>
-        </div>
-        <p className="text-xs text-muted-foreground">
-          Comisión por intermediación:{" "}
-          <strong className="monto text-exito font-medium">
-            {comisionTotalCentavos === 0 ? "Sin costo ($0.00 MXN)" : formatearMonto(comisionTotalCentavos)}
-          </strong>
-        </p>
+        <span className="monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
+        <span className={`text-sm ${suave}`}>
+          en el portafolio ·{" "}
+          {comisionTotalCentavos === 0 ? (
+            <span className={heroe ? "font-medium" : "font-medium text-exito"}>sin comisión</span>
+          ) : (
+            <>
+              comisión <span className="monto">{formatearMonto(comisionTotalCentavos)}</span>
+            </>
+          )}
+        </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
-        <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-          Ajustes requeridos
-        </span>
-
-        <div className="flex flex-col gap-2">
-          {movimientos.map((m, idx) => {
-            const esCompra = m.tipo === "compra";
+      <CardContent>
+        <ul className="flex flex-col">
+          {movimientos.map((m, i) => {
+            const compra = m.tipo === "compra";
             return (
-              <div
-                key={`${m.instrumentoClave}-${idx}`}
-                className="flex items-center justify-between p-3 rounded-xl border border-borde-sutil bg-card"
-              >
-                <div className="flex items-center gap-2.5 min-w-0">
-                  <div
-                    className={`size-8 rounded-lg flex items-center justify-center shrink-0 ${
-                      esCompra ? "bg-emerald-50 text-exito dark:bg-emerald-950/30" : "bg-tinte text-primary"
-                    }`}
-                  >
-                    {esCompra ? <ArrowDownRight className="size-4" /> : <ArrowUpRight className="size-4" />}
-                  </div>
-                  <div className="flex flex-col min-w-0">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm font-semibold text-foreground">{m.instrumentoClave}</span>
-                      <span
-                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded capitalize ${
-                          esCompra ? "bg-emerald-100/50 text-exito dark:bg-emerald-950/50" : "bg-primary/10 text-primary"
-                        }`}
-                      >
-                        {m.tipo}
-                      </span>
-                    </div>
-                    <span className="text-xs text-muted-foreground truncate">{m.claseActivo}</span>
-                  </div>
-                </div>
-
-                <div className="flex flex-col items-end shrink-0 pl-2">
-                  <span className="monto text-sm font-semibold text-foreground">
-                    {formatearMonto(m.montoCentavos)}
-                  </span>
-                  <span className="text-[10px] text-muted-foreground">
+              <li key={`${m.instrumentoClave}-${i}`} className={`flex items-center gap-3 border-b py-2 last:border-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
+                <Badge
+                  variant="secondary"
+                  className={`w-16 shrink-0 justify-center ${
+                    heroe ? "bg-white/20 text-primary-foreground" : compra ? "bg-exito/10 text-exito" : "bg-tinte text-primary"
+                  }`}
+                >
+                  {compra ? "Compra" : "Venta"}
+                </Badge>
+                <span className="flex min-w-0 flex-1 flex-col">
+                  <span className="truncate text-sm font-medium">{m.instrumentoClave}</span>
+                  <span className={`truncate text-xs ${suave}`}>{m.claseActivo}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="monto text-sm font-semibold">{formatearMonto(m.montoCentavos)}</span>
+                  <span className={`monto text-xs ${suave}`}>
                     {formatearPorcentaje(m.pesoAnteriorPct)} → {formatearPorcentaje(m.pesoNuevoPct)}
                   </span>
-                </div>
-              </div>
+                </span>
+              </li>
             );
           })}
-        </div>
-
-        {alAccionar ? (
-          <Button
-            className="min-h-12 w-full rounded-xl"
-            onClick={() =>
-              alAccionar({
-                accion: "confirmar_rebalanceo",
-                portafolioId,
-                totalOperaciones: movimientos.length,
-              })
-            }
-          >
-            <ShieldCheck className="size-4 mr-1.5" /> Confirmar y rebalancear portafolio
-          </Button>
-        ) : null}
+        </ul>
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={clasesPie}>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+        {alAccionar ? (
+          <Button
+            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            onClick={() => alAccionar({ accion: "confirmar_rebalanceo", portafolioId, totalOperaciones: movimientos.length })}
+          >
+            Confirmar rebalanceo <ArrowRight />
+          </Button>
+        ) : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
+      </CardFooter>
     </Card>
   );
 }
