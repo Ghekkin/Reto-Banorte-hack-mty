@@ -108,6 +108,14 @@ que `main` no se rompió. Quien los esté trabajando: su siguiente commit los co
 historial dirá que salieron conmigo, y no es cierto. Mientras compartamos un solo árbol de
 trabajo, antes de correr `sync.sh` mira `git status` y avisa.
 
+### 13:45 · arreglado — `main` quedó con una prueba del catálogo en rojo, por mi `sync.sh`
+
+Mi commit `3ada924` volvió a llevarse cambios de otra sesión: `ProyeccionPagoCredito` ya no
+declaraba la acción `simular_abono_capital` (ninguna tool la atiende), pero el componente
+seguía pintando el botón que la manda. Quité el botón y el campo de ahorro estimado del
+ejemplo, que el schema ahora pide no inventar. Typecheck y las 91 pruebas del catálogo en
+verde.
+
 ### 13:35 · arreglado a medias — el disco del VPS estaba al 99 % y los deploys de la web fallaban (#15)
 
 Fui a ver por qué producción seguía sirviendo la web en `0a31335` con `main` dos commits

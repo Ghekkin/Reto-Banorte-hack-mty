@@ -153,15 +153,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
       </CardContent>
 
       <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
-        {alAccionar ? (
-          <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
-            size="lg"
-            onClick={() => alAccionar({ accion: "simular_abono_capital", creditoId, saldoInsolutoCentavos })}
-          >
-            Simular abono a capital <ArrowRight />
-          </Button>
-        ) : null}
+        {/* Sin boton: `simular_abono_capital` no lo atiende ninguna tool del MCP (ver schema.ts). */}
         {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
       </CardFooter>
     </Card>
