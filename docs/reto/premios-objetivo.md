@@ -23,7 +23,7 @@ se escribe en el chat. Y nada nuevo entra después de la hora 30.
 | Vultr | Deploy + URL pública HTTPS para el MCP | ~1 h | **Sí** |
 | Tiger Data | Los movimientos financieros *son* series de tiempo | 2–3 h | **Sí, mejora el reto** |
 | ElevenLabs | Voz de entrada, interfaz generada de salida; ya usado en Yolani | 1–2 h | **Sí** |
-| Gemini API | Con AI SDK es agregar `@ai-sdk/google`; A2UI nace en Google y sus ejemplos usan Gemini | 1 h | **Probable, subió** |
+| Gemini API | **Es el modelo principal** (ADR 0005): Gemini 3.8 Flash vía `@ai-sdk/google` | 0 h extra | **Sí, objetivo** |
 | MongoDB Atlas | Compite con Tiger Data por la misma capa | 2 h | Solo si Tiger falla |
 | Snowflake | Igual, y más pesado de montar | 3 h+ | No |
 | Solana | Diluye la narrativa bancaria | 4 h+ | **No** |
@@ -49,8 +49,9 @@ se escribe en el chat. Y nada nuevo entra después de la hora 30.
 
 **Nivel 3 — si va sobrado (1 h)**
 
-- **Gemini**: mejor en una tarea multimodal (foto de estado de cuenta o ticket → datos
-  → interfaz) que como simple cambio de modelo.
+- **Gemini**: ya es el modelo principal, así que el premio se compite sin costo extra.
+  Si sobra tiempo, una tarea multimodal (foto de un ticket → movimiento categorizado →
+  interfaz) lo hace más vistoso.
 
 ## Descartados
 

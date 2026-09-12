@@ -64,7 +64,7 @@ contexto. Se demuestra en el guion con dos usuarios demo.
 
 ### Decisiones abiertas
 
-- Modelo: Claude por defecto vía `@ai-sdk/anthropic`; Gemini como alternativa (A2UI
-  nace en Google y el premio de Gemini está en la mesa).
+- Modelo: **Gemini 3.8 Flash** por defecto vía `@ai-sdk/google`; Claude Sonnet 5 como
+  respaldo con `MODELO=claude` (ADR 0005).
 - Si el spike de `@a2ui/react` falla (ADR 0003), el `MessageProcessor` es nuestro.
 - Transporte agente → cliente: SSE/JSONL por el route handler de Next.js.

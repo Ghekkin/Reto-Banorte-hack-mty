@@ -14,6 +14,10 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **06:20 · decisión** — Modelo (ADR 0005): Gemini 3.8 Flash principal por costo
+  (~$40 el hack), latencia y premio; Claude Sonnet 5 cableado como respaldo con
+  `MODELO=claude`. Opus descartado por precio. Facturación en Google desde la hora 1.
+
 - **05:50 · decisión** — Caso de uso (ADR 0004): los tres primeros candidatos como un
   solo viaje —reestructura de tarjeta, gasto por categoría, meta de ahorro— en orden
   estricto (fase 1 completa a la hora 10, 2 a la 18, 3 a la 24, congelación 30). Dos

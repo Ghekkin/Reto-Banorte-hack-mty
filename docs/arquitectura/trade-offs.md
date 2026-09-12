@@ -19,7 +19,7 @@ creíbles, y una regla: nada que no esté probado entra a la demo.
 
 | Dimensión | Decisión | Alternativa descartada | Qué ganamos | Qué sacrificamos | ADR |
 |---|---|---|---|---|---|
-| **Modelo** | Claude Sonnet vía AI SDK, intercambiable por variable de entorno | Gemini (nativo del ecosistema A2UI); modelos locales | Tool calling y structured output confiables; el equipo lo conoce | Costo por token; dependencia de una API externa en la demo (mitigado con plan B grabado) | pendiente |
+| **Modelo** | **Gemini 3.8 Flash** (`gemini-3.8-flash`, $0.75/$3.75 por 1M) vía AI SDK; Claude Sonnet 5 cableado como respaldo con `MODELO=claude` | Opus 5 (6–8× el costo); Sonnet 5 como principal; Haiku 4.5 | Costo total del hack ~$40; latencia mínima para "tiempo real"; ecosistema natal de A2UI; premio Gemini | Menos juicio que Opus/Sonnet en decisiones de interfaz (se mide en el ensayo de la hora 24); nivel gratuito insuficiente, requiere facturación | 0005 |
 | **Protocolo de UI** | A2UI v0.9.1 con `@a2ui/react` y catálogo propio | Protocolo propio `tipo → componente`; MCP Apps; renderer Lit | Estándar que el jurado nombró; catálogo controlado (UI como datos, sin código arbitrario); puntos de ingeniería | Paquete en preview (plan B: processor propio de los mismos mensajes) | 0003 |
 | **Protocolo de datos y acciones** | MCP propio, Streamable HTTP, tools de lectura y de acción | Llamar funciones internas sin MCP | Las mismas tools sirven a cualquier cliente; la acción es visible y auditable | Un proceso más; latencia de un salto HTTP | 0001 |
 | **Lenguaje** | TypeScript de punta a punta, Zod como contrato | Python + Next.js; NestJS | Un schema, un lenguaje, cualquiera toca cualquier archivo | Sin pandas/sklearn a la mano (escape: ADR 0002) | 0001 |

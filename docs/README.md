@@ -43,6 +43,7 @@ quien.
 - [0002 — Python solo detrás de una tool](decisiones/0002-python-solo-detras-de-una-tool.md)
 - [0003 — A2UI real con catálogo propio](decisiones/0003-a2ui-como-protocolo-de-interfaz.md)
 - [0004 — Caso de uso: tres intenciones en orden estricto](decisiones/0004-caso-de-uso.md)
+- [0005 — Gemini 3.8 Flash principal, Sonnet 5 de respaldo](decisiones/0005-modelo-gemini-3-8-flash.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan

@@ -12,6 +12,7 @@ lo real, y `CLAUDE.md` recibe los comandos en "Comandos habituales" y el mapa.
 
 ```
 apps/web/            Next.js (App Router) + React + Tailwind + AI SDK    puerto 3000
+                     + @ai-sdk/google (principal) + @ai-sdk/anthropic (respaldo)
                      + @a2ui/react @a2ui/web_core (renderer A2UI)
 apps/mcp/            TS + @modelcontextprotocol/sdk + Express             puerto 3100
 packages/catalogo/   Catálogo A2UI propio: schema + componente React + .jsonl de ejemplo por componente

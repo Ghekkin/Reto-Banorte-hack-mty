@@ -18,7 +18,7 @@ dominio del rol `contrato`. Vive en `apps/web/src/lib/agente/` y se expone por
 | `mcp-cliente.ts` | Conecta al servidor MCP por Streamable HTTP (`MCP_URL`, `MCP_TOKEN`) y convierte sus tools al formato del AI SDK. Una conexión por request. |
 | `catalogo.ts` | Carga el JSON del catálogo (`packages/catalogo`) y construye el schema de salida A2UI restringido a **nuestros** componentes. |
 | `prompt.ts` | El system prompt. Único lugar donde vive. |
-| `modelo.ts` | Proveedor/modelo por `MODELO` (default Claude Sonnet vía `@ai-sdk/anthropic`; `@ai-sdk/google` si se decide Gemini). |
+| `modelo.ts` | Proveedor/modelo por `MODELO`: `gemini` (default) → `google("gemini-3.8-flash")` con nivel de pensamiento `GEMINI_THINKING` (default `low`); `claude` → `anthropic("claude-sonnet-5")`. ADR 0005. Nada más en el código sabe cuál es. |
 | `agente.ts` | El loop: mensajes + acciones previas → tools MCP → mensajes A2UI. `stopWhen`/límite ≤ 8 pasos, timeout, log por paso. |
 | `a2ui.ts` | Helpers para emitir `createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface` válidos (v0.9.1) y validar contra el schema del catálogo antes de mandarlos. |
 
@@ -69,6 +69,13 @@ catálogo, cierra con una frase de texto como máximo; cuándo elegir cada compo
 bajo → énfasis en ahorro; mora → énfasis en reestructura); qué hacer al recibir una
 `action`; qué no hace (inventar montos, prometer acciones no ejecutadas, componentes
 fuera del catálogo). Cada cambio: entrada en `docs/bitacora/equipo.md`.
+
+## Los dos proveedores
+
+El guion se prueba con `MODELO=gemini` y con `MODELO=claude` al menos una vez (hora
+24). Todo lo que el agente hace —tools, structured output A2UI, acciones— debe
+funcionar igual en los dos; si algo solo funciona en uno, es un bug del agente, no del
+modelo. Structured output contra el schema del catálogo en ambos.
 
 ## Probar
 
