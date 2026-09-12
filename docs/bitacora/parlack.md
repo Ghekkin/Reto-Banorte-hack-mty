@@ -2,6 +2,38 @@
 
 ## 2026-09-12
 
+### 04:10 · hecho — Los 7 componentes que faltaban y lo demás de la lista del A2UI
+
+Lo que quedaba de "¿qué falta para el A2UI?", cerrado:
+
+- **Los 7 componentes del catálogo** (`9d5351e`): `ResumenTarjeta`, `PlanDePago`,
+  `Calendario`, `GastoPorCategoria`, `DetalleCategoria`, `SimuladorMeta`, `MetaActiva`.
+  Sobre shadcn, cero hex, tres estados, props alineadas con las tools. Cada uno con su
+  `.jsonl` validado contra los schemas oficiales y una prueba nueva que **pinta** cada
+  ejemplo con `react-dom/server` (`render.spec.tsx`): un componente que truena al recibir
+  sus props no lo detecta ningún schema. La `Confirmacion` de referencia usaba divs a mano
+  para el skeleton; ahora usa el de shadcn. Doc en `docs/como-funciona/catalogo.md`.
+- **Ejemplos en el prompt** como few-shot, solo los que usan componentes que existen.
+- **`mensajeClienteAServidor()`** en a2ui: nuestra acción envuelta como manda
+  `client_to_server.json` pasa el validador oficial sin un error (test).
+- Frontera de error por componente, canal `VALIDATION_FAILED` de ida y vuelta y
+  `GET /api/agente` con capacidades: los empecé yo y los terminó y commiteó la otra sesión
+  (`0568d25`), incluida una prueba en DOM real de la frontera. Bien.
+- **Panel de transparencia: NO lo hice.** Lo tenía escrito y lo descarté: es frontend del
+  producto, y el frontend lo está rediseñando otra sesión. Los datos que necesita ya están
+  en el stream y `usarAgente` los guarda en `transparencia` (las líneas `tool`, `a2ui`,
+  `error` y `fin` con pasos y ms); armar el panel es leer ese arreglo. Queda para `web`.
+  De paso: el placeholder del lienzo (`components/maya/lienzo.tsx`) dice que los
+  componentes del catálogo "se conectan en el siguiente paso", y eso ya no es cierto
+  desde `9d5351e`: los 8 existen. Es una línea de texto, de `web`.
+
+Decisiones de diseño de los componentes que vale la pena defender: la **selección del plazo
+y la posición del slider viven en el componente** (estado de interfaz), y solo la
+confirmación viaja al agente; ir por cada clic sería un turno por toque. El `SimuladorMeta`
+recalcula la fecha localmente con la misma aritmética que `proyectar_ahorro` (división sin
+rendimiento) para que el slider se sienta; el número autoritativo vuelve de la tool.
+
+
 > Aviso sobre las horas: las entradas de más abajo de este mismo día (05:20 a 09:45)
 > están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
 > adelante, hora de Monterrey como manda el repo.

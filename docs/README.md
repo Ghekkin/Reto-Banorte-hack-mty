@@ -66,6 +66,7 @@ quien.
 - [Shell web](como-funciona/shell-web.md) — las cinco secciones, la navegación en móvil y escritorio, el usuario activo en cookie y la capa de datos sobre los CSV
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, los 22 CSV y las invariantes que sostienen la demo
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
+- [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI propios: qué tool llena cada uno, qué acción devuelve, cómo se prueban
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 
 ### Algoritmos
