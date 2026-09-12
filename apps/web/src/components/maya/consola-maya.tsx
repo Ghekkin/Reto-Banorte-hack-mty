@@ -5,6 +5,7 @@ import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo } from "@/components/maya/lienzo";
 import { ProgresoMaya } from "@/components/maya/progreso-maya";
+import type { AccionEntrante } from "@/lib/agente/tipos";
 import { usarAgente } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
 import type { UsuarioDemo } from "@/lib/usuarios";
@@ -25,12 +26,15 @@ const CHIPS_INICIALES: Record<string, string[]> = {
 export function ConsolaMaya({
   usuario,
   intencionInicial,
+  accionInicial,
 }: {
   usuario: UsuarioDemo;
   intencionInicial?: string;
+  /** Un boton ya tocado en el Inicio que armo Maya: se ejecuta aqui, como cualquier toque. */
+  accionInicial?: AccionEntrante;
 }) {
   const agente = usarAgente(usuario.id);
-  const { enviarTexto } = agente;
+  const { enviarTexto, enviarAccion } = agente;
 
   // Una sola vez por intención: evita que cada render vuelva a disparar la pregunta
   const yaEnviada = useRef<string | undefined>(undefined);
@@ -39,6 +43,15 @@ export function ConsolaMaya({
     yaEnviada.current = intencionInicial;
     void enviarTexto(intencionInicial);
   }, [intencionInicial, enviarTexto]);
+
+  // Igual para la accion: una vez, y se quita de la URL para que recargar no la repita.
+  const yaDisparada = useRef(false);
+  useEffect(() => {
+    if (!accionInicial || yaDisparada.current) return;
+    yaDisparada.current = true;
+    window.history.replaceState(null, "", "/maya");
+    void enviarAccion(accionInicial);
+  }, [accionInicial, enviarAccion]);
 
   const chips = agente.sugerencias.length > 0 ? agente.sugerencias : (CHIPS_INICIALES[usuario.id] ?? []);
   const hayConversacion = agente.hilo.length > 0 || agente.ocupado;

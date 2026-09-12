@@ -5,7 +5,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { correrTurno } from "../agente";
 import { mensajesDelTurno } from "../historial";
 import { herramientasDelMcp } from "../mcp-cliente";
-import { armarMensajes, rescatarJson } from "../pantalla";
+import { armarMensajes, quitarComasColgantes, rescatarJson } from "../pantalla";
 import type { LineaStream, PeticionAgente } from "../tipos";
 import { esquemaPeticion } from "../tipos";
 import { modeloColgado, modeloGuionizado, pasoConTool } from "./ayudas";
@@ -641,6 +641,63 @@ describe("mensajesDelTurno", () => {
  * manda es JSON con algo pegado: una cerca de markdown, una frase de cortesia, dos
  * bloques. Tirar la pantalla por eso cuesta un turno de 6 s en la demo.
  */
+describe("la accion por default", () => {
+  const plan = {
+    id: "plan",
+    component: "PlanDePago",
+    tarjetaId: "tar_beto_clasica",
+    opciones: [{ plazoMeses: 18, mensualidadCentavos: 319335, cat: 0.2858, ahorroCentavos: 13206520, recomendado: true }],
+    razon: "Tienes la tarjeta al 96.7 % de su limite y pagas intereses cada mes",
+  };
+  const armar = (componente: Record<string, unknown>) =>
+    armarMensajes({
+      razon: "Una razon suficientemente larga",
+      texto: "Listo.",
+      componentesJson: JSON.stringify([{ id: "root", component: "Column", children: [componente.id] }, componente]),
+    });
+  const componentesDe = (r: ReturnType<typeof armarMensajes>) =>
+    r.ok ? (r.mensajes[1] as { updateComponents: { components: Array<Record<string, unknown>> } }).updateComponents.components : [];
+
+  it("un componente con boton y sin action recibe la accion que declara el catalogo", () => {
+    const r = armar(plan);
+    expect(r.ok).toBe(true);
+    expect(componentesDe(r)[1]?.action).toEqual({ event: { name: "aplicar_plan_pago", context: {} } });
+  });
+
+  it("si el modelo la declaro, se respeta tal cual", () => {
+    const declarada = { event: { name: "aplicar_plan_pago", context: { tarjetaId: "tar_beto_clasica" } } };
+    const r = armar({ ...plan, action: declarada });
+    expect(r.ok).toBe(true);
+    expect(componentesDe(r)[1]?.action).toEqual(declarada);
+  });
+
+  it("un componente sin acciones en el catalogo se queda sin action", () => {
+    const r = armar({ id: "conf", component: "Confirmacion", titulo: "Listo", detalle: "18 meses", razon: "Una razon con su dato" });
+    expect(r.ok).toBe(true);
+    expect(componentesDe(r)[1]?.action).toBeUndefined();
+  });
+});
+
+describe("quitarComasColgantes", () => {
+  it("quita la coma antes de } o ], con o sin espacios", () => {
+    expect(quitarComasColgantes('{"a": 1,}')).toBe('{"a": 1}');
+    expect(quitarComasColgantes('[1, 2, ]')).toBe("[1, 2]");
+    expect(quitarComasColgantes('{"a": [1,],\n}')).toBe('{"a": [1]}');
+  });
+
+  it("no toca una coma que va dentro de una cadena", () => {
+    const texto = '{"t": "hola, }", "u": "adios ,]"}';
+    expect(quitarComasColgantes(texto)).toBe(texto);
+  });
+
+  it("armarMensajes acepta una pantalla con comas colgantes", () => {
+    const conComa = PANTALLA_VALIDA.replace(/}\]$/, "},]");
+    expect(conComa).not.toBe(PANTALLA_VALIDA);
+    const r = armarMensajes({ razon: "Una razon suficientemente larga", texto: "Listo.", componentesJson: conComa });
+    expect(r.ok).toBe(true);
+  });
+});
+
 describe("rescatarJson", () => {
   const componentes = '[{"id":"root","component":"Text","texto":"hola"}]';
 
