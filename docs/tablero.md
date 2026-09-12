@@ -21,8 +21,8 @@ vez sin conflictos de git.
 ## Bloqueos
 
 - **CRÍTICO · el modelo se quedó sin cuota (issue #12).** El proyecto de Gemini pasó su
-  tope de gasto mensual, así que en producción no se construye ninguna pantalla: el turno
-  muere en el modelo y sale el aviso. **No es del código**: `estable` (`737f0a1`) pasó el
+  tope de gasto mensual, así que **ni en local ni en producción** se construye ninguna
+  pantalla: el turno muere en el modelo y sale el aviso. **No es del código**: `estable` (`737f0a1`) pasó el
   ensayo completo a las 12:00 con este mismo código. Lo destraba una persona con acceso:
   subir el tope en https://ai.studio/spend, o poner `ANTHROPIC_API_KEY` + `MODELO=claude`
   en Coolify (el respaldo del ADR 0005 ya está cableado, la llave está vacía). Mientras
