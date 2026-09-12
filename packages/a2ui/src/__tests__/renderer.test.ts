@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { procesar, procesarVarios } from "../procesar";
 import { escribir, leer, resolver } from "../bindings";
-import { arbol } from "../arbol";
+import { arbol, componentesVisibles } from "../arbol";
 import { validarMensaje } from "../validar";
 import { emitirAccion } from "../acciones";
 import { estadoVacio, propsDe, VERSION_A2UI, type MensajeA2UI } from "../tipos";
@@ -207,5 +207,61 @@ describe("acciones", () => {
       timestamp: "2026-09-13T01:12:00Z",
       context: { plazo: 18, idempotencyKey: "c_01J:2026-09-13T01:12:00Z" },
     });
+  });
+});
+
+describe("componentesVisibles", () => {
+  /** El caso del issue #3: dos pantallas seguidas sobre la misma superficie. */
+  const confirmacion: MensajeA2UI = {
+    version: VERSION_A2UI,
+    updateComponents: {
+      surfaceId: "principal",
+      components: [{ id: "root", component: "Confirmacion", titulo: "Tu plan quedo activo" }],
+    },
+  };
+
+  it("devuelve solo lo alcanzable desde la raiz, no el historico del Map", () => {
+    const { estado } = procesarVarios(estadoVacio(), [crear, componentes, confirmacion]);
+    const superficie = estado.get("principal")!;
+    // El Map sigue teniendo los tres de la pantalla anterior: es upsert, no reemplazo.
+    expect(superficie.componentes.size).toBe(3);
+    expect(componentesVisibles(superficie).map((c) => c.component)).toEqual(["Confirmacion"]);
+  });
+
+  it("lista el arbol completo cuando todo esta enlazado", () => {
+    const { estado } = procesarVarios(estadoVacio(), [crear, componentes]);
+    expect(componentesVisibles(estado.get("principal")!).map((c) => c.component)).toEqual([
+      "Column",
+      "ResumenTarjeta",
+      "PlanDePago",
+    ]);
+  });
+
+  it("un componente repetido por plantilla aparece una sola vez", () => {
+    const conPlantilla: MensajeA2UI = {
+      version: VERSION_A2UI,
+      updateComponents: {
+        surfaceId: "principal",
+        components: [
+          { id: "root", component: "Column", children: { componentId: "fila", path: "/movimientos" } },
+          { id: "fila", component: "Text", texto: { path: "/descripcion" } },
+        ],
+      },
+    };
+    const datos: MensajeA2UI = {
+      version: VERSION_A2UI,
+      updateDataModel: {
+        surfaceId: "principal",
+        path: "/",
+        value: { movimientos: [{ descripcion: "uno" }, { descripcion: "dos" }] },
+      },
+    };
+    const { estado } = procesarVarios(estadoVacio(), [crear, conPlantilla, datos]);
+    expect(componentesVisibles(estado.get("principal")!).map((c) => c.component)).toEqual(["Column", "Text"]);
+  });
+
+  it("sin superficie pintada, no hay nada visible", () => {
+    const { estado } = procesar(estadoVacio(), crear);
+    expect(componentesVisibles(estado.get("principal")!)).toEqual([]);
   });
 });

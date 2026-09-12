@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { estadoVacio, procesar, type Accion, type Estado, type MensajeA2UI } from "@maya/a2ui";
+import { componentesVisibles, estadoVacio, procesar, type Accion, type Estado, type MensajeA2UI } from "@maya/a2ui";
 import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente/tipos";
 
 /**
@@ -49,7 +49,9 @@ export function usarAgente(usuarioId: string) {
             superficie: superficie
               ? {
                   surfaceId: superficie.id,
-                  componentes: [...superficie.componentes.values()].map((c) => c.component),
+                  // Lo alcanzable desde la raiz, no el Map completo: ese acumula los
+                  // componentes de toda la conversacion y le mentiria al agente (issue #3).
+                  componentes: componentesVisibles(superficie).map((c) => c.component),
                   dataModel: superficie.dataModel,
                 }
               : undefined,
