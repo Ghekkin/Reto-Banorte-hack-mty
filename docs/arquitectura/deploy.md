@@ -139,6 +139,13 @@ Lo que eso implica:
   ejecuciones debajo del formulario). `No cleanup needed` quiere decir que revisó y el
   disco estaba bajo el umbral.
 
+**Verificado (12-sep 14:02)**: la API devuelve los ajustes de la tabla, y el historial
+tiene revisiones a las 13:45 y a las **14:00 en punto**, las dos `No cleanup needed`
+con el disco en 75–77 %. Las de antes eran las forzadas de medianoche UTC (18:00 en
+Monterrey), `78 % → 72 %`. A las 14:02 había 56 GB libres y 8 imágenes de `maya-web` y 7
+de `maya-mcp`; la primera revisión que encuentre el disco en 80 % o más las deja en tres
+por app (la que corre y dos).
+
 **Leerla, cambiarla o correrla a mano, por la API** (con el token de `/opt/reto/.env`;
 `PATCH /servers/{uuid}` no acepta estos campos, tienen su propia ruta):
 

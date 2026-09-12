@@ -18,6 +18,14 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 14:03 · infra** — **Coolify ya limpia solo las imágenes viejas**: revisa cada
+  hora y, si el disco del VPS pasa del 80 %, deja de cada app la imagen que corre y las
+  dos anteriores (#15, cerrado). Para quien despliegue: la build que sigue a una
+  limpieza tarda más (va sin caché), y un rollback a algo más viejo que dos builds
+  reconstruye. Si vuelve `no space left on device`, lo primero es `df -h /`; nunca
+  `docker system prune` a mano, el VPS es compartido. Detalle en
+  `docs/arquitectura/deploy.md`.
+
 - **sáb 13:55 · decisión** — **Ana recibe una pantalla compuesta y honesta**: 
   `ProyeccionPagoCredito` con su crédito personal + `SimuladorMeta` con "Crear apartado".
   El guion decía "no tiene deuda, así que el simulador", pero Ana **sí** tiene deuda —un

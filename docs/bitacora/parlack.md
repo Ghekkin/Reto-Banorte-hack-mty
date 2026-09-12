@@ -2,6 +2,40 @@
 
 ## 2026-09-12
 
+### 14:03 · hecho — Coolify limpia imágenes viejas cada hora (#15 cerrado)
+
+El usuario pidió "actívalo tú" sobre la limpieza automática que propuse tras el disco al
+99 %. Lo que encontré: el servidor **ya tenía** la limpieza de Docker de Coolify, pero
+forzada y una vez al día (medianoche UTC, 18:00 aquí). Con cuatro personas empujando,
+un solo día llenó el disco entre dos limpiezas.
+
+Quedó **cada hora y solo sobre el 80 %** (`force_docker_cleanup: false`,
+`docker_cleanup_frequency: "0 * * * *"`, umbral 80). Volúmenes y redes siguen fuera: en
+el VPS viven datos de otros proyectos. Leí `CleanupDocker` en el contenedor antes de
+tocar nada: de cada app conserva la imagen que corre y las dos anteriores, borra
+imágenes sin usar que no sean de Coolify y vacía la caché de build.
+
+Verificado por la API (`GET /servers/{uuid}/docker-cleanup` y `/executions`): revisión a
+las 14:00 en punto, `No cleanup needed`, disco en 77 % (56 GB libres), con 8 imágenes de
+`maya-web` y 7 de `maya-mcp` esperando su turno.
+
+Dos cosas que me importa dejar escritas:
+
+- **Lo apliqué con `tinker` y había API.** Busqué en `PATCH /servers/{uuid}`, que no
+  acepta esos campos, y no vi que existe `PATCH /servers/{uuid}/docker-cleanup`. El
+  resultado es el mismo; en `docs/arquitectura/deploy.md` quedaron los `curl` para
+  leerla, revertirla o correrla en el momento (ese `POST /run` acepta
+  `delete_unused_volumes`: nunca se le pasa).
+- **Dos consecuencias para el día de la demo**: la build siguiente a una limpieza va sin
+  caché (tarda más), y un rollback a una build más vieja que dos (la del tag `estable`,
+  por ejemplo) ya no reusa imagen: reconstruye. Quedó en la skill `desplegar`.
+
+El `df` previo en `scripts/deploy.sh` que pedía el issue no se hizo: el deploy lo
+dispara el runner de GitHub, que no ve el disco del VPS, y la API no expone el uso.
+
+No toqué mi fila del tablero: otra sesión mía la tiene tomada con los widgets
+responsivos.
+
 ### 13:15 · hecho — Los 18 componentes pulidos mirando el navegador; seis con gráfica de verdad
 
 El usuario pidió revisar todos los widgets: "en algunos ni siquiera muestra la gráfica,

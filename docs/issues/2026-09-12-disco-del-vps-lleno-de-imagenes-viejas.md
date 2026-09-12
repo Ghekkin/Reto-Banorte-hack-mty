@@ -1,5 +1,5 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: infra
 encontrado: 2026-09-12 13:25
@@ -39,7 +39,7 @@ proyectos que viven ahí.
 de commits viejos, conservando las dos que corren y la del tag `estable` (`737f0a1`), y
 `pnpm store prune` (2.6 GB). No toqué volúmenes ni imágenes de otros proyectos.
 
-**Lo que falta (por eso sigue abierto):** una política para que no vuelva a pasar. Dos
+**Lo que faltaba:** una política para que no vuelva a pasar. Dos
 opciones, cualquiera sirve:
 
 1. En Coolify, en cada aplicación, activar la limpieza de imágenes viejas tras el deploy
@@ -49,3 +49,19 @@ opciones, cualquiera sirve:
 
 Y en `scripts/deploy.sh`, antes de disparar el deploy, un `df` del servidor con aviso si hay
 menos de 5 GB: falla temprano y con el diagnóstico, no a los 15 minutos con un timeout.
+
+**Resolución (sáb 14:02):** opción 1, en Coolify. El servidor `localhost` ya tenía la
+limpieza de Docker, pero **forzada y una vez al día** (medianoche UTC): un día de pushes
+llenaba el disco entre dos limpiezas. Quedó **cada hora y solo si el disco pasa del
+80 %** (`force_docker_cleanup: false`, `docker_cleanup_frequency: "0 * * * *"`,
+`docker_cleanup_threshold: 80`); volúmenes y redes siguen fuera. Cuando corre conserva de
+cada app la imagen que está sirviendo y las dos anteriores. Verificado con
+`GET /api/v1/servers/{uuid}/docker-cleanup` y su historial: revisiones a las 13:45 y a las
+14:00 en punto, `No cleanup needed` con el disco en 75–77 %. Detalle, consecuencias (la
+build siguiente a una limpieza va sin caché; un rollback más viejo que dos builds
+reconstruye) y cómo revertir en `docs/arquitectura/deploy.md`.
+
+El `df` previo en `scripts/deploy.sh` **no se hizo**: el deploy lo dispara el runner de
+GitHub, que no ve el disco del VPS, y la API de Coolify no expone el uso de disco. Queda
+en la skill `desplegar` qué revisar si un deploy vuelve a fallar con `no space left on
+device`.
