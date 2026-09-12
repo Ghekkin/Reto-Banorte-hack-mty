@@ -13,7 +13,7 @@ vez sin conflictos de git.
 | Rol | Quién | En qué | Desde |
 |---|---|---|---|
 | web | — | — | — |
-| mcp | luis | Paquete 2 completado: detectar_fugas, cancelar_suscripcion y crear_tope_gasto con 56 pruebas en verde | sáb 03:00 |
+| mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Paquete 1 del roadmap del MCP terminado: `panorama_inicial`, `diagnostico_salud_financiera` y `consultar_creditos`. 12 tools, 78 pruebas | sáb 08:45 |
 | contrato | — | — | — |
 | demo | parlack | Ciclo de error A2UI cerrado (`VALIDATION_FAILED` vuelve al agente), frontera de error por componente, `GET /api/agente` con capacidades. Sigue: el guion con llave de modelo | sáb 03:40 |

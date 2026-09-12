@@ -28,3 +28,6 @@ export * from "./tools/crear-tope-gasto.js";
 export * from "./tools/diagnostico-salud-financiera.js";
 export * from "./tools/consultar-creditos.js";
 export * from "./tools/panorama-inicial.js";
+export * from "./tools/consultar-inversiones.js";
+export * from "./tools/consultar-catalogo-inversiones.js";
+export * from "./tools/consultar-historico-inversion.js";

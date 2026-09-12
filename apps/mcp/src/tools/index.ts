@@ -15,6 +15,9 @@ import { cancelarSuscripcion } from "./cancelar-suscripcion.js";
 import { crearTopeGasto } from "./crear-tope-gasto.js";
 import { diagnosticoSaludFinanciera } from "./diagnostico-salud-financiera.js";
 import { consultarCreditos } from "./consultar-creditos.js";
+import { consultarInversiones } from "./consultar-inversiones.js";
+import { consultarCatalogoInversiones } from "./consultar-catalogo-inversiones.js";
+import { consultarHistoricoInversion } from "./consultar-historico-inversion.js";
 
 /**
  * Las tools del servidor. El orden es el del viaje que la demo cuenta: primero saber
@@ -25,15 +28,15 @@ import { consultarCreditos } from "./consultar-creditos.js";
  *
  * Lectura:  panorama_inicial · consultar_perfil · consultar_tarjeta · consultar_movimientos ·
  *           simular_reestructura · consultar_plan · comparar_periodos · proyectar_ahorro ·
- *           diagnostico_salud_financiera · consultar_creditos
- * Accion:   aplicar_plan_pago (fase 1) · crear_apartado (fase 3)
+ *           diagnostico_salud_financiera · consultar_creditos · detectar_fugas ·
+ *           consultar_inversiones · consultar_catalogo_inversiones · consultar_historico_inversion
+ * Accion:   aplicar_plan_pago (fase 1) · crear_apartado (fase 3) ·
+ *           cancelar_suscripcion (fase 2) · crear_tope_gasto (fase 2)
  *
- * Las 9 primeras son las del ADR 0004. Las tres ultimas son el Paquete 1 del
- * `docs/arquitectura/roadmap-mcp.md`: el retrato con el que el agente decide, la deuda
- * completa y la lectura compuesta que ahorra viajes.
- *
- * Pendiente y fuera de alcance por ahora: `crear_tope_gasto`, `detectar_fugas` y
- * `cancelar_suscripcion` (Paquete 2).
+ * Las 9 primeras son las del ADR 0004.
+ * Paquete 1: diagnostico_salud_financiera, consultar_creditos, panorama_inicial.
+ * Paquete 2: detectar_fugas, cancelar_suscripcion, crear_tope_gasto.
+ * Paquete Inversiones: consultar_inversiones, consultar_catalogo_inversiones, consultar_historico_inversion.
  */
 export const TOOLS: DefinicionDeTool[] = [
   panoramaInicial,
@@ -51,6 +54,9 @@ export const TOOLS: DefinicionDeTool[] = [
   crearTopeGasto,
   diagnosticoSaludFinanciera,
   consultarCreditos,
+  consultarInversiones,
+  consultarCatalogoInversiones,
+  consultarHistoricoInversion,
 ];
 
 export function registrarTools(server: McpServer): void {
