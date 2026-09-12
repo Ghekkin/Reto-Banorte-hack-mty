@@ -1,4 +1,22 @@
 import type { NextConfig } from "next";
+import { join } from "node:path";
+
+/**
+ * El `.env` vive en la RAIZ del repo, pero Next corre con `cwd` en `apps/web` y solo
+ * busca `.env` ahi. `scripts/dev.sh` lo resolvia exportando las variables antes de
+ * arrancar; eso solo funciona con bash, asi que en Windows (o con
+ * `pnpm --filter @maya/web dev` a secas) la app quedaba sin `DATABASE_URL` y **todas
+ * las pantallas salian vacias**, porque `lib/datos/tablas.ts` devuelve `[]` cuando
+ * falta. Cargarlo aqui hace que el origen del dato no dependa de como arrancaste.
+ *
+ * `loadEnvFile` NO sobreescribe lo que ya esta en el entorno, asi que `dev.sh`, Docker
+ * y Coolify siguen mandando. El `try` es porque en la imagen de produccion no hay `.env`.
+ */
+try {
+  process.loadEnvFile(join(import.meta.dirname, "..", "..", ".env"));
+} catch {
+  // Sin .env en la raiz: se usa lo que venga del entorno.
+}
 
 const nextConfig: NextConfig = {
   /** Los paquetes del workspace se publican en TypeScript, sin build propio. */

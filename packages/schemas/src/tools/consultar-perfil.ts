@@ -4,7 +4,7 @@ import { Centavos, IdUsuario } from "../comunes.js";
 /**
  * `consultar_perfil` — lectura. La plantilla de la que salen las demas:
  * entrada minima, salida con lo que el agente necesita para DECIDIR la interfaz.
- * Dueno del dato: rol `mcp` (db/datos/usuarios.csv).
+ * Dueno del dato: rol `mcp` (tabla `banorte.usuarios`).
  */
 export const EntradaConsultarPerfil = z.object({
   usuarioId: IdUsuario,

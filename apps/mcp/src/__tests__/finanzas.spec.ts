@@ -24,7 +24,7 @@ describe("finanzas contra los datos generados", () => {
     expect(Math.abs(calculado - aEntero(tarjeta.pago_minimo_centavos))).toBeLessThanOrEqual(100);
   });
 
-  it("reproduce las cuatro ofertas de planes_reestructura.csv", () => {
+  it("reproduce las cuatro ofertas de banorte.planes_reestructura", () => {
     const minimo = escenarioPagoMinimo(saldo, tasaTarjeta);
     for (const fila of filtrar("planes_reestructura", "tarjeta_id", "tar_beto_clasica")) {
       const oferta = ofertaReestructura({

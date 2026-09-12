@@ -1,16 +1,22 @@
+---
+name: "quitar-csv-muerto-y-diagnosticar-base"
+created: "2026-09-12T14:31:40.827Z"
+status: pending
+---
+
 # Quitar el CSV muerto y diagnosticar la base
 
 ## Lo que ya está hecho (y por qué esto es más chico de lo que parece)
 
 El ADR 0010 (13-sep) ya decidió y ejecutó lo que pides: **Postgres es la única fuente de datos**. La migración en código está completa:
 
-| Pieza | Estado |
-|---|---|
+| Pieza                              | Estado                                                               |
+| ---------------------------------- | -------------------------------------------------------------------- |
 | `apps/web/src/lib/datos/tablas.ts` | Lee Postgres con `pg` y `DATABASE_URL`. Es el que usa `consultas.ts` |
-| `apps/mcp/src/datos/postgres.ts` | Carga el esquema entero al arrancar; **lanza** si no hay base |
-| `apps/mcp/src/config.ts:16` | `origenDatos: "postgres" as const` — sin flag, sin alternativa |
-| `db/datos/` (los 22 CSV) | Ya borrado del repo |
-| `FEATURE_POSTGRES`, `DATOS_CSV` | Ya no existen en código ni en `.env.example` |
+| `apps/mcp/src/datos/postgres.ts`   | Carga el esquema entero al arrancar; **lanza** si no hay base        |
+| `apps/mcp/src/config.ts:16`        | `origenDatos: "postgres" as const` — sin flag, sin alternativa       |
+| `db/datos/` (los 22 CSV)           | Ya borrado del repo                                                  |
+| `FEATURE_POSTGRES`, `DATOS_CSV`    | Ya no existen en código ni en `.env.example`                         |
 
 Queda **un solo** lector de CSV: `apps/web/src/lib/datos/leer-csv.ts`, 114 líneas, apuntando a `db/datos` (que ya no existe). **Nadie lo importa** — verificado por grep sobre todo `apps/web/**/*.{ts,tsx}`. Borrarlo no cambia ningún comportamiento.
 
@@ -50,7 +56,7 @@ El archivo completo. Sin sustituto: `tablas.ts` ya expone la misma firma (`leerT
 - `apps/web/src/lib/usuarios.ts:7` — quedó una frase a medio editar ("Los ids coinciden con `la base/usuarios.csv`") que ya no se lee bien.
 - `packages/schemas/src/tools/consultar-perfil.ts:6` — "Dueno del dato: rol `mcp` (db/datos/usuarios.csv)".
 - `db/reiniciar.sql:21` — comentario sobre los CSV.
-- `apps/mcp/src/__tests__/finanzas.spec.ts:26` — nombre de test "reproduce las cuatro ofertas de planes_reestructura.csv". Cosmético, pero es el nombre que sale en la salida de `pnpm test`.
+- `apps/mcp/src/__tests__/finanzas.spec.ts:26` — nombre de test "reproduce las cuatro ofertas de planes\_reestructura.csv". Cosmético, pero es el nombre que sale en la salida de `pnpm test`.
 
 ### 5. Docs
 

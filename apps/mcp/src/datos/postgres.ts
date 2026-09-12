@@ -76,7 +76,7 @@ export async function cargarTablasDesdePostgres(): Promise<Map<string, Fila[]>> 
   const nombres = await nombresDeTablas(cliente);
   if (nombres.length === 0) {
     throw new Error(
-      `la base respondio pero el esquema "${ESQUEMA}" no tiene tablas: corre \`pnpm datos:cargar\``,
+      `la base respondio pero el esquema "${ESQUEMA}" no tiene tablas: corre \`pnpm datos:restaurar\``,
     );
   }
   for (const nombre of nombres) {
