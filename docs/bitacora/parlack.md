@@ -487,6 +487,63 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 13:55 · arreglado — Ana: sin tarjeta no es sin deuda, y el disco del VPS al 100 %
+
+**Lo de Ana empezó por entender, no por ajustar.** El guion decía que Ana ve
+`SimuladorMeta` y el modelo le armaba `ProyeccionPagoCredito`. Mi primera intuición era
+"el modelo se equivoca, hay que forzarlo". No se equivocaba: estaba leyendo el catálogo al
+pie de la letra. `SimuladorMeta` decía "la persona **no tiene deuda**", y Ana **sí** la
+tiene: un crédito personal al **27.9 % anual, CAT 41.4 %**. Y `ProyeccionPagoCredito`
+decía "¿cuánto pagaré de puros intereses?", que es casi la pregunta de Ana. El guion
+suponía "no tiene deuda revolvente"; el catálogo decía "no tiene deuda". No es lo mismo.
+
+Y con esos números, **forzar el simulador era darle peor consejo**: mandar a ahorrar a
+alguien que carga un crédito al 41 % de CAT. Un juez de banca lo ve en dos segundos.
+
+Lo que salió al jalar el hilo:
+
+- **El botón de `ProyeccionPagoCredito` era una acción muerta.** Disparaba
+  `simular_abono_capital` y ninguna tool del MCP lo atiende. Quité la acción del catálogo
+  (sin acción declarada, `Superficie` no pasa `alAccionar` y el botón no se pinta) y del
+  `.jsonl` de ejemplo. Dos líneas en el schema de Chee3mss, sin tocar su componente.
+- **La tarjeta pedía números que ninguna tool devolvía.** La tabla de amortización sí sale
+  de `consultar_creditos` con `incluirAmortizacion`, pero con máximo 12 pagos y a Ana le
+  quedan 15. El total de intereses sale exacto de una identidad del préstamo amortizable:
+  **mensualidad × pagos restantes − saldo** (457,095 × 15 − 5,578,308 = $12,781.17). Lo
+  que NO sale de ningún lado es "cuánto ahorra abonando a capital", así que esa cifra se
+  queda fuera en vez de estimarla. Ojo: en la pregunta que te hice dije que la tarjeta
+  mostraría lo que ahorra abonando; no se puede hacer honestamente sin una tool nueva.
+- **El prompt tenía una regla escrita para Ana antes de que existiera el componente de
+  crédito**: "con `tarjeta: null`… pinta `SimuladorMeta`… si no pagas intereses, lo que
+  sigue es que tu dinero los gane". Ahora dice **"sin tarjeta NO es sin deuda"** y pide la
+  pantalla compuesta.
+
+Verificado con el modelo real, 3 de 3: siempre `ProyeccionPagoCredito` + `SimuladorMeta`,
+**los números exactos contra la tool en las tres** (incluido el total de intereses), sin
+la cifra que nadie calcula, sin botón muerto, y el texto diciendo la verdad. Y "Crear
+apartado" desde esa pantalla: `ejecutar_decision` ok → `Confirmacion` + `MetaActiva` en
+3.1 s. El ensayo automático ahora exige las dos tarjetas, el saldo exacto y la acción de
+Ana: **10 de 10**.
+
+Lo que no arreglé: Ana tarda ~10 s contra ~6 de Beto. Medí y no es desperdicio: son dos
+tarjetas con datos, el doble de salida, y el modelo ya las arma compactas (4 hitos). No
+arriesgo el prompt por 4 segundos a estas horas; el guion ya dice el tiempo real.
+
+**El disco.** Mientras investigaba, el CI del último commit falló en el deploy: la web no
+llegó a servir el commit en 15 minutos. El log de Coolify decía `failed to extract layer ...
+write .next/cache/turbopack`. **El disco del VPS estaba al 99 %: 2.5 GB libres de 242.**
+Causa, medida: 38 imágenes de maya-web y 45 de maya-mcp, ~1.3 GB cada una, una por cada
+push a `main` —hoy hicimos decenas— y **cada una cargando el caché de build de Next**
+porque el Dockerfile es de una sola etapa. Con tu autorización borré las viejas de
+nuestras dos apps (conservando la que corre y las dos anteriores de cada una; nada de otros
+proyectos, ni volúmenes, ni datos): **de 99 % a 76 %, 60 GB libres**, y el siguiente deploy
+ya pasó. Y el Dockerfile ahora borra `.next/cache` en la misma capa del build, para que no
+vuelva a crecer así.
+
+Quedan dos ideas (no bugs): una tool `simular_abono_capital` de verdad —con ella la tarjeta
+de Ana tendría botón y la cifra de ahorro honesta—, y limpiar imágenes viejas en cada
+deploy en vez de a mano.
+
 ### 12:45 · pulido — Los estados de carga miden lo que va a llegar
 
 Medí antes de tocar: en `/catalogo`, el alto de cada esqueleto contra el de su tarjeta

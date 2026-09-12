@@ -18,6 +18,26 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 13:55 · decisión** — **Ana recibe una pantalla compuesta y honesta**: 
+  `ProyeccionPagoCredito` con su crédito personal + `SimuladorMeta` con "Crear apartado".
+  El guion decía "no tiene deuda, así que el simulador", pero Ana **sí** tiene deuda —un
+  crédito al 27.9 % anual, CAT 41.4 %— y mandarla solo a ahorrar era peor consejo que el que
+  el modelo ya estaba dando. Regla nueva en el prompt: **sin tarjeta NO es sin deuda**.
+  Verificado 3 de 3 con el modelo real, números exactos contra la tool. El guion y
+  `pnpm probar-guion` ya lo reflejan (10 de 10).
+
+- **sáb 13:55 · para quien haga componentes** — un componente con `acciones` declaradas
+  necesita una tool que las atienda. `ProyeccionPagoCredito` disparaba
+  `simular_abono_capital` y nadie la atendía: si alguien tocaba el botón en la demo, la
+  acción no tenía destino. Se quitó. Y **ningún número en pantalla se estima**: si la tool
+  no lo devuelve, el campo se queda fuera (ahí quedó "ahorro con abono a capital").
+
+- **sáb 13:55 · infra** — **el disco del VPS llegó al 99 %** y los deploys de la web
+  empezaron a fallar. Eran 83 imágenes de nuestras dos apps (una por push) cargando el
+  caché de build de Next. Se borraron las viejas (de 99 % a 76 %) y el Dockerfile ya no
+  mete `.next/cache` en la imagen. Si un deploy vuelve a fallar con `failed to extract
+  layer`, lo primero es `df -h /`.
+
 - **sáb 13:35 · CUIDADO, infra** — **El disco del VPS estaba al 99 % y los deploys de la
   web fallaban** al exportar la imagen (`no space left on device`); producción se había
   quedado dos commits atrás sin que nadie lo notara. Coolify guarda una imagen por commit

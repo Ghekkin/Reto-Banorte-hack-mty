@@ -109,14 +109,22 @@ Quiero pagar menos intereses de mi tarjeta
 
 | Momento | Qué se ve |
 |---|---|
-| ~6 s | **Otra interfaz**: `SimuladorMeta` con el slider de aportación. Ana no tiene deuda revolvente |
-| Al pie | La razón lo dice: no tienes deuda, así que en vez de un plan de pago, esto |
+| ~10–12 s | **Otra interfaz, y dos tarjetas**: `ProyeccionPagoCredito` con su crédito personal ($55,783, **27.9 % anual**, 15 mensualidades de $4,570.95, **$12,781.17 de intereses por pagar**) y `SimuladorMeta` con el slider de aportación |
+| Texto | Maya dice la verdad: no tiene tarjeta, sus intereses vienen de su crédito personal, y con los $6,629 que le sobran al mes puede adelantar pagos o armar su colchón |
 
-Se arrastra el slider y se toca **Crear apartado**.
+> Ojo al narrar: **Ana no tiene tarjeta, pero SÍ tiene deuda.** Hasta el 2026-09-12 este
+> guion decía "no tiene deuda revolvente, así que el simulador", y con un crédito al 41 %
+> de CAT esa respuesta era peor consejo que la que Maya da ahora. La pantalla compuesta es
+> la honesta, y es la que sale de forma consistente (3 de 3 corridas con el modelo real).
+> La espera es más larga que la de Beto porque son dos tarjetas con datos; la tira
+> LLM · MCP · A2UI la cubre.
+
+Se arrastra el slider del **simulador** (la segunda tarjeta) y se toca **Crear apartado**.
+La tarjeta del crédito no tiene botón: todavía no hay tool que simule un abono a capital.
 
 | Momento | Qué se ve |
 |---|---|
-| ~3 s | `Confirmacion` + **`MetaActiva`** con el avance y la fecha en que llega a su meta |
+| ~3 s | `Confirmacion` + **`MetaActiva`** con el avance y la fecha en que llega a su meta (verificado 2026-09-12 13:50: `ejecutar_decision` ok, 3.1 s) |
 
 > "Misma frase. Misma Maya. **Otra pantalla, y otra acción real.** Porque la interfaz se
 > decide con el contexto de quien pregunta, no con un menú fijo."

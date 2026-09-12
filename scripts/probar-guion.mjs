@@ -72,10 +72,15 @@ const CASOS = [
     nuevaConversacion: true,
   },
   {
+    // Ana no tiene tarjeta pero SI un credito personal al 27.9 %: la pantalla honesta lleva
+    // las dos cosas. El simulador es obligatorio porque de ahi sale la accion de la demo.
     nombre: "Ana · MISMA pregunta, otra interfaz (adaptabilidad)",
     usuario: "usr_ana",
     texto: "Quiero pagar menos intereses de mi tarjeta",
+    componentes: ["ProyeccionPagoCredito", "SimuladorMeta"],
     prohibidos: ["PlanDePago"],
+    // El dato que prueba que no inventó: el saldo exacto de consultar_creditos.
+    dataModelContiene: "5578308",
     nuevaConversacion: true,
   },
   {
@@ -83,6 +88,17 @@ const CASOS = [
     usuario: "usr_ana",
     texto: "Quiero empezar a ahorrar",
     componentes: ["SimuladorMeta"],
+  },
+  {
+    nombre: "Ana · Crear apartado (la segunda accion real)",
+    usuario: "usr_ana",
+    accion: {
+      name: "crear_apartado",
+      sourceComponentId: "simulador",
+      context: { nombre: "Fondo de emergencia", montoObjetivoCentavos: 9600000, aportacionCentavos: 265000, frecuencia: "mensual" },
+    },
+    componentes: ["Confirmacion", "MetaActiva"],
+    toolsAlternativas: ["ejecutar_decision", "crear_apartado"],
   },
   {
     nombre: "Carmen · ¿como estoy?",

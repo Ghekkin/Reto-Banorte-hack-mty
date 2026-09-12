@@ -55,4 +55,5 @@ nosotros con cada punto. Es el documento que el rol `demo` revisa cada 6 horas.
 - [x] Servidor MCP que arranca solo y lista sus tools en `/health`.
 - [x] Catálogo A2UI documentado y **publicado** en `/catalogo/v1.json`.
 - [ ] Grabación de respaldo de la demo, desde `estable`.
-- [ ] Plan B sin red ensayado (Postgres local + `pnpm datos:restaurar`).
+- [x] Plan B sin red ensayado (Postgres local + `pnpm datos:restaurar`). Ensayado entero el
+      2026-09-12: 3,690 filas y el MCP arriba contra Postgres local (issue #10).
