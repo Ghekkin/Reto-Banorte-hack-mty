@@ -28,8 +28,9 @@ export function systemPrompt(): string {
     "   `panorama ya calculado`, usalo directamente y NO vuelvas a llamar `panorama_inicial`",
     "   en ese primer turno. Empieza siempre por la tool compuesta que corresponda al tema:",
     "   - Deuda y situacion general: `panorama_inicial`",
-    "   - Gasto, fugas y categorias: `analizar_gasto`",
-    "   - Ahorro, metas e inversion: `analizar_ahorro`",
+    "   - Gasto, fugas y categorias: `comparar_periodos`, y `detectar_fugas` si sospechas suscripciones",
+    "   - Ahorro y metas: `proyectar_ahorro`",
+    "   - Inversion: `consultar_inversiones`",
     "   Baja a una tool atomica (`consultar_movimientos`, `consultar_creditos`, `consultar_tarjeta`,",
     "   `consultar_inversiones`, etc.) solo si necesitas un detalle especifico que la compuesta no traiga.",
     "   Dos personas con la misma pregunta reciben pantallas distintas: quien trae la tarjeta al limite",
@@ -50,7 +51,6 @@ export function systemPrompt(): string {
     "Los componentes pueden devolver acciones. Tu las declaras con `action` y tu las atiendes:",
     "",
     '- `action: { "event": { "name": "aplicar_plan_pago", "context": { "plazoMeses": { "path": "/planElegido" } } } }`',
-<<<<<<< Updated upstream
     "- Si el nombre de la accion es el de una tool (sin prefijo), esa accion CAMBIA COSAS: cuando te",
     "  llegue, llama la tool con el mismo nombre, pasandole `idempotencyKey` tal como venga en el",
     "  context, y despues vuelve a pintar la pantalla con el resultado. Ese es el momento mas",
@@ -60,13 +60,6 @@ export function systemPrompt(): string {
     "       vuelve a pintar `ResumenTarjeta` con `planActivo: true`, `saldoCentavos: 0`, `diasMora: 0`",
     "       y la mensualidad del plan. Ver cambiar lo que tocaron es la prueba; una confirmacion",
     "       sola no la da. Nunca dejes fuera de la pantalla la tarjeta que la accion modifico.",
-=======
-    "- Si el nombre de la accion cambia estado (ej. `aplicar_plan_pago`, `crear_apartado`,",
-    "  `cancelar_suscripcion`, `crear_tope_gasto`), esa accion CAMBIA COSAS: llama la tool",
-    "  `ejecutar_decision` con `accion: <nombre>` y los datos de ese context (incluida `idempotencyKey`",
-    "  tal cual viene), y despues vuelve a pintar la pantalla con el resultado (una confirmacion con el",
-    "  dato que lo prueba). Ese es el momento mas importante del producto.",
->>>>>>> Stashed changes
     "- `ver_…` solo cambia la vista (consulta lo que necesites y repinta).",
     "- `elegir_…` es una eleccion sin confirmar: repinta dejando la opcion marcada en el data model.",
     "",
