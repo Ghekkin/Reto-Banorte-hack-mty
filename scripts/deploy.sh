@@ -24,9 +24,29 @@ disparar() {
   local nombre="$1" uuid="$2"
   echo "==> deploy de $nombre ($uuid)"
   # Es POST: en Coolify 4.3 el GET responde 405 ("This endpoint has changed to a POST request").
-  curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
-    "$COOLIFY_URL/api/v1/deploy?uuid=$uuid&force=false" | head -c 300
-  echo
+  #
+  # Con reintentos porque el panel devuelve 502 de vez en cuando (esta detras de un
+  # proxy y se reinicia solo mientras construye otra cosa). Un hipo de 2 segundos no
+  # puede tumbar un deploy a las 3 am.
+  local intento respuesta codigo
+  for intento in 1 2 3 4 5; do
+    respuesta=$(curl -sS -o /tmp/deploy-respuesta -w "%{http_code}" -X POST \
+      -H "Authorization: Bearer $COOLIFY_TOKEN" \
+      "$COOLIFY_URL/api/v1/deploy?uuid=$uuid&force=false" || echo "000")
+    codigo="$respuesta"
+    if [ "$codigo" = "200" ] || [ "$codigo" = "201" ]; then
+      head -c 300 /tmp/deploy-respuesta; echo
+      return 0
+    fi
+    echo "    intento $intento: HTTP $codigo $(head -c 120 /tmp/deploy-respuesta 2>/dev/null)"
+    # 4xx no se reintenta: es token malo, uuid malo o metodo malo, y no mejora solo.
+    case "$codigo" in
+      4*) echo "    error del cliente, no reintento" >&2; return 1 ;;
+    esac
+    sleep $((intento * 5))
+  done
+  echo "    el panel no acepto el deploy de $nombre despues de 5 intentos" >&2
+  return 1
 }
 
 esperar() {

@@ -50,7 +50,10 @@ por API, eso se hace desde el VPS con el token root, nunca desde Actions.
 - **Los secretos viven en Coolify** (variables de cada app) y en `/opt/reto/.env` del
   VPS, nunca en el repo ni en el script.
 - **`scripts/deploy.sh`** dispara el deploy por la API de Coolify
-  (`POST /api/v1/deploy?uuid=...`; el `GET` responde 405 desde Coolify 4.3) y espera los `/health` hasta 5 minutos. Si no
+  (`POST /api/v1/deploy?uuid=...`; el `GET` responde 405 desde Coolify 4.3), con
+  **5 reintentos con espera creciente** porque el panel devuelve 502 de vez en cuando
+  mientras construye otra cosa; un 4xx no se reintenta (token o uuid malos no mejoran
+  solos). Después espera los `/health` hasta 5 minutos. Si no
   responden, falla ruidosamente y **no hace rollback solo**: la versión anterior sigue
   sirviendo hasta que el contenedor nuevo pase su healthcheck, y el rollback a una
   build anterior se hace desde el panel (Deployments → la que funcionaba → Redeploy).
