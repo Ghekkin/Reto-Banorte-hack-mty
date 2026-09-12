@@ -9,7 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
 import {
+  CLASES_PIE_HEROE,
   CLASES_TARJETA,
+  CLASES_TARJETA_HEROE,
   formatearFecha,
   formatearMonto,
   formatearPorcentaje,
@@ -42,6 +44,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
     frecuencia = "mensual",
     fechaInicio,
     etiquetaBoton = "Crear apartado",
+    heroe = false,
     razon,
     alAccionar,
   } = props;
@@ -69,11 +72,13 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
   const fecha = meses > 0 ? sumarMeses(fechaInicio ?? hoyISO(), meses) : undefined;
   const minimo = Math.min(aportacionMinimaCentavos, aportacionMaximaCentavos);
   const avance = metaCentavos > 0 ? Math.min(1, saldoInicialCentavos / metaCentavos) : 0;
+  /** Sobre el degradado, el gris de siempre no se lee: el texto secundario va en blanco al 80 %. */
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
       <CardHeader>
-        <span className="text-xs text-muted-foreground">
+        <span className={`text-xs ${suave}`}>
           {nombre} · <span className="monto">{formatearMonto(metaCentavos)}</span>
           {saldoInicialCentavos > 0 ? (
             <>
@@ -85,12 +90,12 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         {meses > 0 && fecha ? (
           <>
             <span className="monto text-3xl font-semibold">{formatearFecha(fecha, true)}</span>
-            <span className="text-sm text-muted-foreground">
+            <span className={`text-sm ${suave}`}>
               llegas en {meses} {meses === 1 ? "mes" : "meses"}
             </span>
           </>
         ) : (
-          <span className="text-sm text-muted-foreground">Mueve la aportación para ver cuándo llegas.</span>
+          <span className={`text-sm ${suave}`}>Mueve la aportación para ver cuándo llegas.</span>
         )}
       </CardHeader>
 
@@ -101,11 +106,17 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
             y despues de crearla. */}
         {saldoInicialCentavos > 0 ? (
           <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between text-xs text-muted-foreground">
+            <div className={`flex justify-between text-xs ${suave}`}>
               <span>Ya llevas</span>
               <span className="monto">{formatearPorcentaje(avance)}</span>
             </div>
-            <Progress value={Math.round(avance * 100)} aria-label={`Avance: ${formatearPorcentaje(avance)}`} />
+            <Progress
+              value={Math.round(avance * 100)}
+              aria-label={`Avance: ${formatearPorcentaje(avance)}`}
+              className={
+                heroe ? "[&_[data-slot=progress-track]]:bg-white/30 [&_[data-slot=progress-indicator]]:bg-white" : ""
+              }
+            />
           </div>
         ) : null}
 
@@ -121,17 +132,25 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
           step={PASO_CENTAVOS}
           onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacion) : valor)}
           aria-label="Aportación"
-          className="py-3"
+          // En el heroe los controles van en blanco: el slider rojo de siempre seria rojo
+          // sobre rojo y la persona no veria cuanto esta moviendo.
+          className={
+            heroe
+              ? "py-3 [&_[data-slot=slider-track]]:bg-white/30 [&_[data-slot=slider-range]]:bg-white [&_[data-slot=slider-thumb]]:border-white [&_[data-slot=slider-thumb]]:ring-white/40"
+              : "py-3"
+          }
         />
-        <div className="flex justify-between text-xs text-muted-foreground">
+        <div className={`flex justify-between text-xs ${suave}`}>
           <span className="monto">{formatearMonto(minimo)}</span>
           <span className="monto">{formatearMonto(aportacionMaximaCentavos)}</span>
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-start gap-3">
+      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
         <Button
-          className="min-h-12 w-full rounded-full sm:w-auto"
+          // El boton del heroe es el claro del sistema de diseno (`bg-white/90 text-primary`):
+          // sigue siendo LA accion de la pantalla, pero sin desaparecer en el degradado.
+          className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
           size="lg"
           disabled={!alAccionar || aportacion <= 0}
           onClick={() =>
@@ -140,7 +159,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         >
           {etiquetaBoton} <ArrowRight />
         </Button>
-        {razon ? <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p> : null}
+        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
       </CardFooter>
     </Card>
   );

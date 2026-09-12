@@ -42,3 +42,22 @@ los 48 px de alto tocable sin engordar la barra.
 - **Cargando**: skeleton hasta que llegan meta, aportación y tope.
 
 Ejemplo: `ejemplos/simulador-meta.jsonl`. Primitivas: `card`, `slider`, `button`.
+
+## Como tarjeta héroe (`heroe: true`)
+
+Para quien no tiene deuda, el simulador **es** la tarjeta principal de la pantalla: no hay
+saldo que resumir, hay una meta. Por eso acepta `heroe` desde el 2026-09-12 (issue #14).
+
+En la variante héroe va el degradado de marca y **todos los controles pasan a blanco**,
+porque el slider y el botón rojos de siempre serían rojo sobre rojo:
+
+| Pieza | Normal | Héroe |
+|---|---|---|
+| Barra "Ya llevas" | indicador rojo | indicador blanco sobre pista `white/30` |
+| Slider | rango rojo | rango blanco, pista `white/30`, pulgar con borde blanco |
+| Botón "Crear apartado" | píldora roja | píldora clara `bg-white/90 text-primary` (la del sistema de diseño) |
+| Texto secundario | `text-muted-foreground` | `text-primary-foreground/80` |
+
+Verificado midiendo los colores computados en el navegador, a 1280 px y a 390 px. Una
+sola tarjeta héroe por pantalla, como siempre.
+

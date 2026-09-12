@@ -352,6 +352,38 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 12:40 · arreglado — SimuladorMeta ya puede ser la tarjeta héroe (#14)
+
+Tomé la salida de fondo y no la barata. La barata era aceptar e ignorar `heroe` en todos
+los componentes (subirlo a `PropsBase`): quitaba el reintento, pero dejaba al modelo
+pidiendo algo que tiene sentido y a la interfaz fingiendo que lo hacía. Para Ana, sin
+deuda, el simulador **es** la tarjeta principal de su pantalla —la de adaptabilidad—, así
+que el modelo tenía razón en pedirlo.
+
+La parte de diseño era la que importaba: en el degradado, el slider y el botón rojos son
+rojo sobre rojo. En la variante héroe todos los controles pasan a blanco —rango y pulgar
+del slider, la barra "Ya llevas"— y el botón es la píldora clara del sistema de diseño
+(`bg-white/90 text-primary`). Lo verifiqué como hoy se verifica todo: midiendo los colores
+computados en el navegador a 1280 y 390 px (rango `rgb(255,255,255)`, pista blanca al 30 %,
+botón blanco al 90 % con texto rojo) y mirando la captura.
+
+Esto solo funcionó a la primera por el arreglo del `@source` de esta mañana: los overrides
+`[&_[data-slot=slider-range]]:bg-white` son clases que solo existen en `packages/catalogo`.
+Sin ese arreglo, habría escrito la variante, se habría visto roja sobre roja, y habría
+pasado un buen rato buscando el error en el componente.
+
+Dos turnos reales con Ana: 2 pasos, cero errores. Pero en ninguno el modelo le puso
+`heroe` al simulador —en uno eligió `ProyeccionPagoCredito` como héroe, un componente
+nuevo del fork—, así que las corridas no ejercitaron el caso exacto. Eso lo cubre una
+prueba determinista con el componente tal como lo mandó el modelo en el turno que falló.
+No quiero confundir "no falló" con "está probado".
+
+Un susto en el camino: `pnpm catalogo` falló una vez y dejó `catalogo.json` truncado
+(`'}' expected` en la línea 2770). Al correrlo solo generó bien. Casi seguro fue el fork
+regenerando el mismo archivo al mismo tiempo: dos sesiones escribiendo un artefacto
+generado es una carrera. Si vuelve a pasar, `pnpm catalogo` otra vez lo arregla, porque el
+archivo sale entero de los schemas.
+
 ### 12:15 · medido — Con cuota, el caché pega: 76–87 % de la entrada
 
 Subieron el tope y por fin se pudo medir en vez de razonar. Cuatro turnos reales:

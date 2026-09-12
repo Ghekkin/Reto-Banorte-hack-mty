@@ -1702,6 +1702,18 @@
                 }
               ]
             },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
             "action": {
               "description": "La accion que este componente devuelve al agente. Nombres validos: crear_apartado.",
               "allOf": [

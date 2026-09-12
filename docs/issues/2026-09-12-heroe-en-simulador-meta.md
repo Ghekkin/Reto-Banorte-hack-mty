@@ -1,10 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: web
 encontrado: 2026-09-12 12:22
 github: 14
-resuelto-en:
+resuelto-en: commit con Fixes #14 (SimuladorMeta soporta heroe, salida 1)
 ---
 
 # El agente le pone heroe a SimuladorMeta, que no lo declara, y el turno gasta un paso en reintentar
