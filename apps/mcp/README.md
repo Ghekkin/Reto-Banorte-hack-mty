@@ -24,7 +24,7 @@ pnpm --filter @maya/mcp reiniciar-estado # antes de cada ensayo
 | `src/datos/` | La puerta única a los datos: CSV en memoria (default) y el estado mutable |
 | `scripts/reiniciar-estado.ts` | Vuelve el estado al punto de partida |
 
-## Las 9 tools
+## Las tools
 
 | Tool | Clase | Para qué |
 |---|---|---|
@@ -37,6 +37,18 @@ pnpm --filter @maya/mcp reiniciar-estado # antes de cada ensayo
 | `comparar_periodos` | lectura | gasto por categoría de dos meses + la categoría atípica |
 | `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios |
 | `crear_apartado` | **acción** | crea la meta con aportación automática; idempotente |
+
+Las nueve de arriba son el viaje del ADR 0004. Las que agregó el rol `mcp` después
+(paquetes 1 y 2 de `docs/arquitectura/roadmap-mcp.md`):
+
+| Tool | Clase | Para qué |
+|---|---|---|
+| `panorama_inicial` | lectura | la situación de la persona en una palabra, para abrir la conversación |
+| `diagnostico_salud_financiera` | lectura | puntaje y calificación de salud financiera |
+| `consultar_creditos` | lectura | todas las deudas, con la más cara señalada |
+| `detectar_fugas` | lectura | suscripciones y cargos recurrentes que se escapan |
+| `cancelar_suscripcion` | **acción** | cancela un cargo recurrente; idempotente |
+| `crear_tope_gasto` | **acción** | pone un límite a una categoría; idempotente |
 
 El detalle (qué devuelve cada una, casos límite, idempotencia) está en
 `docs/como-funciona/tools-mcp.md`. La matemática, en `docs/algoritmos/`.

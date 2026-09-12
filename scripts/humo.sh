@@ -46,9 +46,23 @@ comprobar() {
 echo "==> /health"
 curl -fsS "$SALUD" | jq -c '{ok, origenDatos, tools: (.tools | length)}'
 
+# Las tools que el viaje del ADR 0004 necesita. Se comprueba que ESTEN, no cuantas hay:
+# el total crece cada vez que alguien agrega una, y una asercion sobre el total dejaba el
+# CI rojo por trabajo bien hecho de otro (paso dos veces). Lo que tiene que fallar es que
+# FALTE una de estas. Las demas tools se prueban solas, en las llamadas de mas abajo.
+TOOLS_DEL_GUION="consultar_perfil consultar_tarjeta consultar_movimientos simular_reestructura \
+consultar_plan aplicar_plan_pago comparar_periodos proyectar_ahorro crear_apartado"
+
 echo "==> tools/list"
-TOOLS=$(llamar '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | solo_json | jq -r '.result.tools | length')
-comprobar "tools publicadas" "12" "$TOOLS"
+LISTA=$(llamar '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | solo_json | jq -r '.result.tools[].name')
+echo "    $(echo "$LISTA" | grep -c .) tools publicadas"
+for t in $TOOLS_DEL_GUION; do
+  if ! echo "$LISTA" | grep -qx "$t"; then
+    echo "    FALLO  falta la tool del guion: $t"
+    exit 1
+  fi
+done
+echo "    ok  las $(echo "$TOOLS_DEL_GUION" | wc -w | tr -d ' ') tools del viaje estan publicadas"
 
 echo "==> lecturas"
 PERFIL=$(tool consultar_perfil '{"usuarioId":"usr_beto"}')
@@ -111,6 +125,6 @@ comprobar "la deuda de la tarjeta sigue ahi" "2841500" \
   "$(tool consultar_creditos '{"usuarioId":"usr_carmen"}' | jq -r .deudaTarjetaCentavos)"
 
 echo ""
-echo "humo ok — 12 tools, lecturas y ciclo de accion completo."
+echo "humo ok — las tools del viaje, las lecturas y el ciclo de accion completo."
 echo "   aviso: el estado quedo con un plan aplicado a usr_carmen."
 echo "   antes de un ensayo: pnpm reiniciar-estado"

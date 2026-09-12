@@ -66,6 +66,30 @@ prop está en el `README.md` de su carpeta y en `catalogo.json`.
   el renderer resuelve el `context` contra el data model, agrega lo que el componente sabe
   (`contextoExtra`: el plazo o la aportación elegida) y la `idempotencyKey`.
 
+### La galería: `/catalogo`
+
+Una página que pinta **todos** los componentes con el renderer de verdad, a partir de sus
+`.jsonl`. Sirve a dos públicos:
+
+- **Al equipo**: es el banco de pruebas. Se ven los ocho con datos y en estado de carga,
+  sin llave de modelo y sin el MCP arriba. Si uno se rompe, se ve aquí antes que en la demo.
+- **A un juez**: al lado de `/catalogo/v1.json` (el catálogo legible por máquina, el
+  `catalogId` de cada superficie) está la misma cosa en pantalla.
+
+Cada ficha trae el `cuandoUsarlo` que lee el modelo, la tabla de props del schema, el
+`.jsonl` fuente desplegable, el render con datos y el estado de carga al lado. Y al tocar
+el botón de un componente, el pie muestra **el mensaje A2UI que viajaría al agente**
+(`{ version, action }` de `client_to_server.json`, con `idempotencyKey`): el ciclo cerrado,
+visible sin gastar un turno de modelo.
+
+| Pieza | Ruta |
+|---|---|
+| Página (server: lee los `.jsonl`) | `apps/web/src/app/catalogo/page.tsx` |
+| Galería (cliente: el renderer) | `apps/web/src/app/catalogo/galeria.tsx` |
+
+**No es el producto**: vive fuera del grupo de rutas `(app)`, así que no lleva el shell ni
+la navegación, y no toca nada de `components/`. El producto es `/maya`.
+
 ### Cómo se prueba
 
 ```bash

@@ -3,7 +3,7 @@ verificado: 2026-09-12 09:40
 estado: construido
 ---
 
-# Las 12 tools del servidor MCP
+# Las 15 tools del servidor MCP
 
 ## Para cualquiera
 
@@ -59,11 +59,18 @@ nada.
 | `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
 | `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito y `serie` para graficar | "¿cómo voy?", o antes de proponer un plan |
 | `consultar_creditos` | lectura | toda la deuda (créditos + tarjeta), mensualidad total, ratio, el más caro por CAT | "¿cuánto debo en total?", y antes de comprometer capacidad de pago |
+| `detectar_fugas` | lectura | suscripciones y cargos recurrentes que se escapan, con lo que costarían al año | "¿en qué se me va el dinero sin darme cuenta?" |
+| `cancelar_suscripcion` | **acción** | la suscripción cancelada y lo que se deja de pagar | solo cuando llega la acción A2UI del mismo nombre |
+| `crear_tope_gasto` | **acción** | el tope creado para una categoría | solo cuando llega la acción A2UI del mismo nombre |
 
-Las nueve primeras son las del ADR 0004. Las tres últimas son el **Paquete 1** del
+Las nueve primeras son las del ADR 0004. Las seis siguientes son los **Paquetes 1 y 2** del
 [roadmap del MCP](../arquitectura/roadmap-mcp.md), y ninguna inventa un dato nuevo: abren
-tablas que ya estaban en `db/datos/` y que ninguna tool podía ver. Siguen fuera de alcance
-`crear_tope_gasto`, `detectar_fugas` y `cancelar_suscripcion` (Paquete 2).
+tablas que ya estaban en `db/datos/` y que ninguna tool podía ver.
+
+**El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
+que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
+el total sin juzgarlo. Antes afirmaba un número fijo, y el CI se ponía rojo cada vez que
+alguien agregaba una tool: castigaba trabajo bien hecho.
 
 #### Por qué `panorama_inicial` no decide la pantalla
 

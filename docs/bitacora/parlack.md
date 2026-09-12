@@ -2,6 +2,34 @@
 
 ## 2026-09-12
 
+### 04:40 · hecho — Galería `/catalogo` y el CI desbloqueado
+
+**El CI estaba rojo desde cuatro commits y bloqueaba el deploy a prod.** Typecheck, tests
+y build pasaban; fallaba el paso `humo del MCP`, y la culpa era mía: `scripts/humo.sh`
+afirmaba `tools publicadas = 12` contra un número cableado, y `aldair` y `luis` metieron
+sus paquetes (15 tools ahora). La aserción castigaba trabajo bien hecho de otro.
+
+Ahora comprueba que **estén** las 9 tools del viaje del ADR 0004, por nombre, e imprime el
+total sin juzgarlo. Lo que tiene que fallar es que FALTE una, no que aparezca una nueva.
+Verificado en local contra el MCP al día: humo completo en verde, incluidas las
+aserciones que ellos agregaron (panorama, salud, créditos).
+
+**Galería `/catalogo`**: cada componente del catálogo pintado con `procesarVarios` +
+`<Superficie>` —el renderer de verdad— desde el mismo `.jsonl` que validan las pruebas y
+que va al prompt. Nada maquetado a mano: si se ve bien aquí, es porque el renderer y el
+componente funcionan. Cada ficha trae el `cuandoUsarlo`, la tabla de props del schema, el
+`.jsonl` desplegable, el render con datos y **el estado de carga al lado** (los tres
+estados de la skill `ui-generativa`, de un vistazo).
+
+Lo mejor para el pitch: al tocar el botón de un componente, el pie muestra el mensaje
+`{ version, action }` de `client_to_server.json` con su `idempotencyKey`. El ciclo cerrado
+explicado sin gastar un turno de modelo.
+
+Vive **fuera** del grupo `(app)`, sin shell ni navegación, y no toca `components/`: el
+frontend del producto lo rediseña otra sesión y no me meto. Verificado en el dev server:
+los 8 componentes, cero "componente desconocido", cero errores de render, 25 skeletons en
+los estados de carga, la gráfica de Recharts y el `data-ancho=amplio` respetado.
+
 ### 04:10 · hecho — Los 7 componentes que faltaban y lo demás de la lista del A2UI
 
 Lo que quedaba de "¿qué falta para el A2UI?", cerrado:
@@ -416,3 +444,26 @@ Las tres trampas quedaron escritas en `deploy.md`. Reglas nuevas: después de to
 variables por API, leer la lista **con `is_preview`**, no sólo los nombres; comprobar
 con `docker exec … env` que llegaron al contenedor; y nunca mandar a `/dev/null` la
 respuesta de algo que estás afirmando que quedó hecho.
+
+### 10:30 — Llave de Gemini en produccion, y `CLAUDE.md` estaba roto en `main`
+
+**La llave de Gemini ya está puesta** (en `/opt/reto/.env` del VPS y en las variables de
+`maya-web` en Coolify, nunca en el repo). Antes de instalarla la probé contra la API:
+es válida, y `gemini-3.8-flash` responde, así que el ADR 0005 se mantiene tal cual. De
+paso: `gemini-2.0-flash` ya no existe del lado de Google, por si alguien lo tenía escrito
+en algún lado.
+
+**Y me encontré `CLAUDE.md` con marcadores de conflicto commiteados en `main`**
+(`<<<<<<< Updated upstream` … `>>>>>>> Stashed changes`), de un `stash pop` a medias que
+el commit automático subió. Es el archivo que lee cada agente al abrir sesión, así que
+cualquiera que llegara veía dos estados contradictorios del proyecto: una versión decía
+"1 de 8 componentes" y la otra "8 de 8".
+
+No elegí un lado: medí el repo. **Ninguna de las dos versiones era correcta.** Lo real
+hoy son 15 tools (11 lectura + 4 acción), 15 schemas, 8 de 8 componentes del catálogo, y
+272 pruebas en total (112 a2ui, 92 mcp, 42 catálogo, 26 web). Eso es lo que quedó en el
+mapa. Issue #4.
+
+Propuesta para que no vuelva a pasar, que dejo escrita en el issue y no implemento por
+no tocar el hook de todos sin avisar: que el hook `Stop` rechace el commit si algún
+archivo tiene `<<<<<<<`.
