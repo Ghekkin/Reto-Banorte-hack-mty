@@ -27,6 +27,22 @@
 
 ## 2026-09-12
 
+- **19:21 · toque-ajeno** — El usuario pidió la integración de voz de ElevenLabs (premio
+  lateral, dominio `web`/`demo`, no `mcp`). Construida detrás de `FEATURE_VOZ` (skill
+  `premio-lateral`): `@elevenlabs/client` como dependencia,
+  `apps/web/src/lib/voz/flag.ts` (`vozHabilitada()`),
+  `apps/web/src/app/api/voz/signed-url/route.ts` (única pieza que conoce
+  `ELEVENLABS_API_KEY`/`ELEVENLABS_AGENT_ID`, timeout de 3 s contra ElevenLabs), y el
+  hook `apps/web/src/lib/voz/usar-conversacion-voz.ts` (`usarConversacionVoz`) que
+  entrega la transcripción por `onTranscripcionUsuario` — pensado para conectarse a
+  `enviarTexto` de `usarAgente` cuando el botón exista. Con el flag apagado (default),
+  `pnpm dev` + `curl /api/voz/signed-url` responde 404 sin tocar la red; typecheck y
+  `pnpm test` (71 pruebas, incluye `flag.spec.ts` nuevo) en verde. Doc en
+  `docs/como-funciona/premio-elevenlabs.md`, nota de estado en
+  `docs/reto/premios-objetivo.md`. **Queda a medias a propósito**: nadie llama al hook
+  todavía — falta que `web` conecte el botón de la pantalla principal y el del chat de
+  Maya, y que se cree el agente conversacional en la consola de ElevenLabs con los
+  créditos de MLH.
 - **09:55 · hecho** — Paquete 1 del roadmap del MCP terminado: `panorama_inicial`,
   `diagnostico_salud_financiera` y `consultar_creditos`, con sus schemas en
   `packages/schemas/src/tools/`, dominio nuevo en `apps/mcp/src/dominio/salud.ts` y

@@ -14,6 +14,7 @@
     "@ai-sdk/anthropic": "^2.0.0",
     "@ai-sdk/google": "^2.0.0",
     "@base-ui/react": "^1.8.0",
+    "@elevenlabs/client": "^1.25.0",
     "@maya/a2ui": "workspace:*",
     "@maya/catalogo": "workspace:*",
     "@maya/schemas": "workspace:*",

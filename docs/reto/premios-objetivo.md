@@ -46,6 +46,11 @@ se escribe en el chat. Y nada nuevo entra después de la hora 30.
 **Nivel 2 — mejora la demo (1–2 h)**
 
 - **ElevenLabs**: el usuario habla y la interfaz aparece. SDK ya conocido.
+  **Estado (2026-09-12): integración construida, detrás de `FEATURE_VOZ` (apagado)** —
+  falta conectar el botón de la pantalla principal y el del chat de Maya, y crear el
+  agente en la consola de ElevenLabs con los créditos de MLH. Detalle en
+  `docs/como-funciona/premio-elevenlabs.md`. Registro para el premio: pendiente,
+  dueño `demo`.
 
 **Nivel 3 — si va sobrado (1 h)**
 
