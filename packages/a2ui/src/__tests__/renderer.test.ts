@@ -405,3 +405,32 @@ describe("updateComponents vacio", () => {
     expect(r.ok).toBe(false);
   });
 });
+
+/* --- Lo que nosotros mandamos de vuelta, contra el schema oficial cliente->servidor --- */
+
+import { mensajeClienteAServidor } from "../acciones";
+import { validadorDeDocumento } from "../esquema";
+
+describe("la accion que emite el renderer es un mensaje A2UI valido", () => {
+  const { clienteAServidor } = validadorDeDocumento();
+  const accion = emitirAccion({
+    componente: {
+      id: "plan",
+      component: "PlanDePago",
+      action: { event: { name: "aplicar_plan_pago", context: { plazoMeses: { path: "/planElegido" }, tarjetaId: "tar_x" } } },
+    },
+    surfaceId: "principal",
+    dataModel: { planElegido: 18 },
+    conversacionId: "c_1",
+    contextoExtra: { plazoMeses: 18 },
+  })!;
+
+  it("envuelta en { version, action } pasa client_to_server.json sin un solo error", () => {
+    expect(clienteAServidor(mensajeClienteAServidor(accion))).toEqual([]);
+  });
+
+  it("y el timestamp es date-time de verdad (la spec lo exige con format)", () => {
+    expect(() => new Date(accion.timestamp).toISOString()).not.toThrow();
+    expect(accion.context.idempotencyKey).toBe(`c_1:${accion.timestamp}`);
+  });
+});

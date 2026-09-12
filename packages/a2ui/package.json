@@ -26,7 +26,10 @@
   "devDependencies": {
     "@types/node": "^22",
     "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "happy-dom": "^20.14.5",
     "react": "19.2.8",
+    "react-dom": "19.2.8",
     "typescript": "^5",
     "vitest": "^3.2.4"
   }

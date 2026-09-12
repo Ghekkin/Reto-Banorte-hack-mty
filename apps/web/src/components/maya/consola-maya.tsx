@@ -62,6 +62,7 @@ export function ConsolaMaya({
         superficie={agente.superficie}
         conversacionId={agente.conversacionId}
         alAccionar={agente.enviarAccion}
+        alFallar={agente.reportarFallo}
         vacio={<LienzoPlaceholder />}
       />
 

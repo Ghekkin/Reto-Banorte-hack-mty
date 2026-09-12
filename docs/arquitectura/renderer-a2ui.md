@@ -182,14 +182,30 @@ quien decide es el agente, y una UI que se arregla sola por dentro es una UI que
 agente ya no entiende.
 
 El canal de vuelta de errores de la spec (`VALIDATION_FAILED` en
-`client_to_server.json`) está **medio conectado**: `<Superficie alFallar>` lo emite
-cuando llega un componente que el registro no conoce, pero todavía nadie lo escucha.
-Conectarlo al agente es lo que le permitiría corregirse en el mismo turno.
+`client_to_server.json`) está **conectado**: `<Superficie alFallar>` lo emite cuando llega
+un componente que el registro no conoce; el lienzo lo pasa a `reportarFallo` del hook
+`usar-agente`, que lo manda al `POST /api/agente` como `error` (un turno más), y el agente
+recibe en su contexto qué falló y la instrucción de repintar sin ese componente. Es la
+respuesta a "¿y si el modelo se equivoca?": se corrige en el siguiente turno, solo.
 
-Dos cosas ya resueltas para quien lo conecte: el aviso sale en un `useEffect`, **no
+Dos cosas que evitan que eso se vuelva un bucle: el aviso sale en un `useEffect`, **no
 durante el render** (un aviso en fase de render que provoque `setState` se cicla), y el
 mismo fallo se avisa **una sola vez** por vida del componente, así que un reintento que
-vuelve a fallar igual no se convierte en un bucle entre la interfaz y el agente.
+vuelve a fallar igual no rebota entre la interfaz y el agente.
+
+### Frontera de error: un componente roto no tumba la pantalla
+
+Cada componente se pinta dentro de `FronteraDeError` (una clase con
+`getDerivedStateFromError`, porque React solo permite atrapar errores de render así). Si
+uno truena al pintar (una prop con la forma equivocada, un `undefined` donde iba un
+arreglo), en su lugar aparece "Esta tarjeta no se pudo mostrar" con el nombre del
+componente y el mensaje, y **el resto de la superficie sigue en pie**, incluida la barra
+de conversación. Antes, un componente roto tumbaba la pantalla entera en plena demo.
+
+Este caso **no** se reporta al agente: el JSON era válido, el fallo es del componente.
+Se prueba en `frontera-de-error.test.tsx` con un DOM real (`happy-dom` + `createRoot`),
+aparte de los demás, porque React no ejecuta error boundaries al renderizar en servidor
+y `renderToStaticMarkup` deja pasar el error tal cual.
 
 ### Lo que NO implementamos, y por qué
 
@@ -205,7 +221,7 @@ vuelve a fallar igual no se convierte en un bucle entre la interfaz y el agente.
 ### Cómo se prueba
 
 ```bash
-pnpm --filter @maya/a2ui test        # 109: 33 del motor + 76 de conformidad oficial
+pnpm --filter @maya/a2ui test        # 112: 35 del motor + 76 de conformidad + 1 de la frontera de error
 pnpm --filter @maya/catalogo test    # 12: la cadena completa de un componente
 pnpm catalogo                        # regenera catalogo.json desde los schemas
 ```

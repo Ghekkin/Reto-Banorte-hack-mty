@@ -23,16 +23,31 @@ export type AccionEntrante = {
   context: Record<string, unknown>;
 };
 
+/**
+ * Lo que la interfaz no pudo pintar (`client_to_server.json`, `VALIDATION_FAILED`).
+ * Llega como un turno mas: el agente lee el fallo y repinta sin ese componente.
+ */
+export type FalloDeInterfaz = {
+  code: "VALIDATION_FAILED";
+  surfaceId: string;
+  path: string;
+  message: string;
+};
+
 export type PeticionAgente = {
   usuarioId: string;
   conversacionId: string;
   mensajes: MensajeHistorial[];
   accion?: AccionEntrante;
+  /** La interfaz reporta que no pudo pintar algo del turno anterior. */
+  error?: FalloDeInterfaz;
   superficie?: {
     surfaceId: string;
     componentes: string[];
     dataModel: Record<string, unknown>;
   };
+  /** `client_capabilities.json`: que catalogos soporta el cliente. Opcional. */
+  clientCapabilities?: { "v0.9": { supportedCatalogIds: string[] } };
 };
 
 /**
@@ -61,6 +76,14 @@ export const esquemaPeticion = z
         context: z.record(z.string(), z.unknown()).default({}),
       })
       .optional(),
+    error: z
+      .object({
+        code: z.literal("VALIDATION_FAILED"),
+        surfaceId: z.string().min(1).max(64),
+        path: z.string().max(256),
+        message: z.string().max(1000),
+      })
+      .optional(),
     superficie: z
       .object({
         surfaceId: z.string().min(1).max(64),
@@ -68,10 +91,22 @@ export const esquemaPeticion = z
         dataModel: z.record(z.string(), z.unknown()).default({}),
       })
       .optional(),
+    clientCapabilities: z
+      .object({ "v0.9": z.object({ supportedCatalogIds: z.array(z.string().max(512)).max(20) }) })
+      .optional(),
   })
-  .refine((p) => p.accion !== undefined || p.mensajes.at(-1)?.rol === "usuario", {
-    message: "el turno lo dispara un mensaje de la persona (mensajes[ultimo].rol === 'usuario') o una accion",
+  .refine((p) => p.accion !== undefined || p.error !== undefined || p.mensajes.at(-1)?.rol === "usuario", {
+    message:
+      "el turno lo dispara un mensaje de la persona (mensajes[ultimo].rol === 'usuario'), una accion o un error de la interfaz",
   });
+
+/**
+ * `server_capabilities.json`: lo que este agente sabe generar. Un cliente que declare
+ * otro catalogo en `clientCapabilities` recibe 400: no hay forma de pintarle nada.
+ */
+export function capacidadesDelServidor(urlCatalogo: string): { "v0.9": { supportedCatalogIds: string[]; acceptsInlineCatalogs: false } } {
+  return { "v0.9": { supportedCatalogIds: [urlCatalogo], acceptsInlineCatalogs: false } };
+}
 
 /** Una linea del stream JSONL de respuesta. El cliente ignora lo que no conoce. */
 export type LineaStream =

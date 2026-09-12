@@ -16,7 +16,7 @@ vez sin conflictos de git.
 | mcp | luis | Paquete 2 completado: detectar_fugas, cancelar_suscripcion y crear_tope_gasto con 56 pruebas en verde | sáb 03:00 |
 | mcp | aldair | Paquete 1 del roadmap del MCP terminado: `panorama_inicial`, `diagnostico_salud_financiera` y `consultar_creditos`. 12 tools, 78 pruebas | sáb 08:45 |
 | contrato | — | — | — |
-| demo | parlack | Motor A2UI terminado (ajv + 76 casos de conformidad) y catálogo publicado como JSON Schema A2UI. Sigue: el guion con llave de modelo | sáb 01:45 |
+| demo | parlack | Ciclo de error A2UI cerrado (`VALIDATION_FAILED` vuelve al agente), frontera de error por componente, `GET /api/agente` con capacidades. Sigue: el guion con llave de modelo | sáb 03:40 |
 
 ## Bloqueos
 

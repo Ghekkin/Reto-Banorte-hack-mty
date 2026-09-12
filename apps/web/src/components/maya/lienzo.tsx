@@ -1,7 +1,7 @@
 "use client";
 
 import { Superficie } from "@maya/a2ui";
-import type { Accion, EstadoSuperficie } from "@maya/a2ui";
+import type { Accion, EstadoSuperficie, FalloDeRender } from "@maya/a2ui";
 import { LayoutGrid } from "lucide-react";
 
 /**
@@ -17,11 +17,14 @@ export function Lienzo({
   superficie,
   conversacionId,
   alAccionar,
+  alFallar,
   vacio,
 }: {
   superficie: EstadoSuperficie | undefined;
   conversacionId: string;
   alAccionar: (accion: Accion) => void;
+  /** Un componente que el renderer no supo pintar: se le devuelve al agente. */
+  alFallar?: (fallo: FalloDeRender) => void;
   vacio?: React.ReactNode;
 }) {
   const hayAlgo = superficie && superficie.componentes.size > 0;
@@ -29,7 +32,7 @@ export function Lienzo({
   return (
     <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 [&>[data-ancho=amplio]]:md:col-span-2">
       {hayAlgo ? (
-        <Superficie superficie={superficie} conversacionId={conversacionId} alAccionar={alAccionar} />
+        <Superficie superficie={superficie} conversacionId={conversacionId} alAccionar={alAccionar} alFallar={alFallar} />
       ) : (
         vacio
       )}

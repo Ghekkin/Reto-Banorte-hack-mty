@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, createElement, useEffect, useRef, type ReactNode } from "react";
+import { Component, Fragment, createElement, useEffect, useRef, type ErrorInfo, type ReactNode } from "react";
 import { arbol, type Nodo } from "./arbol";
 import { resolver } from "./bindings";
 import { emitirAccion } from "./acciones";
@@ -104,10 +104,10 @@ export function Superficie({
         }
       : undefined;
 
-    const pintado = createElement(
-      Componente,
-      { ...props, key: clave, alAccionar: manejador },
-      hijos.length ? hijos : undefined,
+    const pintado = (
+      <FronteraDeError key={clave} nombre={componente.component} id={componente.id}>
+        {createElement(Componente, { ...props, alAccionar: manejador }, hijos.length ? hijos : undefined)}
+      </FronteraDeError>
     );
 
     return envolver(pintado, componente.id, props, componente.weight, componente.accessibility, clave);
@@ -151,6 +151,42 @@ function envolver(
       {pintado}
     </div>
   );
+}
+
+/**
+ * Una frontera de error por componente: si uno truena al pintar (una prop con la forma
+ * equivocada, un `undefined` donde iba un arreglo), se cae SOLO esa tarjeta y el resto
+ * de la pantalla sigue en pie. Sin esto, un componente roto tumbaba la superficie entera
+ * —y con ella la barra de conversacion— en plena demo.
+ *
+ * Es una clase porque React solo permite atrapar errores de render asi.
+ */
+class FronteraDeError extends Component<{ nombre: string; id: string; children: ReactNode }, { error?: Error }> {
+  override state: { error?: Error } = {};
+
+  static getDerivedStateFromError(error: Error): { error: Error } {
+    return { error };
+  }
+
+  override componentDidCatch(error: Error, info: ErrorInfo): void {
+    if (process.env.NODE_ENV !== "production") {
+      console.error(`[a2ui] ${this.props.nombre} (${this.props.id}) trono al pintar:`, error, info.componentStack);
+    }
+  }
+
+  override render(): ReactNode {
+    if (this.state.error) {
+      return (
+        <div className="rounded-2xl border border-oscuro p-4 text-sm">
+          <p className="font-medium">Esta tarjeta no se pudo mostrar.</p>
+          <p className="text-muted-foreground">
+            <code>{this.props.nombre}</code>: {this.state.error.message}
+          </p>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
 }
 
 /** Visible a proposito: un nombre fuera del catalogo no puede pasar desapercibido. */

@@ -23,6 +23,11 @@ se guarda en el servidor: cada petición lleva todo lo necesario.
 `POST /api/agente` — en `apps/web/src/app/api/agente/route.ts`. Respuesta en **streaming
 JSONL** (`Content-Type: application/x-ndjson`), una línea por mensaje.
 
+`GET /api/agente` — las capacidades del servidor según `server_capabilities.json` de la
+spec A2UI: el único catálogo que este agente sabe generar (`URL_CATALOGO`) y
+`acceptsInlineCatalogs: false`. Es el handshake de A2UI reducido a lo que un cliente
+ajeno necesita saber antes de hablar. Lo arma `capacidadesDelServidor()` en `tipos.ts`.
+
 ### Petición
 
 ```jsonc
@@ -41,10 +46,19 @@ JSONL** (`Content-Type: application/x-ndjson`), una línea por mensaje.
     "timestamp": "2026-09-13T01:12:00Z",
     "context": { "plazo": 18, "tarjetaId": "tdc_beto" }
   },
+  "error": {                            // opcional: la interfaz no pudo pintar algo del turno anterior
+    "code": "VALIDATION_FAILED",        // el único código, el de client_to_server.json
+    "surfaceId": "principal",
+    "path": "/components/2",
+    "message": "componente 'Grafica' no está en el catálogo"
+  },
   "superficie": {                       // opcional: estado actual de la superficie, compacto
     "surfaceId": "principal",
     "componentes": ["ResumenTarjeta", "PlanDePago"],
     "dataModel": { "tarjeta": { "saldo": 1840000 }, "planElegido": 18 }
+  },
+  "clientCapabilities": {               // opcional: client_capabilities.json; qué catálogos pinta el cliente
+    "v0.9": { "supportedCatalogIds": ["https://…/catalogo/v1.json"] }
   }
 }
 ```
@@ -53,8 +67,18 @@ Reglas:
 - `mensajes` lleva **texto**, nunca JSON A2UI: el historial se mantiene chico y el
   modelo no reprocesa pantallas viejas. Una acción previa se resume en una línea
   `rol: "accion"`.
-- Exactamente uno de `mensajes[último].rol === "usuario"` o `accion` presente es lo
-  que dispara el turno. Si vienen los dos, `accion` manda.
+- El turno lo dispara **uno** de tres: `mensajes[último].rol === "usuario"`, `accion`
+  presente, o `error` presente. Si vienen varios, `error` manda sobre `accion` y
+  `accion` sobre el texto.
+- `error` es el canal de vuelta de la spec (`VALIDATION_FAILED`): el renderer no supo
+  pintar un componente, lo reporta **una sola vez** (ver `renderer-a2ui.md`) y el
+  agente recibe en su contexto qué falló y la instrucción de repintar la misma
+  pantalla sin ese componente. El cliente lo resume además como una línea
+  `rol: "accion"` en el historial. Lo dispara `reportarFallo` en `usar-agente.ts`.
+- `clientCapabilities` es opcional y nuestro cliente no lo manda (habla nuestro
+  catálogo por construcción). Si un cliente lo manda y **no** incluye `URL_CATALOGO`,
+  la respuesta es **400** `{ error: "catalogo no soportado" }`: mejor decirlo que
+  mandarle una pantalla que no sabe pintar.
 - `superficie.dataModel` es lo que el cliente tiene ahora; el agente lo usa como
   contexto, no lo copia de vuelta.
 - El cuerpo se valida con `esquemaPeticion` (`apps/web/src/lib/agente/tipos.ts`); lo que
@@ -142,3 +166,7 @@ reinicia el estado del MCP (eso es `reiniciar-estado`, y solo antes de un ensayo
 - Modelo caído: `error { codigo: "modelo" }`; el cliente muestra "Intenta de nuevo" y
   `demo` decide si cambia `MODELO`.
 - Timeout del turno: 30 s. Después, `error { codigo: "timeout" }` y `fin`.
+- Un componente que **truena al pintar** en el cliente (una prop con la forma
+  equivocada) se cae solo él: `FronteraDeError` en `packages/a2ui/src/Superficie.tsx`
+  muestra "Esta tarjeta no se pudo mostrar" en su lugar y el resto de la pantalla sigue
+  en pie. No se reporta al agente: el JSON era válido, el fallo es del componente.

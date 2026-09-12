@@ -1,5 +1,6 @@
 import { correrTurno } from "@/lib/agente/agente";
-import { esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/agente/tipos";
+import { config } from "@/lib/agente/config";
+import { capacidadesDelServidor, esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/agente/tipos";
 
 /**
  * `POST /api/agente` — el unico endpoint del cliente. Responde en JSONL:
@@ -9,6 +10,17 @@ import { esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/ag
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+
+/**
+ * `GET /api/agente` — las capacidades del servidor segun `server_capabilities.json`:
+ * que catalogos sabe generar este agente. Es el handshake de A2UI reducido a lo que un
+ * cliente necesita saber antes de hablar: nuestro unico catalogo, sin catalogos inline.
+ */
+export async function GET(): Promise<Response> {
+  return Response.json(capacidadesDelServidor(config.urlCatalogo), {
+    headers: { "cache-control": "no-store" },
+  });
+}
 
 export async function POST(request: Request): Promise<Response> {
   let cuerpo: unknown;
@@ -25,6 +37,16 @@ export async function POST(request: Request): Promise<Response> {
     return Response.json({ error: "peticion invalida", detalle }, { status: 400 });
   }
   const peticion: PeticionAgente = validacion.data;
+
+  // Un cliente que solo soporta OTRO catalogo no puede recibir nada nuestro: mejor
+  // decirselo con 400 que mandarle una pantalla que no sabe pintar.
+  const soportados = peticion.clientCapabilities?.["v0.9"].supportedCatalogIds;
+  if (soportados && !soportados.includes(config.urlCatalogo)) {
+    return Response.json(
+      { error: "catalogo no soportado", detalle: [`este agente genera ${config.urlCatalogo}; el cliente declaro ${soportados.join(", ")}`] },
+      { status: 400 },
+    );
+  }
 
   const codificador = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({

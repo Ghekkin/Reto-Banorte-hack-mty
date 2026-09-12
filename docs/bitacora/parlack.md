@@ -6,6 +6,35 @@
 > están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
 > adelante, hora de Monterrey como manda el repo.
 
+### 03:40 · hecho — El ciclo de error A2UI cerrado y una frontera de error por componente
+
+Retomé el árbol con cambios sin commitear de la sesión anterior (el canal
+`VALIDATION_FAILED` conectado al agente, `GET /api/agente` con `server_capabilities`,
+rechazo con 400 de un cliente que declare otro catálogo, y `FronteraDeError` en
+`Superficie`). Lo primero fue comprobar que `main` siguiera arrancando antes de que el
+hook lo subiera solo: **no arrancaba**. Dos cosas:
+
+- `@types/react-dom` se había agregado a `packages/catalogo`, pero el test que importa
+  `react-dom/server` vive en `packages/a2ui`. El typecheck del paquete fallaba. Ahora
+  `react-dom` y sus tipos son devDependencies de `a2ui`.
+- El test de la frontera de error usaba `renderToStaticMarkup` y **no puede pasar así**:
+  React no ejecuta error boundaries en render de servidor, el error se propaga tal cual.
+  El componente estaba bien; la prueba estaba mal planteada. Lo moví a su propio archivo
+  (`frontera-de-error.test.tsx`) con `happy-dom` + `createRoot` + `act`, que es un DOM de
+  verdad. Sí metí una dependencia de pruebas a las 3 am, al contrario de lo que dije a las
+  02:10: sin ella la frontera se quedaba sin prueba, y es justo lo que evita que un
+  componente roto tumbe la pantalla en la demo.
+
+Resultado: typecheck en verde en los 5 paquetes, 222 pruebas (112 a2ui, 42 catálogo,
+42 mcp, 26 web). Docs al día: `contrato-agente-cliente.md` (campos `error` y
+`clientCapabilities`, el `GET`, quién dispara el turno), `renderer-a2ui.md` (el canal ya
+no está "medio conectado"; sección nueva de la frontera), y las cifras del mapa en
+`CLAUDE.md`, que decían 1 de 8 componentes cuando ya son 8 de 8.
+
+**Lo que NO hice:** no probé el ciclo de error con llave de modelo real (que el agente
+efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
+`historial.ts`; falta verlo en la página viva. Va junto con el guion.
+
 ### 01:45 · hecho — El motor A2UI terminado: ajv contra la spec y los 76 casos oficiales
 
 Cerré el último pendiente de `contrato` (`packages/a2ui`), que es dominio ajeno otra vez.

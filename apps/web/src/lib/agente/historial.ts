@@ -40,7 +40,14 @@ function bloqueDeContexto(peticion: PeticionAgente): string {
     partes.push("pantalla actual: (todavia no hay; es el primer turno)");
   }
 
-  if (peticion.accion) {
+  if (peticion.error) {
+    const { path, message } = peticion.error;
+    partes.push(
+      "",
+      `La interfaz NO pudo pintar lo que mandaste en el turno anterior (${path}): ${message}`,
+      "Vuelve a pintar la misma pantalla sin ese componente o con uno del catalogo que si exista.",
+    );
+  } else if (peticion.accion) {
     const { name, sourceComponentId, context } = peticion.accion;
     partes.push(
       "",

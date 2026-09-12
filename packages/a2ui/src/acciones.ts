@@ -1,5 +1,5 @@
 import { resolverValor } from "./bindings";
-import type { Accion, Componente } from "./tipos";
+import { VERSION_A2UI, type Accion, type Componente } from "./tipos";
 
 /**
  * Arma el `action` que vuelve al agente. Resuelve cada `{path}` del `context`
@@ -41,4 +41,17 @@ export function emitirAccion(opciones: {
 /** Las que mutan estado se llaman igual que su tool; las de vista llevan prefijo. */
 export function esAccionDeMutacion(nombre: string): boolean {
   return !nombre.startsWith("ver_") && !nombre.startsWith("elegir_");
+}
+
+/**
+ * El mensaje cliente->servidor tal como lo define `client_to_server.json`: la accion
+ * envuelta en `{ version, action }`, exactamente dos propiedades.
+ *
+ * Nuestro contrato manda `accion` sin envoltura (el objeto de adentro ES el `action` de
+ * la spec, campo por campo); el transporte la aporta. Esta funcion existe para que
+ * quien quiera hablar A2UI puro —otro cliente, un test de conformidad— tenga el mensaje
+ * completo sin rearmarlo a mano.
+ */
+export function mensajeClienteAServidor(accion: Accion): { version: typeof VERSION_A2UI; action: Accion } {
+  return { version: VERSION_A2UI, action: accion };
 }

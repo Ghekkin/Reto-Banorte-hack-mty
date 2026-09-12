@@ -125,9 +125,9 @@ el campo nuevo es opcional.
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
 <<<<<<< Updated upstream
 | `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | shell listo; **agente real** con el AI SDK (Gemini/Claude), MCP y A2UI validado; sin llave sirve una pantalla de ejemplo |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, `src/dominio/` (finanzas, consultas, tiempo), estado mutable | **9 de 9 tools** (7 lectura + 2 acción), 31 pruebas |
-| `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 109 pruebas, incluidos los **76 casos de conformidad** oficiales de `spec/` |
-| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod **como catálogo A2UI de verdad** (el validador oficial valida nuestros componentes) | 1 de 8 componentes; los 7 con su encargo escrito. 12 pruebas cuidan la cadena de cada componente nuevo |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, `src/dominio/` (finanzas, consultas, tiempo), estado mutable | **9 de 9 tools** (7 lectura + 2 acción), 42 pruebas |
+| `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 112 pruebas, incluidos los **76 casos de conformidad** oficiales de `spec/` |
+| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod **como catálogo A2UI de verdad** (el validador oficial valida nuestros componentes) | **8 de 8 componentes propios** más `Column`/`Row`/`Text`/`Divider` del catálogo básico. 42 pruebas cuidan la cadena de cada componente |
 | `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **9 de 9** |
 =======
 | `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell de 5 secciones (Inicio, Productos, Maya, Movimientos, Más), `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/`, `src/lib/datos/` (lee los CSV) | shell construido; el lienzo de Maya es placeholder |

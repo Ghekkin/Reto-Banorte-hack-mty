@@ -1,7 +1,15 @@
 "use client";
 
 import { useCallback, useMemo, useRef, useState } from "react";
-import { estadoVacio, nombresVisibles, procesar, type Accion, type Estado, type MensajeA2UI } from "@maya/a2ui";
+import {
+  estadoVacio,
+  nombresVisibles,
+  procesar,
+  type Accion,
+  type Estado,
+  type FalloDeRender,
+  type MensajeA2UI,
+} from "@maya/a2ui";
 import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente/tipos";
 
 /**
@@ -33,7 +41,7 @@ export function usarAgente(usuarioId: string) {
   }, []);
 
   const enviar = useCallback(
-    async (parcial: Pick<PeticionAgente, "mensajes" | "accion">) => {
+    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error">) => {
       setOcupado(true);
       setTransparencia([]);
       try {
@@ -46,6 +54,7 @@ export function usarAgente(usuarioId: string) {
             conversacionId: conversacionId.current,
             mensajes: parcial.mensajes,
             accion: parcial.accion,
+            error: parcial.error,
             superficie: superficie
               ? {
                   surfaceId: superficie.id,
@@ -108,6 +117,22 @@ export function usarAgente(usuarioId: string) {
     [enviar, historial],
   );
 
+  /**
+   * El canal de error de la spec (`VALIDATION_FAILED`): el renderer no supo pintar un
+   * componente y se lo cuenta al agente, que repinta sin el. Va como un turno mas, y
+   * `Superficie` ya garantiza que el mismo fallo se reporta una sola vez, asi que no
+   * puede volverse un bucle entre la interfaz y el agente.
+   */
+  const reportarFallo = useCallback(
+    async (fallo: FalloDeRender) => {
+      const resumen = `la interfaz no pudo pintar ${fallo.path}: ${fallo.message}`;
+      const mensajes: MensajeHistorial[] = [...historial, { rol: "accion", texto: resumen }];
+      setHistorial(mensajes);
+      await enviar({ mensajes, error: fallo });
+    },
+    [enviar, historial],
+  );
+
   const superficie = useMemo(() => estado.get(SUPERFICIE), [estado]);
 
   return {
@@ -120,6 +145,7 @@ export function usarAgente(usuarioId: string) {
     transparencia,
     enviarTexto,
     enviarAccion,
+    reportarFallo,
     reiniciar,
   };
 }
