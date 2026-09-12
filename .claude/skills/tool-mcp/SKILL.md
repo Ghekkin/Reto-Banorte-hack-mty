@@ -25,7 +25,8 @@ Referencia de patrón (no copiar lógica): `/root/yolani/mcp-tenant/src/server.t
 1. **Schema primero, en `packages/schemas`.** Input y output en Zod, con `.describe()`
    en cada campo del input: es lo que el modelo lee para decidir cómo llamar la tool.
    Exporta los tipos inferidos.
-2. **Mock antes que real.** Lee y escribe sobre `apps/mcp/data/` (skill `datos-mock`).
+2. **Mock antes que real.** Lee y escribe sobre `apps/mcp/data/` a través de
+   `repositorio.ts` (ADR 0006: JSON hoy, TimescaleDB detrás de flag después).
    Las tools de acción escriben en el **estado mutable** (`estado.json`, con script
    `reiniciar-estado` para volver al punto de partida antes de cada demo).
 3. **Registro** con `registerTool`: `title`, `description` (qué hace y cuándo usarla,

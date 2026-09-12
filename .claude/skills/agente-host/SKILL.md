@@ -9,7 +9,9 @@ La presentación lo dice literal: "El LLM es el centro de la experiencia, no un 
 pegado a un lado". El agente hace tres cosas, en ciclo: **interpreta la intención**,
 **genera la interfaz** (A2UI), **ejecuta la acción** cuando la UI se la devuelve. Es
 dominio del rol `contrato`. Vive en `apps/web/src/lib/agente/` y se expone por
-`app/api/agente/route.ts` como stream JSONL de mensajes A2UI.
+`app/api/agente/route.ts` como stream JSONL. **El contrato exacto** (petición,
+tipos de línea del stream, convención de acciones, errores) está en
+`docs/arquitectura/contrato-agente-cliente.md`; esta skill no lo repite.
 
 ## Piezas (un archivo cada una)
 

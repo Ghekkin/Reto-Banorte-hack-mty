@@ -44,9 +44,11 @@ quien.
 - [0003 — A2UI real con catálogo propio](decisiones/0003-a2ui-como-protocolo-de-interfaz.md)
 - [0004 — Caso de uso: tres intenciones en orden estricto](decisiones/0004-caso-de-uso.md)
 - [0005 — Gemini 3.8 Flash principal, Sonnet 5 de respaldo](decisiones/0005-modelo-gemini-3-8-flash.md)
+- [0006 — Estado del MCP en JSON; TimescaleDB detrás de flag](decisiones/0006-estado-del-mcp-en-json.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
+- [Contrato agente ↔ cliente](arquitectura/contrato-agente-cliente.md) — el endpoint, la petición, el stream JSONL, la convención de acciones
 - [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)
 

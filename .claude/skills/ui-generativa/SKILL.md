@@ -33,8 +33,9 @@ su `catalogId` (`https://<dominio>/catalogo/v1.json`).
 3. **Acciones = eventos A2UI.** Un botón declara `action: { event: { name,
    context } }`. El `context` resuelve paths del data model (ej. el plazo elegido). El
    componente **nunca** hace fetch ni llama al MCP: dispara la acción y el agente
-   decide. Nombres de acción en `snake_case`, en español, coherentes con la tool que
-   las ejecuta (`aplicar_plan_pago`).
+   decide. Nombres según la convención de `docs/arquitectura/contrato-agente-cliente.md`:
+   mutación = nombre de la tool (`aplicar_plan_pago`); solo vista = `ver_*`; elegir sin
+   confirmar = `elegir_*`.
 4. **Tres estados siempre**: cargando (skeleton del tamaño final; el data model puede
    llegar después que los componentes), vacío (frase útil, nunca blanco), error
    (mensaje corto + qué puede hacer la persona).
