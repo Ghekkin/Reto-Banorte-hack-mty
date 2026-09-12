@@ -54,6 +54,13 @@ cargar datos desde su máquina sin entrar al VPS. Son datos sintéticos; aun as�
 password es largo y aleatorio. Si un juez pregunta, se cierra en un clic en Coolify
 (`Make it private`).
 
+**Cortafuegos del VPS.** Docker publica puertos saltándose UFW; lo que manda es la
+cadena `DOCKER-USER`, que arma el script `/usr/local/sbin/yolani-docker-firewall.sh`
+(servicio `yolani-docker-firewall.service`) con una lista de puertos permitidos y
+DROP para todo lo demás. El 5437 está en esa lista desde 2026-09-12 05:35. Cualquier
+puerto nuevo que se publique nace cerrado hasta agregarlo ahí y reiniciar el servicio.
+Al terminar el hackathon se quita el 5437 de la lista.
+
 Comprobación hecha (2026-09-12 05:24): conexión desde fuera por `157.173.204.174:5437`
 y desde la red `coolify` por el alias interno, ambas responden; `create extension
 timescaledb` en verde.
