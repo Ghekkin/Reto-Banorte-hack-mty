@@ -99,7 +99,19 @@ export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> &
               {...EJE}
               tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
             />
-            <YAxis dataKey="precio" domain={dominio} hide />
+            {/* Dos marcas: el piso y el techo del periodo. Con ellas la curva tiene escala
+                (regla 7 de `docs/algoritmos/graficas-del-catalogo.md`); sin ellas, una
+                variación de $114 se veía igual que una de $11,400. */}
+            <YAxis
+              dataKey="precio"
+              domain={dominio}
+              ticks={[Math.min(...precios), Math.max(...precios)]}
+              // Entero y no corto: un precio de $1,000 a $1,114 en formato corto es "$1k" y "$1.1k".
+              tickFormatter={formatearMontoEntero}
+              width={60}
+              {...EJE}
+              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
+            />
             <TooltipMonto etiquetaDe={(v) => formatearFechaCorta(String(v))} />
             <Area
               type="monotone"

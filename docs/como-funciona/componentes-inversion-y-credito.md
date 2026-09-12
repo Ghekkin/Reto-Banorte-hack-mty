@@ -72,7 +72,7 @@ Permite al usuario consultar el comportamiento y plusvalía acumulada de un inst
 - **Etiqueta**: nombre del instrumento y clave (`Certificados de la Tesorería 28 días · CETES28`).
 - **Cifra principal**: `$1,114.00`, el precio de cierre.
 - **Detalle**: `+11.4 %` en `text-exito` con el periodo y el precio inicial (`inició en $1,000.00`).
-- **Curva de área** (`AreaChart`): la serie de precios con eje de fechas legible (`20 jun`, `4 jul`…), eje Y oculto, línea en oscuro (`--chart-1`) y el **punto de cierre en rojo con su etiqueta directa** (`$1,114`). Sustituye a las barras con base en el mínimo, que exageraban el cambio.
+- **Curva de área** (`AreaChart`): la serie de precios con eje de fechas legible (`20 jun`, `4 jul`…), eje Y con dos marcas —el piso y el techo del periodo (`$1,000`, `$1,114`), desde el 2026-09-12—, línea en oscuro (`--chart-1`) y el **punto de cierre en rojo con su etiqueta directa** (`$1,114`). Sustituye a las barras con base en el mínimo, que exageraban el cambio.
 - **Pie**: botón en contorno `Ver detalle del instrumento` (píldora, 48 px) y la razón.
 
 ---
