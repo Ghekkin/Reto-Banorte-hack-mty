@@ -1,4 +1,5 @@
 import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
@@ -27,7 +28,7 @@ function superficieDelEjemplo(ruta: string) {
   return estado.get("principal");
 }
 
-const EJEMPLO = new URL("../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url).pathname;
+const EJEMPLO = fileURLToPath(new URL("../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url));
 
 describe("el lienzo de la demo", () => {
   const html = renderToStaticMarkup(
