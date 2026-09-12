@@ -45,8 +45,17 @@ export const proyectarAhorro: DefinicionDeTool = {
 
     const capacidad = capacidadDeAhorro(entrada.usuarioId);
     const sugerida = meta ? aEntero(meta.aportacion_sugerida_centavos) || capacidad : capacidad;
-    const aportacion = entrada.aportacionCentavos ?? sugerida;
-    if (aportacion <= 0) throw new Error("la aportacion tiene que ser mayor que cero");
+    // El cero llega de verdad, por dos caminos: el slider del simulador en su minimo y
+    // el modelo cuando no sabe que poner (paso el 2026-09-12 en el ensayo del guion).
+    // Tratarlo como "no me dijiste nada" y usar la capacidad calculada es mas util que
+    // tumbar la pantalla: quien pregunta cuanto tarda en juntar algo no quiere un error.
+    const pedida = entrada.aportacionCentavos && entrada.aportacionCentavos > 0 ? entrada.aportacionCentavos : undefined;
+    const aportacion = pedida ?? sugerida;
+    if (aportacion <= 0) {
+      throw new Error(
+        "no hay con que proyectar: la capacidad de ahorro calculada es cero, pasa aportacionCentavos mayor que cero",
+      );
+    }
 
     const faltante = Math.max(0, objetivo - saldoInicial);
     const proyeccion = proyectar(faltante, aportacion, frecuencia);

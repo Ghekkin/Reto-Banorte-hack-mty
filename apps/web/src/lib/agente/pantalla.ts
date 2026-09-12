@@ -34,7 +34,13 @@ export const entradaPintarPantalla = z.object({
     .string()
     .min(10)
     .describe("Una frase en segunda persona: por que ESTA pantalla y no otra, con el dato que lo justifica"),
-  texto: z.string().min(1).describe("Una sola frase de cierre para la conversacion. Nada de parrafos"),
+  texto: z
+    .string()
+    .min(1)
+    .describe(
+      "Lo que le dirias de frente: de una a tres frases con el dato clave y tu recomendacion. " +
+        "No describas la pantalla, aconseja. Nada de parrafos.",
+    ),
   componentesJson: z
     .string()
     .describe(
@@ -199,9 +205,59 @@ function parsear(texto: string, campo: string, errores: string[]): unknown {
   try {
     return JSON.parse(texto) as unknown;
   } catch (error) {
-    errores.push(`${campo} no es JSON valido: ${error instanceof Error ? error.message : String(error)}`);
+    // Segundo intento con lo que el modelo suele pegarle al JSON: cercas de markdown, una
+    // frase antes o despues, dos bloques seguidos. Tirar un turno de 6 s por una comilla
+    // de mas no vale la pena, y el contenido se valida igual en los pasos de abajo.
+    const rescatado = rescatarJson(texto);
+    if (rescatado !== undefined) {
+      try {
+        return JSON.parse(rescatado) as unknown;
+      } catch {
+        /* cae al error de abajo */
+      }
+    }
+    // El detalle del parser va en el mensaje a proposito: es lo que el modelo necesita
+    // para corregir en el reintento, y lo unico que queda en el log para saber QUE mando.
+    const detalle = error instanceof Error ? error.message : String(error);
+    errores.push(
+      `${campo} no es JSON valido (${detalle}). Manda un solo arreglo JSON, sin texto ni cercas alrededor.`,
+    );
     return undefined;
   }
+}
+
+/**
+ * El primer JSON completo que haya dentro del texto. Recorta por balance de llaves y
+ * corchetes, ignorando lo que este dentro de una cadena, para no cortar en un `{` que
+ * viniera dentro de un titulo.
+ */
+export function rescatarJson(texto: string): string | undefined {
+  const limpio = texto.replace(/^\s*```(?:json)?/i, "").replace(/```\s*$/, "");
+  const inicio = limpio.search(/[[{]/);
+  if (inicio === -1) return undefined;
+
+  const abre = limpio[inicio] === "[" ? "[" : "{";
+  const cierra = abre === "[" ? "]" : "}";
+  let profundidad = 0;
+  let enCadena = false;
+  let escapado = false;
+
+  for (let i = inicio; i < limpio.length; i++) {
+    const c = limpio[i]!;
+    if (enCadena) {
+      if (escapado) escapado = false;
+      else if (c === "\\") escapado = true;
+      else if (c === '"') enCadena = false;
+      continue;
+    }
+    if (c === '"') enCadena = true;
+    else if (c === abre) profundidad++;
+    else if (c === cierra) {
+      profundidad--;
+      if (profundidad === 0) return limpio.slice(inicio, i + 1);
+    }
+  }
+  return undefined;
 }
 
 function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {

@@ -1,5 +1,6 @@
 import type { ModelMessage } from "ai";
 import { esAccionDeMutacion } from "@maya/a2ui";
+import { systemPrompt } from "./prompt";
 import type { PeticionAgente } from "./tipos";
 
 /**
@@ -8,17 +9,42 @@ import type { PeticionAgente } from "./tipos";
  * El historial es SOLO TEXTO (contrato agente-cliente): nunca viaja JSON A2UI de vuelta
  * al modelo. Se mantiene chico a proposito, y el estado real de la pantalla va en un
  * solo bloque de contexto al final, que es el mas fresco.
+ *
+ * ## El orden es lo que hace que el cache sirva
+ *
+ * El prompt caching de los dos proveedores es **coincidencia de prefijo**: el primer byte
+ * que cambia invalida todo lo que sigue. De ahi el orden de aqui, que no es cosmetico:
+ *
+ *  1. el **system prompt**, que es lo grande (el catalogo entero con sus schemas y los
+ *     ejemplos) y no cambia entre turnos ni entre personas;
+ *  2. el **historial**, que solo CRECE: los turnos viejos se mandan byte por byte igual;
+ *  3. el **bloque de contexto del turno**, que es lo unico volatil (quien pregunta, que
+ *     hay en pantalla, el data model) y por eso va al final, despues del corte del cache.
+ *
+ * Si alguien mete la fecha de hoy, el usuarioId o el data model arriba, el cache deja de
+ * pegar y nadie se entera: el turno solo sale mas caro y mas lento. El `fin` del stream
+ * reporta `cacheLeido` justo para poder notarlo.
  */
 
 /** Mas alla de esto, el data model de la pantalla se recorta: el modelo no lo necesita completo. */
 const LIMITE_DATA_MODEL = 2000;
 
 export function mensajesDelTurno(peticion: PeticionAgente, panorama?: unknown): ModelMessage[] {
-  const mensajes: ModelMessage[] = peticion.mensajes.map((m) => {
-    if (m.rol === "agente") return { role: "assistant" as const, content: m.texto };
-    if (m.rol === "accion") return { role: "user" as const, content: `[la persona toco la interfaz] ${m.texto}` };
-    return { role: "user" as const, content: m.texto };
-  });
+  const mensajes: ModelMessage[] = [
+    {
+      role: "system",
+      content: systemPrompt(),
+      // El corte del cache va aqui: todo lo de arriba se reusa entre turnos. Claude
+      // necesita el breakpoint explicito; Gemini cachea el prefijo estable solo.
+      providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+    },
+  ];
+
+  for (const m of peticion.mensajes) {
+    if (m.rol === "agente") mensajes.push({ role: "assistant", content: m.texto });
+    else if (m.rol === "accion") mensajes.push({ role: "user", content: `[la persona toco la interfaz] ${m.texto}` });
+    else mensajes.push({ role: "user", content: m.texto });
+  }
 
   mensajes.push({ role: "user", content: bloqueDeContexto(peticion, panorama) });
   return mensajes;

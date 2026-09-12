@@ -7,6 +7,7 @@ import {
   procesar,
   type Accion,
   type Estado,
+  type EstadoSuperficie,
   type FalloDeRender,
   type MensajeA2UI,
 } from "@maya/a2ui";
@@ -18,20 +19,51 @@ import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente
  *
  * Aqui esta el ciclo completo del reto: lo que la persona toca (`enviarAccion`)
  * vuelve al agente exactamente igual que lo que escribe (`enviarTexto`).
+ *
+ * ## El hilo guarda las pantallas, no solo el texto
+ *
+ * `hilo` es UNA lista en orden con las dos cosas que pasaron: lo que se dijo y lo que
+ * Maya construyo. Antes solo guardaba texto y la pantalla vivia aparte, asi que cada
+ * pregunta nueva borraba la tarjeta anterior: la conversacion quedaba llena de frases
+ * sueltas ("en agosto tu mayor gasto fue Vivienda") sin la pantalla que las sostenia.
+ *
+ * Al cerrar un turno (`fin`) la superficie se **congela** en el hilo junto con la tira de
+ * transparencia de ESE turno, y ahi se queda. El objeto congelado no se vuelve a tocar:
+ * `procesar` devuelve estado nuevo en cada mensaje, asi que congelar es quedarse con la
+ * referencia. El `historial` que viaja al agente se deriva de esta misma lista, para que
+ * no haya dos versiones de la conversacion que se puedan separar.
  */
 export const SUPERFICIE = "principal";
+
+/** Una entrada del hilo: una linea de conversacion, o una pantalla ya construida. */
+export type EntradaDelHilo =
+  | { tipo: "mensaje"; rol: MensajeHistorial["rol"]; texto: string }
+  | { tipo: "pantalla"; superficie: EstadoSuperficie; transparencia: LineaStream[] };
 
 /** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
 const TOPE_DE_FALLOS = 2;
 
 export function usarAgente(usuarioId: string) {
   const [estado, setEstado] = useState<Estado>(estadoVacio);
-  const [historial, setHistorial] = useState<MensajeHistorial[]>([]);
+  const [hilo, setHilo] = useState<EntradaDelHilo[]>([]);
   const [ocupado, setOcupado] = useState(false);
   const [sugerencias, setSugerencias] = useState<string[]>([]);
   const [razon, setRazon] = useState<string>();
   const [transparencia, setTransparencia] = useState<LineaStream[]>([]);
   const conversacionId = useRef(crearId());
+  /**
+   * El historial que viaja al agente sale del hilo, no de un estado paralelo: una sola
+   * conversacion, imposible que las dos versiones se separen (contrato agente-cliente:
+   * `mensajes` lleva SOLO texto, nunca JSON A2UI).
+   */
+  const historial = useMemo<MensajeHistorial[]>(
+    () =>
+      hilo
+        .filter((e): e is Extract<EntradaDelHilo, { tipo: "mensaje" }> => e.tipo === "mensaje")
+        .map(({ rol, texto }) => ({ rol, texto })),
+    [hilo],
+  );
+
   /** Cuantos fallos de render se le han contado al agente en esta conversacion. */
   const fallosReportados = useRef(0);
 
@@ -40,7 +72,7 @@ export function usarAgente(usuarioId: string) {
     conversacionId.current = crearId();
     fallosReportados.current = 0;
     setEstado(estadoVacio());
-    setHistorial([]);
+    setHilo([]);
     setSugerencias([]);
     setRazon(undefined);
     setTransparencia([]);
@@ -74,14 +106,21 @@ export function usarAgente(usuarioId: string) {
         });
         if (!respuesta.body) throw new Error("el agente no devolvio stream");
 
+        // Copia local del estado y de las lineas: al llegar `fin` hace falta el valor
+        // final de la superficie para congelarla, y `setEstado` no lo devuelve.
+        let actual = estado;
+        const lineas: LineaStream[] = [];
+
         for await (const linea of leerJSONL(respuesta.body)) {
-          setTransparencia((t) => [...t, linea]);
+          lineas.push(linea);
+          setTransparencia([...lineas]);
           switch (linea.tipo) {
             case "a2ui":
-              setEstado((actual) => procesar(actual, linea.mensaje as MensajeA2UI).estado);
+              actual = procesar(actual, linea.mensaje as MensajeA2UI).estado;
+              setEstado(actual);
               break;
             case "texto":
-              setHistorial((h) => [...h, { rol: "agente", texto: linea.valor }]);
+              setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: linea.valor }]);
               break;
             case "razon":
               setRazon(linea.valor);
@@ -90,8 +129,19 @@ export function usarAgente(usuarioId: string) {
               setSugerencias(linea.valores);
               break;
             case "error":
-              setHistorial((h) => [...h, { rol: "agente", texto: `⚠ ${linea.mensaje}` }]);
+              setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: `⚠ ${linea.mensaje}` }]);
               break;
+            case "fin": {
+              // La pantalla del turno se queda en el hilo, con su tira de transparencia.
+              // Un turno que no pinto nada (prosa, error) no congela nada: no hay que
+              // dejar un hueco vacio en la conversacion.
+              const pantalla = actual.get(SUPERFICIE);
+              if (pantalla && pantalla.componentes.size > 0) {
+                const congelada = [...lineas];
+                setHilo((h) => [...h, { tipo: "pantalla", superficie: pantalla, transparencia: congelada }]);
+              }
+              break;
+            }
             default:
               break;
           }
@@ -106,7 +156,7 @@ export function usarAgente(usuarioId: string) {
   const enviarTexto = useCallback(
     async (texto: string) => {
       const mensajes: MensajeHistorial[] = [...historial, { rol: "usuario", texto }];
-      setHistorial(mensajes);
+      setHilo((h) => [...h, { tipo: "mensaje", rol: "usuario", texto }]);
       await enviar({ mensajes });
     },
     [enviar, historial],
@@ -117,7 +167,7 @@ export function usarAgente(usuarioId: string) {
     async (accion: Accion) => {
       const resumen = `${accion.name} ${JSON.stringify(accion.context)}`;
       const mensajes: MensajeHistorial[] = [...historial, { rol: "accion", texto: resumen }];
-      setHistorial(mensajes);
+      setHilo((h) => [...h, { tipo: "mensaje", rol: "accion", texto: resumen }]);
       await enviar({ mensajes, accion });
     },
     [enviar, historial],
@@ -156,8 +206,22 @@ export function usarAgente(usuarioId: string) {
 
   const superficie = useMemo(() => estado.get(SUPERFICIE), [estado]);
 
+  /**
+   * La del turno en curso: la que todavia no se congelo en el hilo. Se compara por
+   * referencia, que es exacta porque `procesar` nunca muta.
+   */
+  const superficieViva = useMemo(() => {
+    for (let i = hilo.length - 1; i >= 0; i--) {
+      const entrada = hilo[i]!;
+      if (entrada.tipo === "pantalla") return superficie === entrada.superficie ? undefined : superficie;
+    }
+    return superficie;
+  }, [hilo, superficie]);
+
   return {
+    hilo,
     superficie,
+    superficieViva,
     conversacionId: conversacionId.current,
     historial,
     ocupado,

@@ -154,6 +154,39 @@ describe("el estado vive en el disco, no en memoria", () => {
   });
 });
 
+describe("proyectar_ahorro: la aportacion en cero", () => {
+  /**
+   * El cero llega por dos caminos reales: el slider del `SimuladorMeta` en su minimo y
+   * el modelo cuando no sabe que poner. Antes tumbaba el turno con "la aportacion tiene
+   * que ser mayor que cero" y el agente gastaba un paso en corregirse (ensayo del
+   * 2026-09-12). Ahora vale como "no me dijiste nada": se usa la capacidad calculada.
+   */
+  it("trata 0 como ausente y proyecta con la capacidad calculada", async () => {
+    const conCero = SalidaProyectarAhorro.parse(
+      await proyectarAhorro.manejar({ usuarioId: "usr_ana", aportacionCentavos: 0 }),
+    );
+    const sinNada = SalidaProyectarAhorro.parse(await proyectarAhorro.manejar({ usuarioId: "usr_ana" }));
+    expect(conCero.aportacionCentavos).toBe(sinNada.aportacionCentavos);
+    expect(conCero.mesesEstimados).toBe(sinNada.mesesEstimados);
+    expect(conCero.mesesEstimados).toBeGreaterThan(0);
+  });
+
+  it("una aportacion negativa tampoco tumba la pantalla", async () => {
+    const salida = SalidaProyectarAhorro.parse(
+      await proyectarAhorro.manejar({ usuarioId: "usr_ana", aportacionCentavos: -5000 }),
+    );
+    expect(salida.mesesEstimados).toBeGreaterThan(0);
+  });
+
+  it("sigue exigiendo saber contra que proyectar", () => {
+    // Beto no tiene meta creada: sin objetivo no hay nada que proyectar. La tool lanza y
+    // la capa de registro lo convierte en error de tool, que es lo que el modelo lee.
+    // `manejar` de esta tool es sincrona y LANZA; la capa de registro del servidor es la
+    // que lo convierte en error de tool, que es lo que el modelo termina leyendo.
+    expect(() => proyectarAhorro.manejar({ usuarioId: "usr_beto" })).toThrow(/montoObjetivoCentavos/);
+  });
+});
+
 describe("crear_apartado y proyectar_ahorro", () => {
   it("Ana: proyecta su meta activa con lo que su flujo permite", async () => {
     const salida = SalidaProyectarAhorro.parse(await proyectarAhorro.manejar({ usuarioId: "usr_ana" }));
