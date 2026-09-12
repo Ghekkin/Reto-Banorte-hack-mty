@@ -1,5 +1,0 @@
-id,cuenta_id,usuario_id,marca,producto,mascara,tipo,limite_centavos,saldo_centavos,tasa_anual,cat,pago_minimo_centavos,pago_no_intereses_centavos,dia_corte,fecha_corte,fecha_limite_pago,dias_mora,estatus
-tar_ana_debito,cta_ana_nomina,usr_ana,visa,Débito Nómina,•••• 0101,debito,0,0,0,0,0,0,1,2026-09-01,2026-09-01,0,activa
-tar_beto_clasica,cta_beto_credito,usr_beto,mastercard,Tarjeta Clásica,•••• 4821,credito,4900000,4738600,0.489,0.621,295073,4738600,5,2026-09-05,2026-08-31,12,activa
-tar_carmen_oro,cta_carmen_credito,usr_carmen,visa,Tarjeta Oro,•••• 7712,credito,25000000,2841500,0.329,0.498,132992,2841500,20,2026-08-20,2026-09-14,0,activa
-tar_carmen_debito,cta_carmen_nomina,usr_carmen,visa,Débito Preferente,•••• 0301,debito,0,0,0,0,0,0,1,2026-09-01,2026-09-01,0,activa

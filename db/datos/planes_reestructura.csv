@@ -1,8 +1,0 @@
-id,usuario_id,tarjeta_id,plazo_meses,saldo_a_diferir_centavos,tasa_anual,cat,mensualidad_centavos,total_a_pagar_centavos,intereses_totales_centavos,ahorro_vs_minimo_centavos,meses_vs_minimo,es_recomendado,vigente_hasta
-plan_beto_clasica_12m,usr_beto,tar_beto_clasica,12,4738600,0.189,0.2427,443333,5319996,581396,13634554,197,false,2026-10-15
-plan_beto_clasica_18m,usr_beto,tar_beto_clasica,18,4738600,0.219,0.2858,319335,5748030,1009430,13206520,191,true,2026-10-15
-plan_beto_clasica_24m,usr_beto,tar_beto_clasica,24,4738600,0.249,0.3303,262234,6293616,1555016,12660934,185,false,2026-10-15
-plan_beto_clasica_36m,usr_beto,tar_beto_clasica,36,4738600,0.279,0.3762,207345,7464420,2725820,11490130,173,false,2026-10-15
-plan_carmen_oro_6m,usr_carmen,tar_carmen_oro,6,2841500,0.189,0.2427,504323,3025938,184438,5233746,156,false,2026-10-15
-plan_carmen_oro_12m,usr_carmen,tar_carmen_oro,12,2841500,0.199,0.2569,267433,3209196,367696,5050488,150,false,2026-10-15
-plan_carmen_oro_18m,usr_carmen,tar_carmen_oro,18,2841500,0.219,0.2858,191489,3446802,605302,4812882,144,false,2026-10-15
