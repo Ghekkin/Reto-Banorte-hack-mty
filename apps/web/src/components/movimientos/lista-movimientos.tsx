@@ -82,7 +82,17 @@ export function ListaMovimientos({
         {total > movimientos.length && ` · los ${movimientos.length} más recientes de ${total}`}
       </p>
 
-      <Card>
+      <Card
+        // La `key` cambia al elegir otra categoria, asi que React remonta la tarjeta y la
+        // entrada se vuelve a reproducir: es la senal de que la lista cambio.
+        //
+        // Va SOLO en la categoria, no en la busqueda: con `busqueda` en la key, la
+        // animacion se relanzaria en cada letra y el resultado parpadea mientras
+        // escribes. Y va en la tarjeta, no en cada fila: animar 100 renglones para decir
+        // "cambio el filtro" es gastar cuadros en algo que una sola superficie ya dice.
+        key={categoria[0] ?? "todas"}
+        className="animar-entrada"
+      >
         <CardContent className="flex flex-col gap-3 p-4 md:p-5">
           {filtrados.length === 0 ? (
             <p className="py-6 text-center text-sm text-muted-foreground">

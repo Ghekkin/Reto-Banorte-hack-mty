@@ -32,7 +32,7 @@ export default async function PaginaMas() {
   const [resumen, cuentas] = await Promise.all([resumenDe(usuario.id), cuentasDe(usuario.id)]);
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 md:gap-4">
+    <div className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4">
       {/* Perfil: datos reales */}
       <Card>
         <CardHeader>
@@ -128,7 +128,9 @@ function Enlace({
       <Icono className="size-4 shrink-0 text-muted-foreground" />
       <span className="flex-1 text-sm">{etiqueta}</span>
       {disponible ? (
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground" />
+        // El chevron se corre 2 px al pasar el cursor. Es lo minimo que hace falta para
+        // que la fila diga "esto lleva a algun lado" sin agregar texto ni color.
+        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
       ) : (
         <Badge variant="outline" className="shrink-0 rounded-full text-[10px]">
           pendiente
@@ -151,7 +153,10 @@ function Enlace({
   return (
     <Link
       href={href}
-      className="flex min-h-12 items-center gap-3 border-b border-borde-sutil px-1 transition-colors duration-150 last:border-0 hover:bg-current/8"
+      // `group` para el chevron. Las dos capas de estado de Material: 8% al pasar el
+      // cursor, 12% al presionar. Sin la segunda, en movil no hay ninguna senal de que
+      // el toque se registro.
+      className="group flex min-h-12 items-center gap-3 border-b border-borde-sutil px-1 transition-colors last:border-0 hover:bg-current/8 active:bg-current/12"
     >
       {contenido}
     </Link>

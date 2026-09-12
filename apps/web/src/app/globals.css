@@ -75,11 +75,37 @@
   --radius-2xl: calc(var(--radius) * 1.8);
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Motion.
+     `--default-transition-*` es la palanca que importa: Tailwind la usa para TODA
+     utilidad `transition-*` que no diga duracion, y eso incluye las decenas de
+     `transition-colors` que traen los componentes de shadcn. Cambiar estos dos
+     valores reafina la app entera de una vez, en vez de ir clase por clase.
+     Sin esto, el default de Tailwind es 150 ms con `ease-in-out`, que en un hover
+     se siente pastoso porque arranca lento.
+     `--ease-salida` queda como utilidad (`ease-salida`) para lo que necesite la
+     curva explicita. NO existe `duration-rapida`: `duration-*` no lee del tema, y
+     una clase inventada en Tailwind no falla, simplemente no hace nada. */
+  --default-transition-duration: var(--motion-rapida);
+  --default-transition-timing-function: var(--motion-salida);
+  --ease-salida: var(--motion-salida);
 }
 
 /* Paleta de Banorte. Tabla y equivalencias en la skill diseno-banorte. */
 :root {
   --radius: 0.625rem;
+
+  /* Motion (skill diseno-banorte: 150-200 ms, ease-out, nada sobre 250 ms).
+     Viven en tokens y no sueltos en cada componente para que "que se sienta mas
+     rapido" sea cambiar dos numeros aqui, no cazar duration-150 por el repo.
+     `salida` es la curva de Material 3 para lo que ENTRA o se mueve por decision
+     de la persona: arranca rapido y frena, que es lo que se lee como fluido. */
+  --motion-rapida: 150ms;
+  --motion-media: 200ms;
+  --motion-salida: cubic-bezier(0.2, 0, 0, 1);
+  /* El escalon de la entrada en cascada. 4 escalones maximo (ver .animar-lista):
+     4 x 25 + 150 = 225 ms de principio a fin, debajo del techo de 250. */
+  --motion-escalon: 25ms;
 
   --background: oklch(1 0 89.88);
   --foreground: oklch(0.2046 0 89.88);
@@ -203,9 +229,53 @@
   .monto {
     @apply tabular-nums;
   }
+
+  /* Los numeros grandes de una tarjeta financiera se leen mejor apretados: a
+     text-4xl el tracking normal separa los digitos y el monto pierde peso visual.
+     Solo aplica de text-2xl para arriba, donde se nota. */
+  .monto-heroe {
+    @apply tabular-nums tracking-tight;
+  }
+
+  /* Seleccion de texto en el tinte de marca en vez del azul del navegador. Es
+     medio segundo de detalle que se ve cada vez que alguien arrastra sobre una
+     cifra en la demo. */
+  ::selection {
+    background-color: var(--tinte-fuerte);
+    color: var(--foreground);
+  }
+
+  /* Barra de scroll delgada y neutra: la del sistema en Windows es gris ancha y
+     rompe el lienzo flotante. `thin` es estandar; el fallback de WebKit es para
+     los contenedores con scroll propio (tablas, lista de categorias). */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--border);
+    border-radius: 9999px;
+  }
+
+  /* Deshabilitar el arrastre de la seleccion al tocar en movil sobre lo tocable:
+     un tap largo en una tarjeta-enlace seleccionaba texto en vez de navegar. */
+  a,
+  button,
+  [role="button"] {
+    -webkit-tap-highlight-color: transparent;
+  }
 }
 
-/* Entrada de las superficies que el agente acaba de construir: 150 ms y nada mas. */
+/* Motion. Todo lo que se mueve en la app sale de aqui.
+   Regla de la skill: 150-200 ms, ease-out, y nada de animar por adorno. Si un
+   movimiento no comunica un cambio de estado, no va. */
 @layer utilities {
   @keyframes entrada-superficie {
     from {
@@ -217,7 +287,74 @@
       transform: none;
     }
   }
+
+  /* Una superficie que acaba de aparecer. La usa el renderer A2UI (el agente acaba
+     de construirla) y las tarjetas de las pantallas al montar. */
   .animar-entrada {
-    animation: entrada-superficie 150ms ease-out both;
+    animation: entrada-superficie var(--motion-rapida) var(--motion-salida) both;
+  }
+
+  /* Entrada en CASCADA: cada hijo entra 25 ms despues del anterior. La diferencia
+     con animar todo a la vez es que la cascada se lee como "esto se esta
+     construyendo", que es literalmente lo que pasa cuando el agente pinta una
+     pantalla.
+     Se corta en el cuarto hijo a proposito: mas escalones cruzan el techo de
+     250 ms y, con 20 tarjetas, la ultima entraria medio segundo tarde. Del quinto
+     en adelante entran junto con el cuarto.
+
+     Son DOS utilidades porque hay dos situaciones distintas:
+
+     - `animar-lista`: los hijos NO se animan solos (las tarjetas de Inicio,
+       Productos, Mas). El contenedor les pone la animacion y el retraso.
+     - `animar-cascada`: los hijos YA traen `animar-entrada` (los componentes del
+       catalogo A2UI, ver `packages/catalogo/src/comunes.ts`). Aqui solo se pone el
+       RETRASO. Si se usara `animar-lista`, las dos reglas escribirian el shorthand
+       `animation` con la misma especificidad y quien gana dependeria del orden en
+       que Tailwind emita el CSS: el retraso se perderia sin aviso. */
+  .animar-lista > * {
+    animation: entrada-superficie var(--motion-rapida) var(--motion-salida) both;
+  }
+  .animar-lista > *:nth-child(2),
+  .animar-cascada > *:nth-child(2) {
+    animation-delay: var(--motion-escalon);
+  }
+  .animar-lista > *:nth-child(3),
+  .animar-cascada > *:nth-child(3) {
+    animation-delay: calc(var(--motion-escalon) * 2);
+  }
+  .animar-lista > *:nth-child(4),
+  .animar-cascada > *:nth-child(4) {
+    animation-delay: calc(var(--motion-escalon) * 3);
+  }
+  .animar-lista > *:nth-child(n + 5),
+  .animar-cascada > *:nth-child(n + 5) {
+    animation-delay: calc(var(--motion-escalon) * 4);
+  }
+
+  /* NOTA para quien agregue una tarjeta que SI sea un enlace o un boton: aqui vivia
+     una utilidad `.superficie-tocable` (hover: sube 1 px y pasa a `shadow-md`;
+     pressed: vuelve). Se quito porque hoy ninguna tarjeta de la app es tocable
+     —las de Inicio y Productos son informativas, y los enlaces de Mas son filas,
+     no tarjetas— y ponersela a una tarjeta informativa es prometer un toque que no
+     existe, que en una app bancaria se paga en confianza. Si algun dia hay una
+     tarjeta-enlace, esa utilidad es lo correcto: dos lineas de `transition` sobre
+     `box-shadow` y `transform`, y nada mas. */
+}
+
+/* Accesibilidad, y no es opcional: para quien tiene activado "reducir movimiento"
+   en el sistema, TODO lo de arriba se apaga.
+   Se apaga con `0.01ms` en vez de `none` porque hay codigo que espera el evento
+   `animationend`/`transitionend` para limpiar estado (los popovers y el sheet de
+   Base UI); con `none` ese evento nunca llega y el componente se queda a medias.
+   Lo mismo aplica al scroll suave: para quien pide menos movimiento, el salto
+   instantaneo es la respuesta correcta. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

@@ -32,7 +32,7 @@ export default async function PaginaProductos() {
         <TabsTrigger value="inversiones">Inversiones</TabsTrigger>
       </TabsList>
 
-      <TabsContent value="cuentas" className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <TabsContent value="cuentas" className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4">
         {cuentas.map((cuenta) => (
           <Card key={cuenta.id}>
             <CardContent className="flex flex-col gap-1 p-5">
@@ -50,7 +50,7 @@ export default async function PaginaProductos() {
         ))}
       </TabsContent>
 
-      <TabsContent value="tarjetas" className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <TabsContent value="tarjetas" className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4">
         {tarjetas.map((tarjeta) => (
           <Card key={tarjeta.id}>
             <CardHeader className="flex-row items-start justify-between gap-2">
@@ -81,7 +81,7 @@ export default async function PaginaProductos() {
         ))}
       </TabsContent>
 
-      <TabsContent value="creditos" className="grid gap-3 md:grid-cols-2 md:gap-4">
+      <TabsContent value="creditos" className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4">
         {creditos.length === 0 ? (
           <Vacio titulo="No tienes créditos" detalle="Cuando contrates uno, aparecerá aquí." />
         ) : (
@@ -115,7 +115,7 @@ export default async function PaginaProductos() {
         )}
       </TabsContent>
 
-      <TabsContent value="inversiones" className="grid gap-3 md:gap-4">
+      <TabsContent value="inversiones" className="animar-lista grid gap-3 md:gap-4">
         {!portafolio ? (
           <Vacio
             titulo="Todavía no inviertes"

@@ -3,7 +3,7 @@ import { ArrowRight } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { formatearFecha, formatearMonto, formatearPorcentaje } from "@/lib/dinero";
 import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
@@ -41,7 +41,7 @@ export function TarjetaSaldo({
           <span className="text-xs text-primary-foreground/80">
             Disponible {cuenta ? `· ${cuenta.alias} ${cuenta.mascara}` : ""}
           </span>
-          <span className="monto text-4xl font-semibold leading-none">
+          <span className="monto-heroe text-4xl font-semibold leading-none">
             {formatearMonto(disponibleCentavos)}
           </span>
         </div>
@@ -153,19 +153,26 @@ export function ListaTarjetas({ tarjetas }: { tarjetas: Tarjeta[] }) {
 export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[] }) {
   return (
     <Card data-ancho="amplio">
-      <CardHeader className="flex-row items-center justify-between gap-2">
+      {/* `CardAction` no es opcional cuando hay una accion en el encabezado: el
+          `CardHeader` de shadcn activa su segunda columna con
+          `has-data-[slot=card-action]`, y un boton sin envolver no trae ese slot. Sin
+          esto la rejilla se queda en una columna y el "Ver todos" cae DEBAJO del titulo,
+          indentado, en vez de alinearse a la derecha. */}
+      <CardHeader>
         <CardTitle className="text-sm font-medium text-muted-foreground">
           Movimientos recientes
         </CardTitle>
-        <Button
-          render={<Link href="/movimientos" />}
-          nativeButton={false}
-          variant="ghost"
-          size="sm"
-          className="rounded-full text-xs"
-        >
-          Ver todos
-        </Button>
+        <CardAction>
+          <Button
+            render={<Link href="/movimientos" />}
+            nativeButton={false}
+            variant="ghost"
+            size="sm"
+            className="rounded-full text-xs"
+          >
+            Ver todos
+          </Button>
+        </CardAction>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {movimientos.length === 0 ? (

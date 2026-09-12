@@ -15,6 +15,10 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  * La rejilla es la misma que usa el lienzo de Maya, para que las dos se sientan la misma
  * app: bento de 1 columna en movil, 2 o 3 en escritorio, con `data-ancho="amplio"` para
  * lo que ocupa doble.
+ *
+ * `animar-lista` hace que las tarjetas entren en cascada de 25 ms. No es adorno: es la
+ * misma entrada que usa el lienzo cuando el agente construye una pantalla, y usarla aqui
+ * es lo que hace que Inicio y Maya se sientan el mismo producto.
  */
 export default async function PaginaInicio() {
   const usuario = await usuarioActivo();
@@ -34,7 +38,7 @@ export default async function PaginaInicio() {
       : ["¿En qué se me fue el dinero?", "Quiero empezar a ahorrar"];
 
   return (
-    <div className="grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 [&>[data-ancho=amplio]]:md:col-span-2">
+    <div className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 [&>[data-ancho=amplio]]:md:col-span-2">
       <TarjetaSaldo
         disponibleCentavos={resumen.disponibleCentavos}
         deudaCentavos={resumen.deudaCentavos}
