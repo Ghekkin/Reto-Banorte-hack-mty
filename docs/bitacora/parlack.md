@@ -270,6 +270,55 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 09:40 · arreglado — La consola no pintaba nada: el registro del renderer estaba vacio
+
+Me llego una captura con la consola llena de burbujas rojas: *"la interfaz no pudo pintar
+/root/component: El componente X no esta en el catalogo de esta superficie"*, una por cada
+componente — `Column`, `ResumenTarjeta`, `Calendario`, `Confirmacion`, `Text`,
+`GastoPorCategoria`, `PlanDePago`, `SimuladorMeta`, `DetalleCategoria`, `MetaActiva`.
+
+**El sintoma engañaba y mucho.** Doce mensajes distintos parecen doce problemas de
+catalogo; son uno solo: si falla `Column`, que es de layout, y falla `Confirmacion`, que
+llevaba horas construida, entonces no falta ningun componente — **esta vacio el registro**.
+`registrarLayout()` y `registrarCatalogo()` solo se llamaban en `galeria.tsx`, la pagina
+`/catalogo`. La galeria se veia perfecta y la demo no pintaba una sola tarjeta.
+
+Tres cosas, no una:
+
+1. **Una sola funcion de registro** (`apps/web/src/lib/registrar-componentes.ts`),
+   idempotente, que llaman el lienzo y la galeria. Dos listas que se podian separar eran
+   dos listas de mas.
+2. **El canal de fallos tenia que tener tope.** Yo habia dejado en `<Superficie>` que el
+   mismo fallo no se reportara dos veces, y me parecio suficiente: no lo era. El agente
+   reintentaba con OTRO componente, que tampoco se podia pintar, y cada intento era un
+   fallo *distinto*: once turnos de modelo seguidos. Ahora son dos por conversacion como
+   maximo, nada se reporta con un turno en vuelo, y el fallo va al panel de transparencia
+   en vez de al hilo, donde decia "Tocaste:" algo que nadie toco.
+3. **`Text` con `razon` era culpa mia.** Al publicar los cuatro de layout en
+   `catalogo.json` (que estaba bien: el agente puede emitirlos y el catalogo tenia que
+   describirlos) volvi ambigua la regla del prompt "razon es obligatoria en cada
+   componente del catalogo". El modelo le ponia `razon` a un `Text` y mi
+   `unevaluatedProperties: false` tumbaba la pantalla completa por una frase decorativa.
+   Los de layout ahora la aceptan y la ignoran, y el prompt lo dice explicito.
+
+**Lo que me deja pensando** es por que ninguna de las 290 pruebas lo cazo. Porque todas
+probaban *mensajes*: que validen, que el reducer los aplique, que el catalogo los describa.
+Ninguna probaba que la pantalla **se pinte**. Y un mensaje valido que nadie sabe pintar se
+ve exactamente igual que un mensaje roto. Agregue tres pruebas en
+`apps/web/src/lib/__tests__/`: que importar el lienzo deje los 12 nombres registrados, que
+registrar dos veces no reemplace nada, y una que **renderiza el lienzo de verdad** con
+`renderToStaticMarkup` y exige HTML con el saldo formateado, la razon y cero "Componente
+desconocido". Sin DOM, sin testing-library, 40 lineas.
+
+Tambien le puse a `<Superficie>` un grito en consola para el caso "registro vacio", con la
+instruccion exacta. Ese aviso habria convertido una mañana en dos minutos.
+
+**Verificado con llave y MCP arriba** (y `pnpm reiniciar-estado` primero, porque el estado
+traia planes de las pruebas de humo y por eso el agente contestaba "ya tienes un plan
+activo" a todo): "Quiero pagar menos intereses" para Beto da `ResumenTarjeta` + `PlanDePago`
+en 5.0 s, y la accion `aplicar_plan_pago` devuelve `Confirmacion` + `ResumenTarjeta` con
+`planActivo: true` y `diasMora: 0` + `Calendario` en 4.6 s. Los tres pasos del reto.
+
 ### 01:45 · hecho — El motor A2UI terminado: ajv contra la spec y los 76 casos oficiales
 
 Cerré el último pendiente de `contrato` (`packages/a2ui`), que es dominio ajeno otra vez.

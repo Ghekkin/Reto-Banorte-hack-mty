@@ -136,10 +136,41 @@ hueco con forma de catálogo. Metemos el nuestro en ese hueco y el validador ofi
 valida nuestros componentes. Cada prop se publica como
 `anyOf: [<el schema de Zod>, DataBinding]`, porque cualquier prop acepta un enlace.
 
+Los cuatro de layout se publican en el mismo catálogo y por eso aceptan las dos props
+comunes (`ancho` y `razon`) aunque no hagan nada con `razon`: si el catálogo los anuncia,
+el modelo los trata como componentes del catálogo y les pone la `razon` que el prompt
+exige. Rechazar la pantalla completa por una frase decorativa en un `Text` es un mal
+negocio; se acepta y se ignora, y el prompt dice que no la lleven.
+
 Se sirve en `/catalogo/v1.json` y es el `catalogId` de cada `createSurface`: **un juez
 puede abrirlo**. En producción el route reescribe `$id`/`catalogId` con `URL_CATALOGO`;
 el archivo del repo siempre sale con la URL de desarrollo para que el CI pueda exigir
 que no cambie.
+
+### El registro: el error que no perdona
+
+El registro es un `Map` en memoria del bundle. **Todo módulo que pinte un
+`<Superficie>` tiene que haberlo llenado**: `registrarLayout()` + `registrarCatalogo()`,
+o en `apps/web` la función única `registrarComponentes()`
+(`apps/web/src/lib/registrar-componentes.ts`), que las llama a las dos y es idempotente.
+
+Si no se llena, **nada** se pinta: cada componente cae en `Desconocido`, incluido
+`Column`. El 2026-09-12 a las 09:20 pasó exactamente eso — la galería (`/catalogo`)
+registraba y el lienzo de la demo no, así que la galería se veía perfecta y la consola
+no pintaba una sola tarjeta. El síntoma engaña: doce mensajes distintos de "X no está en
+el catálogo de esta superficie", uno por componente, y ninguno dice que el problema es
+el registro.
+
+Tres cosas lo cierran ahora:
+
+- una sola función de registro para los dos hosts, en un solo archivo;
+- `<Superficie>` grita en consola si el registro está **vacío** y algo falló, con la
+  instrucción exacta (no es "falta un componente", es "nadie llenó el registro");
+- dos pruebas en `apps/web/src/lib/__tests__/`: una exige que importar el lienzo deje los
+  12 nombres registrados, y otra **renderiza el lienzo de verdad**
+  (`renderToStaticMarkup`) con el `.jsonl` de ejemplo y exige HTML con contenido y cero
+  "Componente desconocido". Un mensaje válido que nadie sabe pintar se veía igual que un
+  mensaje roto; ahora no.
 
 ### Lo que el renderer resuelve por todos los componentes
 
@@ -222,14 +253,25 @@ y `renderToStaticMarkup` deja pasar el error tal cual.
 
 ```bash
 pnpm --filter @maya/a2ui test        # 112: 35 del motor + 76 de conformidad + 1 de la frontera de error
-pnpm --filter @maya/catalogo test    # 12: la cadena completa de un componente
+pnpm --filter @maya/catalogo test    # 47: la cadena completa de cada componente
+pnpm --filter @maya/web test         # 31: el agente, y que el lienzo PINTE
 pnpm catalogo                        # regenera catalogo.json desde los schemas
 ```
 
-Las 12 del catálogo son la red de quien agrega un componente: que el catálogo publicado
-lo describa, que el renderer lo tenga registrado, que exista su `.jsonl` de ejemplo y
-que ese ejemplo **valide de verdad** contra los schemas oficiales. Olvidar un paso falla
-en dos segundos en vez de en la demo.
+Las del catálogo son la red de quien agrega un componente: que el catálogo publicado lo
+describa, que el renderer lo tenga registrado, que exista su `.jsonl` de ejemplo y que
+ese ejemplo **valide de verdad** contra los schemas oficiales. Olvidar un paso falla en
+dos segundos en vez de en la demo.
+
+Y las tres de `apps/web/src/lib/__tests__/` cubren el hueco que quedaba: que el lienzo
+de la demo **pinte**. Todo lo demás se probaba con mensajes —que validen, que el reducer
+los aplique—, y un mensaje válido que nadie sabe pintar se ve igual que un mensaje roto.
+
+Verificado a mano el 2026-09-12 09:35, con llave y MCP arriba: "Quiero pagar menos
+intereses" (usr_beto) → 2 tools, 3 pasos, 5.0 s → `Column` + `ResumenTarjeta` (héroe) +
+`PlanDePago`, cero errores. Y la acción `aplicar_plan_pago` → `Confirmacion` +
+`ResumenTarjeta` con `planActivo: true` y `diasMora: 0` + `Calendario`, en 4.6 s. Los
+tres pasos del reto, cerrados.
 
 ### Criterios de aceptación del ADR 0008
 

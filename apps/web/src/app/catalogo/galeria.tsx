@@ -12,8 +12,7 @@ import {
   type FalloDeRender,
   type MensajeA2UI,
 } from "@maya/a2ui";
-import { registrarLayout } from "@maya/a2ui/layout";
-import { registrarCatalogo } from "@maya/catalogo";
+import { registrarComponentes } from "@/lib/registrar-componentes";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -28,8 +27,7 @@ import { Separator } from "@/components/ui/separator";
  * pagina la muestra tal como viajaria al agente (`client_to_server.json`). Es la forma
  * mas corta de explicar el ciclo cerrado sin gastar un turno de modelo.
  */
-registrarLayout();
-registrarCatalogo();
+registrarComponentes();
 
 export type ComponenteDeGaleria = {
   nombre: string;

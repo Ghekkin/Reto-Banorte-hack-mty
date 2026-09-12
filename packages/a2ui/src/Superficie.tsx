@@ -4,7 +4,7 @@ import { Component, Fragment, createElement, useEffect, useRef, type ErrorInfo, 
 import { arbol, type Nodo } from "./arbol";
 import { resolver } from "./bindings";
 import { emitirAccion } from "./acciones";
-import { obtener } from "./registro";
+import { nombres, obtener } from "./registro";
 import { propsDe, type Accion, type EstadoSuperficie, type Tema } from "./tipos";
 
 /**
@@ -60,6 +60,16 @@ export function Superficie({
   pendientes.current = [];
 
   useEffect(() => {
+    // Un registro vacio no es "falta un componente": es que nadie lo lleno. Sin este
+    // aviso, el sintoma son 12 mensajes distintos de "no esta en el catalogo" y ninguno
+    // dice donde esta el problema. Paso, y costo una tarde.
+    if (pendientes.current.length > 0 && nombres().size === 0) {
+      console.error(
+        "[a2ui] el registro esta VACIO: ningun componente se puede pintar. " +
+          "El modulo que renderiza <Superficie> tiene que llamar registrarLayout() y registrarCatalogo() " +
+          "(en apps/web: `registrarComponentes()` de @/lib/registrar-componentes).",
+      );
+    }
     if (!alFallar) return;
     for (const fallo of pendientes.current) {
       const clave = `${fallo.surfaceId}|${fallo.path}|${fallo.message}`;
