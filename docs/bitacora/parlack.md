@@ -2,6 +2,9 @@
 
 ## 2026-09-12
 
+- **05:35 · hecho** — El 5437 no entraba desde fuera: el VPS tiene un cortafuegos
+  para Docker (`yolani-docker-firewall.service`) con lista blanca de puertos. Agregado
+  el 5437 al script y reiniciado el servicio. Nota en `docs/arquitectura/deploy.md`.
 - **05:25 · hecho** — Coolify en el VPS (`157.173.204.174`): proyecto `reto-banorte`
   y Postgres `postgres-reto-banorte` (Postgres 17 + TimescaleDB, puerto público 5437)
   arriba y verificados desde fuera y desde la red `coolify`. Secretos en `/opt/reto/.env`
