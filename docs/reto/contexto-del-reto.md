@@ -108,6 +108,16 @@ Detalle y estrategia en `rubrica-y-entregables.md`. Resumen:
 contexto, MCP, A2UI). **5%** la presentación: "la demo importa, pero no salva una
 solución incompleta".
 
+## Lo que el video agrega (detalle en `transcripcion-video.md`)
+
+- **Registro de equipos en el stand de Banorte.** Confirmar que estamos registrados es
+  lo primero del día.
+- **Mentores en el stand.** Ahí se preguntan créditos, hora y plataforma de entrega.
+- **El jurado pregunta por qué el stack y la arquitectura.** Respuesta escrita en
+  `docs/arquitectura/trade-offs.md`.
+- "Mientras mejor sea el caso o más diversificado, mejores resultados": amplitud suma,
+  pero después del flujo completo.
+
 ## Consejo oficial
 
 > Elijan un problema pequeño y resuélvanlo completo. Un solo flujo financiero, con una

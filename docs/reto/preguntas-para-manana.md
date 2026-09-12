@@ -13,7 +13,8 @@ las respuestas aquí con hora y actualizar `contexto-del-reto.md`.
 - [ ] ¿Hay restricciones de modelo/proveedor de IA? ¿Dan créditos/API keys?
 - [ ] ¿Qué evalúan exactamente? (rúbrica: técnica, UX, negocio, pitch)
 - [ ] ¿Formato de entrega: repo, demo en vivo, video, deploy público?
-- [ ] ¿Hay mentores de Banorte disponibles? ¿Cuándo?
+- [ ] ¿Hay mentores de Banorte disponibles? ¿Cuándo? → stand de Banorte
+- [ ] **¿Estamos registrados en el reto?** (se registra en el stand)
 - [ ] ¿Qué da Banorte por su reto y cuál es el premio principal del evento? (la página
       de MLH solo lista los de patrocinadores MLH; ver `premios-objetivo.md`)
 - [ ] ¿Los premios MLH exigen registro aparte (Devpost u otro)? ¿Fecha límite?
@@ -43,7 +44,8 @@ las respuestas aquí con hora y actualizar `contexto-del-reto.md`.
 - **¿Formato de entrega?** Cuatro entregables: demo en vivo (flujo completo), repositorio
   con instrucciones, APIs y datasets, diagrama de arquitectura con trade-offs.
   **Plataforma y hora límite: pendiente de confirmar.**
-- **¿Mentores?** Pendiente de confirmar.
+- **¿Mentores?** En el **stand de Banorte** (video, 04:27). Ahí también se registran los
+  equipos: **confirmar que el nuestro está registrado**.
 - **Reglas duras**: componentes propios; datos propios; **al menos un flujo accionable
   con cambio real**; libertad de stack.
 - **Consejo oficial**: problema pequeño, resuelto completo.

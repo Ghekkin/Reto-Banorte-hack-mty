@@ -14,6 +14,10 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **05:10 · hecho** — Video de explicación transcrito (`docs/reto/transcripcion-video.md`).
+  Novedades: registro de equipos y mentores en el stand de Banorte; el jurado preguntará
+  por qué el stack y la arquitectura. Sin fechas límite ni créditos en el video.
+
 - **04:45 · decisión** — Con la presentación oficial en mano: el reto exige LLM + MCP +
   **A2UI** y un flujo accionable con cambio real. Adoptamos A2UI v0.9.1 con catálogo
   propio y `@a2ui/react` (ADR 0003); el campo `tipo` se vuelve el `component` del

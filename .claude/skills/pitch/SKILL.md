@@ -52,6 +52,9 @@ contexto, y las tres piezas (LLM, MCP, A2UI) nombradas en pantalla. Detalle en
 - ¿Cuánto cuesta por conversación? → Número real medido en los ensayos (tokens × precio).
 - ¿Por qué no es solo un chatbot? → La UI es la respuesta; mostrar una pantalla compuesta.
 - ¿Qué se rompió? → Contar uno de la bitácora de issues. Suma credibilidad.
+- **¿Por qué este stack / esta arquitectura?** (lo van a preguntar seguro, lo dijeron en
+  el video) → Una frase por fila de `docs/arquitectura/trade-offs.md`: qué se ganó, qué
+  se sacrificó, qué se descartó.
 
 ## Ensayos
 
