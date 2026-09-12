@@ -1,0 +1,90 @@
+# Verifica todo push y, si es a `main`, despliega en Coolify.
+#
+# El build de las imagenes lo hace Coolify en el VPS (clona el repo con una deploy
+# key). Este workflow es el que decide SI se despliega: si el typecheck, los tests o
+# el build fallan, el deploy no se dispara.
+#
+# Secretos del repo (Settings -> Secrets and variables -> Actions):
+#   COOLIFY_URL, COOLIFY_TOKEN, COOLIFY_APP_WEB_UUID, COOLIFY_APP_MCP_UUID
+# Variables:
+#   URL_WEB_PUBLICA, URL_MCP_PUBLICA
+name: ci y deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-y-deploy-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificar:
+    name: typecheck, tests y build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.32.1
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+
+      - name: catalogo.json al dia
+        run: |
+          pnpm catalogo
+          git diff --exit-code packages/catalogo/catalogo.json \
+            || { echo "::error::catalogo.json esta desfasado de los schemas: corre 'pnpm catalogo' y commitea"; exit 1; }
+
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm --filter @maya/web build
+
+      - name: humo del MCP
+        run: |
+          pnpm --filter @maya/mcp start &
+          for _ in $(seq 1 30); do curl -fsS localhost:3100/health >/dev/null 2>&1 && break; sleep 1; done
+          scripts/humo.sh
+
+  desplegar:
+    name: deploy a Coolify
+    needs: verificar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    environment:
+      name: production
+      url: ${{ vars.URL_WEB_PUBLICA }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: disparar el deploy y esperar los /health
+        env:
+          COOLIFY_URL: ${{ secrets.COOLIFY_URL }}
+          COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
+          COOLIFY_APP_WEB_UUID: ${{ secrets.COOLIFY_APP_WEB_UUID }}
+          COOLIFY_APP_MCP_UUID: ${{ secrets.COOLIFY_APP_MCP_UUID }}
+          URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
+          URL_MCP_PUBLICA: ${{ vars.URL_MCP_PUBLICA }}
+        run: scripts/deploy.sh
+
+      - name: un prompt del guion contra la URL publica
+        if: vars.URL_WEB_PUBLICA != ''
+        env:
+          URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
+        run: |
+          respuesta=$(curl -fsS --max-time 30 -X POST "$URL_WEB_PUBLICA/api/agente" \
+            -H 'content-type: application/json' \
+            -d '{"usuarioId":"usr_beto","conversacionId":"c_ci","mensajes":[{"rol":"usuario","texto":"Quiero pagar menos intereses de mi tarjeta"}]}')
+          echo "$respuesta" | head -5
+          echo "$respuesta" | grep -q '"tipo":"a2ui"' \
+            || { echo "::error::la URL publica no devolvio mensajes A2UI"; exit 1; }

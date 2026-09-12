@@ -118,6 +118,8 @@ el campo nuevo es opcional.
 | `db/` | Datos sintéticos: 22 CSV (fuente), `schema.sql`, `cargar.sql`, `reiniciar.sql` (ADR 0007) | existe |
 | `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh` (prueba del MCP), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh`, generadores de datos | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
+| `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
+| `apps/*/Dockerfile` | Imágenes de web y mcp; se construyen desde la raíz del repo | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
@@ -141,6 +143,7 @@ pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` cor
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
 pnpm reiniciar-estado          # el estado mutable vuelve a cero: ANTES de cada ensayo
 
+scripts/deploy.sh              # dispara el deploy en Coolify y espera los /health
 scripts/sync.sh "mensaje"      # commit con nombre + pull --rebase + push (lo automático usa --auto)
 scripts/marcar-estable.sh      # tras un ensayo de demo que pasó completo
 gh issue create --repo Ghekkin/Reto-Banorte-hack-mty ...   # ver docs/issues/index.md

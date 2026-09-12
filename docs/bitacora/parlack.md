@@ -60,3 +60,39 @@ encargo escrito en cada carpeta (`web`), origen Postgres y panel de transparenci
 cambio a **Maya** (la asistente real de Banorte; la propuesta es "su siguiente
 generación"). El rename está aplicado en todo el scaffold. El disclaimer de
 "no oficial ni afiliado" ya está en el `README.md`.
+
+## sáb 13 · 08:00–09:00 — Deploy en Coolify con GitHub Actions
+
+`maya-web` y `maya-mcp` están arriba en el Coolify del VPS, en el proyecto
+`reto-banorte`, junto al Postgres que ya estaba. **Nadie vuelve a desplegar a mano**:
+push a `main` → Actions verifica → Coolify construye y publica.
+
+- URLs: https://maya.157.173.204.174.sslip.io y
+  https://maya-mcp.157.173.204.174.sslip.io/mcp. `sslip.io` porque todavía no hay
+  `.tech`: resuelve a la IP sin comprar nada y no imita a Banorte. Cambiar al dominio
+  real es agregarlo en Coolify y actualizar dos variables del repo.
+- Repo privado resuelto con **deploy key de solo lectura** (`coolify-maya`), no con la
+  GitHub App. La privada está en `/opt/reto/llaves/maya-deploy-key`.
+- **El token de Coolify que vive en GitHub NO es el root.** Creé
+  `maya-github-actions` con abilities `["deploy","read"]`: dispara deploys, y da 403
+  si intenta crear recursos. El root se queda en el VPS. El mismo Coolify administra
+  la producción de otro proyecto del equipo; un token root dentro de un repo de
+  hackathon es poder de más, y los secrets de Actions los ve cualquiera que pueda
+  editar workflows.
+- El workflow no solo despliega: al final **manda un prompt del guion a la URL pública
+  y exige mensajes A2UI en la respuesta**. Un deploy que arranca pero no contesta
+  cuenta como deploy fallido.
+- Los Dockerfiles no usan `output: standalone` a propósito: la web lee `catalogo.json`
+  y los `.jsonl` de ejemplo en tiempo de ejecución, y standalone los deja fuera.
+  Imagen más grande a cambio de cero sorpresas a las 3 am. Ambas imágenes probadas en
+  local antes de tocar Coolify.
+- El MCP publicado carga los CSV desde la imagen (origen `memoria`): **no depende de
+  que Postgres esté arriba**. Su `estado.json` vive en `/datos`, fuera del repo, para
+  que un redeploy no lo arrastre.
+- Me topé con que `/opt/reto/.env` tenía el token sin comillas y el `|` de Sanctum lo
+  partía: `source` fallaba y la API respondía `Unauthenticated`. Arreglado y registrado
+  como issue #2 (cerrado).
+
+Pendiente mío: la llave de Gemini en las variables de `maya-web` está vacía, así que el
+agente publicado responde con la pantalla de ejemplo. En cuanto alguien la ponga en
+Coolify, la URL pública queda completa.
