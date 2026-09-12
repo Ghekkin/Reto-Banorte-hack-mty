@@ -1,10 +1,11 @@
 import { Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { CLASES_TARJETA, formatearFecha, formatearMonto, formatearPeriodo } from "../comunes";
+import { formatearFecha, formatearMonto, formatearPeriodo } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsDetalleCategoria } from "./schema";
 
 /**
@@ -27,7 +28,7 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
             <Linea tamano="xs" ancho="w-36" />
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie lineas={2} />
+        <EsqueletoPie />
       </EsqueletoTarjeta>
     );
   }
@@ -36,7 +37,7 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
   const faltan = (totalMovimientos ?? movimientos.length) - movimientos.length;
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Tarjeta>
       <CardHeader>
         <span className="text-xs text-muted-foreground">
           {categoria}
@@ -81,11 +82,7 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
         {faltan > 0 ? <p className="pt-2 text-xs text-muted-foreground">… y {faltan} movimientos más.</p> : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} />
+    </Tarjeta>
   );
 }

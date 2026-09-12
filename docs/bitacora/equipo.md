@@ -18,6 +18,16 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 14:35 · para quien haga componentes o pantallas** — **Los widgets ya se adaptan a
+  SU ancho, no al de la pantalla.** Todo componente del catálogo va en `Tarjeta` y su pie en
+  `PieTarjeta` (`packages/catalogo/src/tarjeta.tsx`); adentro nada de `sm:`/`md:`, solo
+  variantes `@md/tarjeta:`, `@3xl/tarjeta:`… (hay prueba que truena). El "¿Por qué veo esto?"
+  viene plegado: en el pitch, **tócalo en vivo**. El lienzo pone las tarjetas lado a lado
+  según el ancho natural de cada componente (`docs/algoritmos/acomodo-del-lienzo.md`), así
+  que el agente puede seguir mandando un `Column`. Para probar un widget a 360 px, 480 px o
+  completo: selector arriba en `/catalogo`. Si alguien arma un dashboard con estos widgets,
+  `Lienzo` ya sirve fuera del chat.
+
 - **sáb 14:03 · infra** — **Coolify ya limpia solo las imágenes viejas**: revisa cada
   hora y, si el disco del VPS pasa del 80 %, deja de cada app la imagen que corre y las
   dos anteriores (#15, cerrado). Para quien despliegue: la build que sigue a una

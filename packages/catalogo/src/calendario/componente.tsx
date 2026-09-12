@@ -1,9 +1,10 @@
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { CLASES_TARJETA, formatearFecha, formatearMonto } from "../comunes";
+import { formatearFecha, formatearMonto } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsCalendario } from "./schema";
 
 const HECHO = new Set(["pagado", "aportado"]);
@@ -34,7 +35,7 @@ export function Calendario(props: Partial<PropsCalendario>) {
             <Linea tamano="xs" ancho="w-40" />
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie lineas={3} />
+        <EsqueletoPie />
       </EsqueletoTarjeta>
     );
   }
@@ -47,7 +48,7 @@ export function Calendario(props: Partial<PropsCalendario>) {
     : eventos.findIndex((e) => !HECHO.has(e.estado ?? "pendiente"));
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Tarjeta>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           <CalendarDays className="size-4 shrink-0 text-muted-foreground" /> {titulo}
@@ -111,11 +112,7 @@ export function Calendario(props: Partial<PropsCalendario>) {
         ) : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} />
+    </Tarjeta>
   );
 }

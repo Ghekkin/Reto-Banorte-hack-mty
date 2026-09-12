@@ -81,6 +81,7 @@ quien.
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto
+- [Acomodo del lienzo](algoritmos/acomodo-del-lienzo.md) — cómo se reparten las tarjetas lado a lado según el ancho del lienzo y el ancho natural de cada componente, y por qué los widgets miden su propio ancho (container queries)
 - [Gráficas del catálogo](algoritmos/graficas-del-catalogo.md) — qué forma para cada dato, el orden de colores que pasa el validador de daltonismo, la serie calibrada del slider y las referencias de los pilares
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 

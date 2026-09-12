@@ -35,6 +35,7 @@ import { SimuladorMeta } from "./simulador-meta/componente";
 import { entradaSimuladorMeta } from "./simulador-meta/schema";
 import { TermometroSaludFinanciera } from "./termometro-salud-financiera/componente";
 import { entradaTermometroSaludFinanciera } from "./termometro-salud-financiera/schema";
+import type { z } from "zod";
 import type { EntradaCatalogo } from "./comunes";
 
 /**
@@ -96,6 +97,27 @@ export function registrarCatalogo(): void {
   registrar("ProyeccionPagoCredito", ProyeccionPagoCredito as never);
 }
 
+/**
+ * El ancho natural de un componente: el valor por omision de su prop `ancho`.
+ *
+ * Es lo que usa el lienzo para acomodar las tarjetas (`apps/web/src/lib/rejilla.ts`), y
+ * sale del schema para que no pueda haber dos verdades: si alguien cambia
+ * `Ancho.default("amplio")` en un componente, el lienzo lo acomoda distinto sin tocar nada
+ * mas. Se prefiere al `ancho` que mande el agente porque el agente no sabe en que pantalla
+ * se va a ver la tarjeta y, en la practica, copia `amplio` de los ejemplos a todo.
+ */
+const ANCHO_NATURAL = new Map<string, "normal" | "amplio">(CATALOGO.map((c) => [c.nombre, anchoPorOmision(c.schema)]));
+
+function anchoPorOmision(schema: z.ZodTypeAny): "normal" | "amplio" {
+  const campo = (schema as unknown as { shape?: Record<string, z.ZodTypeAny> }).shape?.ancho;
+  const resultado = campo?.safeParse(undefined);
+  return resultado?.success && resultado.data === "amplio" ? "amplio" : "normal";
+}
+
+export function anchoNatural(nombre: string): "normal" | "amplio" | undefined {
+  return ANCHO_NATURAL.get(nombre);
+}
+
 /** Los nombres que el agente tiene permitido emitir. */
 export function nombresDelCatalogo(): string[] {
   return CATALOGO.map((c) => c.nombre);
@@ -122,5 +144,6 @@ export {
   TermometroSaludFinanciera,
 };
 export * from "./comunes";
+export { PieTarjeta, Tarjeta } from "./tarjeta";
 
 

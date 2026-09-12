@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 13:10
+verificado: 2026-09-12 14:40
 estado: construido
 ---
 
@@ -8,6 +8,8 @@ estado: construido
 Este documento describe los **10 nuevos componentes del catálogo A2UI** desarrollados para el Reto Banorte (Hack Monterrey 2026). Estos componentes extienden el sistema para cubrir el viaje patrimonial, de financiamiento, diagnóstico holístico y optimización de gastos, permitiendo al agente de IA generar interfaces financieras interactivas, explicables y con ciclo de acción cerrado.
 
 Todos los componentes se construyen sobre **shadcn/ui**, usan exclusivamente la **paleta de tokens de Banorte**, cumplen la regla de **altura táctil mínima de 48 px (`min-h-12`)** y se visualizan en la galería interactiva en `/catalogo`.
+
+**Responsivos, 2026-09-12 (14:40).** Los diez se adaptan al ancho de SU tarjeta (container queries), no al de la pantalla, y el "¿Por qué veo esto?" viene plegado en una línea que se abre al tocarla (`PieTarjeta`). Donde el componente es ancho usa el espacio: `ProyeccionPagoCredito` y `ProyeccionCrecimiento` ponen la gráfica a la izquierda y fichas/controles a la derecha desde 48rem de tarjeta; `TermometroSaludFinanciera` y `EscenariosInversion` pasan a fila desde 28rem; `DistribucionPortafolio` pone la dona junto a la lista desde 32rem; `RiesgoRendimiento` pone las opciones en dos columnas desde 48rem. Lo que se describe abajo como "en móvil/escritorio" se lee como "tarjeta angosta/ancha". El acomodo entre tarjetas está en [`docs/algoritmos/acomodo-del-lienzo.md`](../algoritmos/acomodo-del-lienzo.md).
 
 **Pulido del 2026-09-12 (13:10).** Los diez se revisaron con capturas del navegador a 1280 px y a 390 px y se reescribieron con tres reglas: (1) la anatomía de tarjeta del sistema —etiqueta chica, el número grande, una línea de detalle, cuerpo, pie con un solo botón píldora y la razón—; (2) donde el dato es una serie, hay una gráfica de Recharts (`@/components/ui/chart`) con etiquetas directas y ningún número que viva solo en el tooltip; (3) fuera lo que gritaba sin informar: títulos en mayúsculas, cajas con borde dentro de la tarjeta, iconos de chispas y alerta, montos en rojo. El módulo compartido es `packages/catalogo/src/graficas.tsx` y las decisiones (forma por tipo de dato, orden de colores validado, serie calibrada del slider, referencias de los pilares) están en [`docs/algoritmos/graficas-del-catalogo.md`](../algoritmos/graficas-del-catalogo.md).
 
@@ -359,8 +361,8 @@ Proyecta la extinción paulatina de un crédito vigente (nómina, personal o aut
 - **Etiqueta**: `Crédito de Nómina Banorte · 20 meses restantes`, con badge `24.5 % anual`.
 - **Cifra principal**: `$55,783.00` de saldo.
 - **Detalle**: `de saldo · pagas $3,250.00 al mes`.
-- **Curva del saldo** (`AreaChart`): de hoy a la liquidación, con un punto por hito de la tool y el eje X en `Pago 1 · Pago 6 · Pago 12 · Pago 20`.
-- **Fichas de hitos** (2 columnas en móvil, 4 en escritorio): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, con el interés del periodo en escritorio.
+- **Curva del saldo** (`AreaChart`): de hoy a la liquidación, con un punto por hito de la tool. El eje X marca solo `Hoy` y `En N meses`: la tool real numera los pagos desde la contratación (23, 27, 31, 36 a quien ya lleva 22), así que "hoy" es el pago anterior al primer hito y la curva ya no se aplasta a la derecha.
+- **Fichas de hitos** (2 columnas en tarjeta angosta, 4 desde 36rem, otra vez 2 cuando comparten tarjeta con la curva): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, con el interés del periodo desde 24rem. Si la tool manda una fecha (`2026-10-20`) en vez de etiqueta, se pinta `20 de octubre`.
 - **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos: la respuesta a "¿cuánto pagaré de puros intereses?".
 - **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color.
 - **Pie**: botón `Simular abono a capital` y la razón.

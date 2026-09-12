@@ -16,7 +16,7 @@ vez sin conflictos de git.
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Bloque A de `docs/arquitectura/orquestadores.md` cerrado (21 tools, 117 pruebas). Ahora: integración de voz ElevenLabs (premio lateral, `web`/`demo`), construida detrás de `FEATURE_VOZ` (apagado) — ver `docs/como-funciona/premio-elevenlabs.md`. Falta conectar el botón principal y el del chat de Maya | sáb 19:21 |
 | contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |
-| demo | parlack | **Tocando ahora**: widgets responsivos a su propio ancho (container queries) y lienzo que acomoda las tarjetas lado a lado. Archivos: `components/maya/{lienzo,barra-conversacion,consola-maya}.tsx`, `packages/a2ui/src/Superficie.tsx` (prop opcional), `packages/catalogo/src/*`. Si vas a conectar la voz en la barra, avísame en la bitácora de equipo | sáb 14:10 |
+| demo | parlack | Widgets responsivos a su propio ancho (`Tarjeta` + `PieTarjeta`, container queries en los 18) y lienzo que pone las tarjetas lado a lado (`lib/rejilla.ts`, `docs/algoritmos/acomodo-del-lienzo.md`). `/catalogo` con selector 360/480/completo. 412 pruebas en verde | sáb 14:35 |
 
 ## Bloqueos
 

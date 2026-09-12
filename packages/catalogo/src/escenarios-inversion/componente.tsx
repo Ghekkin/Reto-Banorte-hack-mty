@@ -3,10 +3,11 @@
 import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_FILA_TOCABLE, CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsEscenariosInversion } from "./schema";
 
 type TipoEscenario = "pesimista" | "esperado" | "optimista";
@@ -40,7 +41,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
       <EsqueletoTarjeta heroe={heroe} etiqueta="Calculando los escenarios">
         <EsqueletoEncabezado />
         <EsqueletoCuerpo>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 @md/tarjeta:grid-cols-3">
             {[0, 1, 2].map((i) => (
               <div key={i} className="flex min-h-12 flex-col justify-center gap-1 rounded-xl border border-borde-sutil px-3 py-2">
                 <Linea tamano="xs" ancho="w-20" />
@@ -49,7 +50,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
             ))}
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -64,7 +65,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>
           Escenario {TITULO[seleccionado].toLowerCase()} a {horizonteMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} ·
@@ -78,7 +79,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Escenario">
+        <div className="grid grid-cols-1 gap-2 @md/tarjeta:grid-cols-3" role="radiogroup" aria-label="Escenario">
           {ORDEN.map((tipo) => {
             const esc = escenarios[tipo];
             const activo = seleccionado === tipo;
@@ -89,7 +90,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
                 role="radio"
                 aria-checked={activo}
                 onClick={() => setSeleccionado(tipo)}
-                className={`flex min-h-12 flex-row items-baseline justify-between gap-2 border px-3 py-2 text-left sm:flex-col sm:gap-0.5 ${CLASES_FILA_TOCABLE} ${
+                className={`flex min-h-12 flex-row items-baseline justify-between gap-2 border px-3 py-2 text-left @md/tarjeta:flex-col @md/tarjeta:gap-0.5 ${CLASES_FILA_TOCABLE} ${
                   heroe
                     ? activo
                       ? "border-white bg-white/15"
@@ -111,10 +112,10 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
         {actual.descripcion ? <p className={`text-sm ${suave}`}>{actual.descripcion}</p> : null}
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() =>
               alAccionar({ accion: "elegir_escenario", escenario: seleccionado, valorFinalCentavos: actual.valorFinalCentavos, tasaAnualPct: actual.tasaAnualPct })
@@ -123,8 +124,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
             Elegir escenario {TITULO[seleccionado].toLowerCase()} <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

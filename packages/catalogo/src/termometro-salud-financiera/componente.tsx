@@ -4,11 +4,12 @@ import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { Grafica, SERIES } from "../graficas";
 import type { PropsTermometroSaludFinanciera } from "./schema";
 
@@ -65,7 +66,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
           <Linea tamano="xs" ancho="w-32" />
         </CardHeader>
         <EsqueletoCuerpo className="flex flex-col gap-4">
-          <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
+          <div className="flex flex-col items-center gap-4 @md/tarjeta:flex-row @md/tarjeta:gap-6">
             <Skeleton className="h-24 w-44 rounded-t-full" />
             <div className="flex flex-1 flex-col gap-2">
               <Linea tamano="sm" ancho="w-40" />
@@ -82,7 +83,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
             ))}
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -121,7 +122,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
   ];
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <span className={`text-xs ${suave}`}>Salud financiera</span>
@@ -135,7 +136,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
       </CardHeader>
 
       <CardContent className="flex flex-col gap-4">
-        <div className="flex flex-col items-center gap-3 sm:flex-row sm:gap-6">
+        <div className="flex flex-col items-center gap-3 @md/tarjeta:flex-row @md/tarjeta:gap-6">
           {/* El medio arco: el puntaje sobre 100, con el número adentro. Recharts limita el
               radio a la mitad del lado menor, así que la gráfica es un cuadrado de 192 px y
               la caja recorta la mitad de abajo. */}
@@ -161,9 +162,9 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
             </div>
           </div>
 
-          <div className="flex flex-1 flex-col gap-2 text-center sm:text-left">
+          <div className="flex flex-1 flex-col gap-2 text-center @md/tarjeta:text-left">
             {typeof cambioVsMesAnterior === "number" && cambioVsMesAnterior !== 0 ? (
-              <span className={`monto flex items-center justify-center gap-1 text-sm font-semibold sm:justify-start ${heroe ? "" : cambioVsMesAnterior > 0 ? "text-exito" : "text-foreground"}`}>
+              <span className={`monto flex items-center justify-center gap-1 text-sm font-semibold @md/tarjeta:justify-start ${heroe ? "" : cambioVsMesAnterior > 0 ? "text-exito" : "text-foreground"}`}>
                 {cambioVsMesAnterior > 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
                 {cambioVsMesAnterior > 0 ? "+" : "−"}
                 {Math.abs(cambioVsMesAnterior)} puntos vs. el mes anterior
@@ -179,10 +180,10 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
 
         {/* A 360 px tres columnas recortan "Fondo de emergencia"; en móvil cada pilar es
             una fila con su valor a la derecha, y en escritorio son tres columnas. */}
-        <div className={`grid grid-cols-1 gap-3 border-t pt-3 sm:grid-cols-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
+        <div className={`grid grid-cols-1 gap-3 border-t pt-3 @md/tarjeta:grid-cols-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
           {pilares.map((p) => (
             <div key={p.nombre} className="flex min-w-0 flex-col gap-1">
-              <div className="flex items-baseline justify-between gap-2 sm:flex-col sm:items-start sm:gap-0">
+              <div className="flex items-baseline justify-between gap-2 @md/tarjeta:flex-col @md/tarjeta:items-start @md/tarjeta:gap-0">
                 <span className={`truncate text-xs ${suave}`}>{p.nombre}</span>
                 <span className="monto text-lg font-semibold leading-tight">{p.valor}</span>
               </div>
@@ -203,18 +204,17 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
         {habito ? <p className="text-sm">{habito}</p> : null}
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() => alAccionar({ accion: "mejorar_salud_financiera", puntajeSalud, calificacion })}
           >
             Mejorar mi salud financiera <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

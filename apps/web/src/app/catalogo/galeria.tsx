@@ -3,7 +3,6 @@
 import { useMemo, useState } from "react";
 import { Check, ChevronDown, FileJson, Layers, Zap } from "lucide-react";
 import {
-  Superficie,
   estadoVacio,
   procesarVarios,
   VERSION_A2UI,
@@ -12,10 +11,12 @@ import {
   type FalloDeRender,
   type MensajeA2UI,
 } from "@maya/a2ui";
+import { Lienzo } from "@/components/maya/lienzo";
 import { registrarComponentes } from "@/lib/registrar-componentes";
 import { Badge } from "@/components/ui/badge";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 
 /**
  * La galeria: cada componente del catalogo pintado con el RENDERER de verdad
@@ -38,6 +39,18 @@ export type ComponenteDeGaleria = {
   fuente: string;
 };
 
+/**
+ * A que ancho se ve cada ejemplo. Los componentes del catalogo se adaptan a SU ancho (container
+ * queries), no al de la pantalla, asi que desde un escritorio se puede ver exactamente como
+ * queda un widget en un celular, en media columna de un dashboard o a lo ancho.
+ */
+const ANCHOS = {
+  celular: { etiqueta: "Celular · 360 px", clase: "max-w-[360px]" },
+  mitad: { etiqueta: "Media columna · 480 px", clase: "max-w-[480px]" },
+  completo: { etiqueta: "Completo", clase: "" },
+} as const;
+type Ancho = keyof typeof ANCHOS;
+
 export function Galeria({
   componentes,
   layout,
@@ -49,6 +62,7 @@ export function Galeria({
 }) {
   const [ultimaAccion, setUltimaAccion] = useState<Accion | undefined>();
   const [fallos, setFallos] = useState<FalloDeRender[]>([]);
+  const [ancho, setAncho] = useState<Ancho>("completo");
 
   // `pb-72` y no `pb-28`: el panel de accion de abajo es `fixed` y crece hasta
   // `max-h-64` (256 px) cuando muestra el JSON de la accion, asi que con menos padding
@@ -80,11 +94,37 @@ export function Galeria({
         <p className="text-xs text-muted-foreground">
           Layout disponible para el agente: {layout.join(", ")}.
         </p>
+        <div className="flex min-w-0 flex-wrap items-center gap-2 pt-1">
+          <span className="text-xs text-muted-foreground">Ver cada ejemplo a:</span>
+          <div className="-mx-1 min-w-0 overflow-x-auto px-1 pb-1">
+            <ToggleGroup
+              value={[ancho]}
+              onValueChange={(valor) => {
+                const elegido = (valor as string[])[0] as Ancho | undefined;
+                if (elegido) setAncho(elegido);
+              }}
+              spacing={2}
+              className="w-max"
+            >
+              {(Object.keys(ANCHOS) as Ancho[]).map((clave) => (
+                <ToggleGroupItem key={clave} value={clave} className="min-h-11 whitespace-nowrap rounded-full px-3 text-xs sm:min-h-9">
+                  {ANCHOS[clave].etiqueta}
+                </ToggleGroupItem>
+              ))}
+            </ToggleGroup>
+          </div>
+        </div>
       </header>
 
       <main className="mx-auto flex max-w-6xl flex-col gap-4">
         {componentes.map((c) => (
-          <Ficha key={c.nombre} componente={c} alAccionar={setUltimaAccion} alFallar={(f) => setFallos((v) => [...v, f])} />
+          <Ficha
+            key={c.nombre}
+            componente={c}
+            claseAncho={ANCHOS[ancho].clase}
+            alAccionar={setUltimaAccion}
+            alFallar={(f) => setFallos((v) => [...v, f])}
+          />
         ))}
       </main>
 
@@ -96,10 +136,13 @@ export function Galeria({
 /** Un componente: su ficha del catálogo, su render con datos y su estado de carga. */
 function Ficha({
   componente,
+  claseAncho,
   alAccionar,
   alFallar,
 }: {
   componente: ComponenteDeGaleria;
+  /** El tope de ancho elegido arriba: el mismo lienzo del producto, mas angosto. */
+  claseAncho: string;
   alAccionar: (accion: Accion) => void;
   alFallar: (fallo: FalloDeRender) => void;
 }) {
@@ -172,9 +215,10 @@ function Ficha({
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground">Con datos del ejemplo</span>
-          <div className="grid gap-3 md:grid-cols-2 [&>[data-ancho=amplio]]:md:col-span-2">
+          {/* El mismo `Lienzo` de /maya: si aqui se acomoda bien, alla tambien. */}
+          <div className={`w-full ${claseAncho}`}>
             {conDatos ? (
-              <Superficie superficie={conDatos} conversacionId="c_galeria" alAccionar={alAccionar} alFallar={alFallar} />
+              <Lienzo superficie={conDatos} conversacionId="c_galeria" alAccionar={alAccionar} alFallar={alFallar} />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Falta <code>packages/catalogo/ejemplos/</code> para este componente.
@@ -184,7 +228,9 @@ function Ficha({
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground">Estado de carga</span>
-          <Superficie superficie={cargando} conversacionId="c_galeria" alAccionar={() => {}} />
+          <div className={`w-full ${claseAncho}`}>
+            <Lienzo superficie={cargando} conversacionId="c_galeria" alAccionar={() => {}} />
+          </div>
         </div>
       </div>
     </section>

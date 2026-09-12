@@ -51,7 +51,9 @@ describe("el lienzo de la demo", () => {
     expect(html).toContain("¿Por qué veo esto?"); // la razon, que exige la rubrica
   });
 
-  it("le da a la rejilla el span de las tarjetas amplias (`ancho`)", () => {
-    expect(html).toContain('data-ancho="amplio"');
+  it("reparte las tarjetas del Column en la rejilla, cada una en su hueco", () => {
+    // El detalle del acomodo se prueba en `rejilla.spec.ts`; aqui, que el camino de la demo lo use.
+    expect(html).toContain('data-pieza="resumen"');
+    expect(html).toContain('data-pieza="plan"');
   });
 });

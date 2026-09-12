@@ -61,7 +61,8 @@ tenían una barra de dos segmentos y una lista.
 6. Sin línea de eje, sin marcas, sin cuadrícula. Texto de eje en `text-xs` gris.
 7. El eje Y va oculto: el dato grande del encabezado ya da la escala, y las etiquetas
    directas (el punto final, las fichas) dan los intermedios.
-8. Altura fija: 160 px en móvil y 192 px en escritorio (`CLASES_GRAFICA`). El
+8. Altura fija: 160 px en una tarjeta angosta y 192 px cuando la TARJETA mide 28rem o más
+   (`CLASES_GRAFICA`, `@md/tarjeta:h-48`; antes era `md:h-48`, que miraba la pantalla). El
    `aspect-video` de shadcn hacía que la tarjeta amplia midiera 400 px de alto a 720 px de
    ancho, el doble que sus vecinas.
 9. Dona y medidor traen su propio cuadrado. Recharts limita el radio a la mitad del lado

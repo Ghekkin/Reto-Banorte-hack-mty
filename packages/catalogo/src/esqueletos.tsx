@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE } from "./comunes";
+import { Tarjeta } from "./tarjeta";
 
 /**
  * Los estados de carga del catálogo, con la forma y el TAMAÑO de la tarjeta final.
@@ -58,13 +58,9 @@ export function EsqueletoTarjeta({
   children: ReactNode;
 }) {
   return (
-    <Card
-      aria-busy="true"
-      aria-label={etiqueta}
-      className={heroe ? `${CLASES_TARJETA_HEROE} ${TONO_HEROE}` : CLASES_TARJETA}
-    >
+    <Tarjeta heroe={heroe} aria-busy="true" aria-label={etiqueta} className={heroe ? TONO_HEROE : ""}>
       {children}
-    </Card>
+    </Tarjeta>
   );
 }
 
@@ -159,24 +155,18 @@ export function EsqueletoBarras({ barras }: { barras: number }) {
   );
 }
 
-/** El pie de toda tarjeta del catálogo: la línea "¿Por qué veo esto?", y el botón si hay acción. */
-export function EsqueletoPie({
-  heroe = false,
-  lineas = 2,
-  boton = false,
-}: {
-  heroe?: boolean;
-  lineas?: number;
-  boton?: boolean;
-}) {
-  const anchos = ["w-11/12", "w-4/5", "w-3/5", "w-2/3"];
+/**
+ * El pie de toda tarjeta del catálogo, con la forma de `PieTarjeta`: el botón (si la
+ * tarjeta lleva acción) y la línea plegada de "¿Por qué veo esto?".
+ */
+export function EsqueletoPie({ boton = false }: { heroe?: boolean; boton?: boolean }) {
   return (
-    <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
-      {boton ? <Skeleton className="min-h-12 w-40 rounded-full" /> : null}
-      <div className="flex w-full flex-col">
-        {Array.from({ length: lineas }, (_, i) => (
-          <Linea key={i} tamano="xs" ancho={anchos[i % anchos.length]} />
-        ))}
+    <CardFooter className="mt-auto flex-col items-stretch gap-1 border-t-0 bg-transparent pt-0">
+      <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
+        {boton ? <Skeleton className="min-h-12 w-full rounded-full @sm/tarjeta:w-40" /> : null}
+        <div className="flex min-h-12 items-center pointer-fine:min-h-8">
+          <Skeleton className="h-2.5 w-32" />
+        </div>
       </div>
     </CardFooter>
   );

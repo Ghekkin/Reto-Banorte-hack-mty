@@ -27,7 +27,7 @@ import { formatearMonto } from "./comunes";
  *    La cuadrícula se omite: en una tarjeta de 300 px de ancho solo estorba.
  *  - **Altura fija, no proporción.** `aspect-video` de shadcn da 170 px de alto a 300 px
  *    de ancho y 400 px a 720: la tarjeta amplia se volvía el doble de alta que sus
- *    vecinas. 160 px en móvil y 192 px en escritorio se leen igual proyectadas.
+ *    vecinas. 160 px en una tarjeta angosta y 192 px desde 28rem de TARJETA (no de pantalla).
  */
 
 /** Los colores de serie en el orden en que se asignan. Fijos por entidad, nunca rotan. */
@@ -47,8 +47,8 @@ export const SERIES = {
 /** El color con el que se separan segmentos vecinos (donas, barras apiladas): el de la tarjeta. */
 export const SEPARADOR = "var(--card)";
 
-/** Alto de la gráfica dentro de una tarjeta: 160 px en móvil, 192 px en escritorio. */
-export const CLASES_GRAFICA = "aspect-auto h-40 w-full md:h-48";
+/** Alto de la gráfica: 160 px en una tarjeta angosta, 192 px cuando la tarjeta mide 28rem o más. */
+export const CLASES_GRAFICA = "aspect-auto h-40 w-full @md/tarjeta:h-48";
 
 /**
  * `$24,800.00` es demasiado para una marca de eje: `$24.8 k`. Solo para ejes y etiquetas
@@ -107,7 +107,7 @@ export function Grafica({
   /** Qué muestra la gráfica, para lectores de pantalla. */
   etiqueta: string;
 }) {
-  // Con un tamaño propio (dona, medidor) no se hereda `md:h-48`: tailwind-merge no lo
+  // Con un tamaño propio (dona, medidor) no se hereda `@md/tarjeta:h-48`: tailwind-merge no lo
   // quita porque lleva variante, y el contenedor crecía a 192 px en escritorio.
   const tamano = className ? `aspect-auto ${className}` : CLASES_GRAFICA;
   return (
@@ -142,9 +142,16 @@ export function TooltipMonto({ etiquetaDe }: { etiquetaDe?: (valor: unknown) => 
 }
 
 /** La leyenda de una gráfica de dos o más series: siempre presente, texto en gris. */
-export function Leyenda({ series }: { series: Array<{ nombre: string; color: string }> }) {
+export function Leyenda({
+  series,
+  heroe = false,
+}: {
+  series: Array<{ nombre: string; color: string }>;
+  /** Sobre el degradado de marca el gris no se lee: el texto va en blanco al 80 %. */
+  heroe?: boolean;
+}) {
   return (
-    <ul className="flex flex-wrap gap-x-4 gap-y-1 text-xs text-muted-foreground">
+    <ul className={`flex flex-wrap gap-x-4 gap-y-1 text-xs ${heroe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
       {series.map((s) => (
         <li key={s.nombre} className="flex items-center gap-1.5">
           <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: s.color }} aria-hidden />
@@ -166,23 +173,30 @@ export function Ficha({
   detalle,
   acento = false,
   detalleSoloEscritorio = false,
+  heroe = false,
 }: {
   etiqueta: string;
   valor: string;
   detalle?: string;
-  /** El detalle es secundario: en tres columnas a 360 px no cabe y se recorta. */
-  detalleSoloEscritorio?: boolean;
-  /** Marca la ficha que importa (la meta, el cierre) con el texto en negro y más peso. */
+  /** Marca la ficha que importa (la meta, el cierre) con más peso. */
   acento?: boolean;
+  /** El detalle es secundario: si la TARJETA mide menos de 24rem, no cabe y se oculta. */
+  detalleSoloEscritorio?: boolean;
+  /**
+   * Sobre el degradado de marca: etiqueta en blanco al 80 % y valor en blanco. Sin esto, en
+   * la tarjeta heroe las fichas salian en gris y negro sobre rojo, casi ilegibles (visto en
+   * vivo el 2026-09-12, cuando el agente marco como heroe el credito de Ana).
+   */
+  heroe?: boolean;
 }) {
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const fuerte = heroe ? "text-primary-foreground" : "text-foreground";
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
-      <span className="truncate text-xs text-muted-foreground">{etiqueta}</span>
-      <span className={`monto truncate text-sm ${acento ? "font-semibold text-foreground" : "font-medium text-foreground"}`}>
-        {valor}
-      </span>
+      <span className={`truncate text-xs ${suave}`}>{etiqueta}</span>
+      <span className={`monto truncate text-sm ${fuerte} ${acento ? "font-semibold" : "font-medium"}`}>{valor}</span>
       {detalle ? (
-        <span className={`monto truncate text-xs text-muted-foreground ${detalleSoloEscritorio ? "hidden sm:block" : ""}`}>{detalle}</span>
+        <span className={`monto truncate text-xs ${suave} ${detalleSoloEscritorio ? "hidden @sm/tarjeta:block" : ""}`}>{detalle}</span>
       ) : null}
     </div>
   );

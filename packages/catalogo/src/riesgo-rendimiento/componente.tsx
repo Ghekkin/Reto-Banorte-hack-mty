@@ -4,11 +4,12 @@ import { useState } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_FILA_TOCABLE, CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsRiesgoRendimiento } from "./schema";
 
 const ETIQUETAS_RIESGO = ["", "muy bajo", "bajo", "moderado", "alto", "muy alto"];
@@ -48,7 +49,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
         <EsqueletoCuerpo>
           <EsqueletoOpciones opciones={4} />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -58,7 +59,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>
           Perfil {perfilInversionista.toLowerCase()} · tolera riesgo hasta {toleranciaRiesgoMax} de 5
@@ -72,7 +73,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
       </CardHeader>
 
       <CardContent>
-        <RadioGroup value={seleccionadoId} onValueChange={(v) => setSeleccionadoId(String(v))} aria-label="Instrumento de inversión" className="gap-2">
+        <RadioGroup value={seleccionadoId} onValueChange={(v) => setSeleccionadoId(String(v))} aria-label="Instrumento de inversión" className="gap-2 @3xl/tarjeta:grid-cols-2">
           {instrumentos.map((inst) => {
             const activa = inst.id === seleccionadoId;
             const supera = inst.riesgo > toleranciaRiesgoMax;
@@ -105,7 +106,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
                       riesgo {ETIQUETAS_RIESGO[inst.riesgo]}
                       {supera ? <span className={heroe ? " font-medium" : " font-medium text-advertencia"}> · supera tu perfil</span> : null}
                     </span>
-                    <span className="hidden sm:inline">· {inst.clave}</span>
+                    <span className="hidden @md/tarjeta:inline">· {inst.clave}</span>
                   </span>
                 </span>
                 <span className="flex shrink-0 flex-col items-end">
@@ -118,10 +119,10 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
         </RadioGroup>
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() =>
               alAccionar({
@@ -135,9 +136,8 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
             Invertir en {seleccionado.clave} <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }
 

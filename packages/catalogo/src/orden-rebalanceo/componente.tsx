@@ -3,10 +3,11 @@
 import { ArrowRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsOrdenRebalanceo } from "./schema";
 
 /**
@@ -27,7 +28,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
         <EsqueletoCuerpo>
           <EsqueletoFilas filas={2} />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -35,7 +36,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <span className={`text-xs ${suave}`}>Orden de rebalanceo · {nombrePortafolio}</span>
@@ -86,18 +87,17 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
         </ul>
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() => alAccionar({ accion: "confirmar_rebalanceo", portafolioId, totalOperaciones: movimientos.length })}
           >
             Confirmar rebalanceo <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

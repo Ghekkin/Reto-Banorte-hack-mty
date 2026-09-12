@@ -1,4 +1,4 @@
-import { readFileSync } from "node:fs";
+import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { createElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -105,11 +105,49 @@ describe("reglas de diseno (skill diseno-banorte)", () => {
     }
   });
 
-  it("todas las tarjetas usan la densidad del sistema, para que no se separen", () => {
+  it("todas las tarjetas usan la densidad del sistema, medida contra la TARJETA", () => {
     for (const entrada of CATALOGO) {
       const html = pintar(entrada.nombre);
+      expect(html, `${entrada.nombre} no va dentro del contenedor de Tarjeta`).toContain("@container/tarjeta");
       expect(html, `${entrada.nombre} no usa --card-spacing del sistema`).toContain("--card-spacing:--spacing(4)");
-      expect(html, `${entrada.nombre} no sube a p-5 en escritorio`).toContain("md:[--card-spacing:--spacing(5)]");
+      expect(html, `${entrada.nombre} no sube a p-5 cuando la tarjeta es ancha`).toContain(
+        "@md/tarjeta:[--card-spacing:--spacing(5)]",
+      );
+    }
+  });
+
+  /**
+   * Un widget no sabe donde lo van a poner. Con `sm:`/`md:` una tarjeta de 245 px en un
+   * escritorio se pintaba con el acomodo de escritorio y todo se recortaba (medido el
+   * 2026-09-12 en el chat de Maya). Dentro del catalogo, todo se acomoda con variantes de
+   * contenedor (`@md/tarjeta:`), que miden la tarjeta.
+   */
+  it("ningun componente usa breakpoints de PANTALLA: se adaptan a su propio ancho", () => {
+    const fuentes = readdirSync(join(RAIZ, "src"), { recursive: true, encoding: "utf8" }).filter(
+      (f) => /\.tsx?$/.test(f) && !f.includes("__tests__"),
+    );
+    const culpables: string[] = [];
+    for (const archivo of fuentes) {
+      const codigo = readFileSync(join(RAIZ, "src", archivo), "utf8")
+        .split("\n")
+        .filter((l) => !/^\s*(\*|\/\/|\/\*)/.test(l)) // los comentarios pueden nombrarlos
+        .join("\n");
+      for (const m of codigo.matchAll(/(?<![\w@\/\-\[])(sm|md|lg|xl|2xl):[a-z\[]/g)) {
+        culpables.push(`${archivo}: ${codigo.slice(m.index!, m.index! + 24)}`);
+      }
+    }
+    expect(culpables).toEqual([]);
+  });
+
+  /** Doce lineas de "¿Por que veo esto?" en una pantalla de tres tarjetas eran ruido. */
+  it("la razon viene plegada: el boton la anuncia y el texto esta en el HTML, oculto", () => {
+    for (const entrada of CATALOGO) {
+      const html = pintar(entrada.nombre);
+      expect(html, entrada.nombre).toMatch(/<button[^>]*aria-expanded="false"[^>]*>.*?¿Por qué veo esto\?/s);
+      expect(html, `${entrada.nombre}: la razon no esta oculta`).toMatch(/<p id="[^"]+" hidden=""/);
+      expect(html, `${entrada.nombre}: queda la banda gris del pie de shadcn`).not.toMatch(
+        /data-slot="card-footer" class="[^"]*bg-muted\/50(?![^"]*bg-transparent)/,
+      );
     }
   });
 });

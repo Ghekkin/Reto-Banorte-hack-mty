@@ -3,11 +3,12 @@
 import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { CLASES_GRAFICA, EJE, ETIQUETA, Grafica, SERIES, TooltipMonto, formatearFechaCorta, formatearMontoEntero } from "../graficas";
 import type { PropsRendimientoHistorico } from "./schema";
 
@@ -50,7 +51,7 @@ export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> &
         <EsqueletoCuerpo>
           <Skeleton className={CLASES_GRAFICA} />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -67,7 +68,7 @@ export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> &
   const colorPunto = heroe ? "var(--primary-foreground)" : SERIES.acento;
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>
           {nombre}
@@ -126,19 +127,18 @@ export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> &
         </Grafica>
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
             variant="outline"
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "border-white/40 bg-transparent text-primary-foreground hover:bg-white/10" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "border-white/40 bg-transparent text-primary-foreground hover:bg-white/10" : ""}`}
             size="lg"
             onClick={() => alAccionar({ instrumentoId, clave, accion: "ver_detalle" })}
           >
             Ver detalle del instrumento <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

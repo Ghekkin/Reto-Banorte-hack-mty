@@ -24,7 +24,7 @@
               "const": "ResumenTarjeta"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -192,7 +192,7 @@
               "const": "PlanDePago"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -354,7 +354,7 @@
               "const": "Confirmacion"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -482,7 +482,7 @@
               "const": "Calendario"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -620,7 +620,7 @@
               "const": "GastoPorCategoria"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -796,7 +796,7 @@
               "const": "DetalleCategoria"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -942,7 +942,7 @@
               "const": "AlertaFugas"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -1128,7 +1128,7 @@
               "const": "TermometroSaludFinanciera"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -1340,7 +1340,7 @@
               "const": "ComparadorAntesDespues"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -1559,7 +1559,7 @@
               "const": "SimuladorMeta"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -1766,7 +1766,7 @@
               "const": "MetaActiva"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "normal",
               "anyOf": [
                 {
@@ -1920,7 +1920,7 @@
               "const": "RendimientoHistorico"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -2144,7 +2144,7 @@
               "const": "ProyeccionCrecimiento"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -2374,7 +2374,7 @@
               "const": "EscenariosInversion"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -2626,7 +2626,7 @@
               "const": "DistribucionPortafolio"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -2815,7 +2815,7 @@
               "const": "OrdenRebalanceo"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -3011,7 +3011,7 @@
               "const": "RiesgoRendimiento"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {
@@ -3211,7 +3211,7 @@
               "const": "ProyeccionPagoCredito"
             },
             "ancho": {
-              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "description": "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
               "default": "amplio",
               "anyOf": [
                 {

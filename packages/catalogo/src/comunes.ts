@@ -9,7 +9,9 @@ import { z } from "zod";
 export const Ancho = z
   .enum(["normal", "amplio"])
   .default("normal")
-  .describe("normal = 1 columna; amplio = 2. Tablas y graficas piden amplio");
+  .describe(
+    "Sugerencia de ancho. Normalmente NO la pongas: cada componente ya trae su ancho natural y el lienzo acomoda las tarjetas lado a lado segun el espacio de la pantalla",
+  );
 
 /**
  * Props que el agente puede poner en cualquier componente.
@@ -98,27 +100,38 @@ export function hoyISO(): string {
 }
 
 /**
- * La tarjeta del sistema, en un solo lugar (skill `diseno-banorte`).
+ * La tarjeta del sistema, en un solo lugar (skill `diseno-banorte`). La usa `Tarjeta`
+ * (`tarjeta.tsx`), que la envuelve en el contenedor que la hace responsiva.
+ *
+ * **La densidad depende del ancho de la TARJETA, no de la pantalla.** Antes era
+ * `md:[--card-spacing:--spacing(5)]`, que mira el viewport: en un escritorio de 1,440 px
+ * una tarjeta de 245 px (tres columnas dentro de una columna de chat) se pintaba con la
+ * densidad de escritorio y todo se recortaba. Con `@md/tarjeta` la tarjeta pasa a `p-5`
+ * cuando ELLA mide 28rem (448 px) o mas, este donde este: en el chat, en una rejilla de
+ * dashboard o sola en un celular.
  *
  * `Card` de shadcn trae su propio padding con la variable `--card-spacing`, asi que la
- * densidad del sistema —`p-4` en movil, `p-5` en escritorio— se pone moviendo ESA
- * variable, no agregando `p-5` a cada `CardContent`: hacer lo segundo duplicaba el
- * padding y peleaba con la primitiva.
- *
+ * densidad se pone moviendo ESA variable, no agregando `p-5` a cada `CardContent`.
  * `ring-0` apaga el anillo que `Card` trae por defecto; el sistema usa borde, no anillo.
  */
 export const CLASES_TARJETA =
   "animar-entrada gap-3 rounded-2xl border border-borde-sutil shadow-sm ring-0 " +
-  "[--card-spacing:--spacing(4)] md:gap-4 md:[--card-spacing:--spacing(5)]";
+  "[--card-spacing:--spacing(4)] @md/tarjeta:gap-4 @md/tarjeta:[--card-spacing:--spacing(5)]";
 
 /** La misma tarjeta con el degradado de marca. **Una por pantalla, nunca dos.** */
 export const CLASES_TARJETA_HEROE =
   "animar-entrada gap-3 rounded-2xl border-0 shadow-sm ring-0 text-primary-foreground " +
   "bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] " +
-  "[--card-spacing:--spacing(4)] md:gap-4 md:[--card-spacing:--spacing(5)]";
+  "[--card-spacing:--spacing(4)] @md/tarjeta:gap-4 @md/tarjeta:[--card-spacing:--spacing(5)]";
 
 /** El pie de una tarjeta heroe: el `bg-muted/50` de shadcn no va sobre el degradado. */
 export const CLASES_PIE_HEROE = "border-white/20 bg-transparent";
+
+/**
+ * El boton principal al pie de una tarjeta: pildora de 48 px, a lo ancho mientras la
+ * tarjeta sea angosta y de su tamano cuando ya cabe junto al "¿Por que veo esto?".
+ */
+export const CLASES_BOTON_PIE = "min-h-12 w-full rounded-full @sm/tarjeta:w-auto";
 
 /**
  * Fila tocable: 48 px de alto minimo en movil y las capas de estado de Material 3

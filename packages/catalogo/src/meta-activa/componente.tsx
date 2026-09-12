@@ -1,15 +1,9 @@
 import { Target } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  CLASES_PIE_HEROE,
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  formatearFecha,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { formatearFecha, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsMetaActiva } from "./schema";
 
 /** Un apartado que ya existe: cuanto lleva, cuanto aporta y cuando cae el siguiente cargo. */
@@ -38,7 +32,7 @@ export function MetaActiva(props: Partial<PropsMetaActiva>) {
           </div>
           <Linea tamano="xs" ancho="w-40" />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} />
+        <EsqueletoPie heroe={heroe} />
       </EsqueletoTarjeta>
     );
   }
@@ -47,7 +41,7 @@ export function MetaActiva(props: Partial<PropsMetaActiva>) {
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`flex items-center gap-2 text-xs ${suave}`}>
           <Target className="size-4 shrink-0" /> {nombre}
@@ -84,11 +78,7 @@ export function MetaActiva(props: Partial<PropsMetaActiva>) {
         {fechaObjetivo ? <p className={`text-xs ${suave}`}>Llegas el {formatearFecha(fechaObjetivo, true)}.</p> : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={heroe ? CLASES_PIE_HEROE : ""}>
-          <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} heroe={heroe} />
+    </Tarjeta>
   );
 }

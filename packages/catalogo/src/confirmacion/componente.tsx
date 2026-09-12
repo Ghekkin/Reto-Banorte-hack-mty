@@ -1,8 +1,9 @@
 import { CheckCircle2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { CLASES_TARJETA, formatearMonto } from "../comunes";
+import { CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { formatearMonto } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsConfirmacion } from "./schema";
 
 /**
@@ -25,7 +26,7 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
           <Linea tamano="sm" ancho="w-56" />
           <Linea tamano="sm" ancho="w-44" />
         </EsqueletoCuerpo>
-        <EsqueletoPie lineas={2} />
+        <EsqueletoPie />
       </EsqueletoTarjeta>
     );
   }
@@ -33,7 +34,7 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
   const Icono = tono === "exito" ? CheckCircle2 : Info;
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Tarjeta>
       <CardHeader>
         <CardTitle className="flex items-start gap-2">
           <Icono className={`mt-0.5 size-4 shrink-0 ${tono === "exito" ? "text-exito" : "text-muted-foreground"}`} />
@@ -57,11 +58,7 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
         {siguientePaso ? <p className="text-sm">{siguientePaso}</p> : null}
       </CardContent>
 
-      {razon ? (
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} />
+    </Tarjeta>
   );
 }

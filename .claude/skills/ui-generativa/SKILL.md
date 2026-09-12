@@ -39,8 +39,10 @@ Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro 
    agente elija este componente? Si no puedes decirlo en una frase, no va.
 2. **Schema primero.** Props mínimas, cada una con `.describe()`. Montos en centavos
    con moneda. Lo que cambia con el usuario es binding al data model (`{ path }`), no
-   literal. Toda tarjeta declara `ancho: "normal" | "amplio"` (una o dos columnas de
-   la rejilla bento) y, si aplica, `heroe: boolean` — **solo una por pantalla**.
+   literal. Toda tarjeta declara su ancho natural con `ancho: Ancho.default("amplio")` si
+   lleva gráfica o tabla (si no, hereda `normal`): es lo que el lienzo usa para acomodarla
+   lado a lado (`docs/algoritmos/acomodo-del-lienzo.md`). Si aplica, `heroe: boolean` —
+   **solo una por pantalla**.
 3. **Acciones = eventos A2UI.** Un botón declara `action: { event: { name,
    context } }`. El `context` resuelve paths del data model (ej. el plazo elegido). El
    componente **nunca** hace fetch ni llama al MCP: dispara la acción y el agente
@@ -58,9 +60,15 @@ Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro 
    del texto que reemplaza, así que las alturas coinciden por construcción:
    `EsqueletoTarjeta` (acepta `heroe` y ya sale con el degradado) + `EsqueletoEncabezado`,
    `EsqueletoFilas`, `EsqueletoOpciones`, `EsqueletoBarras`, `EsqueletoBarra` y
-   `EsqueletoPie` (con `boton` si la tarjeta tiene acción). No olvides el pie: el "¿Por
-   qué veo esto?" solo mide 60–90 px. Comprueba el alto en `/catalogo`: la columna
-   "Estado de carga" tiene que medir lo mismo que "Con datos del ejemplo".
+   `EsqueletoPie` (con `boton` si la tarjeta tiene acción). No olvides el pie: aunque el
+   "¿Por qué veo esto?" viene plegado, ocupa su línea. Comprueba el alto en `/catalogo`: la
+   columna "Estado de carga" tiene que medir lo mismo que "Con datos del ejemplo".
+
+   **Responsiva a SU ancho, no a la pantalla.** La tarjeta es `Tarjeta` y el pie
+   `PieTarjeta` (`packages/catalogo/src/tarjeta.tsx`); adentro, nada de `sm:`/`md:`: usa
+   `@sm/tarjeta:`, `@md/tarjeta:`, `@3xl/tarjeta:`… Si la tarjeta es ancha, aprovéchalo (dos
+   paneles, dos columnas). Revísala en `/catalogo` con el selector de ancho: 360 px, 480 px
+   y completo.
 5. **Registro** en `packages/a2ui` (`registrar`) y en el JSON del catálogo que se le
    pasa al agente (el mismo schema sirve para los dos: nada se escribe dos veces).
 6. **Prueba** con un mensaje A2UI escrito a mano en

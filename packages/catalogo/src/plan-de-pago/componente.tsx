@@ -4,11 +4,12 @@ import { useState } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_FILA_TOCABLE, CLASES_TARJETA, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
 import type { PropsPlanDePago } from "./schema";
 
 /**
@@ -39,27 +40,27 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
         <EsqueletoCuerpo className="flex flex-col gap-3">
           <EsqueletoOpciones opciones={4} />
         </EsqueletoCuerpo>
-        <EsqueletoPie lineas={3} boton />
+        <EsqueletoPie boton />
       </EsqueletoTarjeta>
     );
   }
 
   if (opciones.length === 0) {
     return (
-      <Card className={CLASES_TARJETA}>
+      <Tarjeta>
         <CardContent>
           <p className="text-sm text-muted-foreground">
             No hay planes que cotizar para esta tarjeta. Pregúntame por otra opción.
           </p>
         </CardContent>
-      </Card>
+      </Tarjeta>
     );
   }
 
   const elegida = opciones.find((o) => o.plazoMeses === seleccion) ?? opciones[0]!;
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Tarjeta>
       <CardHeader>
         <span className="text-xs text-muted-foreground">Te ahorras con este plan</span>
         <span className="monto text-3xl font-semibold">{formatearMonto(elegida.ahorroCentavos)}</span>
@@ -73,7 +74,7 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
           value={String(seleccion ?? "")}
           onValueChange={(valor) => setSeleccion(Number(valor))}
           aria-label="Plazo del plan de pago"
-          className="gap-2"
+          className="gap-2 @2xl/tarjeta:grid-cols-2"
         >
           {opciones.map((o) => {
             const activa = o.plazoMeses === seleccion;
@@ -109,17 +110,16 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
         </RadioGroup>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-start gap-3">
+      <PieTarjeta razon={razon}>
         <Button
-          className="min-h-12 w-full rounded-full sm:w-auto"
+          className={CLASES_BOTON_PIE}
           size="lg"
           disabled={!alAccionar}
           onClick={() => alAccionar?.({ plazoMeses: elegida.plazoMeses, ...(tarjetaId ? { tarjetaId } : {}) })}
         >
           {etiquetaBoton} <ArrowRight />
         </Button>
-        {razon ? <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

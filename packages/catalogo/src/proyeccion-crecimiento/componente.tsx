@@ -4,12 +4,13 @@ import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Area, AreaChart, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { CLASES_GRAFICA, EJE, Ficha, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsProyeccionCrecimiento } from "./schema";
 
@@ -69,7 +70,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
             <Skeleton className="h-1 w-full" />
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -97,7 +98,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
   const maximoSlider = Math.max(aportacionMensualCentavos * 4, 2000000);
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>
           En {plazoMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} · {formatearPorcentaje(tasaAnualEstimadaPct)} anual estimado
@@ -109,78 +110,85 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
         </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-3">
-        <Grafica
-          config={{ aportado: { label: "Aportado", color: colores.aportado }, rendimiento: { label: "Rendimiento", color: colores.rendimiento } }}
-          etiqueta={`Crecimiento proyectado a ${plazoMeses} meses`}
-        >
-          <AreaChart data={serie} margin={{ top: 8, right: 28, bottom: 0, left: 20 }} stackOffset="none">
-            <XAxis
-              dataKey="mes"
-              type="number"
-              domain={[0, plazoMeses]}
-              ticks={mesesConHito.size > 0 ? [0, ...mesesConHito] : undefined}
-              interval={0}
-              tickFormatter={(m: number) => etiquetaDeMes(m, hitos)}
-              {...EJE}
-              tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
-            />
-            <YAxis hide domain={[0, "dataMax"]} />
-            <TooltipMonto etiquetaDe={(m) => `Mes ${String(m)}`} />
-            <Area
-              type="monotone"
-              dataKey="aportado"
-              name="Aportado"
-              stackId="1"
-              stroke={colores.aportado}
-              strokeWidth={2}
-              fill={colores.aportado}
-              fillOpacity={heroe ? 0.35 : 0.9}
-              dot={false}
-              isAnimationActive={false}
-            />
-            <Area
-              type="monotone"
-              dataKey="rendimiento"
-              name="Rendimiento"
-              stackId="1"
-              stroke={colores.rendimiento}
-              strokeWidth={2}
-              fill={colores.rendimiento}
-              fillOpacity={0.9}
-              dot={false}
-              isAnimationActive={false}
-            />
-          </AreaChart>
-        </Grafica>
-        <Leyenda
-          series={[
-            { nombre: "Aportado", color: colores.aportado },
-            { nombre: "Rendimiento", color: colores.rendimiento },
-          ]}
-        />
+      {/* Una columna mientras la tarjeta es angosta; desde 48rem de TARJETA, la curva a la
+          izquierda y los hitos con el slider a la derecha. */}
+      <CardContent className="grid gap-3 @3xl/tarjeta:grid-cols-[minmax(0,3fr)_minmax(0,2fr)] @3xl/tarjeta:items-center @3xl/tarjeta:gap-6">
+        <div className="flex min-w-0 flex-col gap-3">
+          <Grafica
+            config={{ aportado: { label: "Aportado", color: colores.aportado }, rendimiento: { label: "Rendimiento", color: colores.rendimiento } }}
+            etiqueta={`Crecimiento proyectado a ${plazoMeses} meses`}
+          >
+            <AreaChart data={serie} margin={{ top: 8, right: 28, bottom: 0, left: 20 }} stackOffset="none">
+              <XAxis
+                dataKey="mes"
+                type="number"
+                domain={[0, plazoMeses]}
+                ticks={mesesConHito.size > 0 ? [0, ...mesesConHito] : undefined}
+                interval={0}
+                tickFormatter={(m: number) => etiquetaDeMes(m, hitos)}
+                {...EJE}
+                tick={{ ...EJE.tick, fill: heroe ? "var(--primary-foreground)" : EJE.tick.fill }}
+              />
+              <YAxis hide domain={[0, "dataMax"]} />
+              <TooltipMonto etiquetaDe={(m) => `Mes ${String(m)}`} />
+              <Area
+                type="monotone"
+                dataKey="aportado"
+                name="Aportado"
+                stackId="1"
+                stroke={colores.aportado}
+                strokeWidth={2}
+                fill={colores.aportado}
+                fillOpacity={heroe ? 0.35 : 0.9}
+                dot={false}
+                isAnimationActive={false}
+              />
+              <Area
+                type="monotone"
+                dataKey="rendimiento"
+                name="Rendimiento"
+                stackId="1"
+                stroke={colores.rendimiento}
+                strokeWidth={2}
+                fill={colores.rendimiento}
+                fillOpacity={0.9}
+                dot={false}
+                isAnimationActive={false}
+              />
+            </AreaChart>
+          </Grafica>
+          <Leyenda
+            heroe={heroe}
+            series={[
+              { nombre: "Aportado", color: colores.aportado },
+              { nombre: "Rendimiento", color: colores.rendimiento },
+            ]}
+          />
+        </div>
 
-        {hitos && hitos.length > 0 ? (
-          <div className={`grid gap-3 border-t pt-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`} style={{ gridTemplateColumns: `repeat(${Math.min(hitos.length, 4)}, minmax(0, 1fr))` }}>
-            {hitos.slice(0, 4).map((h, i) => {
-              const punto = serie[Math.min(h.mes, plazoMeses)] ?? final;
-              return (
-                <Ficha
-                  key={h.mes}
-                  etiqueta={h.etiqueta}
-                  valor={formatearMonto(punto.total)}
-                  detalle={`${formatearMontoCorto(punto.aportado)} aportados`}
-                  detalleSoloEscritorio
-                  acento={i === Math.min(hitos.length, 4) - 1}
-                />
-              );
-            })}
-          </div>
-        ) : null}
+        <div className="flex min-w-0 flex-col gap-3">
+          {hitos && hitos.length > 0 ? (
+            <div className={`grid gap-3 border-t pt-3 @3xl/tarjeta:border-t-0 @3xl/tarjeta:pt-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`} style={{ gridTemplateColumns: `repeat(${Math.min(hitos.length, 4)}, minmax(0, 1fr))` }}>
+              {hitos.slice(0, 4).map((h, i) => {
+                const punto = serie[Math.min(h.mes, plazoMeses)] ?? final;
+                return (
+                  <Ficha
+                    key={h.mes}
+                    etiqueta={h.etiqueta}
+                    valor={formatearMonto(punto.total)}
+                    detalle={`${formatearMontoCorto(punto.aportado)} aportados`}
+                    detalleSoloEscritorio
+                    heroe={heroe}
+                    acento={i === Math.min(hitos.length, 4) - 1}
+                  />
+                );
+              })}
+            </div>
+          ) : null}
 
-        <div className="flex flex-wrap items-baseline justify-between gap-x-3 pt-1">
-          <span className="text-sm">Aportación mensual</span>
-          <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
+          <div className="flex flex-wrap items-baseline justify-between gap-x-3 pt-1">
+            <span className="text-sm">Aportación mensual</span>
+            <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
         </div>
         {/* `py-3` le da al slider los 48 px de alto tocable sin engordar la barra. */}
         <Slider
@@ -200,12 +208,13 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
           <span className="monto">{formatearMonto(APORTACION_MINIMA)}</span>
           <span className="monto">{formatearMonto(maximoSlider)}</span>
         </div>
+        </div>
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() =>
               alAccionar({ accion: "simular_inversion", aportacionMensualCentavos: aportacion, valorFinalEstimadoCentavos: final.total })
@@ -214,9 +223,8 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
             Invertir con este plan <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }
 

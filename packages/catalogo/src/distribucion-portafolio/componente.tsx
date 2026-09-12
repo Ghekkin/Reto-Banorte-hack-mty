@@ -4,11 +4,12 @@ import { ArrowRight } from "lucide-react";
 import { Cell, Pie, PieChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { Grafica, SEPARADOR, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsDistribucionPortafolio } from "./schema";
 
@@ -36,13 +37,13 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
     return (
       <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando la distribución de tu portafolio">
         <EsqueletoEncabezado />
-        <EsqueletoCuerpo className="flex flex-col gap-4 sm:flex-row sm:items-center">
+        <EsqueletoCuerpo className="flex flex-col gap-4 @lg/tarjeta:flex-row @lg/tarjeta:items-center">
           <Skeleton className="mx-auto size-40 shrink-0 rounded-full" />
           <div className="flex-1">
             <EsqueletoFilas filas={4} />
           </div>
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -53,7 +54,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
   const config = Object.fromEntries(datos.map((d) => [d.nombre, { label: d.nombre, color: d.color }]));
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <span className={`text-xs ${suave}`}>
@@ -81,7 +82,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
         </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <CardContent className="flex flex-col gap-4 @lg/tarjeta:flex-row @lg/tarjeta:items-center @lg/tarjeta:gap-6">
         <div className="relative mx-auto size-40 shrink-0">
           <Grafica config={config} className="size-40 h-40" etiqueta={`Distribución del portafolio en ${clases.length} clases`}>
             <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
@@ -139,18 +140,17 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
         </ul>
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() => alAccionar({ accion: "rebalancear_portafolio", valorTotalCentavos })}
           >
             Rebalancear al modelo <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }

@@ -84,7 +84,7 @@ apps/web/src/
       tarjetas-productos.tsx    TarjetaEnMano, Cuentas, CreditoEnCurso, Inversiones, vacios
     maya/
       consola-maya.tsx          hilo + lienzo + barra de conversacion
-      lienzo.tsx                rejilla bento y el PLACEHOLDER
+      lienzo.tsx                reparte las tarjetas lado a lado (lib/rejilla.ts) y el PLACEHOLDER
       barra-conversacion.tsx    input y chips
     movimientos/lista-movimientos.tsx   buscador y filtro por categoria
     marca/logo-banorte.tsx      LogoBanorte (completo) e IconoBanorte (isotipo)

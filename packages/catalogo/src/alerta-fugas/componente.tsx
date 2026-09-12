@@ -3,10 +3,11 @@
 import { Ban } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsAlertaFugas } from "./schema";
 
 /**
@@ -30,7 +31,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
         <EsqueletoCuerpo>
           <EsqueletoFilas filas={3} />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} />
+        <EsqueletoPie heroe={heroe} />
       </EsqueletoTarjeta>
     );
   }
@@ -39,7 +40,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
   const sinUso = fugas.filter((f) => f.sinUsoReciente).length;
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <span className={`text-xs ${suave}`}>
@@ -70,9 +71,9 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
             {fugas.map((f) => (
               <li
                 key={f.id}
-                // A 360 px no caben nombre, monto y botón en una línea: el botón baja a su
-                // propia fila, a lo ancho. En escritorio los tres van en la misma.
-                className={`flex flex-col gap-2 border-b py-3 last:border-0 sm:flex-row sm:items-center sm:gap-3 sm:py-2 ${
+                // En una tarjeta angosta no caben nombre, monto y botón en una línea: el botón
+                // baja a su propia fila, a lo ancho. Desde 28rem de TARJETA van en la misma.
+                className={`flex flex-col gap-2 border-b py-3 last:border-0 @md/tarjeta:flex-row @md/tarjeta:items-center @md/tarjeta:gap-3 @md/tarjeta:py-2 ${
                   heroe ? "border-white/20" : "border-borde-sutil"
                 }`}
               >
@@ -96,7 +97,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
                   <Button
                     variant={f.sinUsoReciente ? "default" : "outline"}
                     size="sm"
-                    className={`min-h-12 w-full shrink-0 rounded-full sm:w-auto ${
+                    className={`min-h-12 w-full shrink-0 rounded-full @md/tarjeta:w-auto ${
                       heroe ? (f.sinUsoReciente ? "bg-white/90 text-primary hover:bg-white" : "border-white/40 bg-transparent text-primary-foreground hover:bg-white/10") : ""
                     }`}
                     aria-label={`Cancelar ${f.concepto}`}
@@ -111,11 +112,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
         )}
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={heroe ? CLASES_PIE_HEROE : ""}>
-          <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} heroe={heroe} />
+    </Tarjeta>
   );
 }

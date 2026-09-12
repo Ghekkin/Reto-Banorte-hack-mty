@@ -2,6 +2,63 @@
 
 ## 2026-09-12
 
+### 14:35 · hecho — Widgets responsivos a su propio ancho y tarjetas lado a lado
+
+El usuario: "cuando pones los widgets de saldo diferido de tu tarjeta y crédito de nómina
+aparece uno encima de otro… que esté uno al lado de otro… que no haya tanto espacio vacío…
+que no haya tanto rollo dentro de los widgets en la parte de abajo… que funcione bien en el
+dashboard a futuro".
+
+**Lo reproduje con el agente real** (Beto: "¿Cuánto debo entre mi tarjeta y mi crédito de
+nómina?") y lo grabé para repetirlo interceptando `/api/agente` sin gastar cuota. Tres causas:
+
+1. **El agente manda un `Column` raíz y la rejilla veía UN hijo.** Lo metía en una columna de
+   `md:grid-cols-2 xl:grid-cols-3`: las dos tarjetas apiladas. Y después del rediseño de la
+   consola de Chee3mss (columna de chat de 768 px, 13:46) quedó peor: la rejilla seguía
+   mirando la PANTALLA, así que a 1,440 px repartía tres columnas dentro de 768 px y cada
+   tarjeta medía **245 px**.
+2. **Los widgets usaban `sm:`/`md:`**: en una tarjeta de 245 px las fichas del crédito se
+   pintaban en cuatro columnas ("$27,…", "interés $61…") y el eje decía "Pago 22 Pago 27
+   Pago 3…" encimado.
+3. **La razón completa al pie, en banda gris**, en cada tarjeta.
+
+**Lo que hay ahora:**
+
+- `<Superficie disponer>` (commit aparte, dominio contrato): si la raíz es `Column`/`Row`,
+  entrega sus hijos ya pintados y el host decide el acomodo.
+- `apps/web/src/lib/rejilla.ts` + `lienzo.tsx`: filas flexibles medidas contra el lienzo
+  (`@container/lienzo`). Compacta 18rem ×1, amplia 26rem ×2, una sola a todo lo ancho,
+  cuatro o más de dos en dos, alturas naturales. El tamaño sale del **ancho natural** del
+  componente (default de su schema), no del `ancho` que copia el agente.
+  `docs/algoritmos/acomodo-del-lienzo.md`.
+- `packages/catalogo/src/tarjeta.tsx`: **`Tarjeta`** (contenedor `@container/tarjeta`) y
+  **`PieTarjeta`** (botón + "¿Por qué veo esto?" plegado). Los 18 componentes migrados; cero
+  breakpoints de pantalla en el paquete, con prueba que lo cuida. Donde la tarjeta es ancha
+  se usa el ancho: crédito y crecimiento en dos paneles, gasto y plan en dos columnas,
+  termómetro y escenarios en fila.
+- `ProyeccionPagoCredito` con datos reales: la curva arranca en "hoy" (la tool numera los
+  pagos desde la contratación), el eje dice "Hoy · En N meses" y una fecha ISO en `periodo`
+  se pinta "20 de octubre".
+- `/catalogo`: selector "Ver cada ejemplo a" 360 px / 480 px / completo, con el mismo
+  `Lienzo` de `/maya`.
+
+**Tres decisiones que probé en el navegador antes de dejarlas:**
+
+- **Amplia a 26rem, no 22rem**: con 22rem el crédito quedaba a 376 px junto a otra tarjeta;
+  mejor que baje a su fila a 768 px, donde se pone en dos paneles.
+- **Alturas naturales, no estiradas**: estiradas, "Tu plan quedó activo" junto al calendario
+  tenía 280 px de blanco adentro, y la héroe junto al crédito era un bloque rojo de 530 px.
+- **En vivo el agente marcó el crédito de Ana como héroe** y las fichas salían gris y negro
+  sobre rojo. `Ficha` y `Leyenda` ya tienen variante héroe.
+
+Verificado: `pnpm typecheck` en verde y 412 pruebas (117 a2ui, 120 mcp, 93 catálogo, 82
+web). Una corrida real con el modelo (Ana, 8.7 s, pantalla válida) y ocho composiciones
+repetidas a 1,440, 1,024, 768 y 390 px, en el chat y sin el tope de 768 px.
+
+**No toqué** `consola-maya.tsx` ni `barra-conversacion.tsx`: Chee3mss los rediseñó a las 13:46
+(sugerencias al fondo del hilo, ya no encima de las tarjetas, y el botón de voz). Lo del
+usuario sobre "las sugerencias estorban" quedó resuelto por ese cambio.
+
 ### 14:03 · hecho — Coolify limpia imágenes viejas cada hora (#15 cerrado)
 
 El usuario pidió "actívalo tú" sobre la limpieza automática que propuse tras el disco al

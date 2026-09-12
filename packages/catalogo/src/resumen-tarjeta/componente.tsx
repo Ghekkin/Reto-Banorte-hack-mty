@@ -1,16 +1,10 @@
 import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardAction, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardAction, CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import {
-  CLASES_PIE_HEROE,
-  CLASES_TARJETA,
-  CLASES_TARJETA_HEROE,
-  formatearFecha,
-  formatearMonto,
-  formatearPorcentaje,
-} from "../comunes";
+import { formatearFecha, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsResumenTarjeta } from "./schema";
 
 /**
@@ -43,7 +37,7 @@ export function ResumenTarjeta(props: Partial<PropsResumenTarjeta>) {
           <EsqueletoBarra />
           <Linea tamano="sm" ancho="w-56" />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={3} />
+        <EsqueletoPie heroe={heroe} />
       </EsqueletoTarjeta>
     );
   }
@@ -52,7 +46,7 @@ export function ResumenTarjeta(props: Partial<PropsResumenTarjeta>) {
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>{planActivo ? "Saldo diferido de tu tarjeta" : "Saldo de tu tarjeta"}</span>
         <span className="monto text-3xl font-semibold">{formatearMonto(saldoCentavos)}</span>
@@ -105,11 +99,7 @@ export function ResumenTarjeta(props: Partial<PropsResumenTarjeta>) {
         )}
       </CardContent>
 
-      {razon ? (
-        <CardFooter className={heroe ? CLASES_PIE_HEROE : ""}>
-          <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} heroe={heroe} />
+    </Tarjeta>
   );
 }

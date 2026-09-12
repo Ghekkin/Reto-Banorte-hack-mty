@@ -80,6 +80,13 @@ columnas, nunca un diseño distinto.
 | Navegación | Barra de pestañas abajo + FAB | Sidebar flotante |
 | Tamaño mínimo de texto | 14 px | 14 px |
 
+**Dentro de un componente del catálogo, "móvil" y "escritorio" se miden contra la TARJETA,
+no contra la pantalla.** Un widget no sabe dónde lo van a poner (en el chat comparte fila, en
+un tablero puede ocupar un tercio), así que en `packages/catalogo` no se usan `sm:`/`md:`:
+la tarjeta es un contenedor (`Tarjeta`, `@container/tarjeta`) y todo se acomoda con
+`@md/tarjeta:`, `@3xl/tarjeta:`… El padding pasa de `p-4` a `p-5` cuando la tarjeta mide
+28rem. Una prueba (`render.spec.tsx`) truena si alguien mete un breakpoint de pantalla ahí.
+
 **La única excepción al mínimo de 14 px son las etiquetas de la barra de pestañas**, que van
 en 11 px con `tracking-tight` y `truncate`. Es lo que hacen iOS y Android (10–11 pt), y a
 14 px "Movimientos" no cabe en los 66 px que le tocan a una pestaña en una pantalla de
@@ -288,6 +295,17 @@ De arriba abajo: **etiqueta** pequeña en gris (`text-xs text-muted-foreground`)
 gráfica o los controles. Acciones al pie, alineadas a la izquierda. Si hay estado,
 `badge` arriba a la derecha.
 
+En el catálogo la tarjeta es **`Tarjeta`** (envuelve `Card` en su contenedor) y el pie es
+**`PieTarjeta`** (`packages/catalogo/src/tarjeta.tsx`): el botón principal
+(`CLASES_BOTON_PIE`, a lo ancho en tarjeta angosta) y a su lado **"¿Por qué veo esto?"
+plegado**, que abre la razón al tocarlo. Sin banda gris ni borde: la razón completa al pie de
+cada tarjeta eran doce líneas de letra chica en una pantalla de tres tarjetas. La razón sigue
+en el HTML (`hidden`), así que un lector de pantalla la anuncia y ninguna prueba deja quitarla.
+
+Cuando la tarjeta es ancha, **usa el ancho**: gráfica a un lado y números al otro
+(`@3xl/tarjeta:grid-cols-…`), opciones en dos columnas, categorías en dos columnas. Una tarjeta
+estirada con una sola columna de contenido es espacio vacío.
+
 ### La tarjeta héroe
 
 **Una por pantalla, nunca dos.** Fondo con el degradado de marca
@@ -327,18 +345,24 @@ producto.
 
 ### Cómo encaja con las superficies del agente
 
-El lienzo es una **rejilla bento** donde el agente coloca lo que genera:
+El lienzo reparte lo que genera el agente en **filas que se llenan solas**
+(`docs/algoritmos/acomodo-del-lienzo.md`):
 
 - El renderer A2UI pinta la superficie `principal` dentro del lienzo, no en un panel
-  aparte.
-- Cada componente del catálogo ocupa 1 o 2 columnas según su prop `ancho`
-  (`"normal" | "amplio"`), por defecto `normal`. `GastoPorCategoria` y las tablas piden
-  `amplio`; `Confirmacion` y `ResumenTarjeta` van `normal`.
+  aparte. Con `<Superficie disponer>`, si la raíz es un `Column`/`Row`, sus tarjetas llegan
+  sueltas al lienzo en vez de apiladas.
+- Cada tarjeta tiene el **ancho natural** de su componente (el default de su prop `ancho`):
+  `amplio` para gráficas y tablas (`GastoPorCategoria`, `ProyeccionPagoCredito`…), `normal`
+  para `Confirmacion`, `ResumenTarjeta`, `PlanDePago`, `SimuladorMeta`. El lienzo usa ese, no
+  el que mande el agente.
+- Compacta parte de 18rem y crece ×1; amplia parte de 26rem y crece ×2; caben lado a lado
+  mientras quepan, y si no, bajan a su fila a lo ancho. Una sola tarjeta ocupa todo; con
+  cuatro o más, de dos en dos. Todo se mide contra el lienzo (`@container/lienzo`), no la
+  pantalla: a 390 px queda una por fila.
+- Cada tarjeta mide lo que su contenido (`items-start`); la héroe nunca se estira.
 - Al llegar una UI nueva, las tarjetas **entran con una transición corta** (`opacity` +
-  `translate-y-1`, 150 ms) para que se vea que el agente las acaba de construir. Nada
-  más de animación.
-- Rejilla: `grid gap-4 md:grid-cols-2 xl:grid-cols-3`, con `col-span-2` para `amplio`.
-  A 400 px, una columna.
+  `translate-y-1`, 150 ms, escalonada 25 ms) para que se vea que el agente las acaba de
+  construir. Nada más de animación.
 
 ## Reglas de uso
 
@@ -372,7 +396,7 @@ El lienzo es una **rejilla bento** donde el agente coloca lo que genera:
 | Avance de meta/tope | `progress` | |
 | Detalle sin salir | `dialog` o `sheet` | En A2UI = superficie secundaria |
 | Cargando | `skeleton` | Del tamaño final del contenido |
-| Aviso corto | `alert` | Para "¿por qué veo esto?" no: eso es texto al pie |
+| Aviso corto | `alert` | Para "¿por qué veo esto?" no: eso es el pie plegable `PieTarjeta` |
 | Gráfica | `chart` (Recharts) | Colores `--chart-1..5`, nunca paleta propia |
 | Separadores | `separator` | |
 | Cambiar de usuario demo | `select` | En el sidebar, como tarjeta con avatar |
@@ -449,3 +473,5 @@ Base:
 - [ ] Todo flota: nada pegado al borde del lienzo; `rounded-2xl` + `shadow-sm`.
 - [ ] Legible proyectado: nada menor a 14 px.
 - [ ] Estados `skeleton` / vacío / error resueltos (skill `ui-generativa`).
+- [ ] En `packages/catalogo`: `Tarjeta` + `PieTarjeta`, y **cero `sm:`/`md:`**; el acomodo
+      interno usa variantes `@…/tarjeta`. Revisado en `/catalogo` a 360 px, 480 px y completo.

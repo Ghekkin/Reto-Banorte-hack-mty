@@ -95,10 +95,28 @@ visible sin gastar un turno de modelo.
 **No es el producto**: vive fuera del grupo de rutas `(app)`, así que no lleva el shell ni
 la navegación, y no toca nada de `components/`. El producto es `/maya`.
 
+### Responsivos a su propio ancho
+
+Desde el 2026-09-12 (14:40) cada componente **se adapta al ancho de su tarjeta, no al de la
+pantalla**, para que el mismo widget sirva en el chat de Maya, en un tablero o en un celular:
+
+- Todo componente se pinta dentro de **`Tarjeta`** (`src/tarjeta.tsx`), que envuelve el
+  `Card` de shadcn en un contenedor `@container/tarjeta`. Adentro no hay `sm:`/`md:`: el
+  acomodo usa `@sm/tarjeta:`, `@md/tarjeta:`, `@3xl/tarjeta:`… (p-4 → p-5 desde 28rem;
+  gráfica y fichas en dos paneles desde 48rem; opciones y categorías en dos columnas desde
+  42rem).
+- El pie es **`PieTarjeta`**: el botón principal y "¿Por qué veo esto?" **plegado**, que se
+  abre al tocarlo. La razón sigue en el HTML con `hidden`.
+- El **ancho natural** de cada componente (default de `ancho` en su schema) se expone con
+  `anchoNatural(nombre)`; el lienzo lo usa para ponerlas lado a lado
+  (`docs/algoritmos/acomodo-del-lienzo.md`).
+- En **`/catalogo`**, el selector "Ver cada ejemplo a" pinta todos los ejemplos a 360 px,
+  480 px o ancho completo con el mismo `Lienzo` de `/maya`.
+
 ### Cómo se prueba
 
 ```bash
-pnpm --filter @maya/catalogo test   # 42 pruebas
+pnpm --filter @maya/catalogo test   # 93 pruebas (2026-09-12 14:40)
 ```
 
 - `catalogo.spec.ts`: el catálogo publicado describe todo lo que el agente puede emitir,
@@ -107,7 +125,9 @@ pnpm --filter @maya/catalogo test   # 42 pruebas
 - `render.spec.tsx`: **cada componente pinta su ejemplo** con `react-dom/server` (sin DOM),
   muestra dinero formateado y la línea "¿Por qué veo esto?", y su estado de carga sale
   como `Skeleton` cuando el data model llega vacío. Un componente que truena al recibir sus
-  props no lo detecta ningún schema; esto sí.
+  props no lo detecta ningún schema; esto sí. Además exige las reglas que se pueden ver en
+  el HTML: 48 px en todo lo tocable, cero hex, **ningún breakpoint de pantalla en el
+  paquete**, todas dentro de `@container/tarjeta`, y la razón plegada.
 
 Y en el agente, los mismos `.jsonl` entran al system prompt como few-shot
 (`prompt.ts` → `ejemplosEnTexto()`): un ejemplo real por componente enseña la forma mejor

@@ -1,11 +1,12 @@
 "use client";
 
 import { TrendingDown, TrendingUp } from "lucide-react";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { EsqueletoBarras, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_FILA_TOCABLE, CLASES_TARJETA, formatearMonto, formatearPeriodo, formatearPorcentaje } from "../comunes";
+import { CLASES_FILA_TOCABLE, formatearMonto, formatearPeriodo, formatearPorcentaje } from "../comunes";
 import type { PropsGastoPorCategoria } from "./schema";
 
 /**
@@ -36,7 +37,7 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
         <EsqueletoCuerpo>
           <EsqueletoBarras barras={6} />
         </EsqueletoCuerpo>
-        <EsqueletoPie lineas={2} />
+        <EsqueletoPie />
       </EsqueletoTarjeta>
     );
   }
@@ -47,7 +48,7 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
   const mayor = categorias.reduce((max, c) => Math.max(max, c.montoCentavos), 0) || 1;
 
   return (
-    <Card className={CLASES_TARJETA}>
+    <Tarjeta>
       <CardHeader>
         <span className="text-xs text-muted-foreground">Gasto de {titulo}</span>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -63,7 +64,9 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
         </div>
       </CardHeader>
 
-      <CardContent className="flex flex-col">
+      {/* Desde 42rem de TARJETA las categorías van en dos columnas: una lista de seis
+          filas estirada a 900 px dejaba la mitad derecha de cada fila vacía. */}
+      <CardContent className="grid @2xl/tarjeta:grid-cols-2 @2xl/tarjeta:gap-x-6">
         {categorias.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay gasto registrado en este periodo.</p>
         ) : (
@@ -115,11 +118,7 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
         )}
       </CardContent>
 
-      {razon ? (
-        <CardFooter>
-          <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
-        </CardFooter>
-      ) : null}
-    </Card>
+      <PieTarjeta razon={razon} />
+    </Tarjeta>
   );
 }

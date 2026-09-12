@@ -58,7 +58,7 @@ Quiero pagar menos intereses de mi tarjeta
 | Inmediato | La tira enciende **LLM**, luego **MCP** con los nombres `panorama_inicial · simular_reestructura`, luego **A2UI** |
 | ~10 s | `ResumenTarjeta` (héroe, degradado rojo): **$47,386 de $49,000**, 96.7 % usado, badge **"12 días de atraso"** |
 | Junto | `PlanDePago` con **12, 18 y 24 meses**, cada uno con mensualidad, CAT y **cuánto ahorra frente a seguir pagando el mínimo** |
-| Al pie de cada tarjeta | "¿Por qué veo esto?" con el dato que lo justifica |
+| Al pie de cada tarjeta | "¿Por qué veo esto?" plegado: **tócalo en vivo** y se abre la razón con el dato que la justifica |
 
 > "No programamos esta pantalla. Maya pidió los datos al servidor MCP —los está viendo
 > ahí arriba—, decidió que esta situación se resuelve con un plan de pago, y **describió

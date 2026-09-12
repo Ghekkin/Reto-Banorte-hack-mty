@@ -2,11 +2,12 @@
 
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
+import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_PIE_HEROE, CLASES_TARJETA, CLASES_TARJETA_HEROE, formatearMonto } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
+import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { SERIES } from "../graficas";
 import type { PropsComparadorAntesDespues } from "./schema";
 
@@ -38,7 +39,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
             </div>
           ))}
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} lineas={2} boton />
+        <EsqueletoPie heroe={heroe} boton />
       </EsqueletoTarjeta>
     );
   }
@@ -51,7 +52,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
   ];
 
   return (
-    <Card className={heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA}>
+    <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>{titulo}</span>
         <span className="monto text-3xl font-semibold">{formatearMonto(ahorroNetoCentavos)}</span>
@@ -88,18 +89,17 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
         {escenarioEstrategia.descripcion ? <p className="text-sm">{escenarioEstrategia.descripcion}</p> : null}
       </CardContent>
 
-      <CardFooter className={`flex flex-col items-start gap-3 ${heroe ? CLASES_PIE_HEROE : ""}`}>
+      <PieTarjeta razon={razon} heroe={heroe}>
         {alAccionar ? (
           <Button
-            className={`min-h-12 w-full rounded-full sm:w-auto ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() => alAccionar({ accion: "aplicar_estrategia", ahorroNetoCentavos })}
           >
             Aplicar estrategia <ArrowRight />
           </Button>
         ) : null}
-        {razon ? <p className={`text-xs ${suave}`}>¿Por qué veo esto? {razon}</p> : null}
-      </CardFooter>
-    </Card>
+      </PieTarjeta>
+    </Tarjeta>
   );
 }
