@@ -23,7 +23,8 @@ URL_MCP="${URL_MCP_PUBLICA:-}"
 disparar() {
   local nombre="$1" uuid="$2"
   echo "==> deploy de $nombre ($uuid)"
-  curl -fsS -X GET -H "Authorization: Bearer $COOLIFY_TOKEN" \
+  # Es POST: en Coolify 4.3 el GET responde 405 ("This endpoint has changed to a POST request").
+  curl -fsS -X POST -H "Authorization: Bearer $COOLIFY_TOKEN" \
     "$COOLIFY_URL/api/v1/deploy?uuid=$uuid&force=false" | head -c 300
   echo
 }

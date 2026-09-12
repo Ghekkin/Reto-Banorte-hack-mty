@@ -169,3 +169,29 @@ Lo que esto desbloquea, por rol:
 Dos cosas que van a morder si no se leen: **los imports internos van sin extensión**
 (Turbopack no mapea `.js`→`.ts`, y el typecheck no lo detecta) y **los tokens propios se
 usan como `bg-lienzo`, no `bg-[--lienzo]`** (Tailwind v4; la skill ya está corregida).
+
+## sáb 13 · 09:00 — Publicado, y de aquí en adelante se publica solo
+
+Las dos apps están en el Coolify del VPS, en el proyecto `reto-banorte`:
+
+- **web** → https://maya.157.173.204.174.sslip.io
+- **MCP** → https://maya-mcp.157.173.204.174.sslip.io/mcp (health en `/health`)
+
+`sslip.io` es provisional: resuelve a la IP del VPS sin comprar nada y no imita a
+Banorte. Cuando haya `.tech`, se agrega en Coolify y se cambian dos variables del repo.
+
+**Push a `main` = deploy.** GitHub Actions verifica (typecheck, tests, build, humo del
+MCP, y que `catalogo.json` no esté desfasado de los schemas) y sólo si todo pasa le
+avisa a Coolify. Al final manda un prompt del guion a la URL pública y exige mensajes
+A2UI de vuelta: un deploy que arranca pero no contesta cuenta como fallido. Nadie
+despliega a mano; si hace falta, `scripts/deploy.sh` desde el VPS hace lo mismo.
+
+Tres cosas que conviene saber:
+
+- El **MCP publicado no depende de Postgres**: lleva los CSV dentro de la imagen y
+  arranca en origen `memoria`. Si la base se cae a mitad de la demo, el MCP sigue.
+- El `/mcp` público **pide `Authorization: Bearer`**. El token está en `/opt/reto/.env`
+  del VPS. Es el que hay que darle a un juez que quiera conectar su propio cliente MCP.
+- La llave de Gemini **está vacía en producción**: el agente publicado responde con la
+  pantalla de ejemplo hasta que alguien la ponga en las variables de `maya-web` en
+  Coolify. La demo local no se ve afectada.
