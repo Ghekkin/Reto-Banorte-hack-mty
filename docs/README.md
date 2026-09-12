@@ -66,6 +66,7 @@ quien.
 - [Reglas y plantilla](como-funciona/README.md)
 - [Base de datos](como-funciona/base-de-datos.md) — referencia del esquema `banorte`: las 22 tablas columna por columna, relaciones, índices, restricciones, las tres rutas de carga y los trade-offs
 - [Shell web](como-funciona/shell-web.md) — las cinco secciones, la navegación en móvil y escritorio, el usuario activo en cookie y la capa de datos sobre PostgreSQL
+- [La API REST de lectura](como-funciona/api-rest-lectura.md) — las cinco rutas `GET /api/*` para consumidores externos: parámetros, códigos de estado y por qué las páginas no las usan
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, las 22 tablas de `banorte` y las invariantes que sostienen la demo
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI propios: qué tool llena cada uno, qué acción devuelve, cómo se prueban

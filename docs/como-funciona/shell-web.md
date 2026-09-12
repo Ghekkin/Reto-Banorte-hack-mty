@@ -154,6 +154,9 @@ datos del sistema: no hay CSV ni volcados en el repo (ADR 0010). La conexión sa
   `pnpm --filter @maya/web dev` (o cualquier cosa que no sea `scripts/dev.sh`, que es bash
   y no corre en Windows) dejaba la app sin `DATABASE_URL` y **todas las pantallas vacías**.
 - Los montos salen en **centavos**; formatear es de quien pinta (`lib/dinero.ts`).
+- `consultas.ts` tiene un segundo consumidor: las cinco rutas `GET /api/*`, que exponen
+  los mismos datos por HTTP para quien consulta de fuera. Las páginas **no** pasan por
+  ahí. Ver [la API REST de lectura](api-rest-lectura.md).
 
 ### Tres trampas que ya costaron un bug
 

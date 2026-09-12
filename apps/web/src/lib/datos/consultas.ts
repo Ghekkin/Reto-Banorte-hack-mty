@@ -4,8 +4,12 @@ import { booleano, entero, fraccion, leerTabla } from "./tablas";
 
 /**
  * Consultas tipadas sobre las tablas. Es la capa que separa "como estan guardados los
- * datos" de "que necesita la pantalla": si manana esto lee de Postgres, los
- * componentes no cambian una linea.
+ * datos" de "que necesita la pantalla": `tablas.ts` cambio de leer CSV a consultar
+ * PostgreSQL (ADR 0010) y ni este archivo ni los componentes cambiaron una linea.
+ *
+ * Tiene DOS consumidores: las pantallas (componentes de servidor, que llaman aqui
+ * directo) y las rutas `GET /api/*`, que son la misma informacion por HTTP para quien
+ * consulta de fuera. Ver `docs/como-funciona/api-rest-lectura.md`.
  *
  * Los montos salen en CENTAVOS. Formatear es trabajo de quien pinta (`lib/dinero.ts`).
  */
