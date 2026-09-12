@@ -165,6 +165,16 @@ curl -s -X PATCH -H "Authorization: Bearer $COOLIFY_TOKEN" -H "Content-Type: app
 `php artisan tinker` dentro del contenedor `coolify`, con la misma validación del
 formulario, antes de dar con esta ruta; el resultado es el mismo.)
 
+### El Inicio personalizado en producción
+
+La web publicada arma las portadas con las mismas variables que ya tenía: `MODELO_INICIO`,
+`INICIO_CADA_MINUTOS` y `FEATURE_INICIO_PERSONALIZADO` **no están puestas en Coolify** y
+valen sus defaults (`gemini-3.5-flash-lite`, 10 min, activo). Para apagarlo sin
+redeploy: `FEATURE_INICIO_PERSONALIZADO=0` en las variables de `maya-web` y
+`POST /api/v1/applications/<uuid>/restart`. La migración `0002-pantallas-inicio.sql` se
+aplicó a la base compartida el 12-sep 15:05 con `pnpm datos:migrar`; el reloj arranca con
+el contenedor (`instrumentation.ts`) y lo dice en el log: `{"inicio":"reloj",…}`.
+
 ### Cómo se hablan la web y el MCP (y por qué no por la URL pública)
 
 `MCP_URL=http://maya-mcp:3100/mcp`, por la red interna de Docker.

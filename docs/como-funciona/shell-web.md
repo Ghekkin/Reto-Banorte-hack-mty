@@ -13,8 +13,14 @@ escritorio, y de dónde salen los datos.
 La app tiene **cinco secciones**, como cualquier app de banco: Inicio, Productos, Maya,
 Movimientos y Más. La diferencia está en la tercera.
 
-En **Inicio** ves lo de siempre: tu saldo, tus cuentas, tus tarjetas y lo último que
-gastaste. Es una pantalla programada, igual que en la app de tu banco.
+En **Inicio** ya no ves lo de siempre. **Maya arma la portada de cada persona** con las
+mismas piezas de la conversación: a quien trae la tarjeta al límite le pone la tarjeta y el
+plan de pago; a quien no tiene tarjeta pero sí un crédito, ese crédito y el simulador de
+ahorro; a quien invierte, su portafolio. Arriba dice en dos frases qué ve hoy y qué
+recomienda. Lo arma un modelo pequeño y barato, solo cuando la cuenta se movió, y en
+segundo plano: si todavía no está, se ve la pantalla programada (saldo, cuentas, tarjetas,
+movimientos) con un aviso, y la de Maya entra sola. Detalle en
+[inicio-personalizado.md](inicio-personalizado.md).
 
 **Maya** no es una pantalla programada. Es donde le escribes lo que necesitas —"quiero
 pagar menos intereses"— y ella **construye la pantalla** para resolverlo: el comparador de
@@ -48,7 +54,7 @@ vez de repetir una plantilla.
 
 | Ruta | Sección | Tipo | Datos |
 |---|---|---|---|
-| `/` | Inicio | Server component | Base: cuentas, tarjetas, movimientos, créditos |
+| `/` | Inicio | Server component + `InicioDeMaya` (cliente) | La portada que armó Maya (`banorte.pantallas_inicio`); de respaldo, la programada: cuentas, tarjetas, movimientos |
 | `/productos` | Productos | Server component | Base: cuentas, tarjetas, créditos, portafolio |
 | `/maya` | Maya | Client (streaming) | El agente vía `POST /api/agente` |
 | `/movimientos` | Movimientos | Server + filtro cliente | Base: movimientos, categorías |
@@ -314,7 +320,10 @@ Verificado al 2026-09-12 11:45, midiendo el DOM en el navegador:
   solo sale antes del primer turno.
 - **Pagos, Servicios, Seguridad y Estados de cuenta** están en Más como filas apagadas con
   la etiqueta "pendiente". No tienen datos: el territorio Pagos quedó fuera del esquema.
-- **Sin `skeleton` de carga.** Las pantallas de servidor no tienen `loading.tsx`.
+- ~~Sin `skeleton` de carga.~~ Hay `loading.tsx` en el grupo `(app)`.
+- **Inicio depende del reloj y de la base para su portada.** Sin `DATABASE_URL` o sin
+  llave, es la programada de siempre; con todo, la primera visita después de un
+  `reiniciar-estado` muestra la programada unos segundos mientras Maya rearma.
 - **No se ha probado en un dispositivo real**, solo midiendo el DOM: el harness de navegador
   disponible no puede cambiar el viewport. Conviene abrirlo en Chrome DevTools a 360×740
   antes del ensayo.

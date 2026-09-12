@@ -72,6 +72,7 @@ quien.
 - [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI originales: qué tool llena cada uno, qué acción devuelve, cómo se prueban
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
+- [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción y los botones que llevan a Maya
 
 ### Algoritmos
 - [Reglas y plantilla](algoritmos/README.md)
@@ -83,6 +84,7 @@ quien.
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto
 - [Acomodo del lienzo](algoritmos/acomodo-del-lienzo.md) — cómo se reparten las tarjetas lado a lado según el ancho del lienzo y el ancho natural de cada componente, y por qué los widgets miden su propio ancho (container queries)
 - [Gráficas del catálogo](algoritmos/graficas-del-catalogo.md) — qué forma para cada dato, el orden de colores que pasa el validador de daltonismo, la serie calibrada del slider y las referencias de los pilares
+- [La portada de Maya](algoritmos/portada-de-maya.md) — la huella que decide cuándo rearmar y la escalera de urgencia con la que se eligen las tarjetas
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 
 ### Issues

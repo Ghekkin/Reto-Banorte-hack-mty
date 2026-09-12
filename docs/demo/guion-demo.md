@@ -43,9 +43,25 @@ respuesta de Maya en texto.
 >
 > Maya ya sabe hacer las cosas. Lo que le falta no es capacidad: **es superficie**."
 
-Cambio a nuestra pantalla, vacía, con la barra de conversación abajo.
+Cambio a nuestra app, en **Inicio** de Beto. No está vacía: es la portada que Maya armó
+para él (`docs/como-funciona/inicio-personalizado.md`).
 
-### 0:20–1:00 · Intención → interfaz generada
+### 0:20–0:35 · La portada ya es de Maya
+
+| Momento | Qué se ve |
+|---|---|
+| Al abrir | Arriba, Maya en dos frases: "Tienes la tarjeta al 96.7 % de su límite con 12 días de mora… te recomiendo reestructurar a 18 meses" |
+| Debajo | **Cuatro tarjetas que nadie programó**: `ResumenTarjeta` (héroe), `PlanDePago`, `GastoPorCategoria`, `TermometroSaludFinanciera`. Chip con el modelo (`gemini-3.5-flash-lite`), las tools consultadas y el tiempo |
+| Si cambian a Ana o Carmen | Otra portada: el crédito al 27.9 % y el simulador; el portafolio y su desviación |
+
+> "Ni siquiera la portada está programada. Un modelo pequeño la arma para cada persona con
+> sus datos de hoy, con las mismas piezas que van a ver en la conversación, y solo la
+> rearma cuando algo cambió en su cuenta. Vamos a hablar con Maya."
+
+Se toca **Maya** (o una de las sugerencias de la portada). Si el tiempo aprieta, este
+paso se cuenta en una frase sin detenerse.
+
+### 0:35–1:00 · Intención → interfaz generada
 
 **Prompt 1** (Beto):
 
@@ -81,6 +97,11 @@ Se toca **18 meses** y luego **Aplicar plan**.
 > ejecutó la operación con una herramienta del MCP y **volvió a construir la pantalla**.
 > Fíjense en la tarjeta de arriba: es la misma de hace diez segundos y ya no dice lo
 > mismo. El cambio está en la base de datos. **El ciclo se cierra.**"
+
+Opcional (10 s, si sobra tiempo): se toca **Inicio**. La portada ya se rearmó sola con el
+plan aplicado: la tarjeta dice "Plan activo" y `PlanDePago` desapareció. Si todavía se ve
+"Maya está armando tu inicio…", llega sola en unos segundos (medido: 4 s después de la
+acción). "La portada también se enteró."
 
 ### 1:50–2:20 · El ciclo alimenta lo siguiente
 
@@ -170,15 +191,26 @@ Cada paso cumple, o es issue `alta`:
 El paso 1 es el más lento y es el primero: conviene empezar a hablar mientras corre, que
 es justo para lo que sirve la tira con los badges.
 
+Las portadas de Inicio (2026-09-12 15:20, local, `gemini-3.5-flash-lite`, tras
+`reiniciar-estado`) se arman **antes** de la demo, no durante:
+
+| Persona | Tarjetas | Tiempo |
+|---|---|---|
+| Beto | `ResumenTarjeta` (héroe) · `PlanDePago` · `GastoPorCategoria` · `TermometroSaludFinanciera` | 7.7 s |
+| Ana | `ProyeccionPagoCredito` (héroe) · `DistribucionPortafolio` · `GastoPorCategoria` · `TermometroSaludFinanciera` | 11.6 s |
+| Carmen | `DistribucionPortafolio` (héroe) · `GastoPorCategoria` · `TermometroSaludFinanciera` | 11.0 s |
+
+Y la portada de Beto rearmada tras aplicar el plan: 3.7 s de modelo, visible 4 s después
+de volver a Inicio.
+
 ## Lo que NO se enseña
 
 - **Carmen no pregunta por su portafolio.** El catálogo no tiene componente de portafolio
   y el agente terminaba pintando su valor de mercado dentro de `MetaActiva`, como si fuera
   una meta por alcanzar. Su portafolio se ve en Productos → Inversiones, que es una
   pantalla programada (ADR 0004, enmienda del 2026-09-12 por la tarde).
-- **Las pestañas del banco** (Inicio, Productos, Movimientos, Más) salvo que un juez las
-  pida. La demo vive en Maya: si el recorrido empieza por una pantalla programada, se
-  pierde el argumento de que el LLM es el centro y no un chat pegado a un lado.
+- **Productos, Movimientos y Más** salvo que un juez las pida: son pantallas programadas.
+  Inicio sí se enseña desde el 2026-09-12, porque ya no es programada: la arma Maya.
 
 ## Plan B
 

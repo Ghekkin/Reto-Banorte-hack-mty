@@ -18,6 +18,16 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 15:45 · producto** — **Inicio ya no es una pantalla programada: la arma Maya**
+  para cada persona, con un modelo chico (`gemini-3.5-flash-lite`) y solo cuando la cuenta
+  se movió (huella de acciones + movimientos; reloj cada 10 min que pasa de largo si nada
+  cambió). Tras aplicar un plan o crear un apartado en Maya, la portada se rearma sola.
+  Los botones de la portada llevan a `/maya?accion=…` y ahí se ejecutan. Doc:
+  `docs/como-funciona/inicio-personalizado.md`. Para quien toque el agente: `armarMensajes`
+  ahora completa la `action` que declara el catálogo si el modelo la omite, y repara comas
+  colgantes; `correrTurno` acepta `alMutar`. Para el ensayo: `pnpm probar-inicio` después
+  de `reiniciar-estado` deja las tres portadas listas (checklist actualizado).
+
 - **sáb 14:35 · para quien haga componentes o pantallas** — **Los widgets ya se adaptan a
   SU ancho, no al de la pantalla.** Todo componente del catálogo va en `Tarjeta` y su pie en
   `PieTarjeta` (`packages/catalogo/src/tarjeta.tsx`); adentro nada de `sm:`/`md:`, solo

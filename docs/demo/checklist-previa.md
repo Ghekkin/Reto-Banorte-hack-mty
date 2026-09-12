@@ -22,6 +22,10 @@ y resultado al final. Si algo falla y no se arregla en 10 minutos, se registra e
       el que usó el componente equivocado, el que tardó más de 15 s y la tool que falló.
       Dos minutos, y es lo único que prueba lo que el jurado va a ver: las 315 pruebas del
       repo usan un modelo simulado. Se corre **después** de `reiniciar-estado`.
+- [ ] **`pnpm probar-inicio`**: las 3 portadas de Inicio bien armadas con el modelo chico
+      (Beto tarjeta, Ana crédito, Carmen portafolio). Se corre **después** de
+      `reiniciar-estado` y deja las tres portadas listas, así que al abrir Inicio de cada
+      persona ya está la de Maya y no la programada con el aviso.
 - [ ] Cada paso del guion se ejecutó completo, en orden, con los mismos prompts.
 - [ ] Cada interfaz generada renderiza sin error de consola.
 - [ ] La conversación completa cabe en 3 minutos con margen.

@@ -2,6 +2,67 @@
 
 ## 2026-09-12
 
+### 15:45 · hecho — Inicio ya lo arma Maya: una portada por persona, con un modelo chico y solo cuando algo cambió
+
+El usuario lo pidió así: "que se pueda hacer dependiendo del usuario, que un llm pequeño y
+barato corra cada cierto tiempo para poder mostrar una interfaz completamente personalizada
+con los widgets ya hechos". Pregunté antes de construir; las respuestas: todo lo arma el
+modelo (sin marco fijo), se rearma cada N minutos **y** justo después de una acción,
+`gemini-3.5-flash-lite`, y los botones mandan a Maya. Con una nota suya que se volvió la
+regla central: "si la cuenta está algo inactiva no tiene caso correr el modelo".
+
+**Lo que hay** (`docs/como-funciona/inicio-personalizado.md`, `docs/algoritmos/portada-de-maya.md`):
+
+- `apps/web/src/lib/inicio/`: el generador es el mismo motor del turno (system prompt,
+  tools del MCP, `pintar_pantalla` con sus validaciones) con otro modelo, con los datos
+  reunidos ANTES por el servidor según la situación, y sin tools de acción en el conjunto.
+- La **huella** (`acciones_aplicadas` + `movimientos` + versión del generador) decide si se
+  rearma; un reloj cada 10 min revisa a los tres y pasa de largo si nada cambió. Una
+  generación en vuelo por persona.
+- La portada vive en `banorte.pantallas_inicio` (migración 0002, aplicada a la base
+  compartida a las 15:05). Inicio la pinta con el mismo `Lienzo`; si está desactualizada,
+  muestra la programada con "Maya está armando tu inicio…" y se refresca sola.
+- Un botón en la portada manda a `/maya?accion=…`; el turno ejecuta la acción y, al cerrar,
+  `alMutar` rearma la portada en segundo plano.
+
+**Lo que costó, en orden:**
+
+1. Con el paquete de datos básico, el modelo chico elegía lo que podía llenar (el
+   portafolio de Ana) y no lo que resolvía su situación (su crédito): 1 de 3. Con el
+   prefetch situacional (amortización si no hay tarjeta, `simular_reestructura` si está al
+   límite, `proyectar_ahorro` si no hay meta) y una escalera de urgencia en el encargo:
+   3 de 3, dos corridas.
+2. Dos portadas seguidas de Carmen se cayeron por **comas colgantes** en 2 000 tokens de
+   data model. Tercer intento de `parsear` que las quita sin tocar cadenas.
+3. El modelo omitía la `action` de `PlanDePago` aun con la regla escrita: el botón salía
+   apagado. `armarMensajes` ahora pone la acción que declara el catálogo cuando falta
+   (`context: {}`; todos los componentes mandan sus ids al tocarse). Vale también para la
+   conversación.
+
+**Medido** (local, modelo real): Beto 7.7 s, Ana 11.6 s, Carmen 11.0 s; ~22 000 tokens de
+entrada por portada de los que ~16 300 vienen del caché (el system prompt compartido).
+En el navegador, el ciclo completo: portada → "Aplicar plan" → Maya ejecuta → de vuelta,
+la portada rearmada con "Plan activo" a los 4 s. Sin errores de consola. 151 pruebas en
+verde en la web (31 nuevas de `lib/inicio`, 6 del agente).
+
+**Lo que no hice**: no reinicié el `next dev` de la otra sesión, así que el reloj local
+arranca hasta el siguiente arranque (la ruta y la página sí corren con el código nuevo);
+en producción arranca con el deploy. Y no puse las variables nuevas en Coolify: los
+defaults son los que queremos.
+
+### 15:10 · hallazgo — El agente confirma un rebalanceo que no ocurrió (#16)
+
+El usuario preguntó qué sigue y si faltan widgets. Antes de contestar revisé que cada botón
+de los 18 tenga destino: `ejecutar_decision` solo atiende cuatro acciones y seis widgets
+disparan otras. Lo probé con el modelo real como Carmen: "Confirmar rebalanceo" terminó en
+`Confirmacion` "Tu rebalanceo quedó ejecutado" sin ninguna tool de acción, con
+`acciones_aplicadas` en 0 filas. "Mejorar mi salud financiera", en cambio, lo llevó bien al
+portafolio. Issue #16 con los cuatro arreglos posibles.
+
+Dato para decidir si agregar widgets: el prompt del agente mide 51,308 caracteres y el
+81 % son el catálogo (20,839) y sus ejemplos (20,726). Cada widget nuevo suma su
+descripción y su ejemplo a todos los turnos.
+
 ### 14:35 · hecho — Widgets responsivos a su propio ancho y tarjetas lado a lado
 
 El usuario: "cuando pones los widgets de saldo diferido de tu tarjeta y crédito de nómina
