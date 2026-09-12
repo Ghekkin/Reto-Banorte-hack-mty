@@ -19,3 +19,6 @@ export * from "./tools/aplicar-plan-pago.js";
 export * from "./tools/comparar-periodos.js";
 export * from "./tools/proyectar-ahorro.js";
 export * from "./tools/crear-apartado.js";
+export * from "./tools/detectar-fugas.js";
+export * from "./tools/cancelar-suscripcion.js";
+export * from "./tools/crear-tope-gasto.js";

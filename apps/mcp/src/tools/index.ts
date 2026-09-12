@@ -9,6 +9,9 @@ import { aplicarPlanPago } from "./aplicar-plan-pago.js";
 import { compararPeriodos } from "./comparar-periodos.js";
 import { proyectarAhorro } from "./proyectar-ahorro.js";
 import { crearApartado } from "./crear-apartado.js";
+import { detectarFugas } from "./detectar-fugas.js";
+import { cancelarSuscripcion } from "./cancelar-suscripcion.js";
+import { crearTopeGasto } from "./crear-tope-gasto.js";
 
 /**
  * Las 9 tools del ADR 0004. El orden es el del viaje que la demo cuenta: primero
@@ -29,6 +32,9 @@ export const TOOLS: DefinicionDeTool[] = [
   compararPeriodos,
   proyectarAhorro,
   crearApartado,
+  detectarFugas,
+  cancelarSuscripcion,
+  crearTopeGasto,
 ];
 
 export function registrarTools(server: McpServer): void {
