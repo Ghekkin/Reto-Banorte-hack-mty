@@ -1,12 +1,11 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
+import { stepCountIs, streamText, type LanguageModel, type LanguageModelUsage, type ToolSet } from "ai";
 import { config } from "./config";
 import { mensajesDelTurno } from "./historial";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
 import { crearPintor, type ResultadoPintar } from "./pantalla";
-import { systemPrompt } from "./prompt";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
 
 /**
@@ -36,6 +35,13 @@ export type OpcionesDeTurno = {
 /** Dos entregas invalidas y se corta: el contrato permite un reintento, no una barra libre. */
 const MAX_INTENTOS_DE_PANTALLA = 2;
 
+/**
+ * Cuantos pasos del tope se le guardan a `pintar_pantalla`. Con 2, el modelo tiene
+ * `maxPasos - 2` para consultar y en el siguiente paso se le fuerza la tool de pintar:
+ * uno para pintar y uno de gracia si la primera entrega viene invalida.
+ */
+const PASOS_RESERVADOS_PARA_PINTAR = 2;
+
 export async function* correrTurno(
   peticion: PeticionAgente,
   opciones: OpcionesDeTurno = {},
@@ -50,6 +56,8 @@ export async function* correrTurno(
 
   /** `toolCallId` -> que tool fue y cuando empezo, para medir cada llamada. */
   const enVuelo = new Map<string, { nombre: string; inicio: number }>();
+  /** La promesa de uso de tokens del proveedor; se resuelve al cerrar el stream. */
+  let uso: Promise<LanguageModelUsage> | undefined;
   const usadas: LlamadaRegistrada[] = [];
   const timeoutMs = opciones.timeoutMs ?? TIMEOUT_TURNO_MS;
   let cliente: Client | undefined;
@@ -123,7 +131,9 @@ export async function* correrTurno(
     const pintor = crearPintor();
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
-      system: systemPrompt(),
+      // El system prompt va como PRIMER MENSAJE, no en `system`, para poder marcarlo
+      // como prefijo cacheable (ver `mensajesDelTurno`). En Gemini termina igual en
+      // `systemInstruction`; en Claude lleva el `cache_control`.
       messages: mensajesDelTurno(peticion, panorama),
       tools: { ...herramientas, pintar_pantalla: pintor.herramienta },
       stopWhen: [
@@ -131,10 +141,20 @@ export async function* correrTurno(
         () => pintor.pintada(),
         () => pintor.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
       ],
+      // El ultimo paso se reserva para la pantalla. Sin esto, un turno que se entretiene
+      // consultando se queda sin pasos y contesta en prosa disculpandose: paso el
+      // 2026-09-12 con "simula mi fondo de emergencia", donde el modelo llamo
+      // `proyectar_ahorro` seis veces y murio en el paso 8 sin pintar nada. Mas vale una
+      // pantalla con lo que ya sabe que una disculpa.
+      prepareStep: ({ stepNumber }) =>
+        stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR
+          ? { toolChoice: { type: "tool", toolName: "pintar_pantalla" } }
+          : undefined,
       providerOptions: opcionesDelProveedor(),
       abortSignal: senal,
     });
 
+    uso = resultado.usage;
     let prosa = "";
 
     for await (const parte of resultado.fullStream) {
@@ -253,7 +273,22 @@ export async function* correrTurno(
     await cliente?.close().catch(() => undefined);
   }
 
-  yield { tipo: "fin", pasos, ms: Date.now() - inicio };
+  yield { tipo: "fin", pasos, ms: Date.now() - inicio, ...(await tokensDeCache(uso)) };
+}
+
+/**
+ * Lo que el proveedor dice que sirvio desde su cache. Va al `fin` del stream porque el
+ * caching es invisible por definicion: sin este numero, "el prompt caching funciona" es
+ * una creencia. Si sale 0 turno tras turno, algo rompio el prefijo estable.
+ */
+async function tokensDeCache(uso: Promise<LanguageModelUsage> | undefined): Promise<{ cacheLeido?: number }> {
+  if (!uso) return {};
+  try {
+    const { cachedInputTokens } = await uso;
+    return typeof cachedInputTokens === "number" ? { cacheLeido: cachedInputTokens } : {};
+  } catch {
+    return {};
+  }
 }
 
 /** Cuanto tardo una llamada; si no se registro el inicio, 0 en vez de un numero raro. */

@@ -352,6 +352,19 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 09:50 · nota — Conflicto en el tablero con luis, resuelto
+
+`sync.sh` choco en `docs/tablero.md`: luis habia tomado el rol `contrato` mientras yo
+trabajaba. Resuelto como dice la skill — su fila intacta, la mia (demo) con lo nuevo, y le
+pegue el dato del ensayo de las 08:55 que traia la version de GitHub para no perderlo.
+
+Aproveche para corregir una linea del "Siguiente" de `contrato` que **mi propio cambio de
+anoche dejo mintiendo**: decia que el canal `VALIDATION_FAILED` "nadie lo escucha", y a esa
+hora ya estaba conectado de punta a punta. Ahora dice eso y dice el tope.
+
+Barri todo el repo buscando marcadores de conflicto antes de continuar el rebase (por el
+issue #11, `main` roto por marcadores): cero.
+
 ### 09:40 · arreglado — La consola no pintaba nada: el registro del renderer estaba vacio
 
 Me llego una captura con la consola llena de burbujas rojas: *"la interfaz no pudo pintar

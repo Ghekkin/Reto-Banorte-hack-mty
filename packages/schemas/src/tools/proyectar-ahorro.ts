@@ -15,8 +15,17 @@ export type Frecuencia = z.infer<typeof Frecuencia>;
 export const EntradaProyectarAhorro = z.object({
   usuarioId: IdUsuario,
   metaId: z.string().optional().describe("Una meta que ya existe; si no viene, se usa la meta activa principal"),
-  montoObjetivoCentavos: Centavos.optional().describe("Para simular una meta nueva"),
-  aportacionCentavos: Centavos.optional().describe("Lo que la persona movio en el slider"),
+  montoObjetivoCentavos: Centavos.optional()
+    .describe(
+      "El objetivo a alcanzar. OBLIGATORIO si la persona no tiene una meta creada, o si simulas " +
+        "una meta nueva: sin `metaId` con objetivo y sin esto, la tool no sabe contra que proyectar " +
+        "y devuelve error. Para un fondo de emergencia, tres meses de gastos es un objetivo razonable.",
+    ),
+  aportacionCentavos: Centavos.optional()
+    .describe(
+      "Lo que la persona movio en el slider. Omitela (o manda 0) para que se use la " +
+        "capacidad de ahorro calculada de la persona.",
+    ),
   frecuencia: Frecuencia.optional().describe("Default: mensual"),
 });
 export type EntradaProyectarAhorro = z.infer<typeof EntradaProyectarAhorro>;

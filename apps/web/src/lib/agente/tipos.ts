@@ -117,6 +117,6 @@ export type LineaStream =
   | { tipo: "razon"; valor: string }
   | { tipo: "sugerencias"; valores: string[] }
   | { tipo: "error"; codigo: "tool" | "a2ui" | "modelo" | "timeout"; mensaje: string }
-  | { tipo: "fin"; pasos: number; ms: number };
+  | { tipo: "fin"; pasos: number; ms: number; /** tokens que el proveedor sirvio desde su cache */ cacheLeido?: number };
 
 export const TIMEOUT_TURNO_MS = 30_000;

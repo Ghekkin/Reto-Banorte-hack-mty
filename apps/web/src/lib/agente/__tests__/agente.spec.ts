@@ -5,7 +5,7 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { correrTurno } from "../agente";
 import { mensajesDelTurno } from "../historial";
 import { herramientasDelMcp } from "../mcp-cliente";
-import { armarMensajes } from "../pantalla";
+import { armarMensajes, rescatarJson } from "../pantalla";
 import type { LineaStream, PeticionAgente } from "../tipos";
 import { esquemaPeticion } from "../tipos";
 import { modeloColgado, modeloGuionizado, pasoConTool } from "./ayudas";
@@ -543,9 +543,36 @@ describe("mensajesDelTurno", () => {
         ],
       }),
     );
-    expect(mensajes.map((m) => m.role)).toEqual(["user", "assistant", "user"]);
+    expect(mensajes.map((m) => m.role)).toEqual(["system", "user", "assistant", "user"]);
     expect(String(mensajes.at(-1)!.content)).toContain("usr_beto");
     expect(String(mensajes.at(-1)!.content)).toContain("primer turno");
+  });
+
+  it("el prefijo cacheable va primero y lo volatil al final", () => {
+    const mensajes = mensajesDelTurno(
+      peticion({ mensajes: [{ rol: "usuario", texto: "hola" }], superficie: { surfaceId: "principal", componentes: ["PlanDePago"], dataModel: { planElegido: 18 } } }),
+    );
+    const sistema = mensajes[0]!;
+    expect(sistema.role).toBe("system");
+    // El breakpoint de Claude: sin el, Claude no cachea nada (Gemini cachea el prefijo solo).
+    expect(sistema.providerOptions?.anthropic?.cacheControl).toEqual({ type: "ephemeral" });
+    // La propiedad que hace pegar el cache: el prefijo es BYTE POR BYTE el mismo para
+    // otra persona y otro turno. Si alguien mete el usuarioId, la fecha o el data model
+    // ahi arriba, esto falla; si no, el cache deja de pegar y nadie se entera.
+    const otro = mensajesDelTurno(
+      peticion({
+        usuarioId: "usr_ana",
+        mensajes: [
+          { rol: "usuario", texto: "otra cosa" },
+          { rol: "agente", texto: "te muestro otra pantalla" },
+        ],
+        superficie: { surfaceId: "principal", componentes: ["SimuladorMeta"], dataModel: { aporte: 200000 } },
+      }),
+    );
+    expect(String(otro[0]!.content)).toBe(String(sistema.content));
+    // Y lo volatil si esta abajo, despues del corte del cache.
+    expect(String(mensajes.at(-1)!.content)).toContain("planElegido");
+    expect(String(mensajes.at(-1)!.content)).toContain("usr_beto");
   });
 
   it("inyecta el panorama ya calculado en el contexto del primer turno", () => {
@@ -574,7 +601,7 @@ describe("mensajesDelTurno", () => {
     expect(contexto).toContain('la tool "ejecutar_decision" con accion: "aplicar_plan_pago"');
     expect(contexto).toContain("idempotencyKey");
     expect(contexto).toContain("PlanDePago");
-    expect(String(mensajes[0]!.content)).toContain("toco la interfaz");
+    expect(String(mensajes[1]!.content)).toContain("toco la interfaz");
   });
 
   it("una accion de vista no pide tools de accion", () => {
@@ -606,5 +633,46 @@ describe("mensajesDelTurno", () => {
     const contexto = String(mensajes.at(-1)!.content);
     expect(contexto).toContain("La interfaz NO pudo pintar lo que mandaste en el turno anterior (/componentes/0): componente Inventado no existe");
     expect(contexto).toContain("Vuelve a pintar la misma pantalla sin ese componente");
+  });
+});
+
+/**
+ * El rescate del JSON. El modelo cumple el contrato casi siempre, y cuando no, lo que
+ * manda es JSON con algo pegado: una cerca de markdown, una frase de cortesia, dos
+ * bloques. Tirar la pantalla por eso cuesta un turno de 6 s en la demo.
+ */
+describe("rescatarJson", () => {
+  const componentes = '[{"id":"root","component":"Text","texto":"hola"}]';
+
+  it("quita las cercas de markdown", () => {
+    expect(rescatarJson("```json\n" + componentes + "\n```")).toBe(componentes);
+  });
+
+  it("ignora la prosa de antes y de despues", () => {
+    expect(rescatarJson(`Aqui va la pantalla: ${componentes} espero que sirva`)).toBe(componentes);
+  });
+
+  it("no se corta en una llave que viene dentro de un texto", () => {
+    const conLlave = '[{"id":"root","component":"Text","texto":"el {monto} sube"}]';
+    expect(rescatarJson(conLlave)).toBe(conLlave);
+    expect(JSON.parse(rescatarJson(conLlave)!)).toHaveLength(1);
+  });
+
+  it("se queda con el primer bloque completo si vienen dos", () => {
+    expect(rescatarJson(`${componentes}\n${componentes}`)).toBe(componentes);
+  });
+
+  it("devuelve undefined si no hay nada que rescatar", () => {
+    expect(rescatarJson("no hay json aqui")).toBeUndefined();
+    expect(rescatarJson('[{"sin": "cerrar"')).toBeUndefined();
+  });
+
+  it("armarMensajes acepta una pantalla envuelta en cercas", () => {
+    const r = armarMensajes({
+      razon: "Una razon suficientemente larga",
+      texto: "Listo.",
+      componentesJson: "```json\n" + PANTALLA_VALIDA + "\n```",
+    });
+    expect(r.ok).toBe(true);
   });
 });

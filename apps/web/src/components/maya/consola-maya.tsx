@@ -49,28 +49,45 @@ export function ConsolaMaya({
   }, [intencionInicial, enviarTexto]);
 
   const chips = agente.sugerencias.length > 0 ? agente.sugerencias : (CHIPS_INICIALES[usuario.id] ?? []);
-  const hayConversacion = agente.historial.length > 0;
+  const hayConversacion = agente.hilo.length > 0;
 
   return (
     <div className="flex flex-col gap-3 md:gap-4">
       {!hayConversacion && <Saludo usuario={usuario} />}
 
-      {hayConversacion && (
-        <div className="flex flex-col gap-2">
-          {agente.historial.map((mensaje, i) => (
-            <Mensaje key={i} rol={mensaje.rol} texto={mensaje.texto} />
-          ))}
-        </div>
+      {/* El hilo completo, en orden: lo que se dijo y lo que Maya construyó. Las
+          pantallas de turnos anteriores se quedan aquí con su tira de transparencia, que
+          es lo que hace que la conversación se pueda leer hacia arriba y tenga sentido:
+          una frase suelta sin su tarjeta no dice nada. */}
+      {agente.hilo.map((entrada, i) =>
+        entrada.tipo === "mensaje" ? (
+          <Mensaje key={i} rol={entrada.rol} texto={entrada.texto} />
+        ) : (
+          <div key={i} className="flex flex-col gap-3 md:gap-4">
+            <ProgresoMaya transparencia={entrada.transparencia} ocupado={false} />
+            <Lienzo
+              superficie={entrada.superficie}
+              conversacionId={agente.conversacionId}
+              alAccionar={agente.enviarAccion}
+              alFallar={agente.reportarFallo}
+            />
+          </div>
+        ),
       )}
 
-      <ProgresoMaya transparencia={agente.transparencia} ocupado={agente.ocupado} />
+      {/* El turno en curso: la tira viva y la pantalla que se está armando. Al cerrar el
+          turno esta misma superficie pasa a ser la última entrada del hilo, así que no se
+          pinta dos veces (`superficieViva` la compara por referencia). */}
+      {(agente.ocupado || agente.superficieViva) && (
+        <ProgresoMaya transparencia={agente.transparencia} ocupado={agente.ocupado} />
+      )}
 
       <Lienzo
-        superficie={agente.superficie}
+        superficie={agente.superficieViva}
         conversacionId={agente.conversacionId}
         alAccionar={agente.enviarAccion}
         alFallar={agente.reportarFallo}
-        vacio={<LienzoPlaceholder />}
+        vacio={hayConversacion ? undefined : <LienzoPlaceholder />}
       />
 
       {/* La razón NO se pinta aquí: cada tarjeta del catálogo ya trae la suya al pie
