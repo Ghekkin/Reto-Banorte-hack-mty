@@ -2,6 +2,94 @@
 
 ## 2026-09-12
 
+> Aviso sobre las horas: las entradas de más abajo de este mismo día (05:20 a 09:45)
+> están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
+> adelante, hora de Monterrey como manda el repo.
+
+### 01:20 · hecho — Backend completo: las 9 tools del MCP y el agente real
+
+Tomé el backend entero de un jalón, que es dominio de los roles `mcp` y `contrato`
+(están sin dueño en el tablero). Tres commits de dominio ajeno bien marcados, y aquí
+queda qué toqué y por qué.
+
+**`packages/schemas` (9 de 9).** Un archivo por tool con `EntradaX`/`SalidaX`. Las
+acciones comparten `LlaveIdempotencia` y devuelven `aplicado` / `yaEstaba` / `mensaje`.
+
+**`apps/mcp` (9 de 9 tools).** Lectura: `consultar_perfil`, `consultar_tarjeta`,
+`consultar_movimientos`, `simular_reestructura`, `consultar_plan`, `comparar_periodos`,
+`proyectar_ahorro`. Acción: `aplicar_plan_pago`, `crear_apartado`. Tres módulos nuevos en
+`src/dominio/`: `finanzas.ts` (puerto a TS de `scripts/lib/finanzas.mjs`), `consultas.ts`
+(lo que más de una tool necesita) y `tiempo.ts`.
+
+Decisiones que vale la pena defender frente a un juez:
+
+- **Una sola función decide cuánto debe alguien** (`tarjetaConEstado`). Con un plan
+  aplicado, el saldo revolvente queda en **cero**, el límite se libera, el pago mínimo
+  desaparece y la mora se cura. Ese es el "cambio real": dos llamadas idénticas a
+  `consultar_tarjeta` contestan distinto porque los datos son otros.
+- **La tasa de un plan es un dato del banco, no una fórmula.** Sale de
+  `planes_reestructura.csv`; la fórmula es solo el respaldo para un plazo que nadie
+  cotizó. Documentado en `docs/algoritmos/oferta-de-reestructura.md`.
+- **La categoría atípica no es la más grande.** Es la que más se salió de su propio
+  patrón (base de 3 meses, ≥ 40 % y ≥ $500). Señalar la renta no le sirve a nadie.
+  `docs/algoritmos/categoria-atipica.md`.
+- **"Hoy" no es `new Date()`.** Los CSV terminan el 2026-09-12; si el pitch se corre el
+  13, "los últimos 30 días" saldrían vacíos. `hoy()` usa `MCP_HOY` o la fecha del
+  movimiento más reciente. Variable nueva, ya en `.env.example`.
+
+**Bug propio arreglado de paso:** `MCP_ESTADO=apps/mcp/estado.json` se resolvía contra el
+`cwd`, y el servidor arranca con `cwd` en `apps/mcp` → el estado se escribía en
+`apps/mcp/apps/mcp/estado.json`. O sea: **ninguna acción habría sobrevivido a un
+reinicio**, y `reiniciar-estado` limpiaba otro archivo. Ahora se resuelve contra la raíz
+del repo (`raizDelRepo()` en `datos/memoria.ts`). No abrí issue porque cayó dentro de la
+tarea y quedó arreglado en el mismo commit.
+
+**`apps/web/src/lib/agente` (el agente real, ya no mock).** Vercel AI SDK 5 con
+`streamText`, las tools del MCP traducidas con `dynamicTool` (el schema lo publica el
+MCP, así que **agregar una tool no toca el agente**), y el stream JSONL del contrato.
+
+La decisión de diseño del turno: **entregar la interfaz también es una tool**
+(`pintar_pantalla`). Con eso el reintento de un JSON inválido sale gratis —es un
+resultado de tool con errores y el bucle del SDK ya sabe qué hacer—, el modelo usa un
+solo mecanismo para todo, y hay **una sola puerta de salida** para A2UI. Los componentes
+viajan como texto JSON dentro de la llamada porque un schema estricto de "props planas y
+distintas por componente" no lo aceptan igual los dos proveedores; la validación de
+verdad son cuatro capas en `armarMensajes` (estructura A2UI, catálogo, árbol con `root` e
+hijos que existan, y props contra el schema Zod del componente, saltándose las
+enlazadas).
+
+Dos cosas que el agente **fuerza** y no le pide al modelo: el `usuarioId` es siempre el
+del turno (Maya no puede leer los datos de otra persona ni por error del modelo), y las
+tools de acción reciben la `idempotencyKey` que puso el renderer.
+
+**Pruebas: 63 en verde, sin llave y sin red.** Lo que más me importa de ellas:
+
+- `finanzas.spec.ts` recalcula las cuatro ofertas de Beto y las compara **campo por
+  campo** contra `planes_reestructura.csv`. Si alguien cambia una fórmula, truena: la
+  pantalla y los datos tienen que decir lo mismo.
+- `acciones.spec.ts` prueba el ciclo completo: antes no hay plan → se aplica → la tarjeta
+  queda en cero con `alerta: plan_activo` → el calendario cierra en cero → la misma llave
+  dos veces aplica uno solo.
+- `agente.spec.ts` corre el bucle con `MockLanguageModelV2`: tool → pantalla → stream, el
+  reintento de una pantalla inválida, y el tope de pasos.
+- `proveedor.spec.ts` arma el proveedor **real** de Google con las 9 tools e intercepta el
+  `fetch`: las declaraciones que iban a salir no llevan `$schema` ni
+  `additionalProperties` (Gemini las rechaza) y un 401 deja el turno con `error` + `fin`.
+  Es lo más cerca que se puede estar de "funciona con Gemini" sin gastar una llave.
+
+`scripts/humo.sh` ahora cubre las 9 tools y el ciclo de acción por HTTP, con
+aserciones de verdad (falla con código distinto de cero). Usa `usr_carmen` para la acción
+a propósito: Beto y Ana son los del guion y tienen que quedar como estaban.
+
+**Lo que NO hice, a propósito:** no toqué `packages/catalogo`. El agente solo puede pintar
+lo que exista ahí (hoy `Confirmacion` + layout), y meter los 7 schemas sin su `.tsx`
+dejaría la pantalla llena de cuadros rojos de "componente desconocido". En cuanto `web`
+agregue un componente, el prompt y la validación lo toman solos: los dos leen `CATALOGO`.
+
+**Bloqueo real para el nivel 4 de `probar`:** falta una llave de modelo en el `.env`.
+Sin ella el agente sirve la pantalla de ejemplo y no se puede saber si el prompt decide
+bien. Es lo primero que hay que conseguir.
+
 - **05:50 · hecho** — Verificada la carga de `db/` en el Postgres de Coolify: 22 tablas
   del esquema `banorte`, 3 690 filas, y cada tabla comparada fila a fila contra los CSV
   del repo (cero diferencias); tipos de columna iguales a `db/schema.sql`;

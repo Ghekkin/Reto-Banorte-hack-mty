@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-12 09:40
-implementado-en: scripts/lib/finanzas.mjs
+verificado: 2026-09-12 01:19
+implementado-en: apps/mcp/src/dominio/finanzas.ts (y scripts/lib/finanzas.mjs, el generador)
 lenguaje: typescript
 ---
 
@@ -152,6 +152,19 @@ su capacidad de pago según `buro`.
   diferencia son centavos a este plazo.
 - **Sin pagos anticipados.** No hay lógica de amortización parcial ni de recálculo de
   plazo, que es lo primero que preguntaría un usuario real.
+
+## Dos implementaciones, un solo resultado
+
+La misma matemática vive en dos lugares y tiene que dar **el mismo número**:
+
+- `scripts/lib/finanzas.mjs` generó los CSV (es el origen de `planes_reestructura.csv`);
+- `apps/mcp/src/dominio/finanzas.ts` es lo que las tools llaman en tiempo de ejecución.
+
+No se comparte un módulo porque el generador es un script suelto de Node y el MCP es un
+paquete del workspace con su propio typecheck. Lo que las mantiene juntas es un test:
+`apps/mcp/src/__tests__/finanzas.spec.ts` recalcula las cuatro ofertas de Beto y las
+compara contra las filas del CSV, campo por campo (mensualidad, CAT, total, intereses,
+ahorro y meses). Si alguien cambia una fórmula en un lado, ese test truena.
 
 ## Cómo se probó
 

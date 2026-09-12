@@ -123,11 +123,11 @@ el campo nuevo es opcional.
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
-| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | scaffold listo; el agente es un **mock** |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | scaffold listo; 1 de 9 tools |
+| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | shell listo; **agente real** con el AI SDK (Gemini/Claude), MCP y A2UI validado; sin llave sirve una pantalla de ejemplo |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, `src/dominio/` (finanzas, consultas, tiempo), estado mutable | **9 de 9 tools** (7 lectura + 2 acción), 31 pruebas |
 | `packages/a2ui/` (`@maya/a2ui`) | Renderer A2UI propio: `validar`, `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008). `spec/` con los schemas oficiales | construido; falta ajv contra `spec/` |
 | `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio y `catalogo.json` generado desde los schemas | 1 de 8 componentes; los 7 con su encargo escrito |
-| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | 1 de 9 |
+| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **9 de 9** |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 
 Cuando crees una carpeta nueva, agrégala aquí en el mismo commit.

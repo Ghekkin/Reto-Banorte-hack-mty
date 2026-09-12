@@ -62,11 +62,16 @@ quien.
 - [Reglas y plantilla](como-funciona/README.md)
 - [Base de datos](como-funciona/base-de-datos.md) — referencia del esquema `banorte`: las 22 tablas columna por columna, relaciones, índices, restricciones, las tres rutas de carga y los trade-offs
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, los 22 CSV y las invariantes que sostienen la demo
+- [Las 9 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
+- [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 
 ### Algoritmos
 - [Reglas y plantilla](algoritmos/README.md)
 - [Generación de los datos mock](algoritmos/generacion-de-datos.md) — patrones, estacionalidad, calibración del flujo, puntaje de salud financiera
 - [Amortización, CAT y reestructura](algoritmos/amortizacion.md) — mensualidad, tabla que cierra en cero, CAT por bisección, escenario de pago mínimo
+- [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
+- [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
+- [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

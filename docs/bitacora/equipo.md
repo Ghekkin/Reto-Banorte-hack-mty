@@ -18,6 +18,37 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 01:20 · hecho** — **El backend está completo y el agente ya es real.** 9 tools en
+  el MCP (7 de lectura, 2 de acción) y el turno del agente con el Vercel AI SDK contra el
+  MCP, emitiendo A2UI validado. 63 pruebas en verde sin llave ni red. El ciclo del reto
+  —simular → aplicar → la lectura posterior devuelve otra cosa— está verificado por HTTP
+  con `pnpm humo`. Detalle en `bitacora/parlack.md` y en
+  `docs/como-funciona/{tools-mcp,agente}.md`.
+
+- **sáb 01:20 · decisión** — **Entregar la interfaz es una tool del agente**
+  (`pintar_pantalla`), no el texto de la respuesta del modelo. Así el reintento de un JSON
+  inválido sale gratis (es un resultado de tool con errores y el bucle del AI SDK ya sabe
+  qué hacer), el modelo usa un solo mecanismo para todo el turno, y A2UI tiene una sola
+  puerta de salida, con cuatro validaciones antes de llegar al renderer. Los componentes
+  viajan como texto JSON porque un schema estricto de props planas y distintas por
+  componente no lo aceptan igual Gemini y Claude.
+
+- **sáb 01:20 · decisión** — **La superficie se rearma completa en cada turno**
+  (`createSurface` + lista entera + data model entero). `procesar()` fusiona componentes
+  por id, así que un update parcial dejaría vivos los de la pantalla anterior. El contrato
+  quedó corregido en ese punto: decía "reemplaza" y el renderer fusiona.
+
+- **sáb 01:20 · hecho** — Bug que habría salido en la demo: `MCP_ESTADO` se resolvía
+  contra el `cwd` del proceso, y el MCP arranca con `cwd` en `apps/mcp`. El estado se
+  escribía en `apps/mcp/apps/mcp/estado.json`, así que **ninguna acción habría sobrevivido
+  a un reinicio** y `reiniciar-estado` limpiaba otro archivo. Arreglado: se resuelve contra
+  la raíz del repo.
+
+- **sáb 01:20 · hecho** — Lo que ahora bloquea: **falta una llave de modelo en el `.env`**.
+  Sin ella el agente sirve la pantalla de ejemplo (por diseño, para que `main` arranque sin
+  `.env`) y no se puede correr el nivel 4 de `probar`. Y el agente solo puede pintar lo que
+  exista en `packages/catalogo`: hoy `Confirmacion` + layout.
+
 - **sáb 00:10 · hecho** — Guion literal de la demo escrito con los números reales de
   `db/datos/`: Beto al **96.7 %** de su tarjeta ($47,386 de $49,000, CAT 62.1 %, 12 días
   de atraso) y Ana sin deuda. Abre con "Maya hoy" (texto) y cierra con la misma pregunta

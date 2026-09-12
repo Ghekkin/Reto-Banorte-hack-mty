@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-12 06:40
-estado: plan            # pasa a construido cuando el route handler exista y el guion corra
+verificado: 2026-09-12 01:19
+estado: construido      # el endpoint, el stream y el agente existen; falta el nivel 4 de `probar` con llave
 ---
 
 # Contrato agente ↔ cliente
@@ -20,7 +20,7 @@ se guarda en el servidor: cada petición lleva todo lo necesario.
 
 ### Endpoint
 
-`POST /api/agente` — en `apps/web/app/api/agente/route.ts`. Respuesta en **streaming
+`POST /api/agente` — en `apps/web/src/app/api/agente/route.ts`. Respuesta en **streaming
 JSONL** (`Content-Type: application/x-ndjson`), una línea por mensaje.
 
 ### Petición
@@ -81,14 +81,30 @@ Reglas:
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |
 | `fin` | Métricas del turno | Log, transparencia |
 
-El cliente ignora tipos que no conoce (para poder agregar sin romper).
+El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
+**siempre** termina en `fin`, pase lo que pase: la interfaz nunca se queda esperando.
+
+`tool` sale de las partes del stream del AI SDK, con `ms` medido entre la llamada y el
+resultado. El `ok` no viene de una excepción: una tool del MCP que falla devuelve
+`{ error: "…" }` (`apps/web/src/lib/agente/mcp-cliente.ts`), y de ahí se decide.
+
+### Cómo entrega el agente la interfaz
+
+Del lado del agente, la pantalla se entrega con una tool local, `pintar_pantalla`
+(`apps/web/src/lib/agente/pantalla.ts`): el modelo la llama con `razon`, `texto`,
+los componentes y el data model, y ahí se validan **antes** de convertirse en las tres
+líneas `a2ui`. El detalle y el por qué están en `docs/como-funciona/agente.md`.
 
 ### Superficies
 
-- Una superficie `principal` por conversación. El agente la crea en el primer turno y
-  la **actualiza** en los siguientes (`updateComponents` reemplaza la lista de
-  componentes; `updateDataModel` en `/` reemplaza el estado). `deleteSurface` solo al
-  cambiar de usuario.
+- Una superficie `principal` por conversación, y el agente la **rearma completa en cada
+  turno**: `createSurface` + `updateComponents` con la lista entera + `updateDataModel` en
+  `/` con el data model entero. Al cambiar de usuario no hace falta `deleteSurface`: el
+  cliente vacía su propio estado en `reiniciar()` (`usar-agente.ts`).
+- Rearmar y no parchar es una decisión, no un descuido: `procesar()` **fusiona**
+  componentes por id, así que un `updateComponents` parcial dejaría vivos los componentes
+  de la pantalla anterior y la interfaz mentiría. Como el agente siempre manda el árbol
+  completo, el resultado visual es idéntico y el estado es predecible.
 - Superficies secundarias (`detalle`, `confirmacion`) solo si el catálogo lo pide
   (modal). Por defecto, todo en `principal`.
 
