@@ -14,6 +14,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **07:15 · decisión** — Identidad visual: forma flotante sobre lienzo gris `#F2F2F3`
+  (sidebar y tarjetas `rounded-2xl` con `shadow-sm`, rejilla bento, barra de
+  conversación fija abajo, una tarjeta héroe con degradado rojo por pantalla). Par de
+  gráficas oscuro `#1C1719` + rojo. Las superficies del agente se pintan dentro de la
+  rejilla, con transición de 150 ms. Todo en la skill `diseno-banorte`.
+
 - **06:55 · decisión** — Toda la UI con **shadcn/ui** (regla 9 del `CLAUDE.md`) y la
   **paleta de Banorte** sacada de `Ghekkin/Open-innovation-hack-mty`: rojo `#EC0029`,
   claro `#FF3355`, oscuro `#C00020`, grises `#F5F5F5`/`#C7C9C9`/`#6A6867`. Skills
