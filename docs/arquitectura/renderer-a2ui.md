@@ -186,6 +186,11 @@ El canal de vuelta de errores de la spec (`VALIDATION_FAILED` en
 cuando llega un componente que el registro no conoce, pero todavía nadie lo escucha.
 Conectarlo al agente es lo que le permitiría corregirse en el mismo turno.
 
+Dos cosas ya resueltas para quien lo conecte: el aviso sale en un `useEffect`, **no
+durante el render** (un aviso en fase de render que provoque `setState` se cicla), y el
+mismo fallo se avisa **una sola vez** por vida del componente, así que un reintento que
+vuelve a fallar igual no se convierte en un bucle entre la interfaz y el agente.
+
 ### Lo que NO implementamos, y por qué
 
 - **14 de los 18 componentes del catálogo básico** (Image, Video, AudioPlayer, Tabs,

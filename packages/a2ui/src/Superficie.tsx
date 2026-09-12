@@ -1,11 +1,23 @@
 "use client";
 
-import { Fragment, createElement, type ReactNode } from "react";
+import { Fragment, createElement, useEffect, useRef, type ReactNode } from "react";
 import { arbol, type Nodo } from "./arbol";
 import { resolver } from "./bindings";
 import { emitirAccion } from "./acciones";
 import { obtener } from "./registro";
 import { propsDe, type Accion, type EstadoSuperficie, type Tema } from "./tipos";
+
+/**
+ * Lo que la spec llama `VALIDATION_FAILED` en `client_to_server.json`: la interfaz le
+ * dice al agente que lo que mando no se puede pintar.
+ */
+export type FalloDeRender = {
+  code: "VALIDATION_FAILED";
+  surfaceId: string;
+  /** JSON Pointer dentro de la superficie: `/<id del componente>/component`. */
+  path: string;
+  message: string;
+};
 
 /**
  * Pinta una superficie. Recorre el arbol, busca cada nombre en el registro y le
@@ -33,9 +45,30 @@ export function Superficie({
    * Un componente que el registro no conoce. La spec tiene canal de vuelta para esto
    * (`client_to_server.json`, `VALIDATION_FAILED`): quien reciba esto puede devolverselo
    * al agente para que se corrija. Si nadie escucha, se pinta el aviso y ya.
+   *
+   * Se llama **despues** del render, nunca durante: si quien escucha hace `setState`, un
+   * aviso en fase de render lo ciclaria. Y el mismo fallo se avisa UNA vez por vida del
+   * componente, para que un reintento que vuelve a fallar igual no se vuelva un bucle
+   * entre la interfaz y el agente.
    */
-  alFallar?: (error: { code: "VALIDATION_FAILED"; surfaceId: string; path: string; message: string }) => void;
+  alFallar?: (error: FalloDeRender) => void;
 }): ReactNode {
+  /* Se llena durante el render y se vacia en el efecto. Mutar un ref al pintar no
+     dispara renders ni sale del proceso: el efecto de verdad vive en el useEffect. */
+  const pendientes = useRef<FalloDeRender[]>([]);
+  const avisados = useRef<Set<string>>(new Set());
+  pendientes.current = [];
+
+  useEffect(() => {
+    if (!alFallar) return;
+    for (const fallo of pendientes.current) {
+      const clave = `${fallo.surfaceId}|${fallo.path}|${fallo.message}`;
+      if (avisados.current.has(clave)) continue;
+      avisados.current.add(clave);
+      alFallar(fallo);
+    }
+  });
+
   if (!superficie) return null;
   const raiz = arbol(superficie, (m) => console.warn(`[a2ui] ${m}`));
   if (!raiz) return null;
@@ -45,7 +78,7 @@ export function Superficie({
     const { componente, item, clave } = nodo;
     const Componente = obtener(componente.component);
     if (!Componente) {
-      alFallar?.({
+      pendientes.current.push({
         code: "VALIDATION_FAILED",
         surfaceId: superficie!.id,
         path: `/${componente.id}/component`,

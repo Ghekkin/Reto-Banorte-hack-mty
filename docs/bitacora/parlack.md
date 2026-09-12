@@ -59,6 +59,14 @@ commiteado.
 nadie lo escucha todavía. Conectarlo al agente le permitiría corregirse en el mismo turno,
 y es la mejor respuesta a "¿y si el modelo se equivoca?". Queda anotado, no empezado.
 
+**02:10 — corregido lo que la auditoría de la otra sesión encontró en eso mismo:** yo
+llamaba `alFallar` **durante el render**, y quien lo escuche con un `setState` habría
+entrado en bucle. Ahora sale en un `useEffect` y cada fallo se avisa una sola vez por vida
+del componente, así que un reintento que falla igual tampoco cicla. Dejar una trampa justo
+debajo de lo que estoy recomendando como siguiente paso no tenía sentido. El render no
+tiene prueba unitaria (no hay testing-library en el paquete y no la voy a meter a las 2 am);
+se verificó con la página viva.
+
 ### 01:55 · hecho — Auditoría del backend, el MCP y el A2UI: 12 huecos cerrados
 
 Pasada con ojos frescos sobre todo lo que existe, archivo por archivo. Lo que se
