@@ -2,6 +2,22 @@
 
 ## 2026-09-12
 
+### 05:00 · hecho — Que no se pueda commitear un conflicto a medias
+
+El issue #4 (`CLAUDE.md` con marcadores de conflicto en `main`, que encontró la otra
+sesión) terminaba con "vale la pena un chequeo en el hook `Stop`". Lo implementé:
+`scripts/sync.sh` revisa el índice antes de commitear y, si algún archivo trae
+`<<<<<<< ` o `>>>>>>> `, no commitea — avisa cuáles son y deja el trabajo en el árbol.
+
+Cubre las dos puertas por donde sale el código (el `--auto` del hook y la skill
+`guardar`), que es lo que importa con cuatro sesiones escribiendo sobre el mismo árbol.
+Busca solo esos dos marcadores y no el `=======` solo: en Markdown es el subrayado de un
+título, y un falso positivo que bloquee el commit de todos sería peor que el bug.
+
+Probado con el remoto desconectado para que no hubiera forma de que un fallo del guardia
+subiera basura: el archivo con marcadores no commitea, `HEAD` no se mueve, el título
+Markdown pasa sin ruido.
+
 ### 04:40 · hecho — Galería `/catalogo` y el CI desbloqueado
 
 **El CI estaba rojo desde cuatro commits y bloqueaba el deploy a prod.** Typecheck, tests

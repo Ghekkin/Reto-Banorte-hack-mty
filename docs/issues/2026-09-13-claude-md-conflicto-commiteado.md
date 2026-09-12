@@ -37,5 +37,15 @@ versiones del conflicto era correcta.
 
 **Para que no se repita:** si `sync.sh` o un `stash pop` dejan marcadores, la skill
 `resolver-conflicto` dice cómo resolverlos; lo que no se puede es commitear encima.
-Vale la pena un chequeo en el hook `Stop` que rechace el commit si algún archivo tiene
-`<<<<<<<`.
+
+**Ya no se puede.** `scripts/sync.sh` tiene el chequeo, así que cubre las dos puertas por
+las que sale el código: el commit automático del hook `Stop` (`--auto`) y la skill
+`guardar`. Si algún archivo en el índice trae `<<<<<<< ` o `>>>>>>> `, no commitea: avisa
+qué archivos son, manda a la skill `resolver-conflicto` y deja el trabajo en el árbol.
+
+Busca solo esos dos marcadores, con el espacio y la etiqueta que pone git. El `=======`
+solo **no** cuenta: en Markdown es el subrayado de un título, y un falso positivo que
+bloquea el commit de todo el equipo sería peor que el bug.
+
+Probado de punta a punta con el remoto desconectado: un archivo con marcadores no
+commitea y `HEAD` no se mueve; un título Markdown con `=======` pasa sin ruido.
