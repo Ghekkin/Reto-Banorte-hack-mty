@@ -13,16 +13,13 @@ import { registrarComponentes } from "@/lib/registrar-componentes";
  * El renderer pinta los hijos; esta rejilla solo les da el hueco. Por eso este archivo
  * no sabe nada de plan de pago, gasto ni metas: si supiera, el catalogo dejaria de ser
  * intercambiable.
- *
-<<<<<<< Updated upstream
  * Lo unico que si tiene que saber es que el registro exista: sin el, `<Superficie>` no
  * encuentra ni `Column` y la pantalla entera cae en `Desconocido`.
-=======
+ *
  * `animar-cascada` (no `animar-lista`) porque los componentes del catalogo ya traen su
  * propia `animar-entrada`: aqui solo se agrega el retraso escalonado, para que se vea que
  * las tarjetas se construyeron una tras otra y no que aparecieron de golpe. Es el detalle
  * que le dice al jurado "esto lo acaba de armar el agente".
->>>>>>> Stashed changes
  */
 registrarComponentes();
 

@@ -1,5 +1,7 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUp, Mic } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -54,15 +56,6 @@ export function TarjetaSaldo({
             </span>
           </div>
         )}
-
-        <Button
-          render={<Link href="/maya" />}
-          nativeButton={false}
-          className="w-full rounded-full bg-white/90 text-primary hover:bg-white sm:w-auto"
-        >
-          Pregúntale a Maya
-          <ArrowRight data-icon="inline-end" />
-        </Button>
       </CardContent>
     </Card>
   );
@@ -205,32 +198,48 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
 }
 
 /**
- * El puente a Maya. Existe porque el riesgo de un Inicio bien hecho es que el jurado vea
- * un banco bonito y no un agente: desde aqui, una pregunta concreta lleva al lienzo.
+ * Barra flotante de entrada de Maya en Inicio.
+ * Es la pura barra de input (con texto, micrófono de voz y botón de envío)
+ * flotando en la parte inferior de la pantalla.
  */
-export function AtajoMaya({ sugerencias }: { sugerencias: string[] }) {
+export function BarraFlotanteMaya() {
   return (
-    <Card data-ancho="amplio" className="border-primary/20 bg-tinte/40">
-      <CardContent className="flex flex-col gap-3 p-5">
-        <div className="flex items-center gap-2">
-          <IconoBanorte className="size-4 text-primary" />
-          <span className="text-sm font-medium">¿Y si le preguntas a Maya?</span>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {sugerencias.map((sugerencia) => (
-            <Button
-              key={sugerencia}
-              render={<Link href={`/maya?intencion=${encodeURIComponent(sugerencia)}`} />}
-              nativeButton={false}
-              variant="outline"
-              size="sm"
-              className="min-h-11 rounded-full bg-background text-xs sm:min-h-9"
-            >
-              {sugerencia}
-            </Button>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <aside
+      aria-label="Chat flotante con Maya"
+      className="fixed inset-x-0 bottom-20 z-30 flex justify-center px-4 pointer-events-none md:bottom-6 md:left-[var(--sidebar-width,16rem)]"
+    >
+      <div className="flex w-full max-w-2xl items-center gap-2 rounded-2xl border border-borde-sutil bg-card/95 p-2 shadow-xl backdrop-blur-md ring-1 ring-black/5 pointer-events-auto transition-all focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+        <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground shadow-xs">
+          <IconoBanorte className="size-4" />
+        </span>
+        <input
+          type="text"
+          placeholder="Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
+          aria-label="Pregúntale a Maya"
+          onKeyDown={(e) => {
+            if (e.key === "Enter") e.preventDefault();
+          }}
+          className="flex-1 bg-transparent px-2 text-sm text-foreground placeholder:text-muted-foreground outline-none"
+        />
+        <button
+          type="button"
+          aria-label="Entrada de voz (pendiente)"
+          className="grid size-9 shrink-0 place-items-center rounded-full text-muted-foreground transition-colors hover:bg-muted hover:text-primary active:scale-95"
+        >
+          <Mic className="size-4.5" />
+        </button>
+        <button
+          type="button"
+          aria-label="Enviar mensaje (pendiente)"
+          className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform hover:bg-primary/90 active:scale-95"
+        >
+          <ArrowUp className="size-4.5" />
+        </button>
+      </div>
+    </aside>
   );
 }
+
+export const PreguntaleAMaya = BarraFlotanteMaya;
+export const AtajoMaya = BarraFlotanteMaya;
+

@@ -1,5 +1,5 @@
 import {
-  AtajoMaya,
+  BarraFlotanteMaya,
   ListaCuentas,
   ListaTarjetas,
   MovimientosRecientes,
@@ -30,24 +30,21 @@ export default async function PaginaInicio() {
     movimientosRecientes(usuario.id, 6),
   ]);
 
-  // Las sugerencias se adaptan al contexto: a quien trae deuda se le ofrece salir de
-  // ella; a quien no, ahorrar. Es la adaptabilidad de la rubrica, ya visible en Inicio.
-  const sugerencias =
-    resumen.deudaCentavos > 0
-      ? ["Quiero pagar menos intereses", "¿En qué se me fue el dinero?"]
-      : ["¿En qué se me fue el dinero?", "Quiero empezar a ahorrar"];
-
   return (
-    <div className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 [&>[data-ancho=amplio]]:md:col-span-2">
-      <TarjetaSaldo
-        disponibleCentavos={resumen.disponibleCentavos}
-        deudaCentavos={resumen.deudaCentavos}
-        cuenta={resumen.cuentaPrincipal}
-      />
-      <ListaCuentas cuentas={cuentas} />
-      <ListaTarjetas tarjetas={tarjetas} />
-      <MovimientosRecientes movimientos={movimientos} />
-      <AtajoMaya sugerencias={sugerencias} />
+    <div className="relative pb-24 md:pb-20">
+      <div className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3 [&>[data-ancho=amplio]]:md:col-span-2">
+        <TarjetaSaldo
+          disponibleCentavos={resumen.disponibleCentavos}
+          deudaCentavos={resumen.deudaCentavos}
+          cuenta={resumen.cuentaPrincipal}
+        />
+        <ListaCuentas cuentas={cuentas} />
+        <ListaTarjetas tarjetas={tarjetas} />
+        <MovimientosRecientes movimientos={movimientos} />
+      </div>
+
+      <BarraFlotanteMaya />
     </div>
   );
 }
+
