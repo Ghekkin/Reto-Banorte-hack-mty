@@ -24,8 +24,11 @@ service-account*.json
 .sesion
 .claude/settings.local.json
 
-# estado mutable del MCP: lo cambian las acciones y se reinicia antes de cada ensayo
+# estado mutable del MCP: lo cambian las acciones y se reinicia antes de cada ensayo.
+# El patron cubre los de un solo uso (estado.pruebas.json de vitest, estado.humo.json de
+# una corrida de humo contra un servidor aparte): ninguno es fuente de nada.
 apps/mcp/estado.json
+apps/mcp/estado.*.json
 
 # ruido
 *.log
@@ -33,4 +36,3 @@ apps/mcp/estado.json
 
 # material del reto (PDFs, videos): pesado y no versionable
 .orca/
-apps/mcp/estado.pruebas.json
