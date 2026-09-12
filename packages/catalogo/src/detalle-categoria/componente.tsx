@@ -47,7 +47,10 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
         {movimientos.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay movimientos de {categoria} en este periodo.</p>
         ) : (
-          <ScrollArea className="max-h-80">
+          // `overflow-hidden` no es decoracion: sin el, la raiz del ScrollArea no
+          // recorta (su viewport es `size-full` de una caja sin limite), la tabla se
+          // desborda y se pinta encima del "… y N movimientos mas" y del pie.
+          <ScrollArea className="max-h-80 overflow-hidden">
             <Table>
               <TableBody>
                 {movimientos.map((m, i) => (

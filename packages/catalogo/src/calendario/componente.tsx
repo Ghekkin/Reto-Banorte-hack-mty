@@ -1,7 +1,6 @@
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { CLASES_TARJETA, formatearFecha, formatearMonto } from "../comunes";
@@ -54,8 +53,11 @@ export function Calendario(props: Partial<PropsCalendario>) {
         {eventos.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no hay fechas programadas.</p>
         ) : (
-          <ScrollArea className="max-h-72">
-            <Table>
+          // Sin `ScrollArea`: `maximo` (6 por defecto) ya acota la altura y el resto se
+          // resume en la linea de abajo. El `ScrollArea` con `max-h-72` no recortaba
+          // nada —su viewport es `size-full` de una raiz sin `overflow-hidden`—, asi que
+          // la tabla se desbordaba y se pintaba ENCIMA del "… y N mas" y del pie.
+          <Table>
               <TableBody>
                 {visibles.map((e, i) => {
                   const esProximo = e.estado === "proximo" || i === indiceProximo;
@@ -85,7 +87,6 @@ export function Calendario(props: Partial<PropsCalendario>) {
                 })}
               </TableBody>
             </Table>
-          </ScrollArea>
         )}
 
         {restantes > 0 ? (

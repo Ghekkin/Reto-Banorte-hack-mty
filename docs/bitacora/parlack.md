@@ -352,6 +352,30 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 11:00 · arreglado — Dos tarjetas se pintaban encima de su propio pie
+
+Siguiendo con las capturas, `Calendario` tenía el texto **encimado**: "… y 1 más,
+$57,480.30 en total" y el "¿Por qué veo esto?" quedaban debajo de la fila "12 de marzo".
+`DetalleCategoria` tenía lo mismo.
+
+La causa es la misma en las dos y vale saberla: nuestro `ScrollArea` (Base UI) tiene la
+raíz en `relative` y el viewport en `size-full`. Con solo `max-h-72` en la raíz —sin
+`overflow-hidden`— **nada recorta**: el viewport mide 100 % de una caja sin límite, la
+tabla se desborda fuera del box de la raíz y se pinta sobre lo que sigue. El layout ni se
+queja: para el navegador todo está en su sitio.
+
+Dos arreglos distintos porque son dos casos distintos:
+
+- **`Calendario`**: fuera el `ScrollArea`. Su prop `maximo` (6 por defecto) ya acota las
+  filas y el resto se resume en una línea, así que el scroll era redundante. Menos código
+  y el bug desaparece por construcción.
+- **`DetalleCategoria`**: ahí el scroll sí sirve (la lista la manda el agente y puede
+  traer veinte movimientos), así que lleva `overflow-hidden` para que recorte de verdad.
+
+Verificado midiendo cajas en el navegador, no a ojo: `tablaSolapaResumen`,
+`tablaSolapaPie` y `resumenSolapaPie` en `false`, y la tabla dentro de la tarjeta en las
+dos. Consola sin errores.
+
 ### 10:45 · arreglado — Tailwind no compilaba las clases del catálogo, y no se notaba
 
 Abrí el navegador de verdad (Chromium de Playwright, capturas que pude mirar yo mismo) y
