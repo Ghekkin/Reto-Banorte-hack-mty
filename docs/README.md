@@ -72,7 +72,8 @@ quien.
 - [Registro de hallazgos](issues/index.md)
 
 ### Demo
-- [Guion de la demo](demo/guion-demo.md)
+- [Guion de la demo](demo/guion-demo.md) — los 3 prompts literales, qué debe aparecer en cada paso y los criterios de aceptación
+- [Prompts para pegar](demo/prompts.txt)
 - [Checklist previa](demo/checklist-previa.md)
 - [Pitch](demo/pitch.md) — guion hablado, frase por pantalla, preguntas de jueces
 

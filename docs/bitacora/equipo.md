@@ -18,6 +18,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 00:10 · hecho** — Guion literal de la demo escrito con los números reales de
+  `db/datos/`: Beto al **96.7 %** de su tarjeta ($47,386 de $49,000, CAT 62.1 %, 12 días
+  de atraso) y Ana sin deuda. Abre con "Maya hoy" (texto) y cierra con la misma pregunta
+  dando dos pantallas distintas. Prompts en `docs/demo/prompts.txt`. Marcado qué falta
+  para que corra: 7 componentes, 4 tools y el agente real.
+
 - **vie 23:30 · decisión** — El agente se llama **Maya** (ADR 0009), no Brújula: es la
   asistente virtual real de Banorte (300+ consultas, **17 operaciones bancarias**, hoy
   en texto y menús). El encuadre es evolución, no crítica: "lo que le falta no es
