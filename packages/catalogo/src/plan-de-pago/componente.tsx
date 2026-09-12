@@ -6,7 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Skeleton } from "@/components/ui/skeleton";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_FILA_TOCABLE, CLASES_TARJETA, formatearMonto, formatearPorcentaje } from "../comunes";
 import type { PropsPlanDePago } from "./schema";
@@ -34,14 +34,13 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
 
   if (!opciones) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-14 w-full" />
-          <Skeleton className="h-14 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta etiqueta="Cargando las opciones de tu plan de pagos">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <EsqueletoOpciones opciones={4} />
+        </EsqueletoCuerpo>
+        <EsqueletoPie lineas={3} boton />
+      </EsqueletoTarjeta>
     );
   }
 

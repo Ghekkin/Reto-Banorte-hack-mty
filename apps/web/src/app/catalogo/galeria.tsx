@@ -108,7 +108,10 @@ function Ficha({
 
   // El estado del renderer, uno por componente: cada ejemplo crea su propia superficie.
   const conDatos = useMemo(() => superficieDe(componente.mensajes), [componente.mensajes]);
-  const cargando = useMemo(() => superficieDeCarga(componente.nombre), [componente.nombre]);
+  const cargando = useMemo(
+    () => superficieDeCarga(componente.nombre, componente.mensajes),
+    [componente.nombre, componente.mensajes],
+  );
 
   return (
     <section className="rounded-2xl border border-borde-sutil bg-card p-4 shadow-sm md:p-5">
@@ -200,14 +203,30 @@ function superficieDe(mensajes: MensajeA2UI[]): EstadoSuperficie | undefined {
  * los componentes y llegan los datos. Todo componente del catalogo tiene que aguantarlo
  * (skill `ui-generativa`, tres estados), y aqui se comprueba de un vistazo.
  */
-function superficieDeCarga(nombre: string): EstadoSuperficie | undefined {
+/**
+ * El componente sin datos, como lo veria la persona mientras llegan. Copia del ejemplo
+ * solo las props que NO dependen del data model —`heroe` y `ancho`—, porque esas si se
+ * conocen antes que los datos: sin ellas la galeria mostraba siempre el esqueleto blanco,
+ * aunque en la pantalla real la tarjeta heroe ya aparece roja desde la carga.
+ */
+function superficieDeCarga(nombre: string, mensajes: MensajeA2UI[]): EstadoSuperficie | undefined {
+  const delEjemplo = mensajes
+    .flatMap((m) => ("updateComponents" in m ? m.updateComponents.components : []))
+    .find((c) => c.component === nombre);
+  const literales: Record<string, unknown> = {};
+  for (const clave of ["heroe", "ancho"] as const) {
+    const valor = delEjemplo?.[clave];
+    if (typeof valor === "boolean" || typeof valor === "string") literales[clave] = valor;
+  }
   const { estado } = procesarVarios(estadoVacio(), [
     { version: VERSION_A2UI, createSurface: { surfaceId: "carga", catalogId: "galeria" } },
     {
       version: VERSION_A2UI,
       updateComponents: {
         surfaceId: "carga",
-        components: [{ id: "root", component: nombre, razon: "Todavía no llegan los datos de este componente." }],
+        components: [
+          { id: "root", component: nombre, ...literales, razon: "Todavía no llegan los datos de este componente." },
+        ],
       },
     },
   ]);

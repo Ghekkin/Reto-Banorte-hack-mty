@@ -2,9 +2,9 @@ import { Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { CLASES_TARJETA, formatearFecha, formatearMonto, formatearPeriodo } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsDetalleCategoria } from "./schema";
 
 /**
@@ -19,14 +19,16 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
 
   if (!movimientos || typeof totalCentavos !== "number") {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta etiqueta="Cargando los movimientos">
+        <EsqueletoEncabezado detalle={false} />
+        <EsqueletoCuerpo>
+          <EsqueletoFilas filas={5} />
+          <div className="pt-2">
+            <Linea tamano="xs" ancho="w-36" />
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie lineas={2} />
+      </EsqueletoTarjeta>
     );
   }
 

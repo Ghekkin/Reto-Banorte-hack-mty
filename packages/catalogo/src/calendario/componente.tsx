@@ -1,9 +1,9 @@
 import { CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
 import { CLASES_TARJETA, formatearFecha, formatearMonto } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsCalendario } from "./schema";
 
 const HECHO = new Set(["pagado", "aportado"]);
@@ -23,14 +23,19 @@ export function Calendario(props: Partial<PropsCalendario>) {
 
   if (!eventos) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-2">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta etiqueta="Cargando tus próximas fechas">
+        <CardHeader>
+          <Linea tamano="base" ancho="w-44" />
+        </CardHeader>
+        <EsqueletoCuerpo>
+          {/* Tantas filas como va a pintar: `maximo` se conoce antes que los datos. */}
+          <EsqueletoFilas filas={Math.min(maximo, 6)} />
+          <div className="pt-2">
+            <Linea tamano="xs" ancho="w-40" />
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie lineas={3} />
+      </EsqueletoTarjeta>
     );
   }
 

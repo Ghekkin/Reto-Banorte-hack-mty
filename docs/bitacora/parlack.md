@@ -352,6 +352,56 @@ no está "medio conectado"; sección nueva de la frontera), y las cifras del map
 efectivamente repinte sin el componente al recibir `error`). El prompt lo pide en
 `historial.ts`; falta verlo en la página viva. Va junto con el guion.
 
+### 12:45 · pulido — Los estados de carga miden lo que va a llegar
+
+Medí antes de tocar: en `/catalogo`, el alto de cada esqueleto contra el de su tarjeta
+real. **Casi todos estaban entre el 30 % y el 60 %.** O sea que al llegar los datos cada
+tarjeta saltaba a 2–3 veces su altura y la rejilla bento entera se reacomodaba delante de
+la persona. El sistema de diseño pide "skeleton del tamaño final del contenido"; nadie lo
+cumplía, yo incluido.
+
+La causa era la misma en todos: cada esqueleto dibujaba el encabezado y poco más. Faltaban
+el cuerpo (filas, barras), los botones y **el pie "¿Por qué veo esto?"**, que solo él mide
+60–90 px.
+
+Hice un módulo compartido, `packages/catalogo/src/esqueletos.tsx`, con dos decisiones que
+hacen que las alturas coincidan **por construcción** y no a ojo:
+
+- usa **los mismos contenedores** de la tarjeta real (`CardHeader`, `CardContent`,
+  `CardFooter`), con su padding y sus gaps;
+- cada `Linea` ocupa **la caja de línea exacta** del texto que reemplaza (`text-sm` = 20
+  px, `text-3xl` = 36 px) con el bloque gris centrado. Tres líneas de esqueleto miden lo
+  mismo que tres de texto.
+
+Antes de construir medí las partes de cada tarjeta (encabezado, cuerpo, pie, alto de
+fila) para tener los números objetivo. Resultado en mis 8: **de 0.30–0.61 a 0.99–1.03**
+del alto real. Y lo miré, porque medir bien no es verse bien: el `Calendario` esqueleto
+tiene las 6 filas con su borde al mismo ritmo que la real, la línea "y N más" y el pie a
+la misma altura.
+
+**Un detalle de producto que salió gratis:** `heroe` es una prop literal, no depende del
+data model, así que se conoce antes que los datos. Ahora la tarjeta héroe **ya aparece con
+el degradado** mientras carga, con los bloques en blanco translúcido. Antes salía blanca y
+se volvía roja: un parpadeo. Para verlo en la galería tuve que hacer que su estado de carga
+copie del ejemplo `heroe` y `ancho` (las props que no dependen de datos); antes le pasaba
+solo `razon` y siempre mostraba el esqueleto blanco.
+
+Cada esqueleto lleva `aria-busy` y una etiqueta en palabras ("Cargando tus próximas
+fechas"), para que un lector de pantalla no lea bloques vacíos. Hay 10 pruebas: que los 8
+pinten su esqueleto y lo anuncien, y que el héroe salga rojo desde la carga.
+
+**Lo que NO toqué, a propósito:** los 10 componentes nuevos de Chee3mss (AlertaFugas,
+TermometroSaludFinanciera, RiesgoRendimiento…). Siguen en 0.34–0.71 con un esqueleto
+genérico copiado en cada uno (`h-4 w-36`, `h-9 w-44`, `h-28 w-full`). Los subió hace 24
+minutos y está trabajando en ellos; meterle mano a diez archivos recién commiteados de otra
+persona es la receta para un conflicto. Con `esqueletos.tsx` y la nota nueva en la skill
+`ui-generativa`, adoptarlo son unas líneas por componente.
+
+Dos tropiezos de medición, anotados porque engañan: el primer "2.26" de `PlanDePago` era mi
+script comparando contra la `ResumenTarjeta` que va primero en su ejemplo (la real mide 523
+y el esqueleto 523); y el primer par de capturas salió recortado porque un `scrollIntoView`
+movió la página entre medir las cajas y recortar.
+
 ### 12:40 · arreglado — SimuladorMeta ya puede ser la tarjeta héroe (#14)
 
 Tomé la salida de fondo y no la barata. La barata era aceptar e ignorar `heroe` en todos

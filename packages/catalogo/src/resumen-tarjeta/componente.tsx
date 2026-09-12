@@ -2,7 +2,6 @@ import { AlertTriangle, CheckCircle2 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CLASES_PIE_HEROE,
   CLASES_TARJETA,
@@ -11,6 +10,7 @@ import {
   formatearMonto,
   formatearPorcentaje,
 } from "../comunes";
+import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsResumenTarjeta } from "./schema";
 
 /**
@@ -37,13 +37,14 @@ export function ResumenTarjeta(props: Partial<PropsResumenTarjeta>) {
 
   if (typeof saldoCentavos !== "number" || typeof limiteCentavos !== "number") {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-1 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando el resumen de tu tarjeta">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <EsqueletoBarra />
+          <Linea tamano="sm" ancho="w-56" />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={3} />
+      </EsqueletoTarjeta>
     );
   }
 

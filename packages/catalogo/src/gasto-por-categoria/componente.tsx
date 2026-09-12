@@ -3,7 +3,7 @@
 import { TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
+import { EsqueletoBarras, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_FILA_TOCABLE, CLASES_TARJETA, formatearMonto, formatearPeriodo, formatearPorcentaje } from "../comunes";
 import type { PropsGastoPorCategoria } from "./schema";
@@ -31,15 +31,13 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
 
   if (!categorias || typeof totalCentavos !== "number") {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta etiqueta="Cargando tu gasto por categoría">
+        <EsqueletoEncabezado detalle={false} />
+        <EsqueletoCuerpo>
+          <EsqueletoBarras barras={6} />
+        </EsqueletoCuerpo>
+        <EsqueletoPie lineas={2} />
+      </EsqueletoTarjeta>
     );
   }
 

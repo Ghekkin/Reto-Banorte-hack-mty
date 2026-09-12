@@ -1,7 +1,6 @@
 import { Target } from "lucide-react";
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import {
   CLASES_PIE_HEROE,
   CLASES_TARJETA,
@@ -10,6 +9,7 @@ import {
   formatearMonto,
   formatearPorcentaje,
 } from "../comunes";
+import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsMetaActiva } from "./schema";
 
 /** Un apartado que ya existe: cuanto lleva, cuanto aporta y cuando cae el siguiente cargo. */
@@ -28,13 +28,18 @@ export function MetaActiva(props: Partial<PropsMetaActiva>) {
 
   if (typeof metaCentavos !== "number" || typeof acumuladoCentavos !== "number") {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-1 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Cargando el avance de tu meta">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <EsqueletoBarra />
+          <div className="flex flex-col">
+            <Linea tamano="sm" ancho="w-11/12" />
+            <Linea tamano="sm" ancho="w-24" />
+          </div>
+          <Linea tamano="xs" ancho="w-40" />
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={2} />
+      </EsqueletoTarjeta>
     );
   }
 

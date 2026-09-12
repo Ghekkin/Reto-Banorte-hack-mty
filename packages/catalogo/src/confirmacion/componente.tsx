@@ -1,8 +1,8 @@
 import { CheckCircle2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardAction, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { CLASES_TARJETA, formatearMonto } from "../comunes";
+import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsConfirmacion } from "./schema";
 
 /**
@@ -15,12 +15,18 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
   // Estado de carga: el data model puede llegar despues que los componentes.
   if (!titulo) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-24" />
-          <Skeleton className="h-8 w-48" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta etiqueta="Confirmando la operación">
+        <CardHeader>
+          <Linea tamano="base" ancho="w-48" />
+        </CardHeader>
+        <EsqueletoCuerpo className="flex flex-col gap-2">
+          <Linea tamano="xs" ancho="w-24" />
+          <Linea tamano="3xl" ancho="w-40" />
+          <Linea tamano="sm" ancho="w-56" />
+          <Linea tamano="sm" ancho="w-44" />
+        </EsqueletoCuerpo>
+        <EsqueletoPie lineas={2} />
+      </EsqueletoTarjeta>
     );
   }
 

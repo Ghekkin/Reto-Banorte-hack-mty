@@ -7,6 +7,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
+import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import type { PropsComponente } from "@maya/a2ui";
 import {
   CLASES_PIE_HEROE,
@@ -56,13 +57,24 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
     typeof aportacionMaximaCentavos !== "number"
   ) {
     return (
-      <Card className={CLASES_TARJETA}>
-        <CardContent className="flex flex-col gap-3">
-          <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-2 w-full" />
-        </CardContent>
-      </Card>
+      <EsqueletoTarjeta heroe={heroe} etiqueta="Preparando tu simulador de ahorro">
+        <EsqueletoEncabezado />
+        <EsqueletoCuerpo className="flex flex-col gap-3">
+          <EsqueletoBarra />
+          <div className="flex items-baseline justify-between">
+            <Linea tamano="sm" ancho="w-32" />
+            <Linea tamano="xl" ancho="w-24" />
+          </div>
+          <div className="py-3">
+            <Skeleton className="h-1 w-full" />
+          </div>
+          <div className="flex justify-between">
+            <Linea tamano="xs" ancho="w-14" />
+            <Linea tamano="xs" ancho="w-16" />
+          </div>
+        </EsqueletoCuerpo>
+        <EsqueletoPie heroe={heroe} lineas={3} boton />
+      </EsqueletoTarjeta>
     );
   }
 

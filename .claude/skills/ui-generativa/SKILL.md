@@ -50,6 +50,17 @@ Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro 
 4. **Tres estados siempre**: cargando (skeleton del tamaño final; el data model puede
    llegar después que los componentes), vacío (frase útil, nunca blanco), error
    (mensaje corto + qué puede hacer la persona).
+
+   **El de carga se arma con `packages/catalogo/src/esqueletos.tsx`, no a mano.** El
+   2026-09-12 los esqueletos medían entre el 30 % y el 60 % de su tarjeta y la rejilla
+   saltaba al llegar los datos. El módulo usa los mismos contenedores de la tarjeta real
+   (`CardHeader`/`CardContent`/`CardFooter`) y cada `Linea` ocupa la caja de línea exacta
+   del texto que reemplaza, así que las alturas coinciden por construcción:
+   `EsqueletoTarjeta` (acepta `heroe` y ya sale con el degradado) + `EsqueletoEncabezado`,
+   `EsqueletoFilas`, `EsqueletoOpciones`, `EsqueletoBarras`, `EsqueletoBarra` y
+   `EsqueletoPie` (con `boton` si la tarjeta tiene acción). No olvides el pie: el "¿Por
+   qué veo esto?" solo mide 60–90 px. Comprueba el alto en `/catalogo`: la columna
+   "Estado de carga" tiene que medir lo mismo que "Con datos del ejemplo".
 5. **Registro** en `packages/a2ui` (`registrar`) y en el JSON del catálogo que se le
    pasa al agente (el mismo schema sirve para los dos: nada se escribe dos veces).
 6. **Prueba** con un mensaje A2UI escrito a mano en
