@@ -161,8 +161,11 @@ pnpm --filter @maya/web test   # 26 pruebas del agente, sin llave y sin red
 Con llave, la prueba de verdad es el nivel 4 de la skill `probar`: los prompts de
 `docs/demo/prompts.txt` produciendo la interfaz esperada.
 
-### Lo que falta (rol `web`)
+### Los ejemplos van en el prompt
 
-El agente solo puede pintar lo que existe en `packages/catalogo`: hoy `Confirmacion` más el
-layout. En cuanto lleguen los otros 7 componentes, el prompt y la validación los toman
-**solos** (los dos leen `CATALOGO`): no hay que tocar el agente.
+`prompt.ts` → `ejemplosEnTexto()` lee `packages/catalogo/ejemplos/*.jsonl` una vez por
+proceso y los mete al system prompt como few-shot, solo los que usan componentes que
+existen en el catálogo. Son los mismos archivos que `catalogo.spec.ts` valida contra los
+schemas oficiales: si un ejemplo está mal, truena una prueba antes de que el modelo lo
+aprenda. Con los 8 componentes en `CATALOGO`, el agente ya puede pintar el viaje completo
+del ADR 0004 (`docs/como-funciona/catalogo.md`).

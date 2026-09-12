@@ -2,6 +2,82 @@
 
 ## 2026-09-12
 
+### 05:00 · hecho — Que no se pueda commitear un conflicto a medias
+
+El issue #4 (`CLAUDE.md` con marcadores de conflicto en `main`, que encontró la otra
+sesión) terminaba con "vale la pena un chequeo en el hook `Stop`". Lo implementé:
+`scripts/sync.sh` revisa el índice antes de commitear y, si algún archivo trae
+`<<<<<<< ` o `>>>>>>> `, no commitea — avisa cuáles son y deja el trabajo en el árbol.
+
+Cubre las dos puertas por donde sale el código (el `--auto` del hook y la skill
+`guardar`), que es lo que importa con cuatro sesiones escribiendo sobre el mismo árbol.
+Busca solo esos dos marcadores y no el `=======` solo: en Markdown es el subrayado de un
+título, y un falso positivo que bloquee el commit de todos sería peor que el bug.
+
+Probado con el remoto desconectado para que no hubiera forma de que un fallo del guardia
+subiera basura: el archivo con marcadores no commitea, `HEAD` no se mueve, el título
+Markdown pasa sin ruido.
+
+### 04:40 · hecho — Galería `/catalogo` y el CI desbloqueado
+
+**El CI estaba rojo desde cuatro commits y bloqueaba el deploy a prod.** Typecheck, tests
+y build pasaban; fallaba el paso `humo del MCP`, y la culpa era mía: `scripts/humo.sh`
+afirmaba `tools publicadas = 12` contra un número cableado, y `aldair` y `luis` metieron
+sus paquetes (15 tools ahora). La aserción castigaba trabajo bien hecho de otro.
+
+Ahora comprueba que **estén** las 9 tools del viaje del ADR 0004, por nombre, e imprime el
+total sin juzgarlo. Lo que tiene que fallar es que FALTE una, no que aparezca una nueva.
+Verificado en local contra el MCP al día: humo completo en verde, incluidas las
+aserciones que ellos agregaron (panorama, salud, créditos).
+
+**Galería `/catalogo`**: cada componente del catálogo pintado con `procesarVarios` +
+`<Superficie>` —el renderer de verdad— desde el mismo `.jsonl` que validan las pruebas y
+que va al prompt. Nada maquetado a mano: si se ve bien aquí, es porque el renderer y el
+componente funcionan. Cada ficha trae el `cuandoUsarlo`, la tabla de props del schema, el
+`.jsonl` desplegable, el render con datos y **el estado de carga al lado** (los tres
+estados de la skill `ui-generativa`, de un vistazo).
+
+Lo mejor para el pitch: al tocar el botón de un componente, el pie muestra el mensaje
+`{ version, action }` de `client_to_server.json` con su `idempotencyKey`. El ciclo cerrado
+explicado sin gastar un turno de modelo.
+
+Vive **fuera** del grupo `(app)`, sin shell ni navegación, y no toca `components/`: el
+frontend del producto lo rediseña otra sesión y no me meto. Verificado en el dev server:
+los 8 componentes, cero "componente desconocido", cero errores de render, 25 skeletons en
+los estados de carga, la gráfica de Recharts y el `data-ancho=amplio` respetado.
+
+### 04:10 · hecho — Los 7 componentes que faltaban y lo demás de la lista del A2UI
+
+Lo que quedaba de "¿qué falta para el A2UI?", cerrado:
+
+- **Los 7 componentes del catálogo** (`9d5351e`): `ResumenTarjeta`, `PlanDePago`,
+  `Calendario`, `GastoPorCategoria`, `DetalleCategoria`, `SimuladorMeta`, `MetaActiva`.
+  Sobre shadcn, cero hex, tres estados, props alineadas con las tools. Cada uno con su
+  `.jsonl` validado contra los schemas oficiales y una prueba nueva que **pinta** cada
+  ejemplo con `react-dom/server` (`render.spec.tsx`): un componente que truena al recibir
+  sus props no lo detecta ningún schema. La `Confirmacion` de referencia usaba divs a mano
+  para el skeleton; ahora usa el de shadcn. Doc en `docs/como-funciona/catalogo.md`.
+- **Ejemplos en el prompt** como few-shot, solo los que usan componentes que existen.
+- **`mensajeClienteAServidor()`** en a2ui: nuestra acción envuelta como manda
+  `client_to_server.json` pasa el validador oficial sin un error (test).
+- Frontera de error por componente, canal `VALIDATION_FAILED` de ida y vuelta y
+  `GET /api/agente` con capacidades: los empecé yo y los terminó y commiteó la otra sesión
+  (`0568d25`), incluida una prueba en DOM real de la frontera. Bien.
+- **Panel de transparencia: NO lo hice.** Lo tenía escrito y lo descarté: es frontend del
+  producto, y el frontend lo está rediseñando otra sesión. Los datos que necesita ya están
+  en el stream y `usarAgente` los guarda en `transparencia` (las líneas `tool`, `a2ui`,
+  `error` y `fin` con pasos y ms); armar el panel es leer ese arreglo. Queda para `web`.
+  De paso: el placeholder del lienzo (`components/maya/lienzo.tsx`) dice que los
+  componentes del catálogo "se conectan en el siguiente paso", y eso ya no es cierto
+  desde `9d5351e`: los 8 existen. Es una línea de texto, de `web`.
+
+Decisiones de diseño de los componentes que vale la pena defender: la **selección del plazo
+y la posición del slider viven en el componente** (estado de interfaz), y solo la
+confirmación viaja al agente; ir por cada clic sería un turno por toque. El `SimuladorMeta`
+recalcula la fecha localmente con la misma aritmética que `proyectar_ahorro` (división sin
+rendimiento) para que el slider se sienta; el número autoritativo vuelve de la tool.
+
+
 > Aviso sobre las horas: las entradas de más abajo de este mismo día (05:20 a 09:45)
 > están en hora del servidor (UTC+2), no de Monterrey. Réstales 8 horas. De aquí en
 > adelante, hora de Monterrey como manda el repo.
@@ -384,3 +460,62 @@ Las tres trampas quedaron escritas en `deploy.md`. Reglas nuevas: después de to
 variables por API, leer la lista **con `is_preview`**, no sólo los nombres; comprobar
 con `docker exec … env` que llegaron al contenedor; y nunca mandar a `/dev/null` la
 respuesta de algo que estás afirmando que quedó hecho.
+
+### 10:30 — Llave de Gemini en produccion, y `CLAUDE.md` estaba roto en `main`
+
+**La llave de Gemini ya está puesta** (en `/opt/reto/.env` del VPS y en las variables de
+`maya-web` en Coolify, nunca en el repo). Antes de instalarla la probé contra la API:
+es válida, y `gemini-3.8-flash` responde, así que el ADR 0005 se mantiene tal cual. De
+paso: `gemini-2.0-flash` ya no existe del lado de Google, por si alguien lo tenía escrito
+en algún lado.
+
+**Y me encontré `CLAUDE.md` con marcadores de conflicto commiteados en `main`**
+(`<<<<<<< Updated upstream` … `>>>>>>> Stashed changes`), de un `stash pop` a medias que
+el commit automático subió. Es el archivo que lee cada agente al abrir sesión, así que
+cualquiera que llegara veía dos estados contradictorios del proyecto: una versión decía
+"1 de 8 componentes" y la otra "8 de 8".
+
+No elegí un lado: medí el repo. **Ninguna de las dos versiones era correcta.** Lo real
+hoy son 15 tools (11 lectura + 4 acción), 15 schemas, 8 de 8 componentes del catálogo, y
+272 pruebas en total (112 a2ui, 92 mcp, 42 catálogo, 26 web). Eso es lo que quedó en el
+mapa. Issue #4.
+
+Propuesta para que no vuelva a pasar, que dejo escrita en el issue y no implemento por
+no tocar el hook de todos sin avisar: que el hook `Stop` rechace el commit si algún
+archivo tiene `<<<<<<<`.
+
+### 13:30 — El ciclo completo corriendo en la URL pública
+
+La llave de Gemini quedó puesta (probada antes de instalarla: válida, y
+`gemini-3.8-flash` responde, así que el ADR 0005 sigue en pie). Pero con la llave puesta
+el agente publicado seguía sin contestar: **no alcanzaba al MCP**.
+
+Dos intentos antes de dar con ello:
+
+1. `MCP_URL` al uuid de la app → no resuelve. El único alias que Coolify pone es el
+   nombre del contenedor **con el timestamp del deploy**, que cambia cada vez.
+2. `MCP_URL` a la URL pública del MCP → *timeout* desde dentro del contenedor, aunque
+   desde fuera responda perfecto. **Hairpin NAT.** Esta es la que más me interesa
+   recordar: verificar una URL con `curl` desde mi máquina no prueba que la app pueda
+   usarla. Hay que probar desde donde vive el código: `docker exec <web> curl …`.
+
+Lo que funcionó: alias de red estable (`--network-alias maya-mcp`) y
+`MCP_URL=http://maya-mcp:3100/mcp`. Necesita deploy **forzado**; el `restart` no aplica
+esa opción.
+
+Verificado en producción, los tres pasos del reto:
+
+```
+"Quiero pagar menos intereses de mi tarjeta"
+  → panorama_inicial · simular_reestructura      (interpretar con datos reales)
+  → createSurface + ResumenTarjeta + PlanDePago  (generar la interfaz)
+  → razon: "Tienes $47,386 … al 96.7 % de tu límite"
+con la accion encima:
+  → aplicar_plan_pago · consultar_plan           (ejecutar y que la UI cambie)
+  → "Tu plan de pagos a 18 meses quedó activo con éxito."
+```
+
+Nota de coordinación: somos al menos tres sesiones sobre el mismo árbol. El issue #5 lo
+había documentado otra sesión con el arreglo equivocado (la URL pública); corregí esa
+parte del archivo con la medición, dejando intacto su análisis de la causa, que era
+bueno. Conviene decir siempre quién toca qué antes de tocarlo.

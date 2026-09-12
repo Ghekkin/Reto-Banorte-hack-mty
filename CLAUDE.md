@@ -123,19 +123,11 @@ el campo nuevo es opcional.
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
-<<<<<<< Updated upstream
-| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | shell listo; **agente real** con el AI SDK (Gemini/Claude), MCP y A2UI validado; sin llave sirve una pantalla de ejemplo |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, `src/dominio/` (finanzas, consultas, tiempo), estado mutable | **9 de 9 tools** (7 lectura + 2 acción), 42 pruebas |
-| `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 112 pruebas, incluidos los **76 casos de conformidad** oficiales de `spec/` |
-| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod **como catálogo A2UI de verdad** (el validador oficial valida nuestros componentes) | **8 de 8 componentes propios** más `Column`/`Row`/`Text`/`Divider` del catálogo básico. 42 pruebas cuidan la cadena de cada componente |
-| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **9 de 9** |
-=======
-| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell de 5 secciones (Inicio, Productos, Maya, Movimientos, Más), `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/`, `src/lib/datos/` (lee los CSV) | shell construido; el lienzo de Maya es placeholder |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | 12 tools (10 lectura + 2 acción), 78 pruebas |
-| `packages/a2ui/` (`@maya/a2ui`) | Renderer A2UI propio: `validar`, `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008). `spec/` con los schemas oficiales | construido; falta ajv contra `spec/` |
-| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio y `catalogo.json` generado desde los schemas | 1 de 8 componentes; los 7 con su encargo escrito |
-| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | 12 de 12 |
->>>>>>> Stashed changes
+| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` (agente real con el AI SDK) | construido; 26 pruebas |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | **15 tools** (11 lectura + 4 acción), 92 pruebas |
+| `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 112 pruebas, incluidos los casos de conformidad oficiales de `spec/` |
+| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod | **8 de 8 componentes**, 42 pruebas |
+| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **15 de 15** |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 
 Cuando crees una carpeta nueva, agrégala aquí en el mismo commit.

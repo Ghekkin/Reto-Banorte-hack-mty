@@ -28,6 +28,25 @@ salida() {
 }
 
 git add -A
+
+# Un conflicto a medio resolver NO se commitea. `CLAUDE.md` llego a `main` con los
+# marcadores dentro (issue #4) porque el commit automatico del final del turno se los
+# llevo sin mirar, y `CLAUDE.md` es lo primero que lee cada agente al abrir sesion: paso
+# horas contando dos estados contradictorios del proyecto.
+#
+# Se buscan solo `<<<<<<< ` y `>>>>>>> ` (con el espacio y la etiqueta que pone git). El
+# `=======` solo no cuenta: en Markdown es el subrayado de un titulo.
+marcados=$(
+  git diff --cached --name-only --diff-filter=ACM -z     | xargs -0 -r grep -lIE '^(<<<<<<< |>>>>>>> )' 2>/dev/null
+)
+if [ -n "$marcados" ]; then
+  salida "NO COMMITEO: hay marcadores de conflicto sin resolver en:
+$marcados
+Resuelvelos (skill resolver-conflicto) y vuelve a correr scripts/sync.sh. Tu trabajo
+sigue en el arbol; no se pierde nada."
+  exit 0
+fi
+
 hubo_commit=0
 if ! git diff --cached --quiet; then
   if [ -z "$msg" ]; then

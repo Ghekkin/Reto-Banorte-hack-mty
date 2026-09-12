@@ -87,3 +87,5 @@ gh issue create \
 | 2026-09-13 | alta | infra | [El token de Coolify en `/opt/reto/.env` rompe el `source`](2026-09-13-env-vps-token-sin-comillas.md) | [#2](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/2) | resuelto |
 | 2026-09-12 | media | web | [El agente recibe como "pantalla actual" todos los componentes de la conversación, no los visibles](2026-09-12-componentes-visibles-acumulados.md) | [#3](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/3) | resuelto |
 | 2026-09-12 | media | web | [`packages/catalogo` no declara `@types/react-dom` y `pnpm typecheck` falla en toda la raíz](2026-09-12-catalogo-sin-types-react-dom.md) | pendiente (sin `gh`) | abierto |
+| 2026-09-13 | alta | docs | [`CLAUDE.md` tiene marcadores de conflicto commiteados](2026-09-13-claude-md-conflicto-commiteado.md) | [#4](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/4) | resuelto |
+| 2026-09-13 | crítica | infra | [En producción el agente no alcanzaba el MCP: `MCP_URL` a un hostname que no resuelve](2026-09-13-mcp-url-interna-no-resuelve.md) | [#5](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/5) | resuelto |

@@ -96,8 +96,22 @@ El MCP lleva `db/datos` dentro de la imagen y arranca con el origen `memoria`
 mutable vive en `/datos/estado.json`, fuera del árbol del repo, para que un redeploy
 no lo arrastre.
 
-La web habla con el MCP por la red interna de Docker
-(`MCP_URL=http://a7ld8ya2e0g3ye3pjjlz542f:3100/mcp`), no por internet.
+### Cómo se hablan la web y el MCP (y por qué no por la URL pública)
+
+`MCP_URL=http://maya-mcp:3100/mcp`, por la red interna de Docker.
+
+`maya-mcp` es un **alias de red estable** que se le puso a la app del MCP con
+`custom_docker_run_options: "--network-alias maya-mcp"`. Hace falta porque el único
+alias que Coolify pone por su cuenta es el nombre completo del contenedor **con el
+timestamp del deploy** (`a7ld…-131445254133`): el uuid pelado no resuelve, y el nombre
+completo cambia cada vez. Aplicarlo requiere un **deploy forzado**; un `restart` no
+basta.
+
+**Entre apps del mismo VPS no se usa la URL pública.** Responde desde fuera, pero desde
+dentro de un contenedor da *timeout*: es hairpin NAT — un contenedor que sale hacia la
+IP pública del propio host no vuelve a entrar por Traefik. Comprobarlo con `curl` desde
+tu máquina no prueba que la app pueda usarla; hay que probarlo con
+`docker exec <contenedor> curl …`. Ver issue #5.
 
 ### Variables de entorno de las apps (cuidado con la API)
 
