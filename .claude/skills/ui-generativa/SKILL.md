@@ -1,6 +1,6 @@
 ---
 name: ui-generativa
-description: Cómo se crea o modifica un componente del catálogo A2UI propio (packages/catalogo) - schema de props, implementación React, registro en el Catalog, bindings al data model, acciones que regresan al agente, tres estados, y doc. Invocar antes de tocar packages/catalogo o el renderer en apps/web.
+description: Cómo se crea o modifica un componente del catálogo A2UI propio (packages/catalogo) - schema de props, implementación React, registro en el renderer propio (packages/a2ui), bindings al data model, acciones que regresan al agente, tres estados, y doc. Invocar antes de tocar packages/catalogo o el renderer en apps/web.
 ---
 
 # Componentes del catálogo A2UI
@@ -29,8 +29,9 @@ Tres archivos en `packages/catalogo/src/<nombre>/`:
 | `componente.tsx` | La implementación React. Recibe props ya resueltas por el renderer. |
 | `README.md` | Para qué sirve, cuándo el agente debe elegirlo, ejemplo de mensaje `updateComponents` que lo usa. |
 
-Y una línea en `packages/catalogo/src/index.ts` que lo registra en el `Catalog` con
-su `catalogId` (`https://<dominio>/catalogo/v1.json`).
+Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro de
+`packages/a2ui` (`registrar("PlanDePago", PlanDePago)`); el `catalogId`
+(`https://<dominio>/catalogo/v1.json`) lo sirve `apps/web` desde los schemas.
 
 ## Orden obligatorio
 
@@ -49,8 +50,8 @@ su `catalogId` (`https://<dominio>/catalogo/v1.json`).
 4. **Tres estados siempre**: cargando (skeleton del tamaño final; el data model puede
    llegar después que los componentes), vacío (frase útil, nunca blanco), error
    (mensaje corto + qué puede hacer la persona).
-5. **Registro** en el `Catalog` y en el JSON del catálogo que se le pasa al agente
-   (el mismo schema sirve para los dos: nada se escribe dos veces).
+5. **Registro** en `packages/a2ui` (`registrar`) y en el JSON del catálogo que se le
+   pasa al agente (el mismo schema sirve para los dos: nada se escribe dos veces).
 6. **Prueba** con un mensaje A2UI escrito a mano en
    `packages/catalogo/ejemplos/<nombre>.jsonl` que lo renderiza (skill `probar`,
    nivel 2). Ese archivo es también documentación.
@@ -77,7 +78,7 @@ su `catalogId` (`https://<dominio>/catalogo/v1.json`).
 ## Checklist antes de commitear
 
 - [ ] Construido con primitivas de shadcn; cero hex en el `.tsx`.
-- [ ] Schema con descripciones, registrado en el `Catalog` y en el JSON del catálogo.
+- [ ] Schema con descripciones, registrado en `packages/a2ui` y en el JSON del catálogo.
 - [ ] Acciones declaradas como eventos A2UI; cero fetch en el componente.
 - [ ] Tres estados vistos en pantalla con el `.jsonl` de ejemplo.
 - [ ] Sin errores de consola.

@@ -46,8 +46,17 @@ la vez): `linear-gradient(135deg, #EC0029 0%, #C00020 100%)`.
 
 ## Tokens para `globals.css`
 
-Bloque listo. Va en `apps/web/app/globals.css` después de `@import "tailwindcss"` y de
-la línea de shadcn. Los nombres son los que shadcn espera: no se renombran.
+**Ya están aplicados** en `apps/web/src/app/globals.css`. Los nombres de shadcn no se
+renombran; los propios del proyecto (`lienzo`, `tinte`, `tinte-fuerte`, `oscuro`,
+`borde-sutil`, `exito`, `advertencia`, `marca-claro`, `marca-oscuro`) se declaran ahí
+**y se mapean en el bloque `@theme inline`** (`--color-lienzo: var(--lienzo)`), que es
+lo que permite escribir `bg-lienzo`, `text-exito`, `border-borde-sutil`.
+
+En Tailwind v4 **`bg-[--lienzo]` no funciona**: o se mapea en `@theme inline` (lo que
+hicimos) o se escribe `bg-[var(--lienzo)]`. Si agregas un token, agrégalo en los dos
+lugares del archivo, y aquí.
+
+El bloque, como referencia:
 
 ```css
 :root {
@@ -152,9 +161,9 @@ Todo flota sobre un lienzo gris claro.
 
 | Elemento | Valor |
 |---|---|
-| Lienzo | `bg-[--lienzo]`, `p-3` (móvil) a `p-4` (escritorio) |
+| Lienzo | `bg-lienzo`, `p-3` (móvil) a `p-4` (escritorio) |
 | Sidebar | `w-64`, blanca, `rounded-2xl`, separada del borde por el padding del lienzo, alto completo menos el padding |
-| Tarjetas | `rounded-2xl border border-[--borde-sutil] bg-card shadow-sm` |
+| Tarjetas | `rounded-2xl border border-borde-sutil bg-card shadow-sm` |
 | Separación entre tarjetas | `gap-4` |
 | Padding interno de tarjeta | `p-5` (`p-4` en móvil) |
 | Radio | `--radius: 0.625rem` para controles; **`rounded-2xl` (1rem) para tarjetas y sidebar** |
@@ -165,7 +174,7 @@ Todo flota sobre un lienzo gris claro.
 - Tarjeta blanca `rounded-2xl`, con: logo + nombre del producto arriba; **selector de
   usuario demo** (Beto / Ana) como tarjeta con avatar y `chevron`; etiqueta
   `MAIN MENU` en mayúsculas diminutas grises; ítems con icono a la izquierda.
-- **Ítem activo**: fondo `bg-[--tinte]` con texto e icono en `text-primary`, `rounded-xl`.
+- **Ítem activo**: fondo `bg-tinte` con texto e icono en `text-primary`, `rounded-xl`.
   No una barra lateral, no subrayado: una píldora rellena.
 - Ítems inactivos: `text-muted-foreground`, hover `bg-muted`.
 - Abajo, separada, una tarjeta pequeña de contexto (en nuestro caso: "Reto Banorte ·
@@ -190,8 +199,8 @@ gráfica o los controles. Acciones al pie, alineadas a la izquierda. Si hay esta
 ### La tarjeta héroe
 
 **Una por pantalla, nunca dos.** Fondo con el degradado de marca
-(`bg-[linear-gradient(135deg,#EC0029_0%,#C00020_100%)]`), texto blanco, dos botones
-píldora: uno claro (`bg-white/90 text-primary`) y uno oscuro (`bg-[--oscuro] text-white`).
+(`bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)]`), texto blanco, dos
+botones píldora: uno claro (`bg-white/90 text-primary`) y uno oscuro (`bg-oscuro text-white`).
 Es donde va el número que resume la situación: el saldo de la tarjeta, el total del
 gasto, el avance de la meta.
 
@@ -203,10 +212,10 @@ regla vive en el prompt del agente y en el schema del componente.
 - Botones principales: **píldora** (`rounded-full`), `h-10`, con icono a la derecha
   (`→`, `↑`) cuando la acción lleva a algo.
 - Chips de sugerencia (como las del asistente de la referencia): `rounded-full border
-  bg-background text-sm px-3 py-1.5`, hover `bg-[--tinte]`.
-- `badge` para estados: `Plan activo` en `--tinte` con texto `--primary`; `Atrasado` en
-  `--oscuro` con texto blanco. **El rojo no se usa para error**: es el color de la
-  marca. Un error va en tarjeta con borde `--oscuro`.
+  bg-background text-sm px-3 py-1.5`, hover `bg-tinte`.
+- `badge` para estados: `Plan activo` en `bg-tinte text-primary`; `Atrasado` en
+  `bg-oscuro text-white`. **El rojo no se usa para error**: es el color de la
+  marca. Un error va en tarjeta con borde `border-oscuro`.
 
 ### Gráficas
 
@@ -296,9 +305,18 @@ agente puede invocar".
 
 ## Marca
 
-- El producto tiene **nombre propio**; no es "Banorte algo". El dominio tampoco.
-- Se usa la **paleta** de Banorte, no su logotipo ni su tipografía corporativa, salvo
-  que ellos lo autoricen en el stand.
+El agente se llama **Maya**, como la asistente virtual real de Banorte (ADR 0009). El
+encuadre es *evolución*: Maya ya hace 17 operaciones bancarias; nosotros cambiamos cómo
+las entrega. Límites:
+
+- Se usan el **nombre Maya** y la **paleta**. **Nunca** el logotipo de Banorte, su
+  tipografía corporativa ni la imagen oficial de Maya.
+- El **dominio no imita a Banorte**: nada de `maya-banorte.tech`. Neutro o descriptivo.
+- Pie de la app y `README.md`: *"Prototipo de hackathon. Concepto sobre Maya, la
+  asistente virtual de Banorte. No es un producto oficial ni está afiliado a Grupo
+  Financiero Banorte."*
+- El nombre vive en **un solo archivo de configuración**, no esparcido en los
+  componentes: si en el stand piden no usarlo, se cambia en un `sed`.
 - El encabezado puede decir "Reto Banorte · Hack Monterrey 2026" como contexto.
 
 ## Checklist antes de commitear UI

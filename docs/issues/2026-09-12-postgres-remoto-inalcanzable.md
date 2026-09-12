@@ -1,5 +1,7 @@
 ---
-estado: abierto
+estado: resuelto
+github: 1
+resuelto: 2026-09-12 05:35 (puerto 5437 agregado al cortafuegos Docker del VPS, ver docs/arquitectura/deploy.md)
 severidad: critica
 area: infra
 encontrado: 2026-09-12 10:15

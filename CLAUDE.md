@@ -16,10 +16,15 @@ antes de tocar nada.
 
 ## Arranque
 
-El primer commit del repo salió el **2026-09-12 a las 04:08**, después de la hora de
-arranque del reto (2026-09-11 20:00). Todo lo anterior a ese commit se preparó sin
-commitear a propósito; por eso el historial empieza con la base completa en un solo
-commit.
+El primer commit del repo salió el **viernes 2026-09-11 a las 22:08, hora de
+Monterrey**, después de la hora de arranque del reto (20:00). Todo lo anterior se
+preparó sin commitear a propósito; por eso el historial empieza con la base completa
+en un solo commit.
+
+**Zona horaria: todas las horas del repo son de Monterrey (UTC-6).** El servidor donde
+corren las sesiones está en UTC+2; los scripts fuerzan `TZ=America/Monterrey`. Cuando
+escribas una hora a mano en un doc o en la bitácora, usa la de Monterrey. El plan hora
+por hora está en `docs/equipo/roadmap.md`.
 
 ## Al abrir una sesión
 
@@ -88,9 +93,10 @@ el campo nuevo es opcional.
 
 - **Todo en TypeScript**: Next.js para el host de la UI generativa, servidor MCP en TS
   con `@modelcontextprotocol/sdk`, schemas compartidos con Zod. ADR 0001.
-- **A2UI real (v0.9.1) con catálogo propio**, renderer `@a2ui/react`; el agente emite
+- **A2UI real (v0.9.1) con catálogo propio y renderer propio** (`packages/a2ui`, ~200
+  líneas, validado con los JSON Schema oficiales): el agente emite
   `createSurface`/`updateComponents`/`updateDataModel` restringido a nuestro catálogo y
-  recibe los `action` de la UI. Plan B: processor propio de los mismos mensajes. ADR 0003.
+  recibe los `action` de la UI. Sin `@a2ui/react`. ADR 0003 + 0008.
 - **Python solo detrás de una tool, nunca en el contrato tool → UI.** Si hace falta ML
   pesado, va en un FastAPI mínimo que llama una tool MCP, con mock/fallback en TS.
   Ningún flujo de la demo puede tener a Python como única ruta. ADR 0002.
@@ -110,15 +116,16 @@ el campo nuevo es opcional.
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
 | `db/` | Datos sintéticos: 22 CSV (fuente), `schema.sql`, `cargar.sql`, `reiniciar.sql` (ADR 0007) | existe |
-| `scripts/` | `sesion-inicio.sh` (hook de inicio), `sync.sh` (commit+pull+push), `marcar-estable.sh` | existe |
-| `.env.example` | Todas las variables de entorno con comentario; hoy solo `DATABASE_URL` (Postgres en Coolify) | existe |
+| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh` (prueba del MCP), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh`, generadores de datos | existe |
+| `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
-| `apps/web/` | Host Next.js: chat con el agente y render de interfaces generadas | pendiente |
-| `apps/mcp/` | Servidor MCP en TS (Streamable HTTP), tools del dominio financiero | pendiente |
-| `packages/catalogo/` | Catálogo A2UI propio: schema + componente React + `.jsonl` de ejemplo por componente | pendiente |
-| `packages/schemas/` | Schemas Zod de las tools MCP | pendiente |
+| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell flotante, `/api/agente` (stream JSONL), `/catalogo/v1.json`, `src/lib/agente/` | scaffold listo; el agente es un **mock** |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre los CSV, estado mutable | scaffold listo; 1 de 9 tools |
+| `packages/a2ui/` (`@maya/a2ui`) | Renderer A2UI propio: `validar`, `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008). `spec/` con los schemas oficiales | construido; falta ajv contra `spec/` |
+| `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio y `catalogo.json` generado desde los schemas | 1 de 8 componentes; los 7 con su encargo escrito |
+| `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | 1 de 9 |
 | `services/ml/` | (opcional) FastAPI mínimo si hay ML pesado | no existe, ver ADR 0002 |
 
 Cuando crees una carpeta nueva, agrégala aquí en el mismo commit.
@@ -126,13 +133,28 @@ Cuando crees una carpeta nueva, agrégala aquí en el mismo commit.
 ## Comandos habituales
 
 ```bash
+pnpm install                   # una vez; Node 22 y pnpm 10
+pnpm dev                       # levanta mcp (3100) y web (3000) y espera sus /health
+pnpm typecheck                 # tsc en los 5 paquetes
+pnpm test                      # vitest en los 5 paquetes
+pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` corriendo)
+pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
+pnpm reiniciar-estado          # el estado mutable vuelve a cero: ANTES de cada ensayo
+
 scripts/sync.sh "mensaje"      # commit con nombre + pull --rebase + push (lo automático usa --auto)
 scripts/marcar-estable.sh      # tras un ensayo de demo que pasó completo
 gh issue create --repo Ghekkin/Reto-Banorte-hack-mty ...   # ver docs/issues/index.md
 ```
 
-Pendiente hasta que exista el scaffold: `pnpm dev`, `pnpm typecheck`, `pnpm test` y el
-script único que levanta todo para la demo.
+**El producto se llama Maya**: los paquetes son `@maya/web`, `@maya/mcp`, `@maya/a2ui`,
+`@maya/catalogo`, `@maya/schemas`. Es un prototipo de hackathon sobre el concepto del
+asistente Maya de Banorte, **no oficial ni afiliado**; el `README.md` lo dice y el
+dominio no imita a la marca.
+
+**Los imports internos de un paquete no llevan extensión** (`from "./registro"`, no
+`"./registro.js"`): Turbopack no mapea `.js` a `.ts` y la web truena en tiempo de
+ejecución, no en el typecheck. Los imports de paquetes de node_modules sí la llevan
+(`@modelcontextprotocol/sdk/client/index.js`), porque así los publica el paquete.
 
 ## Referencia externa: Yolani
 
@@ -155,6 +177,13 @@ negocio**. Lo útil:
 - **Dominio en español, siempre.** Tools, schemas, componentes, campos y datos usan las
   palabras del negocio en español (`cuenta`, `movimiento`, `saldo`), nunca mezclado con
   inglés (`account`). Utilidades genéricas de código pueden ir en inglés.
+- **El gestor es pnpm, solo pnpm.** Nunca `npm install` ni `yarn` en este repo: generan
+  un lockfile paralelo y versiones distintas por máquina. `package-lock.json` y
+  `yarn.lock` están en `.gitignore` a propósito.
+- **Next 16 no es el Next que recuerdas.** Cambió APIs y convenciones respecto a la 14/15.
+  Antes de escribir código de Next, lee la guía que trae el propio paquete en
+  `apps/web/node_modules/next/dist/docs/`. (`create-next-app` dejaba un `AGENTS.md` en
+  `apps/web` diciendo justo esto; se quitó para no tener instrucciones anidadas.)
 - **Puertos fijos**: web 3000, mcp 3100, ml 8000. Cambiarlos toca `scripts/dev.sh`,
   `.env.example` y la skill `scaffold`.
 - **`.env.example` siempre completo.** Toda variable nueva entra ahí, con comentario, en

@@ -3,6 +3,7 @@
 # quien esta trabajando, que hay en el tablero y que quedo pendiente.
 # Todo lo que imprime entra al contexto del agente.
 set -u
+export TZ=America/Monterrey   # todas las horas del repo en hora de Monterrey (UTC-6)
 cd "${CLAUDE_PROJECT_DIR:-$(cd "$(dirname "$0")/.." && pwd)}" || exit 0
 
 echo "== Reto Banorte: inicio de sesion $(date '+%Y-%m-%d %H:%M') =="

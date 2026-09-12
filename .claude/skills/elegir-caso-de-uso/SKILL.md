@@ -33,7 +33,7 @@ más que cinco pantallas a medias."**
    y **la tool de acción** (nombres `snake_case`); el flujo accionable paso a paso;
    qué NO entra.
 6. **Reparte de inmediato** en `docs/tablero.md`:
-   - `contrato`: spike `@a2ui/react` con un componente propio (ADR 0003) → schemas de
+   - `contrato`: `packages/a2ui` (renderer propio, ADR 0008) → schemas de
      tools → agente.
    - `mcp`: datos sintéticos con estado mutable → tools de lectura → tool de acción.
    - `web`: tokens visuales → primer componente del catálogo con `.jsonl` de ejemplo.

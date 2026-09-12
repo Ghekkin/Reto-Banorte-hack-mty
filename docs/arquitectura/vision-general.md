@@ -25,7 +25,7 @@ flowchart LR
   U[Usuario] -->|intención| A[Agente / LLM<br/>apps/web/src/lib/agente]
   A -->|tool calls| M[Servidor MCP<br/>apps/mcp]
   M -->|datos y acciones| A
-  A -->|mensajes A2UI<br/>createSurface / updateComponents / updateDataModel| R[Renderer A2UI<br/>@a2ui/react en apps/web]
+  A -->|mensajes A2UI<br/>createSurface / updateComponents / updateDataModel| R[Renderer A2UI propio<br/>packages/a2ui]
   R -->|catálogo propio| C[Componentes financieros<br/>packages/catalogo]
   C -->|action { name, context }| A
   M --> D[(datos sintéticos<br/>PostgreSQL o CSV en memoria)]
@@ -38,8 +38,8 @@ flowchart LR
 |---|---|---|---|
 | Agente (`apps/web/src/lib/agente/`) | Interpretar intención, llamar tools, **emitir mensajes A2UI** restringidos al catálogo, recibir `action` y continuar | No pinta; no contiene datos | `contrato` |
 | Servidor MCP (`apps/mcp/`) | Tools de **lectura** (cuentas, movimientos, productos) y de **acción** (aplicar plan, transferir, contratar) que mutan el estado sintético | No sabe de UI ni de A2UI | `mcp` |
-| Renderer A2UI (`apps/web`) | `MessageProcessor` + `A2uiSurface` de `@a2ui/react`; enruta `action` al agente | No decide qué mostrar | `contrato` |
-| Catálogo (`packages/catalogo/`) | Componentes React propios con schema de props; registrados en un `Catalog` A2UI | No llama al MCP ni fetch propio | `web` |
+| Renderer A2UI (`packages/a2ui`) | Valida con los schemas oficiales, procesa los mensajes, resuelve bindings, pinta con el registro; enruta `action` al agente (ADR 0008) | No decide qué mostrar | `contrato` |
+| Catálogo (`packages/catalogo/`) | Componentes React propios con schema de props; registrados en el registro de `packages/a2ui` | No llama al MCP ni fetch propio | `web` |
 | Schemas de tools (`packages/schemas/`) | Zod de entrada/salida de cada tool | — | `contrato` |
 | Datos (`db/datos/` → PostgreSQL) | Tres perfiles demo, movimientos, créditos, portafolios; **estado mutable** en `acciones_aplicadas` | — | `mcp` |
 
@@ -66,5 +66,4 @@ contexto. Se demuestra en el guion con tres perfiles demo.
 
 - Modelo: **Gemini 3.8 Flash** por defecto vía `@ai-sdk/google`; Claude Sonnet 5 como
   respaldo con `MODELO=claude` (ADR 0005).
-- Si el spike de `@a2ui/react` falla (ADR 0003), el `MessageProcessor` es nuestro.
 - Transporte agente → cliente: SSE/JSONL por el route handler de Next.js.

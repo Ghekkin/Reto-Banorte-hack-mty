@@ -47,10 +47,13 @@ quien.
 - [0005 — Gemini 3.8 Flash principal, Sonnet 5 de respaldo](decisiones/0005-modelo-gemini-3-8-flash.md)
 - [0006 — Estado del MCP en JSON](decisiones/0006-estado-del-mcp-en-json.md) — reemplazada por 0007
 - [0007 — PostgreSQL como fuente de datos mock, CSV commiteados, fallback en memoria](decisiones/0007-postgresql-como-fuente-de-datos-mock.md)
+- [0008 — Renderer A2UI propio, fiel a la spec](decisiones/0008-renderer-a2ui-propio.md)
+- [0009 — El agente se llama Maya](decisiones/0009-maya-como-marca-del-agente.md)
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
 - [Sistema de diseño](arquitectura/diseno.md) — shadcn/ui + paleta de Banorte, con los tokens
+- [Renderer A2UI propio](arquitectura/renderer-a2ui.md) — plan de `packages/a2ui`: estructura, reducer, bindings, acciones, criterios de aceptación
 - [Contrato agente ↔ cliente](arquitectura/contrato-agente-cliente.md) — el endpoint, la petición, el stream JSONL, la convención de acciones
 - [Trade-offs](arquitectura/trade-offs.md) — entregable 04: modelo, protocolo, infraestructura, con lo descartado
 - [Deploy](arquitectura/deploy.md) — URLs, servidor y commit desplegado (cuando exista)

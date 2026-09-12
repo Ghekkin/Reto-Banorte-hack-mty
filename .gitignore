@@ -1,4 +1,8 @@
 # dependencias y builds
+# El gestor del repo es pnpm. Un package-lock.json es residuo de un `npm install`
+# despistado: instala versiones distintas a las del pnpm-lock y se sube sin querer.
+package-lock.json
+yarn.lock
 node_modules/
 .next/
 dist/
@@ -19,6 +23,9 @@ service-account*.json
 # local de cada quien: identidad de sesion y ajustes personales de Claude Code
 .sesion
 .claude/settings.local.json
+
+# estado mutable del MCP: lo cambian las acciones y se reinicia antes de cada ensayo
+apps/mcp/estado.json
 
 # ruido
 *.log

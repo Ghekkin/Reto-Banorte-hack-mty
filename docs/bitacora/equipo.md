@@ -1,5 +1,9 @@
 # Bitácora del equipo
 
+> **Horas en hora de Monterrey (UTC-6).** Las entradas del 2026-09-12 anteriores a esta
+> nota se escribieron con la hora del servidor (UTC+2): réstales 8 h — ocurrieron la
+> noche del viernes 11 (p. ej. "04:08" = vie 20:08). Desde aquí, todo en hora local.
+
 Entradas con fecha y hora, las más recientes **arriba**. Se escribe conforme pasa,
 no al final. La bitácora personal de cada quien está al lado (`<nombre>.md`, ver
 `README.md`). Tres tipos de entrada:
@@ -13,6 +17,29 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 ---
 
 ## 2026-09-12
+
+- **vie 23:30 · decisión** — El agente se llama **Maya** (ADR 0009), no Brújula: es la
+  asistente virtual real de Banorte (300+ consultas, **17 operaciones bancarias**, hoy
+  en texto y menús). El encuadre es evolución, no crítica: "lo que le falta no es
+  capacidad, es superficie". Paquetes `@maya/*`. Límites de marca: sin logotipo, sin
+  tipografía corporativa, dominio que no imita, disclaimer en el README, y se confirma
+  en el stand.
+
+- **vie 23:25 · hecho** — `packages/a2ui/spec/`: spec A2UI v0.9.1 vendoreada del repo
+  oficial (commit `1c45c809`): schemas de mensajes, catálogo básico con 18 componentes y
+  **8 archivos de casos de conformidad** que serán los tests del renderer. Apache 2.0.
+
+- **vie 23:10 · decisión** — Renderer A2UI **propio** (ADR 0008): `packages/a2ui` con los
+  JSON Schema oficiales vendoreados para validar; sin `@a2ui/react` (Lit/shadow DOM
+  rompería shadcn y la paleta) y sin spike. Plan de construcción en
+  `arquitectura/renderer-a2ui.md`; corte sáb 02:00 = pinta `PlanDePago` desde un `.jsonl`
+  y devuelve un `action`.
+
+- **vie 22:55 · decisión** — Zona horaria única: Monterrey (UTC-6). El servidor está en
+  UTC+2 y eso hizo creer que íbamos en la hora 11 del reto cuando vamos en la 3. Scripts
+  con `TZ=America/Monterrey`; roadmap re-baseado a H3 con 33 h por delante: fase 1 a
+  H14 (sáb 10:00), ensayo a H20, fase 3 a H28, congelación H30, entrega H36 (dom 08:00,
+  por confirmar). Se trabaja la noche del viernes entera; dos ventanas de sueño de 4 h.
 
 - **07:30 · decisión** — Roadmap de las horas restantes en `docs/equipo/roadmap.md`,
   re-baseado a H11: cortes en H14 (A2UI), H16 (`dev.sh`), **H22 (fase 1)**, H26 (ensayo),
@@ -119,3 +146,26 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   obligatorios, algoritmos explicados, `main` siempre demostrable, sin push sin pedir.
 - **22:40 · hecho** — Creados `CLAUDE.md`, estructura de `docs/` y skills del repo.
   Sin código todavía; el reto empieza mañana y faltan los detalles oficiales.
+
+## sáb 13 · 07:45 — El scaffold está arriba y `main` arranca
+
+`pnpm install && pnpm dev` levanta el MCP (3100) y la web (3000). `pnpm typecheck`,
+`pnpm test` (19) y `pnpm humo` pasan. Los cinco paquetes se llaman `@maya/*`.
+
+Lo que esto desbloquea, por rol:
+
+- **`web`**: `apps/web` con shadcn inicializado (23 componentes) y los tokens de Banorte
+  aplicados. El shell flotante (sidebar + lienzo bento + barra de conversación) ya está
+  y funciona. Cada componente del catálogo tiene su carpeta con el encargo escrito:
+  intención, props previstas, acciones y qué primitivas usar.
+- **`mcp`**: `apps/mcp` con la capa de datos sobre los 22 CSV, el estado mutable con
+  idempotencia y `consultar_perfil` como plantilla. Una tool nueva son tres archivos.
+- **`contrato`**: `packages/a2ui` con reducer, bindings, árbol, registro, acciones y
+  `<Superficie>`, **fiel al formato de la spec vendoreada** (props planas, raíz `root`,
+  plantillas de hijos), 15 tests en verde. Falta ajv contra `spec/` y los 8 casos de
+  conformidad. El agente es un mock con el stream ya conectado de punta a punta.
+- **`demo`**: `README.md` con comandos reales y el disclaimer de prototipo no oficial.
+
+Dos cosas que van a morder si no se leen: **los imports internos van sin extensión**
+(Turbopack no mapea `.js`→`.ts`, y el typecheck no lo detecta) y **los tokens propios se
+usan como `bg-lienzo`, no `bg-[--lienzo]`** (Tailwind v4; la skill ya está corregida).

@@ -1,0 +1,34 @@
+{
+  "name": "@maya/catalogo",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Catalogo A2UI propio: los componentes financieros que el agente puede invocar. Uno por intencion.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./catalogo.json": "./catalogo.json"
+  },
+  "scripts": {
+    "generar": "tsx scripts/generar-catalogo.ts",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@maya/a2ui": "workspace:*",
+    "zod": "^4.6.2"
+  },
+  "peerDependencies": {
+    "react": "^19"
+  },
+  "devDependencies": {
+    "@types/node": "^22",
+    "@types/react": "^19",
+    "lucide-react": "^1.45.0",
+    "react": "19.2.8",
+    "tsx": "^4.19.2",
+    "typescript": "^5",
+    "vitest": "^3.2.4"
+  }
+}

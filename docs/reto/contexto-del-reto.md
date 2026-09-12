@@ -128,6 +128,9 @@ solución incompleta".
 
 - Stack TS (ADR 0001), Python solo detrás de una tool (ADR 0002).
 - **A2UI real** con catálogo propio, no un protocolo inventado (ADR 0003).
+- **El agente se llama Maya (ADR 0009)**: la asistente virtual real de Banorte, que hoy
+  hace 300+ consultas y 17 operaciones **en texto y menús**. Nuestra propuesta es la
+  misma capacidad entregada como interfaz que se construye y actúa.
 - **Caso de uso decidido (ADR 0004)**: un viaje de salud financiera en tres intenciones
   —reestructura de tarjeta, gasto por categoría, meta de ahorro— construido en orden
   estricto, con dos usuarios demo y un catálogo de 8 componentes.
