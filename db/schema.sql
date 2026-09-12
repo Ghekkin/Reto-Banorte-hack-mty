@@ -1,5 +1,5 @@
--- Reto Banorte — Hack Monterrey 2026
--- Esquema de los datos mock. Ver ADR 0005 y docs/como-funciona/datos-mock.md.
+-- Reto Banorte â€” Hack Monterrey 2026
+-- Esquema de los datos mock. Ver ADR 0007 y docs/como-funciona/datos-mock.md.
 --
 -- Convenciones:
 --   * Todo monto es BIGINT en CENTAVOS. Nunca NUMERIC para dinero.
@@ -8,7 +8,7 @@
 --   * Fechas DATE; los timestamps llevan zona (America/Monterrey, -06:00).
 --
 -- Territorios cubiertos: Credito, Banca personal + Educacion financiera, Inversiones.
--- Pagos y Seguros quedan fuera de esta tanda a proposito (ADR 0005).
+-- Pagos y Seguros quedan fuera de esta tanda a proposito (ADR 0007).
 
 DROP SCHEMA IF EXISTS banorte CASCADE;
 CREATE SCHEMA banorte;
@@ -62,7 +62,7 @@ CREATE TABLE tarjetas (
     usuario_id             TEXT          NOT NULL REFERENCES usuarios(id),
     marca                  TEXT          NOT NULL CHECK (marca IN ('visa','mastercard')),
     producto               TEXT          NOT NULL,
-    mascara                TEXT          NOT NULL,     -- '•••• 4821'
+    mascara                TEXT          NOT NULL,     -- 'â€¢â€¢â€¢â€¢ 4821'
     tipo                   TEXT          NOT NULL CHECK (tipo IN ('debito','credito')),
     limite_centavos        BIGINT        NOT NULL CHECK (limite_centavos >= 0),
     saldo_centavos         BIGINT        NOT NULL CHECK (saldo_centavos >= 0),

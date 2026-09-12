@@ -57,9 +57,13 @@ quien.
 
 ### Cómo funciona
 - [Reglas y plantilla](como-funciona/README.md)
+- [Base de datos](como-funciona/base-de-datos.md) — referencia del esquema `banorte`: las 22 tablas columna por columna, relaciones, índices, restricciones, las tres rutas de carga y los trade-offs
+- [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, los 22 CSV y las invariantes que sostienen la demo
 
 ### Algoritmos
 - [Reglas y plantilla](algoritmos/README.md)
+- [Generación de los datos mock](algoritmos/generacion-de-datos.md) — patrones, estacionalidad, calibración del flujo, puntaje de salud financiera
+- [Amortización, CAT y reestructura](algoritmos/amortizacion.md) — mensualidad, tabla que cierra en cero, CAT por bisección, escenario de pago mínimo
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

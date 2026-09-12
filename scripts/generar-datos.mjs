@@ -4,7 +4,7 @@
 //   node scripts/generar-datos.mjs
 //
 // Escribe los 22 CSV en db/datos/. Los CSV se commitean: la demo NO depende de correr
-// esto (ADR 0005). Node puro, sin dependencias, sin build.
+// esto (ADR 0007). Node puro, sin dependencias, sin build.
 //
 // La logica de patrones, estacionalidad y anomalias esta explicada en
 // docs/algoritmos/generacion-de-datos.md; la de credito en docs/algoritmos/amortizacion.md.

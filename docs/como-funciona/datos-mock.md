@@ -76,7 +76,7 @@ que nadie va a ver cifras distintas a las del ensayo.
 **Estado mutable** — `acciones_aplicadas` (0, solo encabezado).
 
 Total 3 690 filas. **Pagos y Seguros no están** en esta tanda y sus tablas no existen
-todavía; el motivo está en el ADR 0005.
+todavía; el motivo está en el ADR 0007.
 
 ### Los tres perfiles
 
@@ -171,7 +171,7 @@ psql "$POSTGRE_BANORTE_URL" -f db/cargar-completo.sql
 
 La demo **no depende** de correr el generador: los CSV están commiteados. Y no depende del
 Postgres: con `FEATURE_POSTGRES` apagado la capa de datos lee los mismos CSV en memoria
-(ADR 0005).
+(ADR 0007).
 
 **Cuidado al agregar una columna.** La ruta 2 usa `\copy` con `HEADER true`, que ignora los
 nombres del encabezado y mapea **por posición**: si el orden del CSV y el de la tabla no
@@ -181,7 +181,7 @@ riesgo porque escriben la lista de columnas explícita.
 
 La demo **no depende** de correr el generador: los CSV están commiteados. Y no depende
 del Postgres: con `FEATURE_POSTGRES` apagado la capa de datos lee los mismos CSV en
-memoria (ADR 0005).
+memoria (ADR 0007).
 
 ### Casos límite conocidos
 

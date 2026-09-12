@@ -40,7 +40,7 @@ causas posibles, en orden de probabilidad:
    vemos, pero hay que revisarlo igual para el siguiente paso.
 
 **Impacto en la demo:** la rompe **si la demo depende de Postgres**. Hoy no depende: los
-datos viven en los 22 CSV commiteados y el ADR 0005 exige que la capa de datos funcione con
+datos viven en los 22 CSV commiteados y el ADR 0007 exige que la capa de datos funcione con
 `FEATURE_POSTGRES` apagado leyendo los CSV en memoria. Mientras ese fallback exista y esté
 probado, esto es un bloqueo de trabajo, no un riesgo de pitch.
 

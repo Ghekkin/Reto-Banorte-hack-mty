@@ -40,7 +40,7 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   de usuario por URL. ADR 0006: estado del MCP en JSON; TimescaleDB detrás de flag
   después de la hora 18.
 
-- **06:20 · decisión** — Modelo (ADR 0005): Gemini 3.8 Flash principal por costo
+- **06:20 · decisión** — Modelo (ADR 0007): Gemini 3.8 Flash principal por costo
   (~$40 el hack), latencia y premio; Claude Sonnet 5 cableado como respaldo con
   `MODELO=claude`. Opus descartado por precio. Facturación en Google desde la hora 1.
 

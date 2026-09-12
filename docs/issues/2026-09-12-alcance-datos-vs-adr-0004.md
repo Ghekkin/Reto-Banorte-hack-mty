@@ -1,0 +1,61 @@
+---
+estado: abierto
+severidad: media
+area: docs
+encontrado: 2026-09-12 10:55
+---
+
+# Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluye
+
+**Dónde:** `db/datos/` (22 CSV), `db/schema.sql`, `scripts/lib/perfiles.mjs` contra
+`docs/decisiones/0004-caso-de-uso.md` líneas 84–85.
+
+**Qué esperaba:** que el alcance de los datos coincidiera con el caso de uso decidido.
+
+**Qué pasa:** el ADR 0004, aceptado, cierra su sección "Qué NO entra" con:
+
+> Tope de gasto salvo tiempo sobrante. Inversiones con rendimiento variable. **Más de dos
+> usuarios demo.** Cualquier cuarta intención.
+
+Los datos generados tienen **tres** perfiles (Ana, Beto y **Carmen**) y **seis** tablas de
+Inversiones con rendimiento variable: `instrumentos`, `perfiles_inversion`,
+`modelos_portafolio`, `portafolios`, `posiciones` y `precios_historicos` (848 filas de
+precios semanales generados con movimiento browniano).
+
+**Cómo lo reproduje / por qué estoy seguro:** `SELECT count(*) FROM banorte.usuarios` da 3;
+`docs/decisiones/0004-caso-de-uso.md:28` dice "Dos usuarios demo" y `:84` excluye
+explícitamente más de dos y las inversiones con rendimiento variable.
+
+El origen del desajuste: los datos se generaron tomando como insumo
+`docs/reto/casos-de-uso.md`, que es material para decidir y no la decisión, y se eligió
+Inversiones para tener un escenario de **ejecutivo de cuenta** (una audiencia que no es el
+usuario retail). El ADR 0004 se decidió con otro criterio: tres intenciones del mismo viaje
+para un solo usuario, construidas en orden estricto.
+
+**Impacto en la demo:** ninguno hoy, y es importante entender por qué. Las seis tablas de
+Inversiones y el tercer perfil son **filas, no código**: ninguna de las tools que el ADR 0004
+lista (`consultar_tarjeta`, `consultar_movimientos`, `simular_reestructura`,
+`comparar_periodos`, `proyectar_ahorro`, `crear_apartado`…) las lee. No hay riesgo de que
+aparezcan en pantalla por accidente.
+
+El costo es otro: son ~890 filas y 6 tablas que hay que mantener coherentes en cada
+regeneración, y un perfil que la demo no va a usar. Antes de la hora 30 eso es peso muerto,
+y el `CLAUDE.md` prohíbe refactors después de la hora 30.
+
+**Decisión pendiente**, y es del equipo (rol `demo` con el tablero en la mano):
+
+1. **Dejarlo.** Costo cero hoy; el esquema queda más grande de lo que la demo usa. Si un
+   juez pregunta "¿y esto para qué es?", hay que tener respuesta.
+2. **Enmendar el ADR 0004** para admitir a Carmen e Inversiones como cuarta intención
+   opcional después de la hora 24, con el escenario del ejecutivo de cuenta como diferencial
+   frente a otros equipos.
+3. **Recortar** a dos perfiles y quitar las seis tablas, para que el esquema sea exactamente
+   lo que la demo usa. Es mecánico: quitar Carmen de `scripts/lib/perfiles.mjs`, las tablas
+   de `db/schema.sql` y regenerar.
+
+Ninguna es obviamente correcta: depende de si el equipo quiere el ángulo de ejecutivo de
+cuenta en el pitch o prefiere un esquema sin nada que sobre.
+
+**Pendiente:** crear el issue en GitHub. `gh` no está instalado en esta máquina (tampoco
+`git` ni `psql`), así que la mitad de GitHub quedó sin hacer y el frontmatter `github:` sigue
+vacío a propósito.

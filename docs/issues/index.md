@@ -83,3 +83,4 @@ gh issue create \
 | Fecha | Sev. | Área | Título | GitHub | Estado |
 |---|---|---|---|---|---|
 | 2026-09-12 | crítica | infra | [El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo](2026-09-12-postgres-remoto-inalcanzable.md) | pendiente (sin `gh`) | abierto |
+| 2026-09-12 | media | docs | [Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluye](2026-09-12-alcance-datos-vs-adr-0004.md) | pendiente (sin `gh`) | abierto |

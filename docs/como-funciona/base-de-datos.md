@@ -10,7 +10,15 @@ relaciones, los índices, las restricciones de negocio y cómo se carga y se ope
 
 Documentos hermanos: `datos-mock.md` explica **qué historia cuentan** los datos y quiénes
 son los tres perfiles; este documento explica **cómo están guardados**. La decisión de usar
-PostgreSQL está en el ADR 0005.
+PostgreSQL está en el ADR 0007.
+
+> **Alcance en disputa con el ADR 0004.** El ADR 0004 cierra su sección "Qué NO entra" con
+> *"Inversiones con rendimiento variable. Más de dos usuarios demo."* Este esquema tiene un
+> tercer perfil (Carmen) y seis tablas de Inversiones con precios variables. Son filas, no
+> código: ninguna tool de las fases 1–3 las lee, así que no hay riesgo de que aparezcan en la
+> demo por accidente. Pero **no tienen caso de uso asignado** y la decisión de dejarlas,
+> adoptarlas o recortarlas está pendiente en
+> `docs/issues/2026-09-12-alcance-datos-vs-adr-0004.md`.
 
 ## Para cualquiera
 
@@ -702,11 +710,11 @@ hackathon. **No copies este patrón a nada que maneje datos reales.**
 ### Lo que este esquema NO tiene
 
 - **Sin `apps/` que lo consuma todavía.** No hay capa de datos, ni tools MCP, ni el fallback
-  a CSV en memoria que el ADR 0005 exige. Hoy el esquema y los CSV existen; el código que
+  a CSV en memoria que el ADR 0007 exige. Hoy el esquema y los CSV existen; el código que
   los lee, no.
 - **Sin Pagos ni Seguros.** Nada de transferencias a terceros, cobros, conciliación,
   cotizaciones, coberturas ni siniestros. Sus tablas no existen y no se diseñaron: se
-  agregan cuando haya un caso de uso que las pida (ADR 0005).
+  agregan cuando haya un caso de uso que las pida (ADR 0007).
 - **Sin migraciones.** No hay historial de versiones del esquema ni herramienta de migración.
   El esquema se rehace completo; en 36 horas eso es correcto y en producción sería
   inaceptable.
