@@ -57,3 +57,59 @@ describe("cada componente pinta su ejemplo", () => {
     }
   });
 });
+
+/* --- Las reglas del sistema de diseno que se pueden verificar sobre el HTML --- */
+
+describe("reglas de diseno (skill diseno-banorte)", () => {
+  /**
+   * El bug que costo el rediseno de `GastoPorCategoria`: los montos vivian en el tooltip
+   * de la grafica, asi que en movil —donde no hay hover— no se podia leer una sola cifra.
+   * Si vuelve a pasar, esto truena.
+   */
+  it("GastoPorCategoria muestra TODOS los montos, ninguno solo en un tooltip", () => {
+    const html = pintar("GastoPorCategoria");
+    for (const monto of ["$7,200.00", "$5,326.00", "$4,800.00", "$4,601.50", "$3,702.00", "$2,404.50"]) {
+      expect(html, `falta el monto ${monto} en el HTML`).toContain(monto);
+    }
+  });
+
+  it("ninguna tabla pasa de dos columnas: a 360 px la tercera obliga a scroll horizontal", () => {
+    for (const entrada of CATALOGO) {
+      const html = pintar(entrada.nombre);
+      const celdasPorFila = [...html.matchAll(/<tr[^>]*>(.*?)<\/tr>/gs)].map(
+        (m) => (m[1]!.match(/<t[dh][\s>]/g) ?? []).length,
+      );
+      const maximo = Math.max(0, ...celdasPorFila);
+      expect(maximo, `${entrada.nombre} tiene una fila de ${maximo} celdas`).toBeLessThanOrEqual(2);
+    }
+  });
+
+  it("todo lo tocable mide 48 px de alto (min-h-12)", () => {
+    for (const entrada of CATALOGO) {
+      const html = pintar(entrada.nombre);
+      for (const coincidencia of html.matchAll(/<(button|label)([^>]*)>/g)) {
+        const etiqueta = coincidencia[1] ?? "";
+        const atributos = coincidencia[2] ?? "";
+        // El radio de una opcion es tocable por su <label>, que es quien lleva la altura.
+        if (etiqueta === "button" && /data-slot="radio-group-item"/.test(atributos)) continue;
+        expect(atributos, `${entrada.nombre}: un <${etiqueta}> sin min-h-12`).toMatch(/min-h-12/);
+      }
+    }
+  });
+
+  it("cero hex en el HTML: todo color sale de un token", () => {
+    for (const entrada of CATALOGO) {
+      const html = pintar(entrada.nombre);
+      const hex = html.match(/(?:style|fill|stroke)="[^"]*#[0-9a-fA-F]{3,8}/g) ?? [];
+      expect(hex, `${entrada.nombre} pinta un hex suelto`).toEqual([]);
+    }
+  });
+
+  it("todas las tarjetas usan la densidad del sistema, para que no se separen", () => {
+    for (const entrada of CATALOGO) {
+      const html = pintar(entrada.nombre);
+      expect(html, `${entrada.nombre} no usa --card-spacing del sistema`).toContain("--card-spacing:--spacing(4)");
+      expect(html, `${entrada.nombre} no sube a p-5 en escritorio`).toContain("md:[--card-spacing:--spacing(5)]");
+    }
+  });
+});

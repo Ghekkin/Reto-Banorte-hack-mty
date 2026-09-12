@@ -20,14 +20,38 @@
 haya puesto en el `context` (el periodo, típicamente). Solo vista: el agente llama
 `consultar_movimientos` y repinta con `DetalleCategoria` al lado.
 
-## Diseño
+## Diseño: una lista con barras, no una gráfica de Recharts
 
-Gráfica de barras horizontales con `chart` (Recharts): dos tonos, **nunca arcoíris**. La
-atípica en `--chart-2` (rojo), el resto en `--chart-4` (plata). Debajo, una frase con la
-atípica y su brinco.
+Empezó siendo una gráfica de barras con `chart` (Recharts) y se cambió. La razón no es
+estética:
+
+- **Los montos vivían en el tooltip**, y un tooltip **no existe en móvil**. Una tarjeta
+  financiera donde no se puede leer una sola cifra sin pasar el mouse rompe la regla
+  central del sistema —"el número manda"— justo en el dispositivo donde se va a ver.
+- **El área tocable era la barra**, unos pocos píxeles de alto, y de ahí sale la acción
+  `ver_categoria`. Ahora la fila completa es el botón, con los 48 px que pide Material.
+- A 360 px, el eje de categorías se comía el ancho y truncaba "Intereses y comisiones".
+
+Ahora cada fila trae **el monto siempre visible** (`tabular-nums`), su variación cuando es
+significativa (≥ 5 %), y una barra (`progress` de shadcn) que da la proporción de un
+vistazo. La barra se mide **contra la categoría más grande**, no contra el total: con seis
+categorías, medir contra el total deja todas las barras cortas y no se compara nada.
+
+La atípica va en rojo de marca (`bg-primary`) y en negritas; el resto en plata
+(`bg-chart-4`). Dos tonos, nunca arcoíris. Sigue siendo shadcn: `card`, `progress`,
+`skeleton`.
+
+`recharts` sigue declarado en el `package.json` del paquete y ya no lo usa nadie: quitarlo
+mueve `pnpm-lock.yaml`, y el lockfile está ahora mismo mezclado con la migración del MCP a
+Postgres que otra sesión tiene a medias. Se quita cuando eso aterrice.
+
+Es la desviación de un renglón de la skill (`Gráfica → chart`) a favor de sus reglas
+duras (el monto visible, 360 px sin scroll, 48 px tocables, legible proyectado), que son
+las que dicen "no se negocia". Queda escrito aquí para que sea una decisión y no una
+deriva.
 
 ## Estados
 
-- **Cargando**: skeleton con el hueco de la gráfica. **Vacío**: "No hay gasto registrado".
+- **Cargando**: skeleton del alto final. **Vacío**: "No hay gasto registrado en este periodo".
 
-Ejemplo: `ejemplos/gasto-por-categoria.jsonl`. Primitivas: `card`, `chart`, `skeleton`.
+Ejemplo: `ejemplos/gasto-por-categoria.jsonl`. Primitivas: `card`, `progress`, `skeleton`.

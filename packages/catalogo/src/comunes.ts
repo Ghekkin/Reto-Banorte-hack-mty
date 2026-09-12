@@ -97,6 +97,36 @@ export function hoyISO(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 
+/**
+ * La tarjeta del sistema, en un solo lugar (skill `diseno-banorte`).
+ *
+ * `Card` de shadcn trae su propio padding con la variable `--card-spacing`, asi que la
+ * densidad del sistema —`p-4` en movil, `p-5` en escritorio— se pone moviendo ESA
+ * variable, no agregando `p-5` a cada `CardContent`: hacer lo segundo duplicaba el
+ * padding y peleaba con la primitiva.
+ *
+ * `ring-0` apaga el anillo que `Card` trae por defecto; el sistema usa borde, no anillo.
+ */
+export const CLASES_TARJETA =
+  "animar-entrada gap-3 rounded-2xl border border-borde-sutil shadow-sm ring-0 " +
+  "[--card-spacing:--spacing(4)] md:gap-4 md:[--card-spacing:--spacing(5)]";
+
+/** La misma tarjeta con el degradado de marca. **Una por pantalla, nunca dos.** */
+export const CLASES_TARJETA_HEROE =
+  "animar-entrada gap-3 rounded-2xl border-0 shadow-sm ring-0 text-primary-foreground " +
+  "bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] " +
+  "[--card-spacing:--spacing(4)] md:gap-4 md:[--card-spacing:--spacing(5)]";
+
+/** El pie de una tarjeta heroe: el `bg-muted/50` de shadcn no va sobre el degradado. */
+export const CLASES_PIE_HEROE = "border-white/20 bg-transparent";
+
+/**
+ * Fila tocable: 48 px de alto minimo en movil y las capas de estado de Material 3
+ * (hover 8 %, pressed 12 %). Lo usan las filas de `PlanDePago` y `GastoPorCategoria`.
+ */
+export const CLASES_FILA_TOCABLE =
+  "min-h-12 rounded-xl transition-colors duration-150 ease-out hover:bg-current/8 active:bg-current/12";
+
 /** Cada entrada del catalogo: lo que el agente lee para decidir. */
 export type EntradaCatalogo = {
   nombre: string;

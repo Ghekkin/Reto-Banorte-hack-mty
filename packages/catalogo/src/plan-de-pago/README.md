@@ -24,6 +24,13 @@ al confirmar, el renderer manda el `context` declarado más `{ plazoMeses }` ele
 al agente por cada clic en un radio sería un turno completo por toque. Solo la
 confirmación viaja.
 
+## El número grande es el ahorro
+
+No la mensualidad: el dato que decide la conversación es "te ahorras $132,065 frente a
+pagar el mínimo", y cambia al mover la selección, así que la tarjeta responde al toque sin
+ir al agente. La mensualidad de cada plazo va en su fila, alineada a la derecha con
+`shrink-0`, para que a 360 px el nombre se recorte antes que el monto.
+
 ## Estados
 
 - **Cargando**: skeleton de tres filas hasta que llega `opciones`.

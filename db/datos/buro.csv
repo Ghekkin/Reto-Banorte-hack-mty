@@ -1,4 +1,0 @@
-usuario_id,score,calificacion,consultas_12m,cuentas_abiertas,pagos_puntuales_pct,atrasos_12m,deuda_total_centavos,pago_mensual_comprometido_centavos,capacidad_pago_mensual_centavos,nivel_endeudamiento_pct,precalificado,precalificado_hasta_centavos,fecha_consulta
-usr_ana,742,bueno,2,4,0.98,0,5578308,457095,662905,0.1428,true,15900000,2026-09-05
-usr_beto,561,bajo,7,6,0.74,4,7692665,546129,661371,0.1583,false,0,2026-09-05
-usr_carmen,806,excelente,1,9,1,0,158051565,3142971,882029,0.2733,true,21200000,2026-09-05

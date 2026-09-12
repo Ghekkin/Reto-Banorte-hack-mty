@@ -1,20 +1,27 @@
 "use client";
 
 import { useState } from "react";
-import { ArrowRight, PiggyBank } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
-import { formatearFecha, formatearMonto, hoyISO, sumarMeses } from "../comunes";
+import { CLASES_TARJETA, formatearFecha, formatearMonto, hoyISO, sumarMeses } from "../comunes";
 import type { PropsSimuladorMeta } from "./schema";
 
+/** El slider trabaja en pesos: el paso de un centavo no significa nada para nadie. */
+const PASO_CENTAVOS = 10000;
+
 /**
- * El slider mueve la aportacion y la fecha se recalcula AQUI, sin ir al agente: es
- * aritmetica de division (faltante entre aportacion por mes, sin rendimiento, la misma
- * regla de `proyectar_ahorro`). Ir al agente por cada tick del slider seria un turno por
- * pixel. Lo que si va al agente es la confirmacion, con la aportacion elegida.
+ * El simulador de meta: mueve la aportacion y la fecha se recalcula AQUI, sin ir al
+ * agente. Es una division (faltante entre aportacion por mes, sin rendimiento: la misma
+ * regla de `docs/algoritmos/proyeccion-de-ahorro.md`); ir al agente por cada tick del
+ * slider seria un turno por pixel. El numero autoritativo vuelve de la tool despues de la
+ * accion.
+ *
+ * **El numero grande es la fecha a la que llegas**, porque es lo que la persona viene a
+ * ver y lo que cambia al arrastrar. El objetivo queda como contexto arriba.
  */
 export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -32,10 +39,14 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
   } = props;
   const [aportacion, setAportacion] = useState(aportacionCentavos ?? 0);
 
-  if (typeof metaCentavos !== "number" || typeof aportacionCentavos !== "number" || typeof aportacionMaximaCentavos !== "number") {
+  if (
+    typeof metaCentavos !== "number" ||
+    typeof aportacionCentavos !== "number" ||
+    typeof aportacionMaximaCentavos !== "number"
+  ) {
     return (
-      <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
-        <CardContent className="flex flex-col gap-3 p-5">
+      <Card className={CLASES_TARJETA}>
+        <CardContent className="flex flex-col gap-3">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-9 w-40" />
           <Skeleton className="h-2 w-full" />
@@ -48,59 +59,56 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
   const porMes = frecuencia === "quincenal" ? aportacion * 2 : aportacion;
   const meses = porMes > 0 ? Math.max(1, Math.ceil(faltante / porMes)) : 0;
   const fecha = meses > 0 ? sumarMeses(fechaInicio ?? hoyISO(), meses) : undefined;
-  // El slider trabaja en pesos enteros: el paso de un centavo no significa nada para nadie.
-  const paso = 10000;
   const minimo = Math.min(aportacionMinimaCentavos, aportacionMaximaCentavos);
 
   return (
-    <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
+    <Card className={CLASES_TARJETA}>
       <CardHeader>
-        <span className="text-xs text-muted-foreground">{nombre}</span>
-        <CardTitle className="flex items-center gap-2 text-3xl font-semibold tabular-nums">
-          <PiggyBank className="size-6 text-muted-foreground" /> {formatearMonto(metaCentavos)}
-        </CardTitle>
-        {saldoInicialCentavos > 0 ? (
-          <p className="text-sm text-muted-foreground">
-            Ya llevas <span className="tabular-nums">{formatearMonto(saldoInicialCentavos)}</span>.
-          </p>
-        ) : null}
+        <span className="text-xs text-muted-foreground">
+          {nombre} · <span className="monto">{formatearMonto(metaCentavos)}</span>
+          {saldoInicialCentavos > 0 ? (
+            <>
+              {" "}
+              · llevas <span className="monto">{formatearMonto(saldoInicialCentavos)}</span>
+            </>
+          ) : null}
+        </span>
+        {meses > 0 && fecha ? (
+          <>
+            <span className="monto text-3xl font-semibold">{formatearFecha(fecha, true)}</span>
+            <span className="text-sm text-muted-foreground">
+              llegas en {meses} {meses === 1 ? "mes" : "meses"}
+            </span>
+          </>
+        ) : (
+          <span className="text-sm text-muted-foreground">Mueve la aportación para ver cuándo llegas.</span>
+        )}
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4 p-5 pt-0">
-        <div className="flex flex-col gap-2">
-          <div className="flex items-baseline justify-between">
-            <span className="text-sm">Aportación {frecuencia === "quincenal" ? "quincenal" : "mensual"}</span>
-            <span className="text-xl font-semibold tabular-nums">{formatearMonto(aportacion)}</span>
-          </div>
-          <Slider
-            value={[aportacion]}
-            min={minimo}
-            max={aportacionMaximaCentavos}
-            step={paso}
-            onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacion) : valor)}
-            aria-label="Aportación"
-          />
-          <div className="flex justify-between text-xs text-muted-foreground tabular-nums">
-            <span>{formatearMonto(minimo)}</span>
-            <span>{formatearMonto(aportacionMaximaCentavos)}</span>
-          </div>
+      <CardContent className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3">
+          <span className="text-sm">Aportación {frecuencia === "quincenal" ? "quincenal" : "mensual"}</span>
+          <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
         </div>
-
-        <div className="rounded-xl bg-muted p-3 text-sm">
-          {meses > 0 && fecha ? (
-            <>
-              Llegas en <span className="font-semibold">{meses} {meses === 1 ? "mes" : "meses"}</span>: el{" "}
-              <span className="font-semibold">{formatearFecha(fecha, true)}</span>.
-            </>
-          ) : (
-            "Mueve la aportación para ver cuándo llegas."
-          )}
+        {/* `py-3` le da al slider los 48 px de alto tocable sin engordar la barra. */}
+        <Slider
+          value={[aportacion]}
+          min={minimo}
+          max={aportacionMaximaCentavos}
+          step={PASO_CENTAVOS}
+          onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacion) : valor)}
+          aria-label="Aportación"
+          className="py-3"
+        />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span className="monto">{formatearMonto(minimo)}</span>
+          <span className="monto">{formatearMonto(aportacionMaximaCentavos)}</span>
         </div>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-start gap-3 border-t border-borde-sutil pt-4">
+      <CardFooter className="flex flex-col items-start gap-3">
         <Button
-          className="rounded-full"
+          className="min-h-12 w-full rounded-full sm:w-auto"
           size="lg"
           disabled={!alAccionar || aportacion <= 0}
           onClick={() =>

@@ -4,32 +4,42 @@ import { useState } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_FILA_TOCABLE, CLASES_TARJETA, formatearMonto, formatearPorcentaje } from "../comunes";
 import type { PropsPlanDePago } from "./schema";
 
 /**
- * La seleccion del plazo vive en el componente (estado de interfaz, no dato de negocio):
- * ir al agente por cada clic en un radio seria un turno completo por toque. Lo que si
- * va al agente es la confirmacion: el boton dispara la accion declarada con el plazo
- * elegido como `contextoExtra`, y el agente llama la tool.
+ * Las opciones de reestructura y el boton que APLICA.
+ *
+ * **El numero grande es el ahorro del plazo elegido**, no la mensualidad: es el dato que
+ * decide la conversacion ("te ahorras $132,065 frente a pagar el minimo") y cambia al
+ * mover la seleccion, asi que la tarjeta responde al toque sin ir al agente.
+ *
+ * La seleccion del plazo vive aqui (estado de interfaz, no dato de negocio): ir al agente
+ * por cada clic en un radio seria un turno completo por toque. Lo que si viaja es la
+ * confirmacion, con el plazo elegido en el `contextoExtra` de la accion.
+ *
+ * Cada opcion es un `<label>` de 48 px con su radio: a 360 px el nombre se recorta y el
+ * monto nunca se sale, porque va en su propia columna con `shrink-0`.
  */
 export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponente, "alAccionar">) {
   const { opciones, plazoElegido, tarjetaId, etiquetaBoton = "Aplicar plan", razon, alAccionar } = props;
   const recomendado = opciones?.find((o) => o.recomendado)?.plazoMeses;
-  const [seleccion, setSeleccion] = useState<number | undefined>(plazoElegido ?? recomendado ?? opciones?.[0]?.plazoMeses);
+  const [seleccion, setSeleccion] = useState<number | undefined>(
+    plazoElegido ?? recomendado ?? opciones?.[0]?.plazoMeses,
+  );
 
   if (!opciones) {
     return (
-      <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
-        <CardContent className="flex flex-col gap-3 p-5">
+      <Card className={CLASES_TARJETA}>
+        <CardContent className="flex flex-col gap-3">
           <Skeleton className="h-4 w-40" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-12 w-full" />
+          <Skeleton className="h-9 w-48" />
+          <Skeleton className="h-14 w-full" />
+          <Skeleton className="h-14 w-full" />
         </CardContent>
       </Card>
     );
@@ -37,9 +47,11 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
 
   if (opciones.length === 0) {
     return (
-      <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
-        <CardContent className="p-5 text-sm text-muted-foreground">
-          No hay planes que cotizar para esta tarjeta. Pregúntame por otra opción.
+      <Card className={CLASES_TARJETA}>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            No hay planes que cotizar para esta tarjeta. Pregúntame por otra opción.
+          </p>
         </CardContent>
       </Card>
     );
@@ -48,54 +60,56 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
   const elegida = opciones.find((o) => o.plazoMeses === seleccion) ?? opciones[0]!;
 
   return (
-    <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
+    <Card className={CLASES_TARJETA}>
       <CardHeader>
-        <CardTitle className="text-base">Elige tu plazo</CardTitle>
-        <p className="text-sm text-muted-foreground">
-          Con {elegida.plazoMeses} meses te ahorras{" "}
-          <span className="font-semibold tabular-nums text-foreground">{formatearMonto(elegida.ahorroCentavos)}</span> frente a
-          pagar el mínimo.
-        </p>
+        <span className="text-xs text-muted-foreground">Te ahorras con este plan</span>
+        <span className="monto text-3xl font-semibold">{formatearMonto(elegida.ahorroCentavos)}</span>
+        <span className="text-sm text-muted-foreground">
+          frente a seguir pagando el mínimo, en {elegida.plazoMeses} meses
+        </span>
       </CardHeader>
 
-      <CardContent className="p-5 pt-0">
+      <CardContent>
         <RadioGroup
           value={String(seleccion ?? "")}
           onValueChange={(valor) => setSeleccion(Number(valor))}
           aria-label="Plazo del plan de pago"
+          className="gap-2"
         >
           {opciones.map((o) => {
             const activa = o.plazoMeses === seleccion;
             return (
               <label
                 key={o.plazoMeses}
-                className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-colors ${
-                  activa ? "border-primary bg-tinte" : "border-borde-sutil hover:bg-muted"
+                className={`flex cursor-pointer items-center gap-3 border px-3 py-2 ${CLASES_FILA_TOCABLE} ${
+                  activa ? "border-primary bg-tinte" : "border-borde-sutil"
                 }`}
               >
                 <RadioGroupItem value={String(o.plazoMeses)} />
-                <div className="flex flex-1 flex-col">
+                <span className="flex min-w-0 flex-1 flex-col">
                   <span className="flex items-center gap-2 text-sm font-medium">
                     {o.plazoMeses} meses
                     {o.recomendado ? (
-                      <Badge className="bg-tinte text-primary" variant="secondary">
+                      <Badge variant="secondary" className="bg-tinte text-primary">
                         <Star /> Recomendado
                       </Badge>
                     ) : null}
                   </span>
-                  <span className="text-xs text-muted-foreground">CAT {formatearPorcentaje(o.cat)}</span>
-                </div>
-                <span className="text-base font-semibold tabular-nums">{formatearMonto(o.mensualidadCentavos)}</span>
-                <span className="text-xs text-muted-foreground">/mes</span>
+                  <span className="monto text-xs text-muted-foreground">CAT {formatearPorcentaje(o.cat)}</span>
+                </span>
+                <span className="flex shrink-0 flex-col items-end">
+                  <span className="monto text-sm font-semibold">{formatearMonto(o.mensualidadCentavos)}</span>
+                  <span className="text-xs text-muted-foreground">al mes</span>
+                </span>
               </label>
             );
           })}
         </RadioGroup>
       </CardContent>
 
-      <CardFooter className="flex flex-col items-start gap-3 border-t border-borde-sutil pt-4">
+      <CardFooter className="flex flex-col items-start gap-3">
         <Button
-          className="rounded-full"
+          className="min-h-12 w-full rounded-full sm:w-auto"
           size="lg"
           disabled={!alAccionar}
           onClick={() => alAccionar?.({ plazoMeses: elegida.plazoMeses, ...(tarjetaId ? { tarjetaId } : {}) })}

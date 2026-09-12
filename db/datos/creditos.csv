@@ -1,6 +1,0 @@
-id,usuario_id,producto_id,tarjeta_id,alias,monto_original_centavos,saldo_insoluto_centavos,tasa_anual,cat,plazo_meses,pagos_realizados,mensualidad_centavos,fecha_contratacion,fecha_proximo_pago,dias_mora,estatus
-cred_ana_personal,usr_ana,prod_personal,,Crédito Personal,8000000,5578308,0.279,0.4141,24,9,457095,2025-12-05,2026-10-05,0,al_corriente
-cred_beto_nomina,usr_beto,prod_nomina,,Crédito de Nómina,6000000,2954065,0.249,0.3303,36,22,251056,2024-11-20,2026-10-20,0,vigente
-cred_carmen_hipotecario,usr_carmen,prod_hipotecario,,Hipoteca residencia,165000000,138985469,0.109,0.1359,240,98,1891408,2018-04-10,2026-07-10,0,vigente
-cred_carmen_auto,usr_carmen,prod_auto_nuevo,,Auto 2024,45000000,19066096,0.129,0.1699,48,31,1251563,2024-02-15,2026-10-15,0,vigente
-cred_beto_tdc,usr_beto,prod_tdc_clasica,tar_beto_clasica,Tarjeta Clásica •••• 4821,4900000,4738600,0.489,0.621,1,0,295073,2019-07-22,2026-09-30,12,vencido

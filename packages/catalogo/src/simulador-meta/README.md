@@ -31,6 +31,12 @@ El slider mueve la aportación y la fecha se recalcula **aquí**: es una divisi�
 `docs/algoritmos/proyeccion-de-ahorro.md`. Ir al agente por cada tick sería un turno por
 píxel. El número autoritativo vuelve de la tool después de la acción.
 
+## El número grande es la fecha
+
+Es lo que la persona viene a ver y lo que cambia al arrastrar el slider. El objetivo y lo
+que ya lleva quedan como contexto arriba, en una línea. El slider lleva `py-3` para tener
+los 48 px de alto tocable sin engordar la barra.
+
 ## Estados
 
 - **Cargando**: skeleton hasta que llegan meta, aportación y tope.

@@ -1,23 +1,30 @@
 import { Repeat } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { formatearFecha, formatearMonto, formatearPeriodo } from "../comunes";
+import { CLASES_TARJETA, formatearFecha, formatearMonto, formatearPeriodo } from "../comunes";
 import type { PropsDetalleCategoria } from "./schema";
 
+/**
+ * Los movimientos de una categoria.
+ *
+ * Dos columnas por la misma razon que `Calendario`: el comercio y su fecha apilados a la
+ * izquierda, el monto y el sello de recurrente a la derecha. A 360 px no hay scroll
+ * horizontal y el monto —que es lo que se viene a leer— nunca se sale de la pantalla.
+ */
 export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
   const { categoria, periodo, totalCentavos, movimientos, totalMovimientos, razon } = props;
 
   if (!movimientos || typeof totalCentavos !== "number") {
     return (
-      <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
-        <CardContent className="flex flex-col gap-2 p-5">
+      <Card className={CLASES_TARJETA}>
+        <CardContent className="flex flex-col gap-2">
           <Skeleton className="h-4 w-32" />
           <Skeleton className="h-9 w-40" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </CardContent>
       </Card>
     );
@@ -27,15 +34,16 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
   const faltan = (totalMovimientos ?? movimientos.length) - movimientos.length;
 
   return (
-    <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
+    <Card className={CLASES_TARJETA}>
       <CardHeader>
         <span className="text-xs text-muted-foreground">
           {categoria}
           {titulo ? ` · ${titulo}` : ""}
         </span>
-        <CardTitle className="text-3xl font-semibold tabular-nums">{formatearMonto(totalCentavos)}</CardTitle>
+        <span className="monto text-3xl font-semibold">{formatearMonto(totalCentavos)}</span>
       </CardHeader>
-      <CardContent className="p-5 pt-0">
+
+      <CardContent>
         {movimientos.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay movimientos de {categoria} en este periodo.</p>
         ) : (
@@ -44,31 +52,32 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
               <TableBody>
                 {movimientos.map((m, i) => (
                   <TableRow key={`${m.fecha}-${i}`}>
-                    <TableCell className="whitespace-nowrap text-sm text-muted-foreground">{formatearFecha(m.fecha)}</TableCell>
-                    <TableCell className="text-sm">
-                      <span className="font-medium">{m.comercio}</span>
-                      {m.descripcion && m.descripcion !== m.comercio ? (
-                        <span className="block text-xs text-muted-foreground">{m.descripcion}</span>
-                      ) : null}
+                    <TableCell className="py-3 align-middle">
+                      <span className="block text-sm font-medium">{m.comercio}</span>
+                      <span className="block text-xs text-muted-foreground">
+                        {formatearFecha(m.fecha)}
+                        {m.descripcion && m.descripcion !== m.comercio ? ` · ${m.descripcion}` : ""}
+                      </span>
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="py-3 text-right align-middle">
+                      <span className="monto block text-sm font-semibold">{formatearMonto(m.montoCentavos)}</span>
                       {m.recurrente ? (
-                        <Badge variant="secondary">
+                        <Badge variant="secondary" className="mt-1">
                           <Repeat /> Recurrente
                         </Badge>
                       ) : null}
                     </TableCell>
-                    <TableCell className="text-right font-medium tabular-nums">{formatearMonto(m.montoCentavos)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
           </ScrollArea>
         )}
-        {faltan > 0 ? <p className="mt-2 text-xs text-muted-foreground">… y {faltan} movimientos más.</p> : null}
+        {faltan > 0 ? <p className="pt-2 text-xs text-muted-foreground">… y {faltan} movimientos más.</p> : null}
       </CardContent>
+
       {razon ? (
-        <CardFooter className="border-t border-borde-sutil pt-4">
+        <CardFooter>
           <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
         </CardFooter>
       ) : null}

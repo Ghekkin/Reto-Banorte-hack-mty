@@ -23,4 +23,8 @@ Ninguna. `crear_tope_gasto` quedó fuera de alcance (ADR 0004, "qué NO entra").
 
 - **Cargando**: skeleton. **Vacío**: "No hay movimientos de X en este periodo".
 
+**Dos columnas**, por la misma razón que `Calendario`: el comercio y su fecha apilados a la
+izquierda, el monto y el sello de recurrente a la derecha. A 360 px no hay scroll
+horizontal y el monto —que es lo que se viene a leer— nunca se sale de la pantalla.
+
 Ejemplo: `ejemplos/detalle-categoria.jsonl`. Primitivas: `card`, `table`, `scroll-area`, `badge`.

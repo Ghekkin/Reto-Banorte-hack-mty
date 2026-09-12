@@ -4,27 +4,32 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Table, TableBody, TableCell, TableRow } from "@/components/ui/table";
-import { formatearFecha, formatearMonto } from "../comunes";
+import { CLASES_TARJETA, formatearFecha, formatearMonto } from "../comunes";
 import type { PropsCalendario } from "./schema";
 
-const ETIQUETA_ESTADO: Record<string, string> = {
-  proximo: "Próximo",
-  pendiente: "",
-  pagado: "Pagado",
-  aportado: "Aportado",
-};
+const HECHO = new Set(["pagado", "aportado"]);
+const ETIQUETA_HECHO: Record<string, string> = { pagado: "Pagado", aportado: "Aportado" };
 
-/** Una tabla corta: las primeras `maximo` filas y una linea con lo que queda. */
+/**
+ * El calendario de pagos o aportaciones.
+ *
+ * **Dos columnas, no cuatro.** La version anterior tenia fecha, etiqueta, estado y monto en
+ * cuatro celdas: a 360 px eso obliga a scroll horizontal, que es justo lo que el sistema
+ * prohibe. Ahora la fecha y su etiqueta van apiladas en la celda izquierda y el monto con
+ * su estado en la derecha: la misma tabla (`table` de shadcn) se lee igual en un celular y
+ * proyectada, sin un diseno distinto por tamano.
+ */
 export function Calendario(props: Partial<PropsCalendario>) {
   const { titulo = "Tus próximos pagos", eventos, maximo = 6, totalCentavos, razon } = props;
 
   if (!eventos) {
     return (
-      <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
-        <CardContent className="flex flex-col gap-2 p-5">
+      <Card className={CLASES_TARJETA}>
+        <CardContent className="flex flex-col gap-2">
           <Skeleton className="h-4 w-32" />
-          <Skeleton className="h-8 w-full" />
-          <Skeleton className="h-8 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
+          <Skeleton className="h-10 w-full" />
         </CardContent>
       </Card>
     );
@@ -35,16 +40,17 @@ export function Calendario(props: Partial<PropsCalendario>) {
   // Sin `estado: proximo` explicito, el proximo es el primero que no ha ocurrido.
   const indiceProximo = eventos.some((e) => e.estado === "proximo")
     ? -1
-    : eventos.findIndex((e) => e.estado !== "pagado" && e.estado !== "aportado");
+    : eventos.findIndex((e) => !HECHO.has(e.estado ?? "pendiente"));
 
   return (
-    <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
+    <Card className={CLASES_TARJETA}>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-base">
-          <CalendarDays className="text-muted-foreground" /> {titulo}
+        <CardTitle className="flex items-center gap-2">
+          <CalendarDays className="size-4 shrink-0 text-muted-foreground" /> {titulo}
         </CardTitle>
       </CardHeader>
-      <CardContent className="p-5 pt-0">
+
+      <CardContent>
         {eventos.length === 0 ? (
           <p className="text-sm text-muted-foreground">Todavía no hay fechas programadas.</p>
         ) : (
@@ -53,22 +59,26 @@ export function Calendario(props: Partial<PropsCalendario>) {
               <TableBody>
                 {visibles.map((e, i) => {
                   const esProximo = e.estado === "proximo" || i === indiceProximo;
-                  const hecho = e.estado === "pagado" || e.estado === "aportado";
+                  const hecho = HECHO.has(e.estado ?? "pendiente");
                   return (
                     <TableRow key={`${e.fecha}-${i}`} className={esProximo ? "bg-tinte/60" : ""}>
-                      <TableCell className="whitespace-nowrap text-sm">{formatearFecha(e.fecha)}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{e.etiqueta ?? ""}</TableCell>
-                      <TableCell className="text-right">
+                      <TableCell className="py-3 align-middle">
+                        <span className="block text-sm font-medium">{formatearFecha(e.fecha)}</span>
+                        {e.etiqueta ? <span className="block text-xs text-muted-foreground">{e.etiqueta}</span> : null}
+                      </TableCell>
+                      <TableCell className="py-3 text-right align-middle">
+                        <span className={`monto block text-sm ${hecho ? "text-muted-foreground" : "font-semibold"}`}>
+                          {formatearMonto(e.montoCentavos)}
+                        </span>
                         {esProximo ? (
-                          <Badge className="bg-tinte text-primary" variant="secondary">
+                          <Badge variant="secondary" className="mt-1 bg-tinte text-primary">
                             Próximo
                           </Badge>
                         ) : hecho ? (
-                          <Badge variant="secondary">{ETIQUETA_ESTADO[e.estado ?? "pendiente"]}</Badge>
+                          <Badge variant="secondary" className="mt-1">
+                            {ETIQUETA_HECHO[e.estado ?? ""] ?? "Hecho"}
+                          </Badge>
                         ) : null}
-                      </TableCell>
-                      <TableCell className={`text-right tabular-nums ${hecho ? "text-muted-foreground" : "font-medium"}`}>
-                        {formatearMonto(e.montoCentavos)}
                       </TableCell>
                     </TableRow>
                   );
@@ -77,17 +87,26 @@ export function Calendario(props: Partial<PropsCalendario>) {
             </Table>
           </ScrollArea>
         )}
+
         {restantes > 0 ? (
-          <p className="mt-2 text-xs text-muted-foreground">
-            … y {restantes} {restantes === 1 ? "más" : "más"}
-            {typeof totalCentavos === "number" ? `, ${formatearMonto(totalCentavos)} en total` : ""}.
+          <p className="pt-2 text-xs text-muted-foreground">
+            … y {restantes} más
+            {typeof totalCentavos === "number" ? (
+              <>
+                , <span className="monto">{formatearMonto(totalCentavos)}</span> en total
+              </>
+            ) : null}
+            .
           </p>
         ) : typeof totalCentavos === "number" ? (
-          <p className="mt-2 text-xs text-muted-foreground">{formatearMonto(totalCentavos)} en total.</p>
+          <p className="pt-2 text-xs text-muted-foreground">
+            <span className="monto">{formatearMonto(totalCentavos)}</span> en total.
+          </p>
         ) : null}
       </CardContent>
+
       {razon ? (
-        <CardFooter className="border-t border-borde-sutil pt-4">
+        <CardFooter>
           <p className="text-xs text-muted-foreground">¿Por qué veo esto? {razon}</p>
         </CardFooter>
       ) : null}
