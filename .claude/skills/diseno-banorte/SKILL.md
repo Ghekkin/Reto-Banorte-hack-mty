@@ -1,21 +1,97 @@
 ---
 name: diseno-banorte
-description: El sistema de diseño del proyecto - shadcn/ui obligatorio, paleta de Banorte y la forma flotante (lienzo gris, sidebar y tarjetas redondeadas con sombra suave, rejilla bento, barra de conversación). Tokens listos para globals.css, anatomía de tarjeta, qué componente de shadcn usar para cada caso y cómo el agente coloca sus superficies. Invocar antes de escribir cualquier CSS, componente o pantalla.
+description: El sistema de diseño del proyecto - Minimalism + Fintech UI + Material Design como lenguaje obligatorio, shadcn/ui obligatorio, paleta de Banorte y la forma flotante (lienzo gris, sidebar y tarjetas redondeadas con sombra suave, rejilla bento, barra de conversación). Tokens listos para globals.css, anatomía de tarjeta, qué componente de shadcn usar para cada caso y cómo el agente coloca sus superficies. Invocar antes de escribir cualquier CSS, componente o pantalla.
 ---
 
-# Diseño: shadcn/ui + identidad Banorte
+# Diseño: Minimalism + Fintech UI + Material Design sobre shadcn/ui
 
-Dos reglas que no se discuten:
+Tres reglas que no se discuten:
 
-1. **Toda la UI se construye con shadcn/ui.** Nada de componentes a mano, nada de otra
+1. **El lenguaje visual es Minimalism + Fintech UI + Material Design.** No es una
+   preferencia estética: son las reglas verificables de la sección siguiente. Si un
+   componente no las cumple, no entra.
+2. **Toda la UI se construye con shadcn/ui.** Nada de componentes a mano, nada de otra
    librería. Si necesitas un botón, un diálogo, una tabla, un slider: `npx shadcn@latest
    add <componente>`. La skill `shadcn` (instalada en `.agents/skills/shadcn`) tiene el
    CLI, el registro y la guía de theming; **invócala** antes de agregar componentes.
-2. **El color viene de los tokens de Banorte**, nunca de un hex suelto en un `.tsx`.
+3. **El color viene de los tokens de Banorte**, nunca de un hex suelto en un `.tsx`.
    Si un color no está abajo, no se usa.
 
 El reto lo organiza Banorte: la interfaz debe verse suya al primer vistazo. El rojo es
 de ellos; el producto es nuestro (ver "Marca" abajo).
+
+## Minimalism + Fintech UI + Material Design
+
+El lenguaje visual del proyecto, en reglas que se pueden verificar mirando el código. Un
+adjetivo no sirve de regla: "que se vea minimalista" no se puede revisar en un pull
+request, "un solo botón primario por pantalla" sí.
+
+### Minimalismo
+
+| Regla | Cómo se verifica |
+|---|---|
+| **Una idea por tarjeta.** Si necesita dos frases de explicación, está mal partida | Lee la tarjeta en voz alta: si dice "y además", pártela |
+| **Un solo botón primario por pantalla.** El resto son `outline` o `ghost` | `grep 'variant="default"'` en la pantalla: una sola vez |
+| **Un solo acento.** El rojo marca la acción principal; todo lo demás es neutro | Un tablero rojo entero esconde dónde hay que tocar |
+| **Una sola tarjeta héroe por pantalla.** La segunda va en blanco | El degradado de marca aparece una vez |
+| **Sin adornos que no informen.** Nada de iconos decorativos, bordes dobles, fondos con textura | Si quitarlo no pierde información, quítalo |
+
+### Fintech UI
+
+Lo que distingue una interfaz financiera de un tablero cualquiera: **el número manda**.
+
+| Regla | Cómo se verifica |
+|---|---|
+| El monto es el elemento **más grande de su tarjeta**: `text-3xl` mínimo, `font-semibold` | Ningún texto de la tarjeta compite en tamaño con la cifra |
+| **`tabular-nums` en todo monto, porcentaje y fecha en columna.** Sin esto los dígitos bailan al actualizarse | La clase `.monto` de `globals.css` ya lo trae |
+| Etiqueta **arriba** del dato, `text-xs text-muted-foreground` | Se lee "Saldo disponible" y después la cifra, no al revés |
+| Formato `es-MX` con `Intl.NumberFormat`, moneda `MXN`. Los montos viajan en **centavos** y se formatean solo al pintar | Cero `.toFixed(2)` suelto en un `.tsx` |
+| **El signo y el color dicen la dirección**: cargo en `text-foreground`, abono en `text-exito`. El rojo NO es para números negativos: es el color de la marca | Un gasto normal no se pinta de rojo |
+| Dato sensible **enmascarado**: `•••• 4821`, nunca el número completo | |
+| Estado en `badge`, no en texto libre: "Plan activo", "Atrasado" | |
+
+### Material Design
+
+Se toman los **patrones de interacción** de Material 3. No se toma su paleta, su
+tipografía ni su escala de elevación: esos vienen de Banorte y de shadcn.
+
+| Regla | Valor exacto | Qué NO se copia |
+|---|---|---|
+| **State layers** | Hover `bg-current/8`, pressed `bg-current/12` | El ripple animado: en un proyector es ruido |
+| **Objetivos táctiles** | Todo lo tocable **≥ 48 px** en móvil (`min-h-12`), ≥ 36 px en escritorio | |
+| **Rejilla de 8** | Espaciado en múltiplos de 4 px: `gap-3`, `gap-4`, `p-4`, `p-5` | Valores arbitrarios tipo `p-[13px]` |
+| **Elevación: solo dos niveles** | `shadow-sm` (tarjetas, sidebar) y `shadow-md` (FAB, hojas, popovers) | Las 5 elevaciones de Material y **toda sombra de color** |
+| **Motion** | 150–200 ms, `ease-out`. La entrada de superficies usa `.animar-entrada` | Transiciones de contenedor compartido, animaciones de más de 250 ms |
+| **FAB** | Un solo FAB por app: es Maya. Círculo de 56 px con el degradado de marca | FABs para acciones secundarias |
+| **Bottom app bar** | 4 pestañas más el FAB al centro, `pb-[env(safe-area-inset-bottom)]` | Más de 5 zonas: no caben en 360 px |
+| **Jerarquía de superficie** | Lienzo gris → tarjeta blanca → control. Tres capas, no más | Tarjetas dentro de tarjetas dentro de tarjetas |
+
+### Densidad por tamaño
+
+Se construye **móvil primero**. La versión de escritorio es la móvil con más aire y más
+columnas, nunca un diseño distinto.
+
+| | Móvil (< 768 px) | Escritorio (≥ 768 px) |
+|---|---|---|
+| Padding de tarjeta | `p-4` | `p-5` |
+| Separación | `gap-3` | `gap-4` |
+| Padding del lienzo | `p-3` | `p-4` |
+| Columnas de la rejilla | 1 | 2 a 3 |
+| Navegación | Barra de pestañas abajo + FAB | Sidebar flotante |
+| Tamaño mínimo de texto | 14 px | 14 px |
+
+**La única excepción al mínimo de 14 px son las etiquetas de la barra de pestañas**, que van
+en 11 px con `tracking-tight` y `truncate`. Es lo que hacen iOS y Android (10–11 pt), y a
+14 px "Movimientos" no cabe en los 66 px que le tocan a una pestaña en una pantalla de
+360 px. Fuera de la barra de pestañas, el mínimo no se negocia.
+
+### Las cinco preguntas antes de commitear una pantalla
+
+1. ¿Cuál es **el** número de esta pantalla, y es el más grande?
+2. ¿Cuál es **la** acción, y es el único botón rojo?
+3. ¿Se ve completa a **360 px** sin scroll horizontal?
+4. ¿Qué puedo **quitar** sin perder información?
+5. ¿Se lee desde el fondo de un salón, proyectada?
 
 ## La paleta
 
@@ -321,11 +397,30 @@ las entrega. Límites:
 
 ## Checklist antes de commitear UI
 
+Lenguaje visual:
+
+- [ ] **Una idea por tarjeta**; nada que se pueda quitar sin perder información.
+- [ ] **Un solo botón primario** (`variant="default"`) en la pantalla.
+- [ ] **Una sola tarjeta héroe**; el degradado de marca aparece una vez.
+- [ ] El **monto es el elemento más grande** de su tarjeta, con `tabular-nums`.
+- [ ] Etiqueta arriba del dato, en `text-xs text-muted-foreground`.
+- [ ] Abonos en `text-exito`; el rojo **no** se usa para números negativos ni errores.
+- [ ] Datos sensibles enmascarados (`•••• 4821`).
+
+Material:
+
+- [ ] Todo lo tocable mide **≥ 48 px** en móvil.
+- [ ] Espaciado en múltiplos de 4 px; densidad `p-4`/`gap-3` en móvil, `p-5`/`gap-4` en escritorio.
+- [ ] Solo `shadow-sm` y `shadow-md`. Cero sombras de color.
+- [ ] Transiciones de 150–200 ms.
+- [ ] Barra inferior con `pb-[env(safe-area-inset-bottom)]`.
+
+Base:
+
 - [ ] Cero hex en `.tsx`; todo por token.
 - [ ] El componente vino de `npx shadcn@latest add`, no escrito a mano.
-- [ ] Un solo botón primario en la superficie.
-- [ ] Montos con `tabular-nums` y formato `es-MX`.
-- [ ] Se ve bien a 400 px y en el proyector.
+- [ ] Montos con formato `es-MX`, convertidos desde centavos al pintar.
+- [ ] **Se construyó móvil primero** y se ve bien a 360 px.
 - [ ] Todo flota: nada pegado al borde del lienzo; `rounded-2xl` + `shadow-sm`.
-- [ ] Una sola tarjeta héroe por pantalla.
+- [ ] Legible proyectado: nada menor a 14 px.
 - [ ] Estados `skeleton` / vacío / error resueltos (skill `ui-generativa`).

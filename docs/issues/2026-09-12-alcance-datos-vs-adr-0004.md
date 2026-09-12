@@ -1,11 +1,21 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: docs
 encontrado: 2026-09-12 10:55
+resuelto: 2026-09-12 11:40
 ---
 
-# Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluye
+# Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluía
+
+> **Resuelto el 2026-09-12**: se adoptó la opción 2. El ADR 0004 quedó **enmendado** para
+> admitir a Carmen como tercer perfil e Inversiones como pestaña de consulta en Productos.
+> El límite acordado: Inversiones es **solo lectura**, el agente no genera flujos de
+> inversión, y la demo se sigue contando con Beto. Carmen es contraste, no una cuarta
+> intención.
+>
+> Implementado en `apps/web/src/lib/usuarios.ts` (tres perfiles) y
+> `apps/web/src/app/(app)/productos/page.tsx` (pestaña Inversiones).
 
 **Dónde:** `db/datos/` (22 CSV), `db/schema.sql`, `scripts/lib/perfiles.mjs` contra
 `docs/decisiones/0004-caso-de-uso.md` líneas 84–85.
@@ -42,19 +52,14 @@ El costo es otro: son ~890 filas y 6 tablas que hay que mantener coherentes en c
 regeneración, y un perfil que la demo no va a usar. Antes de la hora 30 eso es peso muerto,
 y el `CLAUDE.md` prohíbe refactors después de la hora 30.
 
-**Decisión pendiente**, y es del equipo (rol `demo` con el tablero en la mano):
+**Decisión tomada** (2026-09-12, al reestructurar el shell web): **opción 2**, enmendar el
+ADR 0004.
 
-1. **Dejarlo.** Costo cero hoy; el esquema queda más grande de lo que la demo usa. Si un
-   juez pregunta "¿y esto para qué es?", hay que tener respuesta.
-2. **Enmendar el ADR 0004** para admitir a Carmen e Inversiones como cuarta intención
-   opcional después de la hora 24, con el escenario del ejecutivo de cuenta como diferencial
-   frente a otros equipos.
-3. **Recortar** a dos perfiles y quitar las seis tablas, para que el esquema sea exactamente
-   lo que la demo usa. Es mecánico: quitar Carmen de `scripts/lib/perfiles.mjs`, las tablas
-   de `db/schema.sql` y regenerar.
-
-Ninguna es obviamente correcta: depende de si el equipo quiere el ángulo de ejecutivo de
-cuenta en el pitch o prefiere un esquema sin nada que sobre.
+1. ~~**Dejarlo.**~~ Costo cero hoy; el esquema queda más grande de lo que la demo usa.
+2. **Enmendar el ADR 0004** para admitir a Carmen e Inversiones. ← **elegida**. Aprovecha
+   los datos ya generados y suma el escenario del ejecutivo de cuenta, que ningún otro
+   equipo va a traer.
+3. ~~**Recortar**~~ a dos perfiles y quitar las seis tablas.
 
 **Pendiente:** crear el issue en GitHub. `gh` no está instalado en esta máquina (tampoco
 `git` ni `psql`), así que la mitad de GitHub quedó sin hacer y el frontmatter `github:` sigue

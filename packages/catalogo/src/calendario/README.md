@@ -1,32 +1,28 @@
 # `Calendario`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 1 y 3 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: después de aplicar un plan (los pagos, de
+`consultar_plan.calendario`) o de crear un apartado (las aportaciones). Genérico a
+propósito: el mismo componente sirve a la fase 1 y a la fase 3.
 
-**Cuando lo elige el agente**: Despues de aplicar un plan o crear una meta: cuando y cuanto toca pagar o aportar. Generico a proposito.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `titulo` | 'Tus proximos pagos' / 'Tus aportaciones' |
-| `eventos` | Arreglo de { fecha, montoCentavos, etiqueta, estado } |
-| `resaltarPrimero` | Marca el proximo evento |
+| `titulo` | "Tus próximos pagos" / "Tus aportaciones" |
+| `eventos[]` | `{ fecha, montoCentavos, etiqueta?, estado? }` en orden cronológico; `estado`: `proximo` (resaltado), `pendiente`, `pagado`, `aportado` |
+| `maximo` | Cuántas filas mostrar (default 6); el resto se resume en una línea |
+| `totalCentavos` | La suma, si se quiere al pie |
+| `ancho`, `razon` | Comunes |
+
+Sin `estado: proximo` explícito, el próximo es el primer evento que no ha ocurrido.
 
 ## Acciones
 
-`ver_detalle_plan` opcional.
+Ninguna.
 
-## Primitivas de shadcn
+## Estados
 
-table dentro de scroll-area; badge para el estado de cada fila.
+- **Cargando**: skeleton. **Vacío**: "Todavía no hay fechas programadas". **Normal**: tabla
+  corta con el próximo resaltado en tinte.
 
-## Archivos que faltan
-
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/calendario.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+Ejemplo: `ejemplos/calendario.jsonl`. Primitivas: `card`, `table`, `scroll-area`, `badge`.

@@ -7,6 +7,336 @@
   "a2uiVersion": "v0.9.1",
   "generadoPor": "pnpm catalogo",
   "components": {
+    "ResumenTarjeta": {
+      "type": "object",
+      "description": "La persona pregunta por su tarjeta, su deuda o sus intereses y hace falta poner su situacion en una sola cifra. Casi siempre es la tarjeta heroe de la pantalla de deuda; despues de aplicar un plan, la misma tarjeta muestra 'Plan activo' con el saldo en cero.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "ResumenTarjeta"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "mascara": {
+              "description": "Los ultimos digitos, como los da la tool: '•••• 4821'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "saldoCentavos": {
+              "description": "Saldo revolvente HOY. Cero si ya se difirio a un plan",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "limiteCentavos": {
+              "description": "Limite de la tarjeta; con el saldo sale el % de uso",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "pagoMinimoCentavos": {
+              "description": "Pago minimo del periodo; se omite si hay plan",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "fechaLimitePago": {
+              "description": "AAAA-MM-DD del proximo pago o del limite de pago",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "diasMora": {
+              "description": "Dias de atraso; > 0 pinta el badge 'Atrasado'",
+              "default": 0,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "planActivo": {
+              "description": "true tras aplicar_plan_pago: badge 'Plan activo'",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "mensualidadCentavos": {
+              "description": "La mensualidad fija del plan, si hay plan",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "mascara",
+            "saldoCentavos",
+            "limiteCentavos"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "PlanDePago": {
+      "type": "object",
+      "description": "La persona quiere pagar menos intereses y ya llamaste simular_reestructura: muestra las opciones para que elija un plazo y confirme. El boton dispara aplicar_plan_pago con { plazoMeses, tarjetaId } en el context.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "PlanDePago"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "opciones": {
+              "description": "Una opcion por plazo, de menor a mayor plazo",
+              "anyOf": [
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "plazoMeses": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Plazo en meses"
+                      },
+                      "mensualidadCentavos": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Lo que pagaria al mes"
+                      },
+                      "cat": {
+                        "type": "number",
+                        "description": "CAT como fraccion: 0.2858 = 28.58 %"
+                      },
+                      "ahorroCentavos": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Cuanto se ahorra contra seguir pagando el minimo"
+                      },
+                      "recomendado": {
+                        "description": "true en la opcion que conviene; solo una",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "plazoMeses",
+                      "mensualidadCentavos",
+                      "cat",
+                      "ahorroCentavos"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "plazoElegido": {
+              "description": "El plazo preseleccionado; default: el recomendado",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "tarjetaId": {
+              "description": "La tarjeta que se reestructura; viaja en el context de la accion",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaBoton": {
+              "description": "Texto del boton primario",
+              "default": "Aplicar plan",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: aplicar_plan_pago.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "aplicar_plan_pago"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "opciones"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
     "Confirmacion": {
       "type": "object",
       "description": "Justo despues de que una tool de accion cambio el estado: el plan quedo aplicado, el apartado quedo creado. Nunca antes de que la accion ocurra.",
@@ -130,6 +460,815 @@
             "razon",
             "titulo",
             "detalle"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "Calendario": {
+      "type": "object",
+      "description": "Despues de aplicar un plan o crear un apartado: cuando y cuanto toca pagar o aportar, fila por fila. Va junto a la Confirmacion, nunca antes de la accion.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "Calendario"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "titulo": {
+              "description": "'Tus próximos pagos' / 'Tus aportaciones'",
+              "default": "Tus próximos pagos",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "eventos": {
+              "description": "En orden cronologico",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fecha": {
+                        "type": "string",
+                        "description": "AAAA-MM-DD"
+                      },
+                      "montoCentavos": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Monto en centavos de peso"
+                      },
+                      "etiqueta": {
+                        "description": "'Pago 1 de 18', 'Aportación quincenal'…",
+                        "type": "string"
+                      },
+                      "estado": {
+                        "default": "pendiente",
+                        "description": "proximo = el que sigue (se resalta); pagado/aportado = ya ocurrio",
+                        "type": "string",
+                        "enum": [
+                          "proximo",
+                          "pendiente",
+                          "pagado",
+                          "aportado"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "fecha",
+                      "montoCentavos"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "maximo": {
+              "description": "Cuantas filas mostrar; el resto se resume",
+              "default": 6,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 36
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "totalCentavos": {
+              "description": "La suma de todo el calendario, si quieres mostrarla al pie",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "eventos"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "GastoPorCategoria": {
+      "type": "object",
+      "description": "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa las categorias y cual es la atipica. Tocar una barra dispara ver_categoria con { categoriaId, categoria }.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "GastoPorCategoria"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "amplio",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "periodo": {
+              "description": "El periodo, AAAA-MM o ya en palabras: '2026-08' o 'agosto de 2026'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "totalCentavos": {
+              "description": "El gasto total del periodo",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "variacionPct": {
+              "description": "Variacion del total contra el periodo anterior, como fraccion",
+              "anyOf": [
+                {
+                  "type": "number"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "categorias": {
+              "description": "De mayor a menor; 6 u 8 es un buen numero",
+              "anyOf": [
+                {
+                  "minItems": 1,
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "categoriaId": {
+                        "description": "El id de la tool (cat_restaurantes); viaja en la accion",
+                        "type": "string"
+                      },
+                      "nombre": {
+                        "type": "string",
+                        "description": "Como se muestra: 'Restaurantes'"
+                      },
+                      "montoCentavos": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Monto en centavos de peso"
+                      },
+                      "variacionPct": {
+                        "description": "Fraccion contra el periodo anterior: 0.42 = +42 %",
+                        "type": "number"
+                      }
+                    },
+                    "required": [
+                      "nombre",
+                      "montoCentavos"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "categoriaAtipica": {
+              "description": "El nombre de la que se salio de su patron; se pinta en rojo",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: ver_categoria.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "ver_categoria"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "periodo",
+            "totalCentavos",
+            "categorias"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "DetalleCategoria": {
+      "type": "object",
+      "description": "La persona toco una categoria (accion ver_categoria) o pregunta por un gasto concreto: los movimientos que la componen, con el comercio y la fecha. Va junto a GastoPorCategoria, no en su lugar.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "DetalleCategoria"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "amplio",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "categoria": {
+              "description": "El nombre: 'Restaurantes'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "periodo": {
+              "description": "AAAA-MM o en palabras",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "totalCentavos": {
+              "description": "La suma de la categoria en el periodo",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "movimientos": {
+              "description": "Del mas reciente al mas viejo",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "fecha": {
+                        "type": "string",
+                        "description": "AAAA-MM-DD"
+                      },
+                      "comercio": {
+                        "type": "string",
+                        "description": "Nombre del comercio; si no hay, la descripcion"
+                      },
+                      "descripcion": {
+                        "type": "string"
+                      },
+                      "montoCentavos": {
+                        "type": "integer",
+                        "minimum": -9007199254740991,
+                        "maximum": 9007199254740991,
+                        "description": "Monto en centavos de peso"
+                      },
+                      "recurrente": {
+                        "description": "true si se repite cada mes (suscripcion, renta)",
+                        "type": "boolean"
+                      }
+                    },
+                    "required": [
+                      "fecha",
+                      "comercio",
+                      "montoCentavos"
+                    ]
+                  }
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "totalMovimientos": {
+              "description": "Cuantos hay en total, si solo mandas los primeros",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "categoria",
+            "totalCentavos",
+            "movimientos"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "SimuladorMeta": {
+      "type": "object",
+      "description": "La persona no tiene deuda (o ya la resolvio) y quiere ahorrar: ya llamaste proyectar_ahorro. Deja que mueva la aportacion y vea cuando llega; el boton dispara crear_apartado con { nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "SimuladorMeta"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "nombre": {
+              "description": "Como se llama la meta: 'Fondo de emergencia'",
+              "default": "Tu meta",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "metaCentavos": {
+              "description": "A cuanto quiere llegar",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "saldoInicialCentavos": {
+              "description": "Lo que ya lleva ahorrado para esta meta",
+              "default": 0,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aportacionCentavos": {
+              "description": "La aportacion inicial del slider (la sugerida por proyectar_ahorro)",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aportacionMinimaCentavos": {
+              "description": "Piso del slider",
+              "default": 50000,
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aportacionMaximaCentavos": {
+              "description": "Tope del slider: la capacidad mensual de la persona",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "frecuencia": {
+              "default": "mensual",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "mensual",
+                    "quincenal"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "fechaInicio": {
+              "description": "AAAA-MM-DD desde donde se cuenta; default: hoy",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaBoton": {
+              "default": "Crear apartado",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: crear_apartado.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "crear_apartado"
+                          ]
+                        }
+                      }
+                    }
+                  }
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "metaCentavos",
+            "aportacionCentavos",
+            "aportacionMaximaCentavos"
+          ]
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "MetaActiva": {
+      "type": "object",
+      "description": "Ya existe un apartado (acabas de llamar crear_apartado, o la persona pregunta como va su meta): el avance, la aportacion y cuando cae el siguiente cargo. Si acabas de crearlo, va junto a la Confirmacion.",
+      "allOf": [
+        {
+          "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
+        },
+        {
+          "$ref": "#/$defs/CatalogComponentCommon"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "component": {
+              "const": "MetaActiva"
+            },
+            "ancho": {
+              "description": "normal = 1 columna; amplio = 2. Tablas y graficas piden amplio",
+              "default": "normal",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "normal",
+                    "amplio"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "razon": {
+              "description": "Una frase en segunda persona que explica por que esta pantalla y no otra",
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 10
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "heroe": {
+              "description": "Tarjeta de heroe con el degradado de marca. Solo una por superficie",
+              "default": false,
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "nombre": {
+              "description": "'Fondo de emergencia'",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "metaCentavos": {
+              "description": "El objetivo",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "acumuladoCentavos": {
+              "description": "Lo que lleva",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aportacionCentavos": {
+              "description": "Cuanto se aparta cada periodo",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "frecuencia": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "enum": [
+                    "mensual",
+                    "quincenal"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "proximoCargoFecha": {
+              "description": "AAAA-MM-DD del siguiente apartado automatico",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "fechaObjetivo": {
+              "description": "AAAA-MM-DD estimada para llegar",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            }
+          },
+          "required": [
+            "component",
+            "razon",
+            "nombre",
+            "metaCentavos",
+            "acumuladoCentavos"
           ]
         }
       ],
@@ -290,7 +1429,28 @@
     "anyComponent": {
       "oneOf": [
         {
+          "$ref": "#/components/ResumenTarjeta"
+        },
+        {
+          "$ref": "#/components/PlanDePago"
+        },
+        {
           "$ref": "#/components/Confirmacion"
+        },
+        {
+          "$ref": "#/components/Calendario"
+        },
+        {
+          "$ref": "#/components/GastoPorCategoria"
+        },
+        {
+          "$ref": "#/components/DetalleCategoria"
+        },
+        {
+          "$ref": "#/components/SimuladorMeta"
+        },
+        {
+          "$ref": "#/components/MetaActiva"
         },
         {
           "$ref": "#/components/Column"

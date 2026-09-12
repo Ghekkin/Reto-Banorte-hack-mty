@@ -4,10 +4,13 @@ import { useState } from "react";
 import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 
 /**
- * Lo que hace que esto no sea un tablero: la barra esta siempre visible, flotando
- * abajo del lienzo. Los chips son las sugerencias que el agente ofrece.
+ * La barra de conversacion: lo que hace que esto no sea un tablero.
+ *
+ * En escritorio flota al fondo del lienzo (`sticky`). En movil va fija sobre la barra de
+ * pestanas, con `bottom-16` para no taparla ni quedar tapada.
  */
 export function BarraConversacion({
   sugerencias = [],
@@ -28,25 +31,26 @@ export function BarraConversacion({
   }
 
   return (
-    <div className="sticky bottom-4 flex flex-col gap-2">
-      {sugerencias.length > 0 ? (
+    <div className="sticky bottom-16 z-30 flex flex-col gap-2 md:bottom-4">
+      {sugerencias.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {sugerencias.map((s) => (
+          {sugerencias.map((sugerencia) => (
             <Button
-              key={s}
+              key={sugerencia}
               variant="outline"
               size="sm"
-              className="rounded-full"
-              onClick={() => enviar(s)}
+              className="min-h-11 rounded-full bg-card text-xs shadow-sm hover:bg-tinte sm:min-h-9"
+              onClick={() => enviar(sugerencia)}
               disabled={ocupado}
             >
-              {s}
+              {sugerencia}
             </Button>
           ))}
         </div>
-      ) : null}
+      )}
+
       <form
-        className="flex items-center gap-2 rounded-2xl border border-borde-sutil bg-card p-2 shadow-sm"
+        className="flex items-center gap-2 rounded-2xl border border-borde-sutil bg-card p-2 shadow-md"
         onSubmit={(e) => {
           e.preventDefault();
           enviar(texto);
@@ -56,12 +60,18 @@ export function BarraConversacion({
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           placeholder="¿Qué necesitas resolver hoy?"
+          aria-label="Escríbele a Maya"
           className="border-0 shadow-none focus-visible:ring-0"
           disabled={ocupado}
         />
-        <Button type="submit" className="rounded-full" disabled={ocupado || texto.trim() === ""}>
-          Enviar
-          <ArrowUp data-icon="inline-end" />
+        <Button
+          type="submit"
+          size="icon"
+          aria-label="Enviar"
+          className="size-11 shrink-0 rounded-full sm:size-10"
+          disabled={ocupado || texto.trim() === ""}
+        >
+          {ocupado ? <Spinner /> : <ArrowUp />}
         </Button>
       </form>
     </div>

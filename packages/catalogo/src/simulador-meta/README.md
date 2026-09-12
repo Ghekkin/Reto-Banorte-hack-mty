@@ -1,34 +1,38 @@
 # `SimuladorMeta`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 3 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: la persona no tiene deuda (o ya la resolvió) y quiere
+ahorrar. Es **la respuesta adaptativa de Ana** y el componente de la **segunda acción
+real** de la demo: el botón dispara `crear_apartado`. Los números iniciales salen de
+`proyectar_ahorro`.
 
-**Cuando lo elige el agente**: El usuario no tiene deuda y quiere empezar a ahorrar: el agente le deja mover cuanto aporta y ver cuando llega.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `metaCentavos` | A cuanto quiere llegar |
-| `aportacionCentavos` | Lo que aportaria cada periodo; es lo que el slider mueve |
-| `aportacionMaximaCentavos` | Tope del slider, calculado con su capacidad de ahorro |
-| `fechaEstimada` | Cuando llegaria con la aportacion actual |
-| `frecuencia` | 'quincenal' | 'mensual' |
+| `nombre` | "Fondo de emergencia" |
+| `metaCentavos`, `saldoInicialCentavos` | Objetivo y lo que ya lleva (`montoObjetivoCentavos`, `saldoInicialCentavos` de la tool) |
+| `aportacionCentavos` | Posición inicial del slider (la sugerida por la tool) |
+| `aportacionMinimaCentavos`, `aportacionMaximaCentavos` | Piso y tope del slider; el tope es `capacidadMensualCentavos` |
+| `frecuencia` | `mensual` \| `quincenal` |
+| `fechaInicio` | Desde dónde se cuenta; default hoy |
+| `etiquetaBoton` | Default "Crear apartado" |
+| `ancho`, `razon` | Comunes |
 
 ## Acciones
 
-`elegir_aportacion` al mover el slider (solo data model) y `crear_apartado` al confirmar (accion 2 de la demo).
+`crear_apartado` con `{ nombre, montoObjetivoCentavos, aportacionCentavos, frecuencia }`
+más el `context` declarado y la `idempotencyKey`. El agente llama la tool y repinta con
+`Confirmacion` + `MetaActiva`.
 
-## Primitivas de shadcn
+## Por qué la fecha se calcula en el componente
 
-slider + input, button primario para crear el apartado.
+El slider mueve la aportación y la fecha se recalcula **aquí**: es una división
+(faltante entre aportación por mes, sin rendimiento), la misma regla de
+`docs/algoritmos/proyeccion-de-ahorro.md`. Ir al agente por cada tick sería un turno por
+píxel. El número autoritativo vuelve de la tool después de la acción.
 
-## Archivos que faltan
+## Estados
 
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/simulador-meta.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+- **Cargando**: skeleton hasta que llegan meta, aportación y tope.
+
+Ejemplo: `ejemplos/simulador-meta.jsonl`. Primitivas: `card`, `slider`, `button`.

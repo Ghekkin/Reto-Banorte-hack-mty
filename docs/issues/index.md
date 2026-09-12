@@ -83,6 +83,6 @@ gh issue create \
 | Fecha | Sev. | Área | Título | GitHub | Estado |
 |---|---|---|---|---|---|
 | 2026-09-12 | crítica | infra | [El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo](2026-09-12-postgres-remoto-inalcanzable.md) | pendiente (sin `gh`) | abierto |
-| 2026-09-12 | media | docs | [Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluye](2026-09-12-alcance-datos-vs-adr-0004.md) | pendiente (sin `gh`) | abierto |
+| 2026-09-12 | media | docs | [Los datos mock incluyen un tercer perfil e Inversiones, que el ADR 0004 excluía](2026-09-12-alcance-datos-vs-adr-0004.md) | pendiente (sin `gh`) | resuelto |
 | 2026-09-13 | alta | infra | [El token de Coolify en `/opt/reto/.env` rompe el `source`](2026-09-13-env-vps-token-sin-comillas.md) | [#2](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/2) | resuelto |
 | 2026-09-12 | media | web | [El agente recibe como "pantalla actual" todos los componentes de la conversación, no los visibles](2026-09-12-componentes-visibles-acumulados.md) | [#3](https://github.com/Ghekkin/Reto-Banorte-hack-mty/issues/3) | resuelto |

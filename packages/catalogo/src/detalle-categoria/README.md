@@ -1,33 +1,26 @@
 # `DetalleCategoria`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 2 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: la persona tocó una categoría (`ver_categoria`) o pregunta
+por un gasto concreto: los movimientos que la componen. Sale de `consultar_movimientos`
+con `categoriaId`. Va **junto a** `GastoPorCategoria`, no en su lugar.
 
-**Cuando lo elige el agente**: El usuario toco una categoria y quiere ver los movimientos que la componen.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `categoria` | El nombre de la categoria |
-| `totalCentavos` | Suma del periodo |
-| `movimientos` | Arreglo de { fecha, comercio, montoCentavos, recurrente } |
-| `ancho` | 'amplio' |
+| `categoria`, `periodo` | Encabezado |
+| `totalCentavos` | La suma de la categoría en el periodo (`sumaCargosCentavos` de la tool) |
+| `movimientos[]` | `{ fecha, comercio, descripcion?, montoCentavos, recurrente? }` del más reciente al más viejo |
+| `totalMovimientos` | Cuántos hay en total si solo se mandan los primeros (`total` de la tool) |
+| `ancho` | Default `amplio` |
+| `razon` | Común |
 
 ## Acciones
 
-`crear_tope_gasto` (opcional, ultima en la lista del ADR 0004).
+Ninguna. `crear_tope_gasto` quedó fuera de alcance (ADR 0004, "qué NO entra").
 
-## Primitivas de shadcn
+## Estados
 
-table + scroll-area; badge 'recurrente' donde aplique.
+- **Cargando**: skeleton. **Vacío**: "No hay movimientos de X en este periodo".
 
-## Archivos que faltan
-
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/detalle-categoria.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+Ejemplo: `ejemplos/detalle-categoria.jsonl`. Primitivas: `card`, `table`, `scroll-area`, `badge`.

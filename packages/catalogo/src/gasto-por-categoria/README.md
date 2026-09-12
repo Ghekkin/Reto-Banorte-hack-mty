@@ -1,34 +1,33 @@
 # `GastoPorCategoria`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 2 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: "¿en qué se me va el dinero?". Ya llamó
+`comparar_periodos` y sabe cuál categoría se salió de su patrón. Fase 2 del ADR 0004.
 
-**Cuando lo elige el agente**: '¿En que se me va el dinero?'. El agente ya comparo periodos y sabe cual categoria se salio de lo normal.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `periodo` | 'Agosto 2026' |
-| `totalCentavos` | El total del periodo |
-| `categorias` | Arreglo de { categoria, montoCentavos, variacion } |
-| `categoriaAtipica` | La que se salio de su patron; se pinta en rojo, el resto en plata |
-| `ancho` | Siempre 'amplio': la grafica pide dos columnas |
+| `periodo` | `2026-08` (se formatea) o ya en palabras |
+| `totalCentavos`, `variacionPct` | El total del periodo y su variación contra el anterior |
+| `categorias[]` | `{ categoriaId?, nombre, montoCentavos, variacionPct? }`, de mayor a menor |
+| `categoriaAtipica` | El **nombre** de la que se salió de su patrón: se pinta en rojo, el resto en plata |
+| `ancho` | Default `amplio`: la gráfica pide dos columnas |
+| `heroe`, `razon` | Comunes |
 
 ## Acciones
 
-`ver_categoria` con la categoria tocada (solo vista).
+`ver_categoria`: tocar una barra manda `{ categoriaId, categoria }` más lo que el agente
+haya puesto en el `context` (el periodo, típicamente). Solo vista: el agente llama
+`consultar_movimientos` y repinta con `DetalleCategoria` al lado.
 
-## Primitivas de shadcn
+## Diseño
 
-chart (Recharts) con el par --chart-1 / --chart-2. Nunca arcoiris.
+Gráfica de barras horizontales con `chart` (Recharts): dos tonos, **nunca arcoíris**. La
+atípica en `--chart-2` (rojo), el resto en `--chart-4` (plata). Debajo, una frase con la
+atípica y su brinco.
 
-## Archivos que faltan
+## Estados
 
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/gasto-por-categoria.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+- **Cargando**: skeleton con el hueco de la gráfica. **Vacío**: "No hay gasto registrado".
+
+Ejemplo: `ejemplos/gasto-por-categoria.jsonl`. Primitivas: `card`, `chart`, `skeleton`.

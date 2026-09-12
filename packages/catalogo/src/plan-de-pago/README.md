@@ -1,32 +1,33 @@
 # `PlanDePago`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 1 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: la persona quiere pagar menos intereses y el agente ya
+llamó `simular_reestructura`. Es **el componente del flujo accionable** de la fase 1: lo
+que se elige aquí es lo que `aplicar_plan_pago` cambia de verdad.
 
-**Cuando lo elige el agente**: El usuario quiere pagar menos intereses. El agente ya llamo `simular_reestructura` y tiene tres opciones que comparar.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `opciones` | Arreglo de { plazo, mensualidadCentavos, cat, ahorroCentavos } |
-| `plazoElegido` | El plazo preseleccionado: el que mas le ahorra |
-| `recomendado` | Que plazo marcar como recomendado y por que |
+| `opciones[]` | `{ plazoMeses, mensualidadCentavos, cat, ahorroCentavos, recomendado? }`, de `simular_reestructura.opciones` |
+| `plazoElegido` | Preselección; default el recomendado |
+| `tarjetaId` | Viaja en el `context` de la acción |
+| `etiquetaBoton` | Default "Aplicar plan" |
+| `ancho`, `razon` | Comunes |
 
 ## Acciones
 
-`elegir_plazo` al mover la seleccion (solo data model) y `aplicar_plan_pago` al confirmar (muta estado, lleva idempotencyKey).
+`aplicar_plan_pago`. El componente declara `action.event.name = "aplicar_plan_pago"`;
+al confirmar, el renderer manda el `context` declarado más `{ plazoMeses }` elegido y la
+`idempotencyKey`. El agente llama la tool y repinta con `Confirmacion` + `Calendario`.
 
-## Primitivas de shadcn
+**La selección del plazo vive en el componente** (estado de interfaz, no de negocio): ir
+al agente por cada clic en un radio sería un turno completo por toque. Solo la
+confirmación viaja.
 
-radio-group para los plazos, button primario (uno solo) para aplicar.
+## Estados
 
-## Archivos que faltan
+- **Cargando**: skeleton de tres filas hasta que llega `opciones`.
+- **Vacío** (`opciones: []`): "No hay planes que cotizar para esta tarjeta".
+- **Normal**: radio por plazo, el recomendado con badge, un solo botón primario.
 
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/plan-de-pago.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+Ejemplo: `ejemplos/plan-de-pago.jsonl`. Primitivas: `card`, `radio-group`, `badge`, `button`.

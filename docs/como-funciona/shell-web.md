@@ -1,0 +1,193 @@
+---
+verificado: 2026-09-12 11:45
+estado: construido
+---
+
+# Shell web
+
+La estructura de la aplicación: las cinco secciones, cómo se navega en móvil y en
+escritorio, y de dónde salen los datos.
+
+## Para cualquiera
+
+La app tiene **cinco secciones**, como cualquier app de banco: Inicio, Productos, Maya,
+Movimientos y Más. La diferencia está en la tercera.
+
+En **Inicio** ves lo de siempre: tu saldo, tus cuentas, tus tarjetas y lo último que
+gastaste. Es una pantalla programada, igual que en la app de tu banco.
+
+**Maya** no es una pantalla programada. Es donde le escribes lo que necesitas —"quiero
+pagar menos intereses"— y ella **construye la pantalla** para resolverlo: el comparador de
+plazos, la gráfica de gasto, el simulador de meta. Nadie programó esas pantallas una por
+una; el agente las arma con un catálogo de piezas financieras según lo que pediste.
+
+**Productos**, **Movimientos** y **Más** son consultas normales: qué tienes contratado, tu
+historial con filtros, y el resto de opciones. Están a propósito simples, porque el peso
+del proyecto está en Inicio y en Maya.
+
+En el celular se navega con una barra abajo de cuatro pestañas, y **Maya al centro, en un
+botón redondo elevado**. Eso no es capricho: si Maya fuera una pestaña más se perdería
+entre las otras, y es lo único que esta app tiene y las demás no. En computadora, las cinco
+secciones viven en un menú lateral blanco que flota sobre el fondo gris.
+
+Se puede cambiar entre tres personas de prueba (Beto, Ana y Carmen) desde el menú. Al
+cambiar, todo cambia: los saldos, las tarjetas, y sobre todo **lo que Maya responde a la
+misma pregunta**. Es la forma más rápida de mostrar que el agente se adapta al contexto en
+vez de repetir una plantilla.
+
+## Técnico
+
+### Las cinco secciones
+
+| Ruta | Sección | Tipo | Datos |
+|---|---|---|---|
+| `/` | Inicio | Server component | CSV: cuentas, tarjetas, movimientos, créditos |
+| `/productos` | Productos | Server component | CSV: cuentas, tarjetas, créditos, portafolio |
+| `/maya` | Maya | Client (streaming) | El agente vía `POST /api/agente` |
+| `/movimientos` | Movimientos | Server + filtro cliente | CSV: movimientos, categorías |
+| `/mas` | Más | Server component | CSV: resumen; el resto es estático |
+
+`ORDEN_PESTANAS` en [navegacion.ts](../../apps/web/src/components/shell/navegacion.ts) fija
+el orden de la barra inferior con Maya en la posición central.
+
+### Dónde vive
+
+```
+apps/web/src/
+  app/
+    layout.tsx                  raiz: fuentes, metadata, viewportFit: cover
+    (app)/layout.tsx            el shell; server component, resuelve la cookie
+    (app)/acciones.ts           server action: cambiar de usuario demo
+    (app)/page.tsx              Inicio
+    (app)/productos/page.tsx    Productos, con tabs
+    (app)/maya/page.tsx         Maya, resuelve ?intencion=
+    (app)/movimientos/page.tsx  Movimientos
+    (app)/mas/page.tsx          Mas
+  components/
+    shell/
+      navegacion.ts             LAS 5 SECCIONES, fuente unica
+      sidebar-app.tsx           escritorio
+      barra-superior.tsx        titulo, subtitulo, trigger y avatar en movil
+      barra-pestanas.tsx        movil: 4 pestanas + FAB de Maya
+      selector-usuario.tsx      cambia de perfil demo
+    inicio/tarjetas-inicio.tsx  heroe, cuentas, tarjetas, movimientos, atajo a Maya
+    maya/
+      consola-maya.tsx          hilo + lienzo + barra de conversacion
+      lienzo.tsx                rejilla bento y el PLACEHOLDER
+      barra-conversacion.tsx    input y chips
+    movimientos/lista-movimientos.tsx   buscador y filtro por categoria
+  lib/
+    marca.ts                    nombre, tagline, aviso legal: un solo lugar
+    usuario-activo.ts           lee la cookie (server-only)
+    usuarios.ts                 los tres perfiles demo
+    datos/leer-csv.ts           parser + cache de los CSV (server-only)
+    datos/consultas.ts          consultas tipadas para las pantallas
+    agente/usar-agente.ts       cliente del streaming JSONL
+```
+
+### El usuario activo va en cookie, no en contexto de React
+
+Es la decisión estructural del shell y conviene entenderla antes de tocar nada.
+
+Inicio, Productos y Movimientos son **componentes de servidor**: leen los CSV directo del
+disco. Para eso necesitan saber de quién son los datos **antes** de que exista cualquier
+contexto de cliente. Un `useState` en un provider no le sirve al servidor; una cookie sí,
+porque llega en el request del primer render.
+
+```mermaid
+sequenceDiagram
+    participant U as Usuario
+    participant S as SelectorUsuario
+    participant A as "Server action cambiarUsuario"
+    participant C as Cookie
+    participant P as "Pagina (server component)"
+    U->>S: elige otro perfil
+    S->>A: cambiarUsuario(id)
+    A->>C: set maya_usuario
+    A->>A: revalidatePath("/", "layout")
+    P->>C: usuarioActivo() lee la cookie
+    P->>P: consulta los CSV de ese usuario
+    P-->>U: pantalla nueva
+```
+
+Sin el `revalidatePath` la cookie cambia pero las pantallas siguen mostrando el cache del
+usuario anterior. El id se **valida contra `USUARIOS`** en la server action: llega del
+navegador y termina en una lectura de disco.
+
+### Navegación en los dos tamaños
+
+Una sola estructura, no dos diseños. `< 768 px` el sidebar es un sheet que abre el trigger
+de la barra superior y la navegación real es la barra de pestañas; `>= 768 px` el sidebar
+flota permanente y la barra de pestañas desaparece con `md:hidden`.
+
+**El FAB de Maya** es `absolute -top-5 size-14` con el degradado de marca, elevado sobre la
+barra. Patrón de bottom app bar con FAB anclado de Material. Resuelve una tensión real:
+navegación de app bancaria sin que el asistente quede como "una pestaña más".
+
+### La capa de datos
+
+`lib/datos/` lee los 22 CSV de `db/datos/`. **Es el fallback que el ADR 0007 exige** y que
+no existía: con `FEATURE_POSTGRES` apagado la app no abre conexión. Hoy es la única ruta que
+funciona, porque el Postgres remoto no es alcanzable
+(`docs/issues/2026-09-12-postgres-remoto-inalcanzable.md`).
+
+- `leerTabla` está envuelto en `cache` de React: Inicio pide `cuentas` desde tres
+  componentes y el archivo se lee una vez por request.
+- `server-only` en los dos archivos: si alguien los importa en un componente de cliente,
+  falla al compilar en vez de intentar leer disco en el navegador.
+- Los montos salen en **centavos**; formatear es de quien pinta (`lib/dinero.ts`).
+
+### Tres trampas que ya costaron un bug
+
+Las tres se encontraron midiendo el DOM en el navegador, no leyendo el código:
+
+1. **`data-active:` gana por especificidad.** El ítem activo de Maya salía rojo sobre rojo:
+   `text-primary-foreground` (0,1,0) pierde contra el
+   `data-active:text-sidebar-accent-foreground` del componente `sidebar` (0,2,0). Se
+   arregla usando **el mismo variant**: `data-active:text-primary-foreground`. El degradado
+   sí se veía porque es `background-image` y no compite con `background-color`.
+2. **`overflow-x-auto` dentro de un flex necesita `min-w-0`.** El filtro de categorías de
+   Movimientos tiene un `ToggleGroup` con `w-max`; sin `min-w-0`, ese ancho se vuelve el
+   min-content del flex y **estiraba el layout 256 px fuera de la pantalla**.
+3. **`SidebarInset` ya es un `<main>`.** Meterle otro `<main>` dentro daba dos por
+   documento. El contenido va en `div`.
+
+### Base UI, no Radix
+
+`components.json` usa el estilo `base-nova` y la dependencia es `@base-ui/react`. Las
+diferencias que importan aquí:
+
+- **`render={<Link />}`**, no `asChild`. Con `nativeButton={false}` cuando lo renderizado no
+  es un `<button>`.
+- **`Select` necesita `items`** en la raíz, y los `SelectItem` van dentro de `SelectGroup`.
+- **`ToggleGroup` no lleva `type`** y su `value` es siempre un arreglo.
+
+### Cómo probarlo
+
+```bash
+pnpm -r typecheck
+pnpm --filter @maya/web build
+pnpm --filter @maya/web dev      # http://localhost:3000
+```
+
+Verificado al 2026-09-12 11:45, midiendo el DOM en el navegador:
+
+- Las 5 rutas cargan, cada una con su `<h1>`, y **ninguna desborda**
+  (`scrollWidth === clientWidth`).
+- Exactamente **un `<main>`** por documento y **una sola tarjeta con degradado** en Inicio.
+- El ítem activo de Maya tiene texto **blanco** (`lab(100 0 0)`) sobre el degradado.
+- Las 4 etiquetas de pestaña **caben a 360 px** sin desbordar, con objetivos táctiles de
+  56 px.
+- La barra de pestañas tiene `display: none` en escritorio.
+- Consola sin errores ni warnings de React o Next.
+
+### Lo que falta
+
+- **El lienzo de Maya es un placeholder.** Dibuja el hueco y explica qué va ahí, porque 7
+  de los 8 componentes del catálogo A2UI son carpetas con README y sin código.
+- **Pagos, Servicios, Seguridad y Estados de cuenta** están en Más como filas apagadas con
+  la etiqueta "pendiente". No tienen datos: el territorio Pagos quedó fuera del esquema.
+- **Sin `skeleton` de carga.** Las pantallas de servidor no tienen `loading.tsx`.
+- **No se ha probado en un dispositivo real**, solo midiendo el DOM: el harness de navegador
+  disponible no puede cambiar el viewport. Conviene abrirlo en Chrome DevTools a 360×740
+  antes del ensayo.

@@ -1,6 +1,7 @@
 import { CheckCircle2, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { formatearMonto } from "../comunes";
 import type { PropsConfirmacion } from "./schema";
 
@@ -16,8 +17,8 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
     return (
       <Card className="animar-entrada rounded-2xl border-borde-sutil shadow-sm">
         <CardContent className="flex flex-col gap-3 p-5">
-          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
-          <div className="h-8 w-48 animate-pulse rounded bg-muted" />
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-48" />
         </CardContent>
       </Card>
     );

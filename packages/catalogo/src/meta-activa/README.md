@@ -1,34 +1,27 @@
 # `MetaActiva`
 
-> **Encargo del scaffold, todavia sin construir.** Dueno: rol `web`.
-> Fase 3 del ADR 0004. Orden obligatorio y checklist: skill `ui-generativa`.
-> Cuando exista, este README describe lo real y se borra este aviso.
+**Cuándo lo elige el agente**: ya existe un apartado (acaba de llamar `crear_apartado`,
+o la persona pregunta cómo va su meta): avance, aportación y cuándo cae el siguiente
+cargo. Tras la acción va junto a `Confirmacion`.
 
-**Cuando lo elige el agente**: Ya existe un apartado: cuanto lleva, cuanto falta y cuando cae el primer cargo.
+## Props
 
-## Props previstas
-
-Ademas de las comunes (`ancho`, `razon`, y `heroe` donde aplique):
-
-| Prop | Para que |
+| Prop | Para qué |
 |---|---|
-| `nombre` | 'Fondo de emergencia' |
-| `metaCentavos` | El objetivo |
-| `acumuladoCentavos` | Lo que lleva |
-| `proximoCargoFecha` | Cuando se aparta lo siguiente |
-| `proximoCargoCentavos` | Cuanto |
+| `nombre` | "Fondo de emergencia" |
+| `metaCentavos`, `acumuladoCentavos` | Objetivo y lo que lleva; con ellos sale el avance (`progress`) |
+| `aportacionCentavos`, `frecuencia` | Cuánto se aparta y cada cuánto |
+| `proximoCargoFecha` | El siguiente apartado automático (`primeraAportacionFecha` de la tool) |
+| `fechaObjetivo` | Cuándo llega |
+| `heroe` | Solo si no hay otra héroe en la pantalla |
+| `ancho`, `razon` | Comunes |
 
 ## Acciones
 
-`ver_detalle_meta` opcional.
+Ninguna.
 
-## Primitivas de shadcn
+## Estados
 
-progress para el avance; card normal (el heroe ya lo tomo otro).
+- **Cargando**: skeleton hasta que llegan meta y acumulado.
 
-## Archivos que faltan
-
-- `schema.ts` — Zod con `.describe()` en cada prop (es lo que el modelo lee).
-- `componente.tsx` — React sobre shadcn, tres estados, cero hex.
-- `../../ejemplos/meta-activa.jsonl` — el mensaje a mano que lo pinta.
-- Registro en `src/index.ts` y linea en `docs/como-funciona/`.
+Ejemplo: `ejemplos/meta-activa.jsonl`. Primitivas: `card`, `progress`.
