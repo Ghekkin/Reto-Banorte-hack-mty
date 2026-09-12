@@ -32,6 +32,7 @@ quien.
 ### Reto
 - [Contexto del reto](reto/contexto-del-reto.md) — lo que sabemos hoy y la hipótesis de solución
 - [Preguntas para el día 1](reto/preguntas-para-manana.md) — lo que hay que confirmar cuando den detalles
+- [Casos de uso candidatos](reto/casos-de-uso.md) — cinco candidatos puntuados contra la rúbrica, con flujo, componentes y tools; insumo del ADR 0004
 - [Rúbrica y entregables](reto/rubrica-y-entregables.md) — los 7 criterios con peso, los 4 entregables y qué los cubre
 - [Premios objetivo](reto/premios-objetivo.md) — qué premios laterales vale la pena perseguir y cuáles no
 - [Transcripción del video](reto/transcripcion-video.md) — la explicación oral del 2026-09-11, literal

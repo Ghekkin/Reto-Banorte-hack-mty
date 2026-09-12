@@ -14,6 +14,11 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **05:30 · hecho** — `docs/reto/casos-de-uso.md`: cinco candidatos puntuados contra
+  la rúbrica con flujo, componentes y tools; recomendación: reestructura de tarjeta
+  como flujo principal + gasto por categoría como segunda intención, adaptabilidad con
+  dos usuarios. Insumo del ADR 0004, no decisión.
+
 - **05:10 · hecho** — Video de explicación transcrito (`docs/reto/transcripcion-video.md`).
   Novedades: registro de equipos y mentores en el stand de Banorte; el jurado preguntará
   por qué el stack y la arquitectura. Sin fechas límite ni créditos en el video.

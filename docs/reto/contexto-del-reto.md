@@ -128,7 +128,8 @@ solución incompleta".
 
 - Stack TS (ADR 0001), Python solo detrás de una tool (ADR 0002).
 - **A2UI real** con catálogo propio, no un protocolo inventado (ADR 0003).
-- El caso de uso se decide con la skill `elegir-caso-de-uso` y queda en ADR 0004.
+- El caso de uso se decide con la skill `elegir-caso-de-uso` a partir de los candidatos
+  ya puntuados en `casos-de-uso.md`, y queda en ADR 0004.
 
 ## Lo que NO vamos a hacer
 

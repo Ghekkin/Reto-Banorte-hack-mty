@@ -14,11 +14,10 @@ más que cinco pantallas a medias."**
 
 1. **Lee** `docs/reto/contexto-del-reto.md` (dominio, ejemplo oficial, reglas) y
    `docs/reto/rubrica-y-entregables.md`. La rúbrica es el criterio; no hay otro.
-2. **Candidatos**: máximo cinco, uno por línea, cada uno con su **flujo accionable**
-   escrito ("el usuario elige plazo y aplica el plan → el saldo y el calendario
-   cambian"). Un candidato sin acción real queda fuera antes de puntuar. El ejemplo de
-   la portada oficial (reestructura de tarjeta con plan de pago) es un candidato
-   legítimo: es lo que el jurado tiene en la cabeza.
+2. **Candidatos**: ya hay cinco puntuados en `docs/reto/casos-de-uso.md`, cada uno
+   con flujo accionable, componentes, tools y cómo mostrar adaptabilidad, más una
+   recomendación. Parte de ahí: se pueden ajustar puntajes o agregar uno, no empezar
+   de cero. Un candidato sin acción real queda fuera antes de puntuar.
 3. **Matriz** en `docs/decisiones/0004-caso-de-uso.md`, puntúa 1–3:
    - **Utilidad real** (25%): ¿resuelve un problema que una persona reconoce?
    - **Adaptabilidad visible** (20%): ¿la misma pregunta con otro contexto produce otra
