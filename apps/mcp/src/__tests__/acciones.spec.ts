@@ -1,3 +1,4 @@
+import { writeFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   SalidaAplicarPlanPago,
@@ -7,7 +8,7 @@ import {
   SalidaCrearApartado,
   SalidaProyectarAhorro,
 } from "@maya/schemas";
-import { reiniciarEstado } from "../datos/index.js";
+import { reiniciarEstado, rutaDelEstado } from "../datos/index.js";
 import { aplicarPlanPago } from "../tools/aplicar-plan-pago.js";
 import { compararPeriodos } from "../tools/comparar-periodos.js";
 import { consultarPlan } from "../tools/consultar-plan.js";
@@ -132,6 +133,25 @@ describe("aplicar_plan_pago: el ciclo completo", () => {
     expect(gasto.efectoDelPlan).not.toBeNull();
     expect(gasto.efectoDelPlan!.mensualidadDelPlanCentavos).toBe(319335);
     expect(gasto.efectoDelPlan!.interesesDelPeriodoCentavos).toBeGreaterThan(0);
+  });
+});
+
+describe("el estado vive en el disco, no en memoria", () => {
+  it("un reinicio desde otro proceso se ve en la siguiente lectura", async () => {
+    await aplicarPlanPago.manejar({
+      usuarioId: "usr_beto",
+      tarjetaId: "tar_beto_clasica",
+      plazoMeses: 18,
+      idempotencyKey: LLAVE,
+    });
+    expect(SalidaConsultarPlan.parse(await consultarPlan.manejar({ usuarioId: "usr_beto" })).hayPlan).toBe(true);
+
+    // Lo que hace `pnpm reiniciar-estado`: escribir el archivo desde OTRO proceso. Si la
+    // capa de datos cachea, el servidor sigue contestando con el plan viejo y el ensayo
+    // arranca sucio (paso a paso en docs/como-funciona/tools-mcp.md).
+    writeFileSync(rutaDelEstado(), JSON.stringify({ acciones: [] }, null, 2) + "\n");
+
+    expect(SalidaConsultarPlan.parse(await consultarPlan.manejar({ usuarioId: "usr_beto" })).hayPlan).toBe(false);
   });
 });
 

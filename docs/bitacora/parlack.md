@@ -44,6 +44,13 @@ reinicio**, y `reiniciar-estado` limpiaba otro archivo. Ahora se resuelve contra
 del repo (`raizDelRepo()` en `datos/memoria.ts`). No abrí issue porque cayó dentro de la
 tarea y quedó arreglado en el mismo commit.
 
+**Segundo bug propio, encontrado al verificar el primero:** `pnpm reiniciar-estado`
+escribía el archivo y decía "estado reiniciado", pero el servidor que ya estaba corriendo
+seguía contestando desde su caché en memoria. O sea: **el reinicio antes de un ensayo no
+servía de nada con el MCP arriba**. Quité la caché (el archivo pesa unos KB). Verificado en
+caliente: aplico un plan → el servidor lo ve → `reiniciar-estado` en otro proceso → el
+mismo servidor, sin reiniciarlo, ya dice `hayPlan: false`. Hay test.
+
 **`apps/web/src/lib/agente` (el agente real, ya no mock).** Vercel AI SDK 5 con
 `streamText`, las tools del MCP traducidas con `dynamicTool` (el schema lo publica el
 MCP, así que **agregar una tool no toca el agente**), y el stream JSONL del contrato.

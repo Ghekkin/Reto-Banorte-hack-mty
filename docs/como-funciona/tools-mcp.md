@@ -76,8 +76,12 @@ escribe en `apps/mcp/estado.json` (fuera de git), y las lecturas lo superponen:
   alguien, para que dos tools no contesten cosas distintas.
 - Con un plan aplicado: saldo revolvente `0`, uso del límite `0`, pago mínimo `0`, mora
   `0`, `planActivo` con la mensualidad, y `alerta: "plan_activo"`.
-- `pnpm reiniciar-estado` borra el archivo y todo vuelve al punto de partida. Se corre
-  antes de cada ensayo (skill `checklist-demo`).
+- `pnpm reiniciar-estado` vuelve el archivo a cero y **surte efecto en el servidor que ya
+  está corriendo**: la capa de datos lee el archivo en cada llamada, sin caché en memoria.
+  Con caché, el script decía "estado reiniciado" y el servidor seguía contestando con el
+  plan viejo hasta reiniciarlo, que es justo el susto que uno no quiere cinco minutos antes
+  del pitch. El archivo pesa unos KB; leerlo siempre no se nota. Se corre antes de cada
+  ensayo (skill `checklist-demo`).
 
 ### Idempotencia
 

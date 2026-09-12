@@ -23,24 +23,35 @@ export type AccionAplicada = {
 
 type Estado = { acciones: AccionAplicada[] };
 
-const VACIO: Estado = { acciones: [] };
-let cache: Estado | undefined;
-
 /**
  * `MCP_ESTADO` viene como ruta del repo (`apps/mcp/estado.json`), y el servidor arranca
  * con `cwd` en `apps/mcp`: resolverla contra `cwd` dejaba el archivo en
  * `apps/mcp/apps/mcp/estado.json` y cada arranque empezaba sin estado. Se resuelve
  * contra la raiz del repo, que es lo que la variable describe.
  */
-function archivo(): string {
+export function rutaDelEstado(): string {
   return isAbsolute(config.archivoEstado) ? config.archivoEstado : resolve(raizDelRepo(), config.archivoEstado);
 }
 
+/**
+ * Lee el estado del disco **cada vez**, sin cache en memoria.
+ *
+ * Tenerlo cacheado parecia gratis y era una trampa: `pnpm reiniciar-estado` corre en OTRO
+ * proceso, escribe el archivo y dice "estado reiniciado", pero el servidor seguia
+ * contestando desde su copia vieja. En un ensayo eso se ve como "reiniciamos y sigue
+ * apareciendo el plan aplicado", cinco minutos antes del pitch. El archivo tiene unos KB y
+ * cada tool hace una o dos lecturas: leerlo siempre no se nota.
+ */
 export function leerEstado(): Estado {
-  if (cache) return cache;
-  const ruta = archivo();
-  cache = existsSync(ruta) ? (JSON.parse(readFileSync(ruta, "utf8")) as Estado) : { acciones: [] };
-  return cache;
+  const ruta = rutaDelEstado();
+  if (!existsSync(ruta)) return { acciones: [] };
+  try {
+    return JSON.parse(readFileSync(ruta, "utf8")) as Estado;
+  } catch (error) {
+    // Un archivo a medio escribir no puede tumbar una lectura: se parte de cero y se avisa.
+    console.warn(`[mcp] estado ilegible en ${ruta}: ${error instanceof Error ? error.message : String(error)}`);
+    return { acciones: [] };
+  }
 }
 
 /**
@@ -53,7 +64,7 @@ export function aplicarAccion(accion: AccionAplicada): { aplicado: boolean; yaEs
     return { aplicado: false, yaEstaba: true };
   }
   estado.acciones.push(accion);
-  writeFileSync(archivo(), JSON.stringify(estado, null, 2) + "\n");
+  writeFileSync(rutaDelEstado(), JSON.stringify(estado, null, 2) + "\n");
   return { aplicado: true, yaEstaba: false };
 }
 
@@ -62,8 +73,10 @@ export function accionesDe(usuarioId: string, tipo?: string): AccionAplicada[] {
   return leerEstado().acciones.filter((a) => a.usuarioId === usuarioId && (!tipo || a.tipo === tipo));
 }
 
-/** Vuelve al punto de partida. Lo llama `pnpm --filter @maya/mcp reiniciar-estado`. */
+/**
+ * Vuelve al punto de partida. Lo llama `pnpm --filter @maya/mcp reiniciar-estado`, y surte
+ * efecto en el servidor que ya este corriendo (ver `leerEstado`).
+ */
 export function reiniciarEstado(): void {
-  cache = { ...VACIO, acciones: [] };
-  writeFileSync(archivo(), JSON.stringify(cache, null, 2) + "\n");
+  writeFileSync(rutaDelEstado(), JSON.stringify({ acciones: [] }, null, 2) + "\n");
 }
