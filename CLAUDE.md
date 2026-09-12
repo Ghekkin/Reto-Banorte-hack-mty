@@ -162,6 +162,9 @@ negocio**. Lo útil:
 - **Dominio en español, siempre.** Tools, schemas, componentes, campos y datos usan las
   palabras del negocio en español (`cuenta`, `movimiento`, `saldo`), nunca mezclado con
   inglés (`account`). Utilidades genéricas de código pueden ir en inglés.
+- **El gestor es pnpm, solo pnpm.** Nunca `npm install` ni `yarn` en este repo: generan
+  un lockfile paralelo y versiones distintas por máquina. `package-lock.json` y
+  `yarn.lock` están en `.gitignore` a propósito.
 - **Puertos fijos**: web 3000, mcp 3100, ml 8000. Cambiarlos toca `scripts/dev.sh`,
   `.env.example` y la skill `scaffold`.
 - **`.env.example` siempre completo.** Toda variable nueva entra ahí, con comentario, en

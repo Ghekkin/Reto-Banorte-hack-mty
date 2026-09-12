@@ -1,4 +1,8 @@
 # dependencias y builds
+# El gestor del repo es pnpm. Un package-lock.json es residuo de un `npm install`
+# despistado: instala versiones distintas a las del pnpm-lock y se sube sin querer.
+package-lock.json
+yarn.lock
 node_modules/
 .next/
 dist/
