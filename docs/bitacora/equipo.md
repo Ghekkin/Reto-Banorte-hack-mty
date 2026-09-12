@@ -18,6 +18,25 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 09:40 · arreglado** — **La consola no pintaba nada porque el registro del renderer
+  estaba vacío en ese camino.** `registrarLayout()`/`registrarCatalogo()` solo se llamaban
+  en `/catalogo`, así que la galería se veía perfecta y la demo no pintaba una tarjeta.
+  **Regla nueva: todo módulo que renderice un `<Superficie>` llama
+  `registrarComponentes()`** (`apps/web/src/lib/registrar-componentes.ts`, una sola
+  función, idempotente). Si algún día vuelve a aparecer "X no está en el catálogo de esta
+  superficie" para **varios** componentes a la vez —`Column` incluido—, no falta un
+  componente: falta el registro. `<Superficie>` ahora lo grita en consola.
+
+- **sáb 09:40 · lección** — **290 pruebas y ninguna cazó esto**, porque todas probaban
+  *mensajes* (que validen, que el reducer los aplique) y ninguna probaba que la pantalla
+  **se pinte**. Un mensaje válido que nadie sabe pintar se ve igual que uno roto. Ya hay
+  tres pruebas que renderizan el lienzo de verdad con `renderToStaticMarkup`, sin DOM ni
+  testing-library. Si agregas un camino de render nuevo, prueba que pinte, no que valide.
+
+- **sáb 09:40 · ojo al ensayar** — el agente contestaba "ya tienes un plan activo" a todo
+  porque el estado traía los planes de las pruebas de humo. **`pnpm reiniciar-estado` antes
+  de cada ensayo**, como dice el `CLAUDE.md`; no es opcional.
+
 - **sáb 05:30 · hecho** — **El producto funciona en producción, con el modelo real.** Los
   tres pasos del guion corriendo contra `https://maya.157.173.204.174.sslip.io`: Beto pide
   bajar intereses y recibe `ResumenTarjeta` + `PlanDePago` con sus números reales (4 pasos,

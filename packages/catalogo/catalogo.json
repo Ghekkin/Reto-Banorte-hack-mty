@@ -1290,6 +1290,19 @@
             "component": {
               "const": "Column"
             },
+            "ancho": {
+              "type": "string",
+              "description": "normal = 1 columna de la rejilla; amplio = 2",
+              "enum": [
+                "normal",
+                "amplio"
+              ],
+              "default": "normal"
+            },
+            "razon": {
+              "type": "string",
+              "description": "Solo la llevan los componentes financieros; aqui se acepta y se ignora"
+            },
             "children": {
               "description": "Los hijos: arreglo de ids, o una plantilla { componentId, path } para repetir un componente por cada elemento de una lista del data model.",
               "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ChildList"
@@ -1328,6 +1341,19 @@
           "properties": {
             "component": {
               "const": "Row"
+            },
+            "ancho": {
+              "type": "string",
+              "description": "normal = 1 columna de la rejilla; amplio = 2",
+              "enum": [
+                "normal",
+                "amplio"
+              ],
+              "default": "normal"
+            },
+            "razon": {
+              "type": "string",
+              "description": "Solo la llevan los componentes financieros; aqui se acepta y se ignora"
             },
             "children": {
               "description": "Los hijos: arreglo de ids, o una plantilla { componentId, path } para repetir un componente por cada elemento de una lista del data model.",
@@ -1368,6 +1394,19 @@
             "component": {
               "const": "Text"
             },
+            "ancho": {
+              "type": "string",
+              "description": "normal = 1 columna de la rejilla; amplio = 2",
+              "enum": [
+                "normal",
+                "amplio"
+              ],
+              "default": "normal"
+            },
+            "razon": {
+              "type": "string",
+              "description": "Solo la llevan los componentes financieros; aqui se acepta y se ignora"
+            },
             "texto": {
               "description": "El texto a mostrar.",
               "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DynamicString"
@@ -1405,6 +1444,19 @@
           "properties": {
             "component": {
               "const": "Divider"
+            },
+            "ancho": {
+              "type": "string",
+              "description": "normal = 1 columna de la rejilla; amplio = 2",
+              "enum": [
+                "normal",
+                "amplio"
+              ],
+              "default": "normal"
+            },
+            "razon": {
+              "type": "string",
+              "description": "Solo la llevan los componentes financieros; aqui se acepta y se ignora"
             }
           },
           "required": [

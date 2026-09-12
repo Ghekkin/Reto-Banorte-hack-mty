@@ -21,6 +21,9 @@ import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente
  */
 export const SUPERFICIE = "principal";
 
+/** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
+const TOPE_DE_FALLOS = 2;
+
 export function usarAgente(usuarioId: string) {
   const [estado, setEstado] = useState<Estado>(estadoVacio);
   const [historial, setHistorial] = useState<MensajeHistorial[]>([]);
@@ -29,10 +32,13 @@ export function usarAgente(usuarioId: string) {
   const [razon, setRazon] = useState<string>();
   const [transparencia, setTransparencia] = useState<LineaStream[]>([]);
   const conversacionId = useRef(crearId());
+  /** Cuantos fallos de render se le han contado al agente en esta conversacion. */
+  const fallosReportados = useRef(0);
 
   /** Cambiar de usuario empieza conversacion nueva y borra la superficie. */
   const reiniciar = useCallback(() => {
     conversacionId.current = crearId();
+    fallosReportados.current = 0;
     setEstado(estadoVacio());
     setHistorial([]);
     setSugerencias([]);
@@ -119,18 +125,33 @@ export function usarAgente(usuarioId: string) {
 
   /**
    * El canal de error de la spec (`VALIDATION_FAILED`): el renderer no supo pintar un
-   * componente y se lo cuenta al agente, que repinta sin el. Va como un turno mas, y
-   * `Superficie` ya garantiza que el mismo fallo se reporta una sola vez, asi que no
-   * puede volverse un bucle entre la interfaz y el agente.
+   * componente y se lo cuenta al agente, que repinta sin el.
+   *
+   * Tres frenos, y los tres hicieron falta. `Superficie` ya no reporta dos veces el MISMO
+   * fallo, pero eso no basta: si el agente reintenta con OTRO componente que tampoco se
+   * puede pintar, cada intento es un fallo distinto y el ping-pong no se acaba. Paso de
+   * verdad el 2026-09-12 09:20, con el registro del renderer vacio en la consola: once
+   * turnos seguidos, uno por componente del catalogo. Asi que:
+   *
+   *  1. `TOPE_DE_FALLOS` por conversacion. Al pasarlo, se anota y se calla: si la
+   *     interfaz no puede pintar nada, el problema no lo va a arreglar el agente.
+   *  2. Nada de reportar con un turno en vuelo.
+   *  3. No entra al hilo visible como un turno de la persona: `historial.ts` ya le cuenta
+   *     el fallo al modelo desde `peticion.error`, y en la pantalla decia "Tocaste:" algo
+   *     que nadie toco. Va al panel de transparencia, que es su lugar.
    */
   const reportarFallo = useCallback(
     async (fallo: FalloDeRender) => {
       const resumen = `la interfaz no pudo pintar ${fallo.path}: ${fallo.message}`;
-      const mensajes: MensajeHistorial[] = [...historial, { rol: "accion", texto: resumen }];
-      setHistorial(mensajes);
-      await enviar({ mensajes, error: fallo });
+      if (fallosReportados.current >= TOPE_DE_FALLOS || ocupado) {
+        console.warn(`[a2ui] ${resumen} (no se reporta: ${ocupado ? "turno en vuelo" : "tope alcanzado"})`);
+        return;
+      }
+      fallosReportados.current++;
+      setTransparencia((t) => [...t, { tipo: "error", codigo: "a2ui", mensaje: resumen }]);
+      await enviar({ mensajes: historial, error: fallo });
     },
-    [enviar, historial],
+    [enviar, historial, ocupado],
   );
 
   const superficie = useMemo(() => estado.get(SUPERFICIE), [estado]);

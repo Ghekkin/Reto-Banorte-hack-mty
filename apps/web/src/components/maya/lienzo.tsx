@@ -3,6 +3,7 @@
 import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender } from "@maya/a2ui";
 import { LayoutGrid } from "lucide-react";
+import { registrarComponentes } from "@/lib/registrar-componentes";
 
 /**
  * El lienzo: la rejilla bento donde el agente coloca lo que construye. Cada componente
@@ -12,7 +13,12 @@ import { LayoutGrid } from "lucide-react";
  * El renderer pinta los hijos; esta rejilla solo les da el hueco. Por eso este archivo
  * no sabe nada de plan de pago, gasto ni metas: si supiera, el catalogo dejaria de ser
  * intercambiable.
+ *
+ * Lo unico que si tiene que saber es que el registro exista: sin el, `<Superficie>` no
+ * encuentra ni `Column` y la pantalla entera cae en `Desconocido`.
  */
+registrarComponentes();
+
 export function Lienzo({
   superficie,
   conversacionId,

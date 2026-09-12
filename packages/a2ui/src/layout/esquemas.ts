@@ -23,6 +23,27 @@ const SEPARACION = {
   default: "normal",
 } as const;
 
+/**
+ * Las dos props comunes de NUESTRO catalogo. Los de layout no hacen nada con ellas, pero
+ * las aceptan: van publicados en el mismo `catalogo.json` que los financieros, asi que
+ * para el modelo son "componentes del catalogo" y les pone `razon` como le pide el
+ * prompt. Rechazar la pantalla completa por una frase decorativa en un `Text` es un mal
+ * negocio: se acepta y se ignora. (`ancho` si tiene efecto en un contenedor raiz: la
+ * envoltura del renderer le pone `data-ancho` y la rejilla bento le da dos columnas.)
+ */
+const COMUNES_DEL_CATALOGO = {
+  ancho: {
+    type: "string",
+    description: "normal = 1 columna de la rejilla; amplio = 2",
+    enum: ["normal", "amplio"],
+    default: "normal",
+  },
+  razon: {
+    type: "string",
+    description: "Solo la llevan los componentes financieros; aqui se acepta y se ignora",
+  },
+} as const;
+
 /** Un componente del catalogo, con la envoltura que pide la spec. */
 function componente(nombre: NombreDeLayout, propias: Record<string, unknown>, requeridas: string[], descripcion: string) {
   return {
@@ -33,7 +54,7 @@ function componente(nombre: NombreDeLayout, propias: Record<string, unknown>, re
       {
         type: "object",
         description: descripcion,
-        properties: { component: { const: nombre }, ...propias },
+        properties: { component: { const: nombre }, ...COMUNES_DEL_CATALOGO, ...propias },
         required: ["component", ...requeridas],
       },
     ],
