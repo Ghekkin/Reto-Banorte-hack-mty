@@ -20,9 +20,12 @@ import type { Movimiento } from "@/lib/datos/consultas";
 export function ListaMovimientos({
   movimientos,
   categorias,
+  total,
 }: {
   movimientos: Movimiento[];
   categorias: { id: string; nombre: string }[];
+  /** Cuantos tiene en total, para decir la verdad sobre lo que se esta mostrando. */
+  total: number;
 }) {
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState<string[]>([]);
@@ -76,6 +79,7 @@ export function ListaMovimientos({
 
       <p className="px-1 text-xs text-muted-foreground">
         {filtrados.length} de {movimientos.length} movimientos
+        {total > movimientos.length && ` · los ${movimientos.length} más recientes de ${total}`}
       </p>
 
       <Card>

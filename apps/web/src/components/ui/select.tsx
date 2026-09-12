@@ -21,7 +21,9 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
   return (
     <SelectPrimitive.Value
       data-slot="select-value"
-      className={cn("flex flex-1 text-left", className)}
+      // `min-w-0`: sin el, un flex item no baja de su ancho de contenido y el `truncate`
+      // de los hijos nunca se activa (el texto desborda en vez de cortarse con puntos).
+      className={cn("flex min-w-0 flex-1 text-left", className)}
       {...props}
     />
   )
@@ -110,27 +112,44 @@ function SelectLabel({
 function SelectItem({
   className,
   children,
+  indicador = true,
   ...props
-}: SelectPrimitive.Item.Props) {
+}: SelectPrimitive.Item.Props & {
+  /**
+   * Con `false` no se pinta la palomita y se recupera el espacio que reservaba a la
+   * derecha. Para listas donde la seleccion se comunica por contraste (fondo relleno) en
+   * vez de por un icono de 16 px: ver `components/shell/selector-usuario.tsx`.
+   */
+  indicador?: boolean;
+}) {
   return (
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
         "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-1 pr-8 pl-1.5 text-sm outline-hidden select-none focus:bg-accent focus:text-accent-foreground not-data-[variant=destructive]:focus:**:text-accent-foreground data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
+        !indicador && "pr-1.5",
         className
       )}
       {...props}
     >
-      <SelectPrimitive.ItemText className="flex flex-1 shrink-0 gap-2 whitespace-nowrap">
+      {/* `min-w-0` en vez de `shrink-0`: con `shrink-0` el texto del item no cede ancho
+          nunca, asi que desborda el popup y ningun `truncate` de los hijos llega a
+          dibujar los tres puntos. */}
+      <SelectPrimitive.ItemText className="flex min-w-0 flex-1 gap-2 whitespace-nowrap">
         {children}
       </SelectPrimitive.ItemText>
-      <SelectPrimitive.ItemIndicator
-        render={
-          <span className="pointer-events-none absolute right-2 flex size-4 items-center justify-center" />
-        }
-      >
-        <CheckIcon className="pointer-events-none" />
-      </SelectPrimitive.ItemIndicator>
+      {indicador && (
+        <SelectPrimitive.ItemIndicator
+          render={
+            <span
+              data-slot="select-item-indicator"
+              className="pointer-events-none absolute right-2 flex size-4 items-center justify-center"
+            />
+          }
+        >
+          <CheckIcon className="pointer-events-none" />
+        </SelectPrimitive.ItemIndicator>
+      )}
     </SelectPrimitive.Item>
   )
 }

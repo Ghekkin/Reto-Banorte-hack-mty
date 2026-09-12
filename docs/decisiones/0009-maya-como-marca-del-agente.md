@@ -37,6 +37,7 @@ que trabaja en Banorte. Maya no necesita presentación: la conocen, la construye
 4. **Límites de marca, sin excepción:**
    - Se usa el **nombre Maya** y la **paleta** de Banorte. **No** el logotipo, **no** la
      tipografía corporativa, **no** la imagen de Maya si la tiene.
+     *(El límite del logotipo se levantó el 2026-09-12; ver la enmienda al final.)*
    - El **dominio no imita a Banorte**: nada de `maya-banorte.tech` ni `mayabanorte.tech`.
      Neutro o descriptivo.
    - `README.md` y el pie de la app llevan: *"Prototipo de hackathon. Concepto sobre
@@ -67,3 +68,37 @@ que trabaja en Banorte. Maya no necesita presentación: la conocen, la construye
 - Riesgo asumido: si en el stand piden no usar el nombre, se cambia en un `sed` y el
   encuadre sobrevive ("el asistente de tu banco"). Por eso el nombre vive en un solo
   archivo de configuración, no esparcido en los componentes.
+
+## Enmienda 2026-09-12 — sí se usa el logotipo de Banorte
+
+**Qué cambia.** El punto 4 prohibía el logotipo. Se levanta esa prohibición por decisión
+del equipo: el logotipo oficial de Banorte entra en la interfaz. El resto del punto 4
+sigue igual —**no** se usa la tipografía corporativa, **no** la imagen de Maya, y el
+dominio sigue sin imitar a la marca.
+
+**Por qué.** La paleta sola no lee como Banorte en un proyector a tres metros. El
+encuadre del pitch ("Maya ya opera; le damos superficie") depende de que el jurado
+reconozca su propio producto en la primera pantalla, y el reconocimiento lo carga el
+logotipo, no el rojo. Es la misma apuesta del nombre, un paso más lejos.
+
+**Dónde vive.** `apps/web/src/components/marca/logo-banorte.tsx`, dos componentes:
+
+| Componente | Qué es | Dónde se usa |
+|---|---|---|
+| `LogoBanorte` | Logotipo completo (isotipo + palabra). 8.16:1, se dimensiona por altura | Header del sidebar de escritorio |
+| `IconoBanorte` | Isotipo solo, en `viewBox` cuadrado y centrado | Todo lo que representa a Maya: item del sidebar, FAB central de móvil, avatar del saludo en `/maya`, atajo de Inicio |
+
+Van como SVG **en línea** con `fill="currentColor"`, no como `<img>`: el isotipo tiene que
+ser blanco sobre el degradado rojo de marca y un `<img>` no se puede recolorear. Los SVG
+fuente quedan en `apps/web/public/marca/`.
+
+**Lo que sigue vigente y se vuelve más importante.** El disclaimer de `src/lib/marca.ts`,
+del `README.md` y del pie de la app es ahora la única cosa que separa el prototipo de una
+suplantación de marca: no se toca, no se esconde y no se hace más chico. Y el punto 5 del
+ADR ("se confirma con los mentores en el stand antes del pitch") **deja de ser cortesía
+y pasa a ser obligatorio**: si piden retirarlo, se quitan los dos componentes de
+`components/marca/` y se vuelve a la insignia con la inicial. El riesgo está acotado a un
+archivo, igual que el nombre.
+
+**Riesgo asumido:** que un juez lea el logotipo como afiliación real pese al disclaimer.
+Se mitiga diciéndolo en voz alta en la demo, no solo en el pie.

@@ -1,5 +1,5 @@
 import { ListaMovimientos } from "@/components/movimientos/lista-movimientos";
-import { categoriasUsadas, movimientosDe } from "@/lib/datos/consultas";
+import { categoriasUsadas, movimientosDe, totalMovimientosDe } from "@/lib/datos/consultas";
 import { usuarioActivo } from "@/lib/usuario-activo";
 
 /**
@@ -10,10 +10,11 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  */
 export default async function PaginaMovimientos() {
   const usuario = await usuarioActivo();
-  const [movimientos, categorias] = await Promise.all([
+  const [movimientos, categorias, total] = await Promise.all([
     movimientosDe(usuario.id),
     categoriasUsadas(usuario.id),
+    totalMovimientosDe(usuario.id),
   ]);
 
-  return <ListaMovimientos movimientos={movimientos} categorias={categorias} />;
+  return <ListaMovimientos movimientos={movimientos} categorias={categorias} total={total} />;
 }

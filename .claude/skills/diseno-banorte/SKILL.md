@@ -385,8 +385,17 @@ El agente se llama **Maya**, como la asistente virtual real de Banorte (ADR 0009
 encuadre es *evolución*: Maya ya hace 17 operaciones bancarias; nosotros cambiamos cómo
 las entrega. Límites:
 
-- Se usan el **nombre Maya** y la **paleta**. **Nunca** el logotipo de Banorte, su
+- Se usan el **nombre Maya**, la **paleta** y el **logotipo** de Banorte (la prohibición
+  del logotipo se levantó el 2026-09-12; ver la enmienda del ADR 0009). **Nunca** la
   tipografía corporativa ni la imagen oficial de Maya.
+- **El logotipo no se escribe a mano ni se mete como `<img>`.** Son dos componentes en
+  `apps/web/src/components/marca/logo-banorte.tsx`: `LogoBanorte` (completo, se dimensiona
+  por altura porque es 8.16:1) e `IconoBanorte` (el isotipo, cuadrado, para todo lo que
+  representa a Maya). Rellenan con `currentColor`, así que se colorean con `text-*` y
+  funcionan en blanco sobre el degradado de marca.
+- Por lo mismo, el **disclaimer no es decorativo**: es lo único que separa el prototipo de
+  una suplantación de marca. No se esconde ni se hace más chico. Confirmar con los
+  mentores en el stand antes del pitch es obligatorio, no cortesía.
 - El **dominio no imita a Banorte**: nada de `maya-banorte.tech`. Neutro o descriptivo.
 - Pie de la app y `README.md`: *"Prototipo de hackathon. Concepto sobre Maya, la
   asistente virtual de Banorte. No es un producto oficial ni está afiliado a Grupo

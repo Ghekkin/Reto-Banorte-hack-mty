@@ -9,7 +9,7 @@ encontrado: 2026-09-12 10:15
 
 # El PostgreSQL remoto no es alcanzable desde la máquina de desarrollo
 
-**Dónde:** `scripts/cargar-postgres.mjs` contra el host de `POSTGRE_BANORTE_URL`
+**Dónde:** `scripts/cargar-postgres.mjs` contra el host de `DATABASE_URL`
 (`157.173.204.174`, puerto 5437).
 
 **Qué esperaba:** que `node scripts/cargar-postgres.mjs --inspeccionar` conectara y

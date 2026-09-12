@@ -14,6 +14,7 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
+import { LogoBanorte } from "@/components/marca/logo-banorte";
 import { SelectorUsuario } from "@/components/shell/selector-usuario";
 import { SECCIONES, seccionActiva } from "@/components/shell/navegacion";
 import { MARCA } from "@/lib/marca";
@@ -38,16 +39,15 @@ export function SidebarApp({ usuario }: { usuario: UsuarioDemo }) {
   return (
     <Sidebar variant="floating" collapsible="offcanvas">
       <SidebarHeader className="gap-3">
-        <Link href="/maya" className="flex items-center gap-2 px-2 pt-1">
-          <span className="grid size-8 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-sm font-semibold text-primary-foreground">
-            M
-          </span>
-          <span className="flex flex-col leading-tight">
-            <span className="text-base font-semibold">{MARCA.nombre}</span>
-            <span className="text-xs text-muted-foreground">{MARCA.tagline}</span>
-          </span>
+        <Link
+          href="/maya"
+          aria-label={`${MARCA.nombre} — ${MARCA.tagline}`}
+          className="flex flex-col gap-1.5 px-2 pt-1"
+        >
+          {/* El logotipo manda la identidad; se dimensiona por altura porque es 8:1. */}
+          <LogoBanorte className="h-6 w-auto text-primary" />
+          <span className="text-xs text-muted-foreground">{MARCA.tagline}</span>
         </Link>
-        <SelectorUsuario usuario={usuario} />
       </SidebarHeader>
 
       <SidebarContent>
@@ -57,11 +57,7 @@ export function SidebarApp({ usuario }: { usuario: UsuarioDemo }) {
       </SidebarContent>
 
       <SidebarFooter>
-        <div className="rounded-xl border border-borde-sutil p-3 text-xs leading-relaxed text-muted-foreground">
-          {MARCA.contexto}
-          <br />
-          {MARCA.piezas}
-        </div>
+        <SelectorUsuario usuario={usuario} />
       </SidebarFooter>
     </Sidebar>
   );

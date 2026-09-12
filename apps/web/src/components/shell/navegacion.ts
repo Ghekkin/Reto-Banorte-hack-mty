@@ -1,5 +1,6 @@
-import type { LucideIcon } from "lucide-react";
-import { CreditCard, Home, MoreHorizontal, Receipt, Sparkles } from "lucide-react";
+import type { ComponentType, SVGProps } from "react";
+import { CreditCard, Home, MoreHorizontal, Receipt } from "lucide-react";
+import { IconoBanorte } from "@/components/marca/logo-banorte";
 
 /**
  * Las cinco secciones de la app, en UN solo lugar. El sidebar de escritorio y la barra
@@ -14,7 +15,11 @@ export type Seccion = {
   etiqueta: string;
   /** Lo que va bajo el titulo en la barra superior. */
   descripcion: string;
-  icono: LucideIcon;
+  /**
+   * Cualquier SVG que acepte `className`: los iconos de Lucide y tambien el isotipo de
+   * Banorte que usa Maya (`IconoBanorte`), que no es de Lucide pero se comporta igual.
+   */
+  icono: ComponentType<SVGProps<SVGSVGElement>>;
   grupo: "banco" | "maya" | "mas";
   /**
    * Maya. En movil es el boton central elevado; en escritorio, el item con el
@@ -43,7 +48,9 @@ export const SECCIONES: Seccion[] = [
     href: "/maya",
     etiqueta: "Maya",
     descripcion: "Pregunta lo que necesites y ella construye la pantalla",
-    icono: Sparkles,
+    // Maya lleva el isotipo de Banorte, no un icono genérico: es la marca la que
+    // construye la pantalla.
+    icono: IconoBanorte,
     grupo: "maya",
     destacada: true,
   },

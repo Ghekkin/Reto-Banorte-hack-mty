@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { Sparkles } from "lucide-react";
+import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo, LienzoPlaceholder } from "@/components/maya/lienzo";
 import { usarAgente } from "@/lib/agente/usar-agente";
@@ -81,7 +81,7 @@ function Saludo({ usuario }: { usuario: UsuarioDemo }) {
   return (
     <div className="flex items-start gap-3 rounded-2xl border border-borde-sutil bg-card p-4 shadow-sm md:p-5">
       <span className="grid size-9 shrink-0 place-items-center rounded-full bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground">
-        <Sparkles className="size-4" />
+        <IconoBanorte className="size-4" />
       </span>
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">

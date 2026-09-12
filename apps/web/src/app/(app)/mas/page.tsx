@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { ComponentType, SVGProps } from "react";
 import {
   ChevronRight,
   CircleHelp,
@@ -6,10 +7,10 @@ import {
   Receipt,
   Settings,
   ShieldCheck,
-  Sparkles,
   User,
   Zap,
 } from "lucide-react";
+import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -84,7 +85,7 @@ export default async function PaginaMas() {
           <CardTitle className="text-sm font-medium text-muted-foreground">Todo lo demás</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col">
-          <Enlace href="/maya" icono={Sparkles} etiqueta="Preguntarle a Maya" disponible />
+          <Enlace href="/maya" icono={IconoBanorte} etiqueta="Preguntarle a Maya" disponible />
           <Enlace href="/movimientos" icono={Receipt} etiqueta="Movimientos" disponible />
           <Enlace icono={Zap} etiqueta="Pagos y servicios" />
           <Enlace icono={FileText} etiqueta="Estados de cuenta" />
@@ -118,7 +119,7 @@ function Enlace({
   disponible = false,
 }: {
   href?: string;
-  icono: typeof Zap;
+  icono: ComponentType<SVGProps<SVGSVGElement>>;
   etiqueta: string;
   disponible?: boolean;
 }) {
