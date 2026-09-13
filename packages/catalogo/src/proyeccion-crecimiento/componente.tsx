@@ -105,10 +105,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
   const maximoSlider = Math.max(aportacionMensualCentavos * 4, 2000000);
   const colorEje = heroe ? "var(--primary-foreground)" : EJE.tick.fill;
   const colorEtiqueta = heroe ? "var(--primary-foreground)" : ETIQUETA.fill;
-  // El techo del eje es el mayor de los dos: con un escenario perdedor el total queda por
-  // DEBAJO de lo aportado, y un dominio atado al total recortaria la linea de aportaciones.
-  const techo = Math.max(final.total, final.aportado);
-  const marcasY = [0, Math.round(techo / 2), techo];
+  const marcasY = [0, Math.round(final.total / 2), final.total];
   /** Los hitos sobre la serie simulada, con el último siempre en el cierre. */
   const puntosDeHito = [...mesesConHito]
     .filter((m) => m > 0 && m < plazoMeses)
@@ -123,13 +120,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
         </span>
         <span className="monto text-3xl font-semibold">{formatearMonto(final.total)}</span>
         <span className={`text-sm ${suave}`}>
-          {/* El signo lo pone el numero, no la plantilla: con un escenario adverso esto
-              decia "+-$95,351 de rendimiento", que es peor que no decir nada. */}
-          <span className={`monto font-semibold ${heroe ? "" : final.rendimiento < 0 ? "text-destructive" : "text-exito"}`}>
-            {final.rendimiento < 0 ? "" : "+"}
-            {formatearMonto(final.rendimiento)}
-          </span>{" "}
-          {final.rendimiento < 0 ? "de perdida" : "de rendimiento"} sobre{" "}
+          <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(final.rendimiento)}</span> de rendimiento sobre{" "}
           <span className="monto">{formatearMonto(final.aportado)}</span> aportados
         </span>
       </CardHeader>
@@ -157,7 +148,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
               />
               {/* Tres marcas dan la escala; el tope es el cierre, que cambia con el slider. */}
               <YAxis
-                domain={[0, techo]}
+                domain={[0, final.total]}
                 ticks={marcasY}
                 tickFormatter={formatearMontoCorto}
                 width={60}
@@ -308,14 +299,6 @@ type Punto = { mes: number; aportado: number; rendimiento: number; total: number
  * Interés compuesto mensual con la aportación al inicio de cada mes. `calibracion`
  * escala el rendimiento para que, con la aportación original, el cierre coincida con el
  * que mandó la tool: la tool es la fuente de verdad y el componente solo interpola.
- *
- * **La fórmula tiene que ser la misma que `proyectarCrecimiento()` del MCP**
- * (`apps/mcp/src/dominio/inversiones.ts`), porque contra ella se calibra. Hay una prueba
- * a cada lado con los mismos números.
- *
- * El rendimiento **puede ser negativo** y no se aplasta a cero: antes un
- * `Math.max(0, …)` convertía un escenario perdedor en uno plano, que es la única cosa que
- * una proyección financiera no puede hacer.
  */
 function simular({
   capitalInicialCentavos,
@@ -336,17 +319,13 @@ function simular({
   for (let m = 1; m <= plazoMeses; m++) {
     saldo = (saldo + aportacionCentavos) * (1 + r);
     const aportado = capitalInicialCentavos + aportacionCentavos * m;
-    const rendimiento = Math.round((saldo - aportado) * calibracion);
+    const rendimiento = Math.max(0, Math.round((saldo - aportado) * calibracion));
     puntos.push({ mes: m, aportado, rendimiento, total: aportado + rendimiento });
   }
   return puntos;
 }
 
-/**
- * El factor que hace que la simulación con la aportación original cierre donde dijo la
- * tool. Con un rendimiento esperado negativo (escenario adverso) no se calibra: el signo
- * del cociente haría girar la curva.
- */
+/** El factor que hace que la simulación con la aportación original cierre donde dijo la tool. */
 function calibrar({
   capitalInicialCentavos,
   aportacionCentavos,

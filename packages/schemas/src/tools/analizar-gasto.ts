@@ -22,20 +22,6 @@ export const EntradaAnalizarGasto = z.object({
     .regex(/^\d{4}-\d{2}$/, "usa AAAA-MM")
     .optional()
     .describe("Mes a analizar (AAAA-MM). Default: el ultimo mes cerrado"),
-  periodoAnterior: z
-    .string()
-    .regex(/^\d{4}-\d{2}$/, "usa AAAA-MM")
-    .optional()
-    .describe(
-      "Contra que mes comparar (AAAA-MM). Default: el mes anterior a `periodo`. Es lo que contesta " +
-        "'comparalo con julio' sin bajar a `comparar_periodos`",
-    ),
-  mesesSinUso: z
-    .number()
-    .int()
-    .min(1)
-    .optional()
-    .describe("Cuantos meses sin un cargo para marcar una suscripcion como sin uso. Default 2"),
 });
 export type EntradaAnalizarGasto = z.infer<typeof EntradaAnalizarGasto>;
 

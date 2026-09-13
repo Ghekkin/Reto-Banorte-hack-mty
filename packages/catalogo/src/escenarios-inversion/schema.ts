@@ -7,14 +7,8 @@ import { Ancho, Centavos, Heroe, PropsBase } from "../comunes";
  */
 export const DetalleEscenario = z.object({
   tasaAnualPct: z.number().describe("Tasa de rendimiento anual estimada para el escenario como fracción (ej. 0.06 = 6%)"),
-  valorFinalCentavos: Centavos.describe("Monto total estimado al final del plazo. Sale de proyectar_inversion"),
-  rendimientoCentavos: z
-    .number()
-    .int()
-    .describe(
-      "Ganancia o PERDIDA estimada sobre el capital, en centavos. Puede ser NEGATIVO en el escenario " +
-        "pesimista, y si la tool lo devuelve negativo se pinta negativo: no lo subas a cero",
-    ),
+  valorFinalCentavos: Centavos.describe("Monto total estimado al final del plazo"),
+  rendimientoCentavos: Centavos.describe("Ganancia monetaria neta estimada sobre el capital"),
   descripcion: z.string().describe("Breve explicación de las condiciones que propiciarían este resultado"),
 });
 
@@ -34,7 +28,7 @@ export type PropsEscenariosInversion = z.infer<typeof schemaEscenariosInversion>
 export const entradaEscenariosInversion = {
   nombre: "EscenariosInversion",
   cuandoUsarlo:
-    "La persona duda sobre la volatilidad de su inversión o quiere entender qué pasaría en el peor y mejor caso antes de decidir: **ya llamaste proyectar_inversion** y pasas sus tres escenarios tal como vinieron. Compara pesimista, esperado y optimista. Si pide otro monto u otro horizonte, vuelve a llamar la tool: los tres escenarios cambian y no se pueden derivar. Dispara elegir_escenario.",
+    "La persona duda sobre la volatilidad de su inversión o quiere entender qué pasaría en el peor y mejor caso antes de decidir. Compara pesimista, esperado y optimista. Dispara elegir_escenario.",
   schema: schemaEscenariosInversion,
   acciones: ["elegir_escenario"],
 };

@@ -1,7 +1,6 @@
 "use server";
 
 import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { almacenEnPostgres } from "@/lib/inicio/almacen";
 import { generarPortada } from "@/lib/inicio/generar";
@@ -17,12 +16,6 @@ import { USUARIOS } from "@/lib/usuarios";
  *
  * Se valida el id contra la lista en vez de confiar en lo que llega del cliente: es una
  * entrada del navegador y termina en una lectura de disco.
- *
- * **Y manda a Inicio.** Cambiar de persona es lo que demuestra la adaptabilidad del reto:
- * misma pregunta, otro contexto, otra interfaz. Quedarse en la pantalla donde estaba deja a
- * la persona viendo la conversacion de Maya vacia (el hilo se limpia con el cambio) o una
- * seccion cualquiera; Inicio es lo unico que se rearma solo para quien acaba de entrar, y es
- * lo que hay que ver primero en la demo.
  */
 export async function cambiarUsuario(id: string): Promise<void> {
   if (!USUARIOS.some((u) => u.id === id)) return;
@@ -35,9 +28,6 @@ export async function cambiarUsuario(id: string): Promise<void> {
   });
 
   revalidatePath("/", "layout");
-  // `redirect` lanza para cortar la accion, asi que va al final: nada despues de esta linea
-  // se ejecuta.
-  redirect("/");
 }
 
 /** Mas largo que esto no es una pregunta, es un texto pegado. */

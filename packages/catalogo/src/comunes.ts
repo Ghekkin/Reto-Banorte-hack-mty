@@ -61,42 +61,6 @@ export function formatearPorcentaje(fraccion: number): string {
 export const Frecuencia = z.enum(["mensual", "quincenal"]);
 export type Frecuencia = z.infer<typeof Frecuencia>;
 
-/**
- * `limite`: cuantos elementos de una coleccion se listan tras ordenar.
- *
- * Es una prop de **VISTA**: cambiarla con `ajustar_pantalla` recorta la lista sin volver a
- * pedir datos. Existe en los componentes que listan colecciones porque sin ella una
- * peticion tan comun como "muestrame solo las 3 mas caras" obligaba a repintar la pantalla
- * completa con datos nuevos, aunque el componente ya los tuviera todos.
- */
-export const Limite = z
-  .number()
-  .int()
-  .min(1)
-  .optional()
-  .describe(
-    "Cuantos elementos se listan tras ordenar; el resto se resume en un renglon al pie. Solo cuando la " +
-      "persona pida ver los N primeros: sin esto se listan todos. NO recortes el arreglo para lograr " +
-      "esto, usa esta prop: los totales tienen que seguir cuadrando",
-  );
-
-/**
- * Corta una lista al limite y devuelve lo que quedo fuera.
- *
- * Lo de fuera **no se tira**: se resume en un renglon ("y 4 mas: $1,234.00"), porque una
- * lista recortada en silencio hace que la suma de los renglones no cuadre con el total de
- * la tarjeta y quien la lea piense que uno de los dos numeros esta mal.
- */
-export function recortar<T>(items: T[], limite?: number): { visibles: T[]; fuera: T[] } {
-  if (limite === undefined || limite >= items.length) return { visibles: items, fuera: [] };
-  return { visibles: items.slice(0, limite), fuera: items.slice(limite) };
-}
-
-/** La suma en centavos de lo que quedo fuera del limite. */
-export function sumaDeMontos(items: Array<{ montoCentavos: number }>): number {
-  return items.reduce((suma, i) => suma + i.montoCentavos, 0);
-}
-
 /** `2026-10-05` -> `5 de octubre`. Las fechas viajan en ISO corto y se formatean al pintar. */
 export function formatearFecha(iso: string | undefined, conAnio = false): string {
   if (!iso) return "";

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Ancho, Centavos, Heroe, Limite, PropsBase } from "../comunes";
+import { Ancho, Centavos, Heroe, PropsBase } from "../comunes";
 
 /**
  * `AlertaFugas` — Detecta cargos recurrentes y suscripciones sin uso reciente
@@ -23,15 +23,6 @@ export const schemaAlertaFugas = PropsBase.extend({
   totalAnualCentavos: Centavos.describe("Impacto anual total en el bolsillo"),
   pctDelIngreso: z.number().describe("Porcentaje del ingreso mensual que representan"),
   fugas: z.array(ElementoFuga).min(1).describe("Lista de servicios y cargos recurrentes analizados"),
-  orden: z
-    .enum(["monto", "sinUso", "nombre"])
-    .default("monto")
-    .describe(
-      "Como se ordena la lista. `monto`: de la mas cara a la mas barata (el default). `sinUso`: primero " +
-        "las que no se usan, que son las que conviene cancelar. `nombre`: alfabetico. Es una prop de " +
-        "VISTA: cambiarla con ajustar_pantalla reordena sin volver a pedir los datos",
-    ),
-  limite: Limite,
 });
 
 export type PropsAlertaFugas = z.infer<typeof schemaAlertaFugas>;
@@ -39,7 +30,7 @@ export type PropsAlertaFugas = z.infer<typeof schemaAlertaFugas>;
 export const entradaAlertaFugas = {
   nombre: "AlertaFugas",
   cuandoUsarlo:
-    "La persona pregunta '¿En qué estoy gastando de más?', '¿Tengo cargos fantasma?' o el agente detecta membresías sin uso para recortar gasto. Dispara cancelar_suscripcion. Si después pide otro orden o solo las N más caras, eso es `ajustar_pantalla` sobre `orden` o `limite`: no vuelvas a pintar la tarjeta.",
+    "La persona pregunta '¿En qué estoy gastando de más?', '¿Tengo cargos fantasma?' o el agente detecta membresías sin uso para recortar gasto. Dispara cancelar_suscripcion.",
   schema: schemaAlertaFugas,
   acciones: ["cancelar_suscripcion"],
 };

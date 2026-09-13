@@ -86,7 +86,7 @@
               ]
             },
             "datos": {
-              "description": "Hasta 3 cifras que sostienen el titular. Son las MISMAS que ya estan en las tarjetas, no nuevas. El dinero va en `montoCentavos`, no en `valor`",
+              "description": "Hasta 3 cifras que sostienen el titular. Son las MISMAS que ya estan en las tarjetas, no nuevas",
               "anyOf": [
                 {
                   "maxItems": 3,
@@ -98,15 +98,9 @@
                         "type": "string",
                         "description": "Que es: 'Mensualidad', 'Retiros de efectivo', 'Salud financiera'"
                       },
-                      "montoCentavos": {
-                        "description": "SI ES DINERO, va aqui: el entero en CENTAVOS tal como lo devolvio la tool (457095, no 4570.95 ni '$4,570.95'). La interfaz lo formatea. Nunca escribas un monto a mano en `valor`",
-                        "type": "integer",
-                        "minimum": -9007199254740991,
-                        "maximum": 9007199254740991
-                      },
                       "valor": {
-                        "description": "Solo para lo que NO es dinero: '+74%', '39/100', '15 meses', '5 de octubre'. Si empieza con `$` se rechaza la pantalla: eso va en `montoCentavos`",
-                        "type": "string"
+                        "type": "string",
+                        "description": "Ya formateado y corto: '$3,193.35', '+74%', '39/100'. Si es dinero, va con centavos y EXACTAMENTE igual que en la tarjeta que lo reporta: dos cifras distintas para el mismo monto en la misma pantalla es lo que hace que nadie crea ninguna"
                       },
                       "tono": {
                         "default": "neutro",
@@ -115,7 +109,8 @@
                       }
                     },
                     "required": [
-                      "etiqueta"
+                      "etiqueta",
+                      "valor"
                     ]
                   }
                 },
@@ -976,7 +971,7 @@
     },
     "DetalleCategoria": {
       "type": "object",
-      "description": "La persona toco una categoria (accion ver_categoria) o pregunta por un gasto concreto: los movimientos que la componen, con el comercio y la fecha. Va junto a GastoPorCategoria, no en su lugar. Si despues pide otro orden o solo los N mas grandes, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
+      "description": "La persona toco una categoria (accion ver_categoria) o pregunta por un gasto concreto: los movimientos que la componen, con el comercio y la fecha. Va junto a GastoPorCategoria, no en su lugar.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -1107,36 +1102,6 @@
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
                 }
               ]
-            },
-            "orden": {
-              "description": "Como se ordena. `fecha`: del mas reciente al mas viejo (el default). `monto`: del mas grande al mas chico, para 'cual fue el gasto mas fuerte'. `comercio`: alfabetico. Es una prop de VISTA: cambiarla con ajustar_pantalla reordena sin volver a pedir los datos",
-              "default": "fecha",
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "fecha",
-                    "monto",
-                    "comercio"
-                  ]
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "limite": {
-              "description": "Cuantos elementos se listan tras ordenar; el resto se resume en un renglon al pie. Solo cuando la persona pida ver los N primeros: sin esto se listan todos. NO recortes el arreglo para lograr esto, usa esta prop: los totales tienen que seguir cuadrando",
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
             }
           },
           "required": [
@@ -1152,7 +1117,7 @@
     },
     "AlertaFugas": {
       "type": "object",
-      "description": "La persona pregunta '¿En qué estoy gastando de más?', '¿Tengo cargos fantasma?' o el agente detecta membresías sin uso para recortar gasto. Dispara cancelar_suscripcion. Si después pide otro orden o solo las N más caras, eso es `ajustar_pantalla` sobre `orden` o `limite`: no vuelvas a pintar la tarjeta.",
+      "description": "La persona pregunta '¿En qué estoy gastando de más?', '¿Tengo cargos fantasma?' o el agente detecta membresías sin uso para recortar gasto. Dispara cancelar_suscripcion.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -1294,36 +1259,6 @@
                       "periodicidad"
                     ]
                   }
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "orden": {
-              "description": "Como se ordena la lista. `monto`: de la mas cara a la mas barata (el default). `sinUso`: primero las que no se usan, que son las que conviene cancelar. `nombre`: alfabetico. Es una prop de VISTA: cambiarla con ajustar_pantalla reordena sin volver a pedir los datos",
-              "default": "monto",
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "monto",
-                    "sinUso",
-                    "nombre"
-                  ]
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "limite": {
-              "description": "Cuantos elementos se listan tras ordenar; el resto se resume en un renglon al pie. Solo cuando la persona pida ver los N primeros: sin esto se listan todos. NO recortes el arreglo para lograr esto, usa esta prop: los totales tienen que seguir cuadrando",
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
                 },
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
@@ -1881,7 +1816,7 @@
               ]
             },
             "aportacionCentavos": {
-              "description": "La aportacion inicial del slider (la sugerida por proyectar_ahorro). TIENE que caer entre `aportacionMinimaCentavos` y `aportacionMaximaCentavos`: fuera de ahi es un valor que el propio slider no puede representar",
+              "description": "La aportacion inicial del slider (la sugerida por proyectar_ahorro)",
               "anyOf": [
                 {
                   "type": "integer",
@@ -2384,7 +2319,7 @@
     },
     "ProyeccionCrecimiento": {
       "type": "object",
-      "description": "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo: **ya llamaste proyectar_inversion** y pasas sus cifras tal como vinieron (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`). NUNCA calcules tú un valor futuro: la tarjeta simula la curva en el navegador y la calibra contra el cierre que mandes, así que un cierre inventado dobla la gráfica para taparlo. Si pide otro plazo, otra tasa u otro capital, vuelve a llamar la tool; la aportación mensual sí la resuelve el slider. Dispara simular_inversion.",
+      "description": "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo. Pasa el desglose entre aportado y rendimientos con los hitos temporales. Dispara simular_inversion.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -2502,7 +2437,7 @@
               ]
             },
             "rendimientoEstimadoCentavos": {
-              "description": "Ganancia neta estimada por interés compuesto. Sale de proyectar_inversion",
+              "description": "Ganancia neta estimada por interés compuesto",
               "anyOf": [
                 {
                   "type": "integer",
@@ -2614,7 +2549,7 @@
     },
     "EscenariosInversion": {
       "type": "object",
-      "description": "La persona duda sobre la volatilidad de su inversión o quiere entender qué pasaría en el peor y mejor caso antes de decidir: **ya llamaste proyectar_inversion** y pasas sus tres escenarios tal como vinieron. Compara pesimista, esperado y optimista. Si pide otro monto u otro horizonte, vuelve a llamar la tool: los tres escenarios cambian y no se pueden derivar. Dispara elegir_escenario.",
+      "description": "La persona duda sobre la volatilidad de su inversión o quiere entender qué pasaría en el peor y mejor caso antes de decidir. Compara pesimista, esperado y optimista. Dispara elegir_escenario.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -2708,13 +2643,13 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Monto total estimado al final del plazo. Sale de proyectar_inversion"
+                      "description": "Monto total estimado al final del plazo"
                     },
                     "rendimientoCentavos": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Ganancia o PERDIDA estimada sobre el capital, en centavos. Puede ser NEGATIVO en el escenario pesimista, y si la tool lo devuelve negativo se pinta negativo: no lo subas a cero"
+                      "description": "Ganancia monetaria neta estimada sobre el capital"
                     },
                     "descripcion": {
                       "type": "string",
@@ -2747,13 +2682,13 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Monto total estimado al final del plazo. Sale de proyectar_inversion"
+                      "description": "Monto total estimado al final del plazo"
                     },
                     "rendimientoCentavos": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Ganancia o PERDIDA estimada sobre el capital, en centavos. Puede ser NEGATIVO en el escenario pesimista, y si la tool lo devuelve negativo se pinta negativo: no lo subas a cero"
+                      "description": "Ganancia monetaria neta estimada sobre el capital"
                     },
                     "descripcion": {
                       "type": "string",
@@ -2786,13 +2721,13 @@
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Monto total estimado al final del plazo. Sale de proyectar_inversion"
+                      "description": "Monto total estimado al final del plazo"
                     },
                     "rendimientoCentavos": {
                       "type": "integer",
                       "minimum": -9007199254740991,
                       "maximum": 9007199254740991,
-                      "description": "Ganancia o PERDIDA estimada sobre el capital, en centavos. Puede ser NEGATIVO en el escenario pesimista, y si la tool lo devuelve negativo se pinta negativo: no lo subas a cero"
+                      "description": "Ganancia monetaria neta estimada sobre el capital"
                     },
                     "descripcion": {
                       "type": "string",
@@ -2866,7 +2801,7 @@
     },
     "DistribucionPortafolio": {
       "type": "object",
-      "description": "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
+      "description": "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3018,36 +2953,6 @@
                 }
               ]
             },
-            "orden": {
-              "description": "Como se ordena la lista de al lado de la dona. `peso`: de mayor a menor (el default). `desviacion`: primero las que mas se salieron del modelo, para 'que tengo que rebalancear'. `nombre`: alfabetico. Es una prop de VISTA: cambiarla con ajustar_pantalla reordena sin volver a pedir los datos",
-              "default": "peso",
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "peso",
-                    "desviacion",
-                    "nombre"
-                  ]
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "limite": {
-              "description": "Cuantos elementos se listan tras ordenar; el resto se resume en un renglon al pie. Solo cuando la persona pida ver los N primeros: sin esto se listan todos. NO recortes el arreglo para lograr esto, usa esta prop: los totales tienen que seguir cuadrando",
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
             "action": {
               "description": "La accion que este componente devuelve al agente. Nombres validos: rebalancear_portafolio.",
               "allOf": [
@@ -3085,7 +2990,7 @@
     },
     "OrdenRebalanceo": {
       "type": "object",
-      "description": "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara confirmar_rebalanceo. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
+      "description": "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara confirmar_rebalanceo.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3237,36 +3142,6 @@
                       "pesoNuevoPct"
                     ]
                   }
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "orden": {
-              "description": "Como se ordena la orden. `monto`: de la operacion mas grande a la mas chica (el default). `tipo`: primero las ventas y luego las compras, que es el orden en que se ejecutan. `instrumento`: alfabetico por clave. Es una prop de VISTA: cambiarla con ajustar_pantalla reordena sin volver a pedir los datos",
-              "default": "monto",
-              "anyOf": [
-                {
-                  "type": "string",
-                  "enum": [
-                    "monto",
-                    "tipo",
-                    "instrumento"
-                  ]
-                },
-                {
-                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
-                }
-              ]
-            },
-            "limite": {
-              "description": "Cuantos elementos se listan tras ordenar; el resto se resume en un renglon al pie. Solo cuando la persona pida ver los N primeros: sin esto se listan todos. NO recortes el arreglo para lograr esto, usa esta prop: los totales tienen que seguir cuadrando",
-              "anyOf": [
-                {
-                  "type": "integer",
-                  "minimum": 1,
-                  "maximum": 9007199254740991
                 },
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"

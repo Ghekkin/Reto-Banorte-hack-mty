@@ -20,9 +20,7 @@ export const consultarInversiones: DefinicionDeTool = {
   descripcion:
     "Consulta el perfil de inversión de la persona, su portafolio patrimonial activo con desglose de " +
     "posiciones a mercado (plusvalía, peso actual y peso objetivo), y el modelo de asignación recomendado. " +
-    "Úsala cuando pregunten por sus inversiones, su portafolio, rendimientos de fondos o su perfil de riesgo. " +
-    "Con `perfil` devuelve el modelo de OTRO perfil para contestar '¿y si fuera agresivo?'; el perfil real " +
-    "de la persona no cambia.",
+    "Úsala cuando pregunten por sus inversiones, su portafolio, rendimientos de fondos o su perfil de riesgo.",
   clase: "lectura",
   entrada: EntradaConsultarInversiones.shape,
   manejar: (argumentos) => {
@@ -32,11 +30,7 @@ export const consultarInversiones: DefinicionDeTool = {
     const perfil = perfilDeInversion(entrada.usuarioId);
     const portafolio = portafolioDeInversion(entrada.usuarioId);
     const posiciones = portafolio ? posicionesDePortafolio(portafolio.id) : [];
-
-    // El modelo puede ser de un perfil pedido, pero `perfil` sigue siendo el de la persona:
-    // sobreescribirlo haria creer al modelo —y a quien vea la pantalla— que su perfil cambio.
-    const perfilDelModelo = entrada.perfil ?? perfil?.tipo ?? null;
-    const modeloRecomendado = perfilDelModelo ? modeloRecomendadoPara(perfilDelModelo) : [];
+    const modeloRecomendado = perfil ? modeloRecomendadoPara(perfil.tipo) : [];
 
     return SalidaConsultarInversiones.parse({
       tienePerfil: perfil !== null,
@@ -45,8 +39,6 @@ export const consultarInversiones: DefinicionDeTool = {
       portafolio,
       posiciones,
       modeloRecomendado,
-      perfilDelModelo: perfilDelModelo ?? "",
-      perfilEsHipotetico: entrada.perfil !== undefined && entrada.perfil !== perfil?.tipo,
     });
   },
 };

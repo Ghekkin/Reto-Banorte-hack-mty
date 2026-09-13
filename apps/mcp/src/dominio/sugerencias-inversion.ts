@@ -10,11 +10,6 @@ import type {
 /**
  * Genera sugerencias y alternativas de inversión personalizadas basadas en la
  * situación financiera real del usuario (deuda, ahorro y portafolios existentes).
- *
- * `horizonteMeses` **se usa**: descarta los instrumentos que piden más plazo del que la
- * persona dijo tener y promueve el más corto que sí quepa. Hasta el 2026-09-12 este
- * parámetro se declaraba, se recibía y se ignoraba, así que el modelo creía estar
- * afinando la respuesta con algo que no movía nada (issue de parámetro muerto).
  */
 export function generarSugerenciasInversion(
   usuarioId: string,
@@ -124,7 +119,7 @@ export function generarSugerenciasInversion(
       montoRecomendadoCentavos: montoSugeridoCentavos ?? 5_000_000, // 50,000 MXN default patrimonial
       motivo:
         "Cuentas con portafolio patrimonial establecido. Las recomendaciones buscan optimizar diversificación y controlar riesgo.",
-      sugerencias: ajustarPorHorizonte(sugerencias, horizonteMeses),
+      sugerencias,
       siguientePaso: "Revisa la distribución por instrumento o ejecuta una estrategia de rebalanceo periódico.",
     };
   }
@@ -176,55 +171,7 @@ export function generarSugerenciasInversion(
     montoRecomendadoCentavos: montoInicio,
     motivo:
       "Cuentas con capacidad de ahorro libre y sin deudas de crédito. Recomendamos instrumentos de liquidez diaria y bajo riesgo para tu etapa inicial.",
-    sugerencias: ajustarPorHorizonte(sugerencias, horizonteMeses),
+    sugerencias,
     siguientePaso: "Comienza con un Pagaré a 28 días o programa un apartado de ahorro quincenal para crear el hábito.",
   };
-}
-
-/**
- * Descarta los instrumentos que no caben en el horizonte y promueve el más corto que sí.
- *
- * `plazoMinimo` es texto libre porque es lo que se le muestra a la persona ("28 días",
- * "360 días+", "Diaria"), así que se lee el número que traiga; lo que no se puede leer se
- * considera líquido y siempre cabe. Un mes se cuenta como 30 días: es una comparación de
- * orden de magnitud, no una fecha de vencimiento.
- */
-function ajustarPorHorizonte(
-  sugerencias: OpcionSugerenciaInversion[],
-  horizonteMeses?: number,
-): OpcionSugerenciaInversion[] {
-  if (horizonteMeses === undefined) return sugerencias;
-
-  const horizonteDias = horizonteMeses * DIAS_POR_MES;
-  const ajustadas = sugerencias.map((s) => {
-    const dias = diasDePlazo(s.plazoMinimo);
-    if (s.tipo !== "instrumento" || dias === null || dias <= horizonteDias) return s;
-
-    return {
-      ...s,
-      recomendado: false,
-      descripcion:
-        `${s.descripcion} No cabe en tu horizonte: pide al menos ${dias} días y me dijiste ` +
-        `${horizonteMeses} ${horizonteMeses === 1 ? "mes" : "meses"}.`,
-    };
-  });
-
-  // Si el recomendado se cayó, hay que dejar uno: una lista sin recomendación deja a la
-  // persona eligiendo sola, que es justo lo que la tarjeta existe para evitar.
-  if (ajustadas.some((s) => s.recomendado)) return ajustadas;
-
-  const cabe = ajustadas.findIndex(
-    (s) => s.tipo === "instrumento" && (diasDePlazo(s.plazoMinimo) ?? 0) <= horizonteDias,
-  );
-  const nuevo = cabe >= 0 ? cabe : 0;
-  return ajustadas.map((s, i) => (i === nuevo ? { ...s, recomendado: true } : s));
-}
-
-const DIAS_POR_MES = 30;
-
-/** El número de días de un `plazoMinimo`; null cuando es líquido o no se puede leer. */
-function diasDePlazo(plazoMinimo?: string): number | null {
-  if (!plazoMinimo) return null;
-  const numero = plazoMinimo.match(/\d+/);
-  return numero ? Number(numero[0]) : null;
 }

@@ -47,38 +47,10 @@ respuesta.
 host tenga.
 
 Las cifras de `datos` llevan `tono` (`neutro` | `bueno` | `alerta`; ver abajo, es texto libre a
-propósito) y son las **mismas** que ya están en las otras tarjetas.
-
-### El dinero va en `montoCentavos`, no en `valor`
-
-Cada dato lleva **uno** de los dos, y cuál es no es una preferencia:
-
-- **`montoCentavos`** si es dinero: el entero en centavos tal como lo devolvió la tool (`457095`), y
-  **el componente lo formatea** con `formatearMonto`.
-- **`valor`** solo para lo que no es dinero: `+74%`, `39/100`, `15 meses`.
-
-Hasta el 2026-09-12 `valor` era la única opción y su `describe` pedía la cifra "ya formateada". Era el
-**único lugar del catálogo** donde el modelo escribía dinero como texto, contra la regla de todo el
-repo (los montos viajan en centavos y formatea quien pinta), y salió a la pantalla de Ana:
-
-```
-Actualmente pagas $457,09.50 mensuales      ← el dato real son 457095 centavos = $4,570.95
-```
-
-El destrozo es reproducible: el modelo toma el entero de centavos, lo agrupa como si fueran pesos
-(`457095` → `457,095`) y después le mete el punto decimal **dentro del número ya agrupado**. Con
-`montoCentavos` el error es imposible por construcción, venga la prop enlazada o literal.
-
-Y como refuerzo, un `valor` que empieza con `$` **se rechaza** y le vuelve al modelo con el mensaje de
-usar `montoCentavos` (`dineroEscritoAMano`, en `apps/web/src/lib/agente/pantalla.ts`). Zod no puede
-distinguir `"$4,570.95"` de `"39/100"` —los dos son strings válidos—, así que ese cerco vive en el host,
-sobre las props ya **resueltas**, que es el único lugar donde se ve el valor final de una prop enlazada.
-
-Sigue valiendo la regla de fondo del schema: la cifra tiene que ser la **misma** que la de la tarjeta
-que la reporta. Dos cifras distintas para el mismo monto en la misma pantalla es lo que hace que nadie
-crea ninguna.
-
-Detalle en `docs/issues/2026-09-12-conclusion-formatea-dinero-a-mano.md`.
+propósito) y son las **mismas** que
+ya están en las otras tarjetas, ya formateadas. El schema es explícito sobre esto: *"Si es
+dinero, va con centavos y EXACTAMENTE igual que en la tarjeta que lo reporta: dos cifras
+distintas para el mismo monto en la misma pantalla es lo que hace que nadie crea ninguna"*.
 
 ### No lleva `heroe`
 

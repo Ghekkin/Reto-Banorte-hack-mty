@@ -6,7 +6,6 @@ import {
   esBinding,
   hijosFijos,
   propsDe,
-  resolverValor,
   validarMensaje,
   type Componente,
   type MensajeA2UI,
@@ -44,14 +43,14 @@ export const entradaPintarPantalla = z.object({
         "No describas la pantalla, aconseja. Nada de parrafos.",
     ),
   componentesJson: z
-    .union([z.string(), z.array(z.unknown())])
+    .string()
     .describe(
       "Arreglo JSON de componentes A2UI. Props PLANAS junto a `id` y `component`. " +
         'Un componente con `id: "root"` es la raiz. Ejemplo: ' +
         '[{"id":"root","component":"Column","children":["tarjeta"]},{"id":"tarjeta","component":"Confirmacion","titulo":"…","detalle":"…","razon":"…"}]',
     ),
   datosJson: z
-    .union([z.string(), z.record(z.string(), z.unknown())])
+    .string()
     .optional()
     .describe('Objeto JSON del data model, si usas enlaces {"path":"/…"} en las props. Default: {}'),
   sugerencias: z
@@ -67,20 +66,13 @@ export type ResultadoPintar = { ok: true; componentes: number } | { ok: false; e
 
 export const MAX_INTENTOS_DE_PANTALLA = 2;
 
-/** Un campo `...Json` como valor: si es texto se parsea, si ya viene parseado se devuelve. */
-function comoValor(campo: unknown): unknown {
-  return typeof campo === "string" ? (JSON.parse(campo) as unknown) : campo;
-}
-
 export function resolverSugerenciasPantalla(entrada: EntradaPintarPantalla): string[] {
   if (entrada.sugerencias && entrada.sugerencias.length > 0) {
     return entrada.sugerencias.slice(0, 3);
   }
   try {
-    // Los dos campos aceptan texto JSON o el valor ya parseado (ver `parsear`), asi que aqui
-    // tambien: leer las sugerencias no puede ser mas estricto que armar la pantalla.
-    const componentes = comoValor(entrada.componentesJson) as Array<Record<string, unknown>>;
-    const datos = (entrada.datosJson ? comoValor(entrada.datosJson) : {}) as Record<string, unknown>;
+    const componentes = JSON.parse(entrada.componentesJson) as Array<Record<string, unknown>>;
+    const datos = entrada.datosJson ? (JSON.parse(entrada.datosJson) as Record<string, unknown>) : {};
     const conclusion = componentes.find((c) => c && c.component === "Conclusion");
     if (conclusion && conclusion.sugerencias) {
       if (Array.isArray(conclusion.sugerencias)) {
@@ -286,9 +278,7 @@ export function armarMensajes(entrada: EntradaPintarPantalla, opciones: Opciones
   // 3) Las props de cada componente, contra el schema de su entrada del catalogo, y la
   // regla de diseno que ningun schema individual puede ver: un solo heroe por pantalla.
   for (const componente of componentes) {
-    // Con el data model a la mano se validan los valores RESUELTOS, no solo las props
-    // literales: es lo que hace que una prop enlazada deje de ser invisible.
-    errores.push(...revisarProps(componente, entrada.razon, datos));
+    errores.push(...revisarProps(componente, entrada.razon));
     completarAccion(componente);
   }
   const heroes = componentes.filter((c) => c.heroe === true).map((c) => c.id);
@@ -330,21 +320,7 @@ function completarAccion(componente: Componente): void {
   if (nombre) componente.action = { event: { name: nombre, context: {} } };
 }
 
-/**
- * El contenido de `componentesJson` / `datosJson`, venga como texto JSON o ya parseado.
- *
- * Los campos se llaman `...Json` justamente para decirle al modelo que van como texto, y casi
- * siempre funciona. Pero no siempre: el 2026-09-12, en el ensayo del guion, Gemini mando
- * `componentesJson` como **arreglo nativo** en el paso del simulador de ahorro. El AI SDK
- * rechazo la llamada, el turno gasto un paso reintentando y aparecio una linea de error en la
- * tira de transparencia por algo que era una pantalla perfectamente valida. Es el mismo caso
- * que ya se habia arreglado en `ajustar_pantalla` para `parchesDatos` (ver `ajustar.ts`), y la
- * respuesta es la misma: aceptar las dos formas en vez de castigar la que no adivinamos.
- */
-function parsear(texto: unknown, campo: string, errores: string[]): unknown {
-  // Ya viene parseado: nada que hacer, el contenido se valida igual mas abajo.
-  if (typeof texto !== "string") return texto;
-
+function parsear(texto: string, campo: string, errores: string[]): unknown {
   try {
     return JSON.parse(texto) as unknown;
   } catch (error) {
@@ -459,98 +435,30 @@ function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {
 }
 
 /**
- * Valida las props contra el schema del catalogo.
- *
- * **Con `dataModel` valida los valores RESUELTOS.** Hasta el 2026-09-12 esta funcion se
- * saltaba toda prop enlazada (`{path}`) con el argumento de que "no se pueden validar por
- * valor", y como el modelo enlaza casi todo, en la practica la mayoria de las props del
- * catalogo no se validaban nunca. Ese era el agujero de fondo detras de los tres bugs de
- * cifras de ese dia: una aportacion de $477 con piso de $500 y un `$457,09.50` escrito a
- * mano pasaron sin que nada dijera nada, porque las dos props venian enlazadas.
- *
- * En `pintar_pantalla` y en `ajustar_pantalla` el data model esta ahi mismo, asi que se
- * resuelve y se valida completo. Lo que sigue quedando fuera es una prop cuyo path resuelve
- * a `undefined`: puede ser un path RELATIVO de plantilla (`children: { componentId, path }`,
- * que solo resuelve contra su elemento) o un dato que llegara despues. Esas se omiten como
- * antes; es el unico hueco que queda y es acotado.
+ * Valida las props contra el schema del catalogo. Las props enlazadas (`{path}`) no se
+ * pueden validar por valor —lo resuelve el cliente contra el data model—, asi que se
+ * omiten sus errores y se revisa todo lo demas.
  *
  * `razon` es obligatoria en todo componente del catalogo y es la evidencia de que el
  * agente decidio; si al modelo se le olvida en un componente, se le pone la del turno en
  * vez de rechazar la pantalla completa por una frase. Sin `razonDelTurno` (un parche de
  * `ajustar_pantalla`, donde no hay componente completo que validar) no se completa nada.
  */
-export function revisarProps(
-  componente: Componente,
-  razonDelTurno?: string,
-  dataModel?: Record<string, unknown>,
-): string[] {
+export function revisarProps(componente: Componente, razonDelTurno?: string): string[] {
   const entrada = CATALOGO.find((c) => c.nombre === componente.component);
   if (!entrada) return []; // layout: no tiene schema propio
 
   if (componente.razon === undefined && razonDelTurno !== undefined) componente.razon = razonDelTurno;
 
   const props = propsDe(componente);
-  const paraValidar: Record<string, unknown> = {};
-  /** Las que no se pudieron mirar: sus errores se descartan, como se hacia con todas. */
-  const opacas = new Set<string>();
+  const enlazadas = new Set(Object.keys(props).filter((k) => esBinding(props[k])));
+  const literales: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(props)) if (!enlazadas.has(k)) literales[k] = v;
 
-  for (const [nombre, valor] of Object.entries(props)) {
-    if (!tieneBinding(valor)) {
-      paraValidar[nombre] = valor;
-      continue;
-    }
-    if (!dataModel) {
-      opacas.add(nombre);
-      continue;
-    }
-    const resuelto = resolverValor(valor as never, dataModel);
-    // `undefined` es "no se pudo resolver", no "el modelo mando undefined": path relativo
-    // de plantilla, o un dato que aun no esta en el modelo.
-    if (resuelto === undefined) opacas.add(nombre);
-    else paraValidar[nombre] = resuelto;
-  }
+  const resultado = entrada.schema.safeParse(literales);
+  if (resultado.success) return [];
 
-  const errores = [...dineroEscritoAMano(componente, paraValidar)];
-
-  const resultado = entrada.schema.safeParse(paraValidar);
-  if (!resultado.success) {
-    errores.push(
-      ...resultado.error.issues
-        .filter((issue) => !opacas.has(String(issue.path[0])))
-        .map((issue) => `${componente.component} (${componente.id}): ${issue.path.join(".") || "props"} ${issue.message}`),
-    );
-  }
-
-  return errores;
-}
-
-/** `true` si el valor es un binding o si esconde uno dentro (un arreglo, un objeto). */
-function tieneBinding(valor: unknown): boolean {
-  if (esBinding(valor)) return true;
-  if (Array.isArray(valor)) return valor.some(tieneBinding);
-  if (esObjetoPlano(valor)) return Object.values(valor).some(tieneBinding);
-  return false;
-}
-
-/**
- * El ultimo cerco contra la cifra escrita a mano.
- *
- * `Conclusion.datos[].valor` es texto libre y tiene que seguirlo siendo (ahi van `+74%` o
- * `39/100`), asi que Zod no puede distinguir un porcentaje de un monto. Pero un valor que
- * empieza con `$` SI es distinguible, y es exactamente el error que llego a pantalla el
- * 2026-09-12: el modelo convirtio 457095 centavos a pesos a mano y escribio `$457,09.50`.
- * El dinero va en `montoCentavos` y lo formatea el componente.
- */
-function dineroEscritoAMano(componente: Componente, props: Record<string, unknown>): string[] {
-  const datos = props.datos;
-  if (!Array.isArray(datos)) return [];
-
-  return datos
-    .filter((d): d is { etiqueta?: unknown; valor: string } => esObjetoPlano(d) && typeof d.valor === "string" && d.valor.trim().startsWith("$"))
-    .map(
-      (d) =>
-        `${componente.component} (${componente.id}): el dato "${String(d.etiqueta ?? "")}" trae el monto ` +
-        `escrito a mano en \`valor\` ("${d.valor}"). El dinero va en \`montoCentavos\` como entero de ` +
-        `centavos (457095, no "$4,570.95") y lo formatea la interfaz.`,
-    );
+  return resultado.error.issues
+    .filter((issue) => !enlazadas.has(String(issue.path[0])))
+    .map((issue) => `${componente.component} (${componente.id}): ${issue.path.join(".") || "props"} ${issue.message}`);
 }

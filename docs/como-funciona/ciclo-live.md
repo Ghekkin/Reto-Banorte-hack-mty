@@ -132,59 +132,18 @@ es la función pura `seguir`, probada en `estado.spec.ts`.
 
 Lo que el agente puede ajustar sin pedir datos nuevos. Las que ya existían:
 `escenarioInicial`, `instrumentoSeleccionadoId`, `plazoElegido`, `periodo`, `plazoMeses`,
-`horizonteMeses`, y `maximo` en `Calendario`.
+`horizonteMeses`. Nuevas en `GastoPorCategoria`:
 
-**`orden` y `limite`, en cinco componentes.** Empezaron en `GastoPorCategoria` y el 2026-09-12 se
-extendieron a los cuatro que faltaban, al inventariar el catálogo buscando por dónde podía el usuario
-cambiar un parámetro hablando. El hallazgo fue que **cuatro componentes listaban colecciones sin
-ninguna prop de orden ni límite**, así que «muéstrame solo las 3 suscripciones más caras» obligaba a
-repintar la pantalla con datos nuevos aunque el componente ya los tuviera todos. Era asimetría del
-catálogo, no falta de información:
-
-| Componente | `orden` | Qué pone primero lo que no es el default |
-|---|---|---|
-| `GastoPorCategoria` | `monto` · `variacion` · `nombre` | la que más subió, para «qué se me disparó» |
-| `AlertaFugas` | `monto` · `sinUso` · `nombre` | las que no se usan (y dentro, las más caras): las que conviene cancelar |
-| `DetalleCategoria` | `fecha` · `monto` · `comercio` | el gasto más fuerte |
-| `DistribucionPortafolio` | `peso` · `desviacion` · `nombre` | la clase que más se salió del modelo, que es la lectura que lleva al rebalanceo |
-| `OrdenRebalanceo` | `monto` · `tipo` · `instrumento` | las **ventas** primero: es el orden en que se ejecutan, hay que liberar efectivo antes de comprar |
-
-`limite` recorta la lista tras ordenar, y **lo que deja fuera se resume**, no desaparece: un renglón
-neutro con el conteo y la suma («y 2 cargos más — $164.00»). Si desapareciera, la suma de los renglones
-no cuadraría con el total del encabezado y quien lo lea no sabría a cuál de los dos números creerle. En
-`GastoPorCategoria` el aviso ámbar «Faltan X sin desglosar» sigue reservado para cuando el modelo
-recortó `categorias` de verdad, que es el bug que ese aviso existe para delatar.
-
-Dos detalles que se cuidaron al extenderlo:
-
-- En `DistribucionPortafolio`, `limite` recorta **la lista de al lado, no la dona**: un pedazo de dona
-  no suma 100 %. Y el color se ata a la clase (`claseId`), no a su posición, para que reordenar no
-  cambie los colores.
-- En `OrdenRebalanceo`, el botón confirma **todas** las operaciones, también las que el límite no
-  lista; el renglón de resumen lo dice con esas palabras («y 2 operaciones más en la orden»).
-
-### La validación mira las props RESUELTAS
-
-Hasta el 2026-09-12 `revisarProps` se saltaba toda prop enlazada (`{"path":"/…"}`) porque "no se puede
-validar por valor". Como el modelo enlaza casi todo, en la práctica **la mayoría de las props no se
-validaban nunca**, y por ahí pasaron tres bugs de cifras el mismo día sin que nada dijera nada.
-
-El argumento era falso en el caso que importa: tanto en `pintar_pantalla` como en `ajustar_pantalla`
-**el data model viene en la misma llamada**. Ahora se resuelve con `resolverValor` y se valida el
-resultado. Lo único que sigue fuera es una prop cuyo path resuelve a `undefined`: un path relativo de
-plantilla, o un dato que llegará después.
-
-En `ajustar_pantalla` se valida contra el data model **ya parcheado**, no contra el que llegó: un
-parche de datos y uno de props del mismo turno pueden depender entre sí, y validar contra el modelo
-viejo reportaría un error que el turno ya arregló.
-
-Detalle en `docs/issues/2026-09-12-props-enlazadas-sin-validar.md`.
+- `orden`: `"monto"` (default) · `"variacion"` · `"nombre"`.
+- `limite`: cuántas categorías se listan tras ordenar. Lo que deja fuera **se agrupa** en un renglón
+  neutro («otras 2: $4,702.00»), no desaparece: el total del encabezado tiene que seguir cuadrando
+  con lo que la tarjeta lista. El aviso ámbar «Faltan X sin desglosar» sigue reservado para cuando
+  el modelo recortó `categorias` de verdad, que es el bug que ese aviso existe para delatar.
 
 ## Cómo se prueba
 
 ```bash
-pnpm test                 # 619 pruebas; las de esto: agente.spec.ts, hilo.spec.ts, estado.spec.ts,
-                          # props-resueltas.spec.ts, props-de-vista.spec.tsx
+pnpm test                 # 522 pruebas; las de esto: agente.spec.ts, hilo.spec.ts, estado.spec.ts
 pnpm reiniciar-estado     # ANTES de cualquier ensayo, o un plan ya aplicado falsea el resultado
 pnpm probar-inicio        # 3 portadas con el modelo real: exactamente 3 tarjetas, una Conclusion
 ```
@@ -196,19 +155,6 @@ de las tres fue, así que es comprobable desde la tira de transparencia.
 
 ## Lo que no está verificado
 
-El guion completo con el modelo real. La cuota gratuita de Gemini es **por modelo** y se agotó dos
-veces el 2026-09-12: primero las 20 peticiones diarias de `gemini-3.8-flash`, y después los 250,000
-tokens de entrada de `gemini-3.5-flash-lite`, al que se cambió con la variable nueva `MODELO_GEMINI`.
-De los 10 pasos, **los 2 que alcanzaron a correr pasaron** («Beto · detalle de una categoría» y «Ana ·
-MISMA pregunta, otra interfaz», esta última pintando `ProyeccionPagoCredito` + `SimuladorMeta` en 3
-pasos); los otros 8 fallaron con `0 pasos` y error de cuota, no de código. `pnpm probar-inicio` sí
-corrió completo: **3 de 3**.
-
-Lo que eso deja sin medir es lo más importante de este bloque: **si la validación sobre props
-resueltas sube los reintentos**. Caza errores que antes eran invisibles, así que puede costar pasos.
-En las dos corridas parciales no apareció ninguno por esa causa, pero dos turnos no son una medición.
-
-Sí quedó verificado a mano en el navegador: la galería completa sin errores de consola, el hilo
-sobreviviendo al cambio de pestaña y al F5, y el cambio de usuario limpiando el chat y redirigiendo a
-Inicio. En esa pasada apareció un defecto nuevo, ya registrado y **sin arreglar**:
-`docs/issues/2026-09-12-aviso-de-renderer-en-la-conversacion.md`.
+El paso 1 del guion (`Beto · deuda: intención → interfaz`) con estado limpio no se pudo ensayar con
+el modelo real: la cuota de Gemini se agotó a media verificación (issue #12, reabierto). En la
+corrida anterior el guion dio **9 de 10**, y el que falló fue por estado viejo, no por código.
