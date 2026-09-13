@@ -73,6 +73,7 @@ quien.
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, las 22 tablas de `banorte` y las invariantes que sostienen la demo
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI originales: qué tool llena cada uno, qué acción devuelve, cómo se prueban
+- [La animación de los widgets](como-funciona/animacion-de-widgets.md) — la coreografía de entrada de toda tarjeta (cifra, filas, barras, curvas que se dibujan), por qué todo corre en la GPU, la espera al scroll en celular y el deslizamiento de Inicio
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga

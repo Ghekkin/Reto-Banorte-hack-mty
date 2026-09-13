@@ -86,7 +86,7 @@ export function SugerenciasInversion(
         <div className="mt-2 flex items-baseline justify-between flex-wrap gap-2">
           <div>
             <span className="text-xs text-muted-foreground block">Monto sugerido para destinar</span>
-            <span className="monto text-xl @md/tarjeta:text-2xl font-bold tracking-tight text-foreground">
+            <span className="cifra monto block text-xl @md/tarjeta:text-2xl font-bold tracking-tight text-foreground">
               {formatearMonto(montoRecomendadoCentavos)}
             </span>
           </div>
@@ -104,7 +104,7 @@ export function SugerenciasInversion(
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
-        <div className="flex flex-col gap-2">
+        <div className="animar-filas flex flex-col gap-2">
           {sugerencias.map((sug) => {
             const esRec = sug.recomendado;
             const esAdvertencia = sug.tipo === "advertencia";

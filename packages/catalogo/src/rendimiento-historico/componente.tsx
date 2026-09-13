@@ -74,7 +74,7 @@ export function RendimientoHistorico(props: Partial<PropsRendimientoHistorico> &
           {nombre}
           {clave ? ` · ${clave}` : ""}
         </span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(precioFinalCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(precioFinalCentavos)}</span>
         <span className={`flex flex-wrap items-center gap-x-1.5 text-sm ${suave}`}>
           <span className={`monto flex items-center gap-1 font-semibold ${heroe ? "" : positivo ? "text-exito" : "text-foreground"}`}>
             {positivo ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}

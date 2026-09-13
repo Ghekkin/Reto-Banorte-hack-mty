@@ -115,7 +115,7 @@ export function AvisoConsultaNoValida(
           <span className="text-xs font-medium text-muted-foreground">
             Alternativas recomendadas para ti:
           </span>
-          <div className="flex flex-col gap-1.5">
+          <div className="animar-filas flex flex-col gap-1.5">
             {alternativasSugeridas.map((alt, i) => (
               <button
                 key={i}

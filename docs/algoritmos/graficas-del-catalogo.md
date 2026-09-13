@@ -80,6 +80,14 @@ tenían una barra de dos segmentos y una lista.
    ancho, el doble que sus vecinas.
 9. Dona y medidor traen su propio cuadrado. Recharts limita el radio a la mitad del lado
    menor: el medio arco es un cuadrado de 192 px del que la caja recorta la mitad de abajo.
+   Desde 2026-09-13 el medidor son **dos** `RadialBarChart` con la misma geometría
+   (`GEOMETRIA_MEDIDOR`): abajo el riel, arriba el arco en su propia capa, que es la que gira al
+   entrar.
+9b. **Toda gráfica entra animada** ([animación de los widgets](../como-funciona/animacion-de-widgets.md)):
+   las curvas se abren de izquierda a derecha con una ventana (`Grafica`, `entrada="trazo"`),
+   así que el valor de cada hito aparece cuando la línea llega a él; la dona gira 30° al
+   aparecer y el arco del medidor barre desde la izquierda. Recharts sigue con
+   `isAnimationActive={false}`: la entrada es CSS y corre en la GPU.
 
 ### Formato compacto (`formatearMontoCorto`)
 

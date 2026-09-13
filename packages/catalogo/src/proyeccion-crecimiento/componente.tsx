@@ -118,7 +118,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
         <span className={`text-xs ${suave}`}>
           En {plazoMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} · {formatearPorcentaje(tasaAnualEstimadaPct)} anual estimado
         </span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(final.total)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(final.total)}</span>
         <span className={`text-sm ${suave}`}>
           <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(final.rendimiento)}</span> de rendimiento sobre{" "}
           <span className="monto">{formatearMonto(final.aportado)}</span> aportados
@@ -233,7 +233,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
 
         <div className="flex min-w-0 flex-col gap-3">
           {hitos && hitos.length > 0 ? (
-            <div className={`grid gap-3 border-t pt-3 @3xl/tarjeta:border-t-0 @3xl/tarjeta:pt-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`} style={{ gridTemplateColumns: `repeat(${Math.min(hitos.length, 4)}, minmax(0, 1fr))` }}>
+            <div className={`animar-filas grid gap-3 border-t pt-3 @3xl/tarjeta:border-t-0 @3xl/tarjeta:pt-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`} style={{ gridTemplateColumns: `repeat(${Math.min(hitos.length, 4)}, minmax(0, 1fr))` }}>
               {hitos.slice(0, 4).map((h, i) => {
                 const punto = serie[Math.min(h.mes, plazoMeses)] ?? final;
                 return (

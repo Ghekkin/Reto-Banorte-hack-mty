@@ -61,7 +61,7 @@ tipografía ni su escala de elevación: esos vienen de Banorte y de shadcn.
 | **Objetivos táctiles** | Todo lo tocable **≥ 48 px** en móvil (`min-h-12`), ≥ 36 px en escritorio | |
 | **Rejilla de 8** | Espaciado en múltiplos de 4 px: `gap-3`, `gap-4`, `p-4`, `p-5` | Valores arbitrarios tipo `p-[13px]` |
 | **Elevación: solo dos niveles** | `shadow-sm` (tarjetas, sidebar) y `shadow-md` (FAB, hojas, popovers) | Las 5 elevaciones de Material y **toda sombra de color** |
-| **Motion** | 150–200 ms, `ease-out`. La entrada de superficies usa `.animar-entrada` | Transiciones de contenedor compartido, animaciones de más de 250 ms |
+| **Motion** | Controles: 150–200 ms, `ease-out`. **Widgets del catálogo**: su propia coreografía de entrada (`animar-tarjeta`: tarjeta 350 ms, datos 650 ms, todo bajo ~1 s), solo `transform`/`opacity` ([animación de los widgets](../../../docs/como-funciona/animacion-de-widgets.md)) | Transiciones de contenedor compartido, rebotes, `clip-path` o cualquier animación que no componga la GPU |
 | **FAB** | Un solo FAB por app: es Maya. Círculo de 56 px con el degradado de marca | FABs para acciones secundarias |
 | **Bottom app bar** | 4 pestañas más el FAB al centro, `pb-[env(safe-area-inset-bottom)]` | Más de 5 zonas: no caben en 360 px |
 | **Jerarquía de superficie** | Lienzo gris → tarjeta blanca → control. Tres capas, no más | Tarjetas dentro de tarjetas dentro de tarjetas |
@@ -363,9 +363,13 @@ El lienzo reparte lo que genera el agente en **filas que se llenan solas**
   cuatro o más, de dos en dos. Todo se mide contra el lienzo (`@container/lienzo`), no la
   pantalla: a 390 px queda una por fila.
 - Cada tarjeta mide lo que su contenido (`items-start`); la héroe nunca se estira.
-- Al llegar una UI nueva, las tarjetas **entran con una transición corta** (`opacity` +
-  `translate-y-1`, 150 ms, escalonada 25 ms) para que se vea que el agente las acaba de
-  construir. Nada más de animación.
+- Al llegar una UI nueva, **cada tarjeta entra con su coreografía** (desde 2026-09-13, a
+  pedido del usuario: "que los widgets siempre tengan una animación"): la tarjeta sube y
+  aparece, luego su cifra, sus filas en cascada, sus barras desde cero y su gráfica
+  dibujándose de izquierda a derecha; 50 ms entre tarjetas. Todo `transform`/`opacity`, en la
+  GPU, y la tarjeta que monta fuera de la pantalla espera a verse. La pone `Tarjeta` sola;
+  el componente solo marca `cifra`, `animar-filas` y `animar-barra`. Detalle, tiempos y
+  mediciones en `docs/como-funciona/animacion-de-widgets.md`.
 
 ## Reglas de uso
 
@@ -464,7 +468,7 @@ Material:
 - [ ] Todo lo tocable mide **≥ 48 px** en móvil.
 - [ ] Espaciado en múltiplos de 4 px; densidad `p-4`/`gap-3` en móvil, `p-5`/`gap-4` en escritorio.
 - [ ] Solo `shadow-sm` y `shadow-md`. Cero sombras de color.
-- [ ] Transiciones de 150–200 ms.
+- [ ] Transiciones de controles de 150–200 ms; los widgets entran con `animar-tarjeta` y nada anima fuera de `transform`/`opacity`.
 - [ ] Barra inferior con `pb-[env(safe-area-inset-bottom)]`.
 
 Base:

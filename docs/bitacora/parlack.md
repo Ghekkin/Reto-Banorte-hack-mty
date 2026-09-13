@@ -1736,3 +1736,36 @@ dispositivo nuevo arma su propia portada.
   dentro del contenedor) tras `probar-widgets` 6 de 6. Transición de valores al ajustar: en curso
   (subagente), coordinado con la sesión que hace las animaciones de entrada.
 - Limpieza: borré de la base las filas de ensayo (abono de Ana, gasto de Beto) y rearmé sus portadas.
+
+### 04:15 (dom 13) — Los widgets entran animados, en la GPU
+
+El usuario pidió que los widgets siempre tengan una animación («que las gráficas se muestren con
+algo»), lo más fluida posible sin afectar rendimiento ni identidad, con la taste-skill; a media
+sesión aclaró que le importan los widgets y no el sidebar ni el chat, y reportó que en
+ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También apareció la skill
+`financial-animations` del equipo y se siguieron sus bandas de tiempo.
+
+- **Hecho**: coreografía de entrada de toda tarjeta del catálogo (`animar-tarjeta` en
+  `CLASES_TARJETA`): superficie, cifra, filas en cascada, barras desde cero, curvas que se abren
+  de izquierda a derecha (ventana CSS en `Grafica`), dona que gira 30°, medidor en dos capas cuyo
+  arco barre. Tarjetas fuera de la pantalla esperan a verse (`animacion.ts`, dos
+  `IntersectionObserver`). En Inicio, las tarjetas se deslizan a su lugar al medir en vez de
+  brincar (`deslizarAlMedir` en `masonry.tsx`). Doc: `docs/como-funciona/animacion-de-widgets.md`.
+- **Medido** (Chromium sin GPU, máquina con carga 23): la primera versión animaba `clip-path` y
+  elementos del SVG; la traza (`compositeFailed`) mostró 6 animaciones en el hilo principal. Se
+  rehízo: las 56 de una pantalla de 4 widgets corren en el compositor. En producción, lo que se
+  sentía trabado era la hidratación (cuadros de 130–240 ms) más el salto del masonry, y las
+  gráficas de Recharts que se dibujan tras hidratar (la animación terminaba sobre un contenedor
+  vacío): ahora esperan a su SVG con `:has(.recharts-surface)`.
+- **Descartado**: animación propia de Recharts (re-render de React por fotograma y se redispara
+  con el slider); conteo de cifras al montar (los dígitos bailan); cascada de segmentos SVG en
+  la dona.
+- **Bugs registrados, no arreglados**: #26 (dona héroe con clases invisibles desde la sexta) y
+  #28 (`ÔÇóÔÇóÔÇóÔÇó 4821` en la tarjeta de Inicio).
+- **Coordinación**: la otra sesión (ajustes en vivo) hace la transición de valores al ajustar en
+  `transicion.ts`; acordado que Recharts no anima al montar y que no se tocan los ganchos
+  `animar-*`/`cifra`.
+- **Toque ajeno**: `apps/web/src/components/inicio/masonry.tsx` (web), `globals.css` (web),
+  skills `diseno-banorte` y `ui-generativa`.
+- **Pendiente**: ver el deslizamiento de Inicio en producción tras el deploy; la hidratación
+  de Inicio sigue trayendo cuadros largos (no es de animación).

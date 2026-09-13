@@ -46,7 +46,7 @@ export function MetaActiva(props: Partial<PropsMetaActiva>) {
         <span className={`flex items-center gap-2 text-xs ${suave}`}>
           <Target className="size-4 shrink-0" /> {nombre}
         </span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(acumuladoCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(acumuladoCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           de <span className="monto">{formatearMonto(metaCentavos)}</span>
         </span>

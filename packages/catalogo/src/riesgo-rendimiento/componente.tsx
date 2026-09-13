@@ -66,7 +66,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
         <span className={`text-xs ${suave}`}>
           Perfil {perfilInversionista.toLowerCase()} · tolera riesgo hasta {toleranciaRiesgoMax} de 5
         </span>
-        <span className="monto text-3xl font-semibold">{formatearPorcentaje(seleccionado.rendimientoAnualEsperado)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearPorcentaje(seleccionado.rendimientoAnualEsperado)}</span>
         <span className={`text-sm ${suave}`}>
           anual estimado con {seleccionado.nombre} ·{" "}
           <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(gananciaAnual)}</span> al año sobre{" "}
@@ -75,7 +75,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
       </CardHeader>
 
       <CardContent>
-        <RadioGroup value={seleccionadoId} onValueChange={(v) => setSeleccionadoId(String(v))} aria-label="Instrumento de inversión" className="gap-2 @3xl/tarjeta:grid-cols-2">
+        <RadioGroup value={seleccionadoId} onValueChange={(v) => setSeleccionadoId(String(v))} aria-label="Instrumento de inversión" className="animar-filas gap-2 @3xl/tarjeta:grid-cols-2">
           {instrumentos.map((inst) => {
             const activa = inst.id === seleccionadoId;
             const supera = inst.riesgo > toleranciaRiesgoMax;

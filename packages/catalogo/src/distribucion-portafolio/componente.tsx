@@ -66,7 +66,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
             </Badge>
           ) : null}
         </div>
-        <span className="monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           <span className={`monto font-semibold ${heroe ? "" : positivo ? "text-exito" : "text-foreground"}`}>
             {positivo ? "+" : "−"}
@@ -84,7 +84,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
 
       <CardContent className="flex flex-col gap-4 @lg/tarjeta:flex-row @lg/tarjeta:items-center @lg/tarjeta:gap-6">
         <div className="relative mx-auto size-40 shrink-0">
-          <Grafica config={config} className="size-40 h-40" etiqueta={`Distribución del portafolio en ${clases.length} clases`}>
+          <Grafica config={config} className="animar-dona size-40 h-40" entrada="ninguna" etiqueta={`Distribución del portafolio en ${clases.length} clases`}>
             <PieChart margin={{ top: 0, right: 0, bottom: 0, left: 0 }}>
               <TooltipMonto />
               <Pie
@@ -112,7 +112,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
           </div>
         </div>
 
-        <ul className="flex min-w-0 flex-1 flex-col">
+        <ul className="animar-filas flex min-w-0 flex-1 flex-col">
           {clases.map((c, i) => {
             const desviada = typeof c.pesoObjetivoPct === "number" && Math.abs(c.pesoPct - c.pesoObjetivoPct) >= 0.03;
             return (

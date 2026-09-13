@@ -113,14 +113,18 @@ export function hoyISO(): string {
  * `Card` de shadcn trae su propio padding con la variable `--card-spacing`, asi que la
  * densidad se pone moviendo ESA variable, no agregando `p-5` a cada `CardContent`.
  * `ring-0` apaga el anillo que `Card` trae por defecto; el sistema usa borde, no anillo.
+ *
+ * `animar-tarjeta` es la coreografia de entrada de todo widget (`globals.css`,
+ * `docs/como-funciona/animacion-de-widgets.md`): va aqui para que ninguna tarjeta del
+ * catalogo pueda quedarse sin ella.
  */
 export const CLASES_TARJETA =
-  "animar-entrada gap-3 rounded-2xl border border-borde-sutil shadow-sm ring-0 " +
+  "animar-tarjeta gap-3 rounded-2xl border border-borde-sutil shadow-sm ring-0 " +
   "[--card-spacing:--spacing(4)] @md/tarjeta:gap-4 @md/tarjeta:[--card-spacing:--spacing(5)]";
 
 /** La misma tarjeta con el degradado de marca. **Una por pantalla, nunca dos.** */
 export const CLASES_TARJETA_HEROE =
-  "animar-entrada gap-3 rounded-2xl border-0 shadow-sm ring-0 text-primary-foreground " +
+  "animar-tarjeta gap-3 rounded-2xl border-0 shadow-sm ring-0 text-primary-foreground " +
   "bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] " +
   "[--card-spacing:--spacing(4)] @md/tarjeta:gap-4 @md/tarjeta:[--card-spacing:--spacing(5)]";
 

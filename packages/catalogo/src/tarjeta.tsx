@@ -1,9 +1,10 @@
 "use client";
 
-import { useId, useState, type ComponentProps, type ReactNode } from "react";
+import { useId, useRef, useState, type ComponentProps, type ReactNode } from "react";
 import { ChevronDown, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardFooter } from "@/components/ui/card";
+import { usarEntradaAlVerse } from "./animacion";
 import { CLASES_TARJETA, CLASES_TARJETA_HEROE } from "./comunes";
 
 /**
@@ -24,6 +25,11 @@ import { CLASES_TARJETA, CLASES_TARJETA_HEROE } from "./comunes";
  * contenido) se volvia un bloque rojo de 530 px con el texto arriba y nada abajo: el
  * degradado grita, y estirado grita el doble. Se queda de su alto (`self-start`); las
  * blancas si se estiran, porque ahi el espacio de mas no pesa y los pies quedan alineados.
+ *
+ * **Entra animada, siempre.** `CLASES_TARJETA` trae `animar-tarjeta`, que es toda la
+ * coreografia del widget (superficie, cifra, filas, trazo de la grafica) y vive en CSS
+ * (`docs/como-funciona/animacion-de-widgets.md`). Lo unico que pone esta envoltura es que una
+ * tarjeta montada fuera de la pantalla espere a verse (`usarEntradaAlVerse`).
  */
 export function Tarjeta({
   heroe = false,
@@ -31,8 +37,10 @@ export function Tarjeta({
   children,
   ...props
 }: ComponentProps<typeof Card> & { heroe?: boolean }) {
+  const envoltura = useRef<HTMLDivElement>(null);
+  usarEntradaAlVerse(envoltura);
   return (
-    <div data-tarjeta="" className={`@container/tarjeta grid min-w-0 ${heroe ? "self-start" : ""}`}>
+    <div ref={envoltura} data-tarjeta="" className={`@container/tarjeta grid min-w-0 ${heroe ? "self-start" : ""}`}>
       <Card className={`${heroe ? CLASES_TARJETA_HEROE : CLASES_TARJETA} ${className}`} {...props}>
         {children}
       </Card>

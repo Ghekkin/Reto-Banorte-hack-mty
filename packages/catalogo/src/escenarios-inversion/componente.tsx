@@ -73,7 +73,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
           Escenario {TITULO[seleccionado].toLowerCase()} a {horizonteMeses} meses{anios >= 1 ? ` (${anios} ${anios === 1 ? "año" : "años"})` : ""} ·
           inviertes <span className="monto">{formatearMonto(montoInvertidoCentavos)}</span>
         </span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(actual.valorFinalCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(actual.valorFinalCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           <span className={`monto font-semibold ${heroe ? "" : "text-exito"}`}>+{formatearMonto(actual.rendimientoCentavos)}</span> ·{" "}
           <span className="monto">{formatearPorcentaje(actual.tasaAnualPct)}</span> anual
@@ -81,7 +81,7 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
       </CardHeader>
 
       <CardContent className="flex flex-col gap-3">
-        <div className="grid grid-cols-1 gap-2 @md/tarjeta:grid-cols-3" role="radiogroup" aria-label="Escenario">
+        <div className="animar-filas grid grid-cols-1 gap-2 @md/tarjeta:grid-cols-3" role="radiogroup" aria-label="Escenario">
           {ORDEN.map((tipo) => {
             const esc = escenarios[tipo];
             const activo = seleccionado === tipo;

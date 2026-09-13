@@ -69,6 +69,14 @@ Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro 
    `@sm/tarjeta:`, `@md/tarjeta:`, `@3xl/tarjeta:`… Si la tarjeta es ancha, aprovéchalo (dos
    paneles, dos columnas). Revísala en `/catalogo` con el selector de ancho: 360 px, 480 px
    y completo.
+
+   **Entra animada, y casi sola.** `Tarjeta` ya trae la coreografía de entrada
+   (`animar-tarjeta`) y la espera al scroll; las `Progress` crecen solas. Lo que te toca: `cifra`
+   en EL número de la tarjeta (uno solo, y que sea caja), `animar-filas` en el contenedor de una
+   lista, `animar-barra` en una barra hecha con `div`s, y las gráficas siempre por `Grafica`
+   (una curva se dibuja sola; una polar pasa `entrada="ninguna"` y trae su gancho). Nada de
+   `@keyframes` propios que animen algo distinto de `transform`/`opacity`. Ver
+   `docs/como-funciona/animacion-de-widgets.md`.
 5. **Registro** en `packages/a2ui` (`registrar`) y en el JSON del catálogo que se le
    pasa al agente (el mismo schema sirve para los dos: nada se escribe dos veces).
 6. **Prueba** con un mensaje A2UI escrito a mano en
@@ -100,5 +108,6 @@ Y una línea en `packages/catalogo/src/index.ts` que lo registra en el registro 
 - [ ] Schema con descripciones, registrado en `packages/a2ui` y en el JSON del catálogo.
 - [ ] Acciones declaradas como eventos A2UI; cero fetch en el componente.
 - [ ] Tres estados vistos en pantalla con el `.jsonl` de ejemplo.
+- [ ] Entra animado en `/catalogo`: `cifra` en su número, `animar-filas`/`animar-barra` donde aplique, gráficas por `Grafica`.
 - [ ] Sin errores de consola.
 - [ ] Doc y README del componente. Entrada en tu bitácora.
