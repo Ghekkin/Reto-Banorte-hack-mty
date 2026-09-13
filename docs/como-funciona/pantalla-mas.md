@@ -76,9 +76,10 @@ botones van juntos al fondo.
 
 - **Una sola héroe y ningún botón rojo.** La acción de la pantalla es la píldora clara «Preguntarle
   a Maya» del héroe. Los isotipos de las preguntas son neutros y se ponen rojos al pasar el cursor.
-- **Sin «Invertido» en el héroe.** `resumenDe` suma la cuenta de inversión al disponible, y con
-  las dos cifras juntas el portafolio de Carmen se veía dos veces (issue #32). Queda la misma cifra
-  que el héroe de Inicio.
+- **Sin «Invertido» en el héroe.** Se quitó cuando `resumenDe` sumaba la cuenta de inversión al
+  disponible y con las dos cifras juntas el portafolio de Carmen se veía dos veces (issue #32).
+  Desde el 2026-09-13 el disponible es solo nómina y ahorro, así que ya no hay doble conteo; el
+  héroe sigue con la misma cifra que el de Inicio.
 - **Personas como `RadioGroup`, no como `Select`.** En el sidebar el menú cabe cerrado; aquí lo que
   hay que enseñar son las tres situaciones a la vez. La fila activa usa el `border-primary bg-tinte`
   de las opciones de `PlanDePago`.

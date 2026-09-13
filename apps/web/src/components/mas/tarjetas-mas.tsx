@@ -105,9 +105,9 @@ export function PerfilHeroe({
               </span>
             </div>
 
-            {/* Sin "Invertido" a proposito: `disponibleCentavos` (de `resumenDe`) ya suma la
-                cuenta de inversion, y con las dos cifras juntas el portafolio de Carmen se veia
-                contado dos veces (issue #32). Queda la misma cifra que el heroe de Inicio. */}
+            {/* Sin "Invertido": se quito cuando `resumenDe` sumaba la cuenta de inversion al
+                disponible y el portafolio de Carmen se veia dos veces (issue #32, ya resuelto:
+                el disponible es solo nomina y ahorro). Queda la misma cifra que el heroe de Inicio. */}
             <div className="flex flex-col gap-1">
               <span className="text-xs text-primary-foreground/80">Lo que debes</span>
               <span className="monto text-xl font-medium leading-none">{formatearMonto(deudaCentavos)}</span>

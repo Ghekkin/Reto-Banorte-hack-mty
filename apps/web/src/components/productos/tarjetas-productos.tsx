@@ -174,9 +174,10 @@ const ETIQUETA_CUENTA: Record<Cuenta["tipo"], string> = {
 };
 
 /**
- * Las cuentas liquidas con su total arriba. Las de tipo `credito` no entran: esa deuda ya
- * esta en la tarjeta y en Creditos, y sumarla aqui como si fuera dinero es el error que
- * hace que una app bancaria pierda la confianza (mismo criterio que `resumenDe`).
+ * Las cuentas de deposito e inversion con su total arriba ("Total en tus cuentas"). Las de tipo
+ * `credito` no entran: esa deuda ya esta en la tarjeta y en Creditos, y sumarla aqui como si
+ * fuera dinero es el error que hace que una app bancaria pierda la confianza. El "Disponible"
+ * de `resumenDe` es mas estricto: solo nomina y ahorro.
  */
 export function Cuentas({ cuentas }: { cuentas: Cuenta[] }) {
   const liquidas = cuentas.filter((c) => c.tipo !== "credito");

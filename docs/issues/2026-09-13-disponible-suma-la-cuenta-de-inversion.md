@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: web
 encontrado: 2026-09-13 04:35
 github: 32
+resuelto-en:
 ---
 
 # «Disponible» suma la cuenta de inversión: a Carmen le marca $3,543,842 cuando lo líquido es $669,342
@@ -38,3 +39,27 @@ queda igual que Inicio mientras esto se decide.
 **Arreglo propuesto:** en `resumenDe`, excluir también `tipo === "inversion"` (y revisar si
 «Total en tus cuentas» de Productos debe seguir sumándola; ahí la etiqueta sí es honesta). Cambia el
 número de Inicio de Ana y Carmen: avisar a quien esté ensayando antes de subirlo.
+
+## Resolución (2026-09-13)
+
+`resumenDe` (`apps/web/src/lib/datos/consultas.ts`) suma solo las cuentas de `CUENTAS_LIQUIDAS`
+(`nomina` y `ahorro`): ni `credito` ni `inversion`. Lo leen el héroe de Inicio, el de Más,
+`GET /api/perfil` y `GET /api/panorama`, así que los cuatro cambian igual.
+
+Cifras de la base (SELECT sobre `banorte.cuentas`, 2026-09-13):
+
+| Persona | Antes | Después |
+|---|---|---|
+| Beto | $2,819.40 | $2,819.40 |
+| Ana | $91,873.50 | $66,573.50 |
+| Carmen | $3,543,842.00 | $669,342.00 |
+
+- **Productos no cambia a propósito:** la tarjeta `Cuentas` dice «Total en tus cuentas» y sí suma
+  la inversión (se corrigió su comentario, que decía «mismo criterio que `resumenDe`»).
+- **El MCP no tiene una noción equivalente:** `panorama_inicial` no reporta un disponible (perfil,
+  tarjeta, deuda, capacidad de pago, salud), así que no hay nada que deba coincidir.
+- **Más:** el héroe sigue sin «Invertido». Ahora se podría volver a poner sin doble conteo; es
+  decisión de diseño, no de este arreglo.
+- **Prueba:** `apps/web/src/lib/datos/__tests__/resumen.spec.ts`, con las cuentas reales de Carmen.
+  Falla con el filtro anterior (354384200 en vez de 66934200) y pasa con el nuevo.
+- **Docs:** `api-rest-lectura.md` (los dos niveles), `pantalla-mas.md` y `shell-web.md`.

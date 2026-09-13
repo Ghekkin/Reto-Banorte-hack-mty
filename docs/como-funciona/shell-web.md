@@ -156,8 +156,9 @@ yendo el dinero?`. Son los dos prompts del guion, que ya producen una pantalla v
 **Datos.** `Tarjeta` en `lib/datos/consultas.ts` creció con `cuentaId` (para el disponible
 del débito), `tasaAnual`, `cat`, `fechaCorte`, `fechaLimitePago` y `pagoNoInteresesCentavos`;
 todos salían ya de `banorte.tarjetas`. Las cuentas de tipo `credito` no entran en el total
-de `Cuentas`: esa deuda ya está en el plástico y en Créditos (mismo criterio que
-`resumenDe`). Las celdas de tres datos usan `formatearFechaCorta` (`14 sep`) porque
+de `Cuentas`: esa deuda ya está en el plástico y en Créditos. La de inversión sí entra, porque
+la etiqueta dice «Total en tus cuentas»; el «Disponible» de Inicio y Más (`resumenDe`) es más
+estricto: solo nómina y ahorro (issue #32). Las celdas de tres datos usan `formatearFechaCorta` (`14 sep`) porque
 `14 de septiembre` no cabe en 90 px sin truncarse.
 
 Verificado en el navegador (Chromium de Playwright, tres perfiles, 390 y 1280 px): sin

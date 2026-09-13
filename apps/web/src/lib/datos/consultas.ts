@@ -222,10 +222,14 @@ export async function portafolioDe(usuarioId: string): Promise<Portafolio | null
   };
 }
 
+/** Las cuentas cuyo saldo se puede usar hoy. Ver `resumenDe`. */
+const CUENTAS_LIQUIDAS: ReadonlySet<Cuenta["tipo"]> = new Set(["nomina", "ahorro"]);
+
 /**
- * Lo que necesita el heroe de Inicio. `disponible` es solo lo liquido: las cuentas de
- * credito no suman patrimonio, restan. Confundirlas es como un banco pierde la
- * confianza de quien lee la pantalla.
+ * Lo que necesita el heroe de Inicio. `disponible` es solo lo liquido: nomina y ahorro. Las
+ * cuentas de credito no suman patrimonio, restan; y la de inversion es patrimonio pero no
+ * dinero disponible hoy (y ya se reporta como portafolio: sumarla lo contaba dos veces, issue
+ * #32). Confundirlas es como un banco pierde la confianza de quien lee la pantalla.
  */
 export async function resumenDe(usuarioId: string): Promise<{
   disponibleCentavos: number;
@@ -236,7 +240,7 @@ export async function resumenDe(usuarioId: string): Promise<{
 
   return {
     disponibleCentavos: cuentas
-      .filter((c) => c.tipo !== "credito")
+      .filter((c) => CUENTAS_LIQUIDAS.has(c.tipo))
       .reduce((total, c) => total + c.saldoCentavos, 0),
     deudaCentavos: creditos.reduce((total, c) => total + c.saldoInsolutoCentavos, 0),
     cuentaPrincipal: cuentas.find((c) => c.esPrincipal) ?? cuentas[0],

@@ -26,6 +26,9 @@ Dos cosas que sorprenden a quien la usa por primera vez:
 - **Los montos vienen en centavos, como enteros.** Un `281940` son $2,819.40. Se hace así
   en todo el proyecto para que no exista un solo redondeo de dinero flotando: quien pinta
   el número decide cómo se ve.
+- **«Disponible» es lo que se puede usar hoy**: nómina y ahorro. Ni la tarjeta de crédito (es
+  deuda) ni la cuenta de inversión (es patrimonio y ya aparece como portafolio) entran en
+  `disponibleCentavos`. Por eso a Carmen le salen $669,342 y no $3.5 millones.
 - **Esta API solo lee.** No hay forma de aplicar un plan de pago ni cancelar una
   suscripción por aquí. Eso pasa por el agente y el servidor MCP, que llevan una llave de
   idempotencia para que un reintento no cobre dos veces.
@@ -135,3 +138,11 @@ Desde el 2026-09-12 13:00 cada elemento de `tarjetas` (en `/api/productos` y
 `/api/panorama`) trae además `cuentaId`, `tasaAnual`, `cat`, `fechaCorte`,
 `fechaLimitePago` y `pagoNoInteresesCentavos`, que la pantalla de Productos necesita. Es
 un cambio aditivo: nada de lo que había cambió de nombre ni de forma.
+
+Desde el 2026-09-13 `disponibleCentavos` (en `/api/panorama` y `/api/perfil`, y el héroe de
+Inicio y de Más, que leen lo mismo) suma solo las cuentas `nomina` y `ahorro`
+(`CUENTAS_LIQUIDAS` en `resumenDe`, `lib/datos/consultas.ts`). Antes sumaba todo lo que no
+fuera `credito`, así que la cuenta `inversion` entraba y el portafolio de Carmen se contaba dos
+veces (issue #32). Cambió el número de Ana ($91,873.50 → $66,573.50) y el de Carmen
+($3,543,842.00 → $669,342.00); el de Beto no. Prueba: `lib/datos/__tests__/resumen.spec.ts`.
+`/api/productos` no cambia: sus `cuentas` traen todas, con su `tipo`.
