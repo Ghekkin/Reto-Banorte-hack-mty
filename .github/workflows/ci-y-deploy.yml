@@ -61,10 +61,6 @@ jobs:
     if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     timeout-minutes: 20
-    # `contents: write` solo para mover la etiqueta `prompt-verificado` (ver el paso del prompt).
-    permissions:
-      contents: write
-      deployments: write
     environment:
       name: production
       url: ${{ vars.URL_WEB_PUBLICA }}
