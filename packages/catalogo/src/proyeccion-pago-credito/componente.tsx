@@ -13,7 +13,6 @@ import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } 
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { CLASES_GRAFICA, EJE, ETIQUETA, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto, formatearMontoEntero } from "../graficas";
 import { clasesResaltado, usarCambio } from "../resaltado";
-import { usarValoresAnimados } from "../transicion";
 import { compararEscenarios, meses, type Comparacion } from "./comparacion";
 import type { PropsProyeccionPagoCredito } from "./schema";
 
@@ -53,14 +52,6 @@ import type { PropsProyeccionPagoCredito } from "./schema";
  * `programar_abono_capital` con `{ creditoId, mensualidadCentavos }`; al volver, el agente
  * parchea `programado: true` y la tarjeta muestra el badge «Abono programado» con los
  * números ya aplicados. Sin slider ni campo: el monto se pide por chat.
- *
- * **Y el cambio se ve moverse** (`transicion.ts`): al ajustarse, los montos cuentan del valor
- * viejo al nuevo y la curva, sus puntos, sus etiquetas y el eje se deslizan juntos a la forma
- * nueva. La curva no usa la animación de Recharts: esa mueve el área pero deja los
- * `ReferenceDot` brincar a su lugar, y una etiqueta de "$20.4k" suelta mientras la curva aún
- * viaja se lee como un error. Por eso se interpolan los DATOS (`pago` y `saldo` de cada punto) y
- * Recharts pinta cada cuadro con `isAnimationActive={false}`, que además deja la entrada a
- * `Grafica`. Las barras capital / interés se deslizan con `transition` de `width` (CSS).
  */
 export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -89,27 +80,6 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
   const cambioPlazo = usarCambio(plazoRestanteMeses);
   const cambioIntereses = usarCambio(totalInteresesEstimadosCentavos);
 
-  const hitos = [...(amortizacionResumen ?? [])].sort((a, b) => a.numeroPago - b.numeroPago);
-  // "Hoy" es el pago anterior al primer hito (ver abajo); se calcula aquí para animarlo junto.
-  const hoyReal = Math.max(0, (hitos[0]?.numeroPago ?? 1) - 1);
-  // Lo que cuenta al ajustarse. Montos y meses en enteros; las posiciones de la curva, no.
-  const n = usarValoresAnimados({
-    saldo: saldoInsolutoCentavos,
-    mensualidad: mensualidadCentavos,
-    plazo: plazoRestanteMeses,
-    intereses: totalInteresesEstimadosCentavos,
-    contrato: mensualidadContratoCentavos,
-    ...Object.fromEntries(hitos.slice(0, 4).flatMap((h, i) => [[`hs${i}`, h.saldoFinalCentavos], [`hi${i}`, h.interesCentavos]])),
-  });
-  const curva = usarValoresAnimados(
-    {
-      x0: hoyReal,
-      y0: saldoInsolutoCentavos,
-      ...Object.fromEntries(hitos.flatMap((h, i) => [[`x${i + 1}`, h.numeroPago], [`y${i + 1}`, h.saldoFinalCentavos]])),
-    },
-    { redondear: false },
-  );
-
   if (
     typeof saldoInsolutoCentavos !== "number" ||
     typeof mensualidadCentavos !== "number" ||
@@ -132,28 +102,17 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
     );
   }
 
+  const hitos = [...amortizacionResumen].sort((a, b) => a.numeroPago - b.numeroPago);
   // `numeroPago` puede venir contado desde que se contrató el crédito (la tool real manda
   // 23, 27, 31, 36 a quien ya lleva 22 pagos) o desde hoy (1, 6, 12, 20). "Hoy" es el pago
   // anterior al primer hito: así la curva arranca donde está la persona y no se aplasta a
   // la derecha con 22 meses de línea plana que ya pasaron.
-  const hoy = curva.x0 ?? hoyReal;
-  // La curva con los valores de ESTE cuadro: durante un ajuste, puntos y etiquetas van juntos.
-  const puntos = hitos.map((h, i) => ({
-    pago: curva[`x${i + 1}`] ?? h.numeroPago,
-    saldo: curva[`y${i + 1}`] ?? h.saldoFinalCentavos,
-  }));
-  const serie = [{ pago: hoy, saldo: curva.y0 ?? saldoInsolutoCentavos }, ...puntos];
-  // Los montos de texto, en el cuadro actual (al montar, los reales).
-  const saldoVisto = n.saldo ?? saldoInsolutoCentavos;
-  const mensualidadVista = n.mensualidad ?? mensualidadCentavos;
-  const plazoVisto = n.plazo ?? plazoRestanteMeses;
-  const interesesVistos = n.intereses ?? totalInteresesEstimadosCentavos;
-  // La barra capital / intereses se mide con los valores REALES: su `transition` de CSS hace el
-  // deslizamiento. Con los del cuadro, cada cuadro reiniciaría la transición y la barra iría tarde.
+  const hoy = Math.max(0, (hitos[0]?.numeroPago ?? 1) - 1);
+  const ultimo = hitos[hitos.length - 1]!;
+  const serie = [{ pago: hoy, saldo: saldoInsolutoCentavos }, ...hitos.map((h) => ({ pago: h.numeroPago, saldo: h.saldoFinalCentavos }))];
   const costoTotal = saldoInsolutoCentavos + totalInteresesEstimadosCentavos;
   const pctCapital = costoTotal > 0 ? (saldoInsolutoCentavos / costoTotal) * 100 : 100;
-  const costoVisto = saldoVisto + interesesVistos;
-  const pctIntereses = costoVisto > 0 ? Math.round((interesesVistos / costoVisto) * 100) : 0;
+  const pctIntereses = Math.round(100 - pctCapital);
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
   const colores = heroe
     ? { saldo: "var(--primary-foreground)", capital: "var(--primary-foreground)", intereses: "var(--oscuro)" }
@@ -163,20 +122,10 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
   const marcasY = [0, Math.round(saldoInsolutoCentavos / 2), saldoInsolutoCentavos];
 
   const ahora = { mensualidadCentavos, plazoRestanteMeses, totalInteresesEstimadosCentavos };
-  // Qué líneas hay y hacia dónde, con los valores reales; los números que dicen, del cuadro.
   const comparacion = antes ? compararEscenarios(antes, ahora) : undefined;
-  const comparacionVista: Comparacion | undefined =
-    comparacion && antes
-      ? {
-          ...(comparacion.plazo ? { plazo: { ...comparacion.plazo, ahora: plazoVisto } } : {}),
-          ...(comparacion.intereses
-            ? { intereses: { ...comparacion.intereses, diferenciaCentavos: Math.abs(antes.totalInteresesEstimadosCentavos - interesesVistos) } }
-            : {}),
-        }
-      : undefined;
   const aCapitalCentavos =
     typeof mensualidadContratoCentavos === "number" && mensualidadCentavos > mensualidadContratoCentavos
-      ? Math.max(0, mensualidadVista - (n.contrato ?? mensualidadContratoCentavos))
+      ? mensualidadCentavos - mensualidadContratoCentavos
       : 0;
   const puedeProgramar = Boolean(antes) && antes!.mensualidadCentavos !== mensualidadCentavos && !programado;
 
@@ -187,7 +136,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
           <span className={`text-xs ${suave}`}>
             {alias} ·{" "}
             <span className={`monto ${clasesResaltado(cambioPlazo, heroe)}`}>
-              {plazoVisto} {plazoVisto === 1 ? "mes restante" : "meses restantes"}
+              {plazoRestanteMeses} {plazoRestanteMeses === 1 ? "mes restante" : "meses restantes"}
             </span>
           </span>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -201,23 +150,23 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
             </Badge>
           </div>
         </div>
-        <span className="cifra monto text-3xl font-semibold">{formatearMonto(saldoVisto)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           de saldo · pagas{" "}
-          <span className={`monto font-medium ${clasesResaltado(cambioMensualidad, heroe)}`}>{formatearMonto(mensualidadVista)}</span> al
+          <span className={`monto font-medium ${clasesResaltado(cambioMensualidad, heroe)}`}>{formatearMonto(mensualidadCentavos)}</span> al
           mes
         </span>
         {aCapitalCentavos > 0 ? (
           <span className={`monto text-xs ${suave}`}>
-            {formatearMonto(n.contrato ?? mensualidadContratoCentavos!)} del contrato + {formatearMonto(aCapitalCentavos)} a capital
+            {formatearMonto(mensualidadContratoCentavos!)} del contrato + {formatearMonto(aCapitalCentavos)} a capital
           </span>
         ) : null}
       </CardHeader>
 
       {comparacion || aviso ? (
         <CardContent className="flex flex-col gap-3">
-          {comparacionVista ? (
-            <LineasDeCambio comparacion={comparacionVista} fechaLiquidacion={fechaLiquidacion} heroe={heroe} />
+          {comparacion ? (
+            <LineasDeCambio comparacion={comparacion} fechaLiquidacion={fechaLiquidacion} heroe={heroe} />
           ) : null}
           {aviso ? (
             <Alert
@@ -242,10 +191,10 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               dataKey="pago"
               type="number"
               domain={[hoy, "dataMax"]}
-              ticks={serie.map((p) => p.pago)}
+              ticks={[hoy, ...hitos.map((h) => h.numeroPago)]}
               interval="preserveStartEnd"
               minTickGap={18}
-              tickFormatter={(p: number) => etiquetaDeMeses(Math.round(p - hoy))}
+              tickFormatter={(p: number) => etiquetaDeMeses(p - hoy)}
               {...EJE}
               tick={{ ...EJE.tick, fill: colorEje }}
             />
@@ -258,7 +207,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               {...EJE}
               tick={{ ...EJE.tick, fill: colorEje }}
             />
-            <TooltipMonto etiquetaDe={(p) => (Number(p) === hoy ? "Hoy" : `Después del pago ${Math.round(Number(p))}`)} />
+            <TooltipMonto etiquetaDe={(p) => (Number(p) === hoy ? "Hoy" : `Después del pago ${String(p)}`)} />
             <Area
               type="monotone"
               dataKey="saldo"
@@ -272,18 +221,16 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               isAnimationActive={false}
             />
             {/* El saldo de cada hito, escrito sobre su punto: la gráfica se lee sin hover. */}
-            {/* `key` por posición y no por `numeroPago`: un ajuste cambia los números de pago
-                (36 → 31) y con esa llave el punto se desmontaría en vez de deslizarse. */}
-            {puntos.map((p, i) => (
+            {hitos.map((h) => (
               <ReferenceDot
-                key={i}
-                x={p.pago}
-                y={p.saldo}
+                key={h.numeroPago}
+                x={h.numeroPago}
+                y={h.saldoFinalCentavos}
                 r={4}
                 fill={colores.saldo}
                 stroke="var(--card)"
                 strokeWidth={2}
-                label={{ value: formatearMontoCorto(Math.round(p.saldo)), position: "top", ...ETIQUETA, fill: colorEtiqueta }}
+                label={{ value: formatearMontoCorto(h.saldoFinalCentavos), position: "top", ...ETIQUETA, fill: colorEtiqueta }}
               />
             ))}
           </AreaChart>
@@ -293,17 +240,13 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
           {/* Dos columnas en angosto, cuatro cuando la tarjeta es ancha, y otra vez dos
               cuando comparten la tarjeta con la curva. */}
           <div className="animar-filas grid grid-cols-2 gap-3 @xl/tarjeta:grid-cols-4 @3xl/tarjeta:grid-cols-2">
-            {/* `key` por posición: al ajustarse, la ficha se queda y sus montos cuentan; con
-                `numeroPago` se desmontaba y volvía a entrar como si fuera otra. */}
             {hitos.slice(0, 4).map((h, i) => (
               <FichaDePago
-                key={i}
+                key={h.numeroPago}
                 etiqueta={etiquetaDeHito(h.periodo)}
                 saldoCentavos={h.saldoFinalCentavos}
                 capitalCentavos={h.capitalCentavos}
                 interesCentavos={h.interesCentavos}
-                saldoVisto={n[`hs${i}`]}
-                interesVisto={n[`hi${i}`]}
                 mensualidadCentavos={mensualidadCentavos}
                 colores={colores}
                 heroe={heroe}
@@ -315,22 +258,19 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
           {/* Lo que falta pagar, partido en capital e intereses: dos segmentos, una barra. */}
           <div className={`flex flex-col gap-2 border-t pt-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
             <div className="animar-barra flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
-              <div
-                className={`h-full rounded-l-full ${CLASES_DESLIZAR_ANCHO}`}
-                style={{ width: `${pctCapital}%`, background: colores.capital }}
-              />
+              <div className="h-full rounded-l-full" style={{ width: `${pctCapital}%`, background: colores.capital }} />
               <div className="h-full flex-1 rounded-r-full" style={{ background: colores.intereses }} />
             </div>
             <Leyenda
               heroe={heroe}
               series={[
-                { nombre: `Capital ${formatearMonto(saldoVisto)}`, color: colores.capital },
+                { nombre: `Capital ${formatearMonto(saldoInsolutoCentavos)}`, color: colores.capital },
                 {
                   nombre: (
                     <span>
                       Intereses{" "}
                       <span className={`monto ${clasesResaltado(cambioIntereses, heroe)}`}>
-                        {formatearMonto(interesesVistos)}
+                        {formatearMonto(totalInteresesEstimadosCentavos)}
                       </span>{" "}
                       · {pctIntereses} % de lo que pagarás
                     </span>
@@ -422,8 +362,6 @@ function FichaDePago({
   saldoCentavos,
   capitalCentavos,
   interesCentavos,
-  saldoVisto = saldoCentavos,
-  interesVisto = interesCentavos,
   mensualidadCentavos,
   colores,
   heroe,
@@ -433,9 +371,6 @@ function FichaDePago({
   saldoCentavos: number;
   capitalCentavos: number;
   interesCentavos: number;
-  /** Los montos del cuadro actual durante un ajuste (`transicion.ts`); sin ellos, los reales. */
-  saldoVisto?: number;
-  interesVisto?: number;
   mensualidadCentavos: number;
   colores: { capital: string; intereses: string };
   heroe: boolean;
@@ -450,28 +385,21 @@ function FichaDePago({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <span className={`truncate text-xs ${suave}`}>{etiqueta}</span>
-      <span className={`monto truncate text-sm ${fuerte} ${acento ? "font-semibold" : "font-medium"}`}>{formatearMonto(saldoVisto)}</span>
+      <span className={`monto truncate text-sm ${fuerte} ${acento ? "font-semibold" : "font-medium"}`}>{formatearMonto(saldoCentavos)}</span>
       <div
         className="animar-barra flex h-1.5 w-full gap-px overflow-hidden rounded-full"
         role="img"
         aria-label={`Del pago, ${pctInteres} % es interés`}
       >
-        <div className={`h-full rounded-l-full ${CLASES_DESLIZAR_ANCHO}`} style={{ width: `${100 - pctInteres}%`, background: colores.capital }} />
+        <div className="h-full rounded-l-full" style={{ width: `${100 - pctInteres}%`, background: colores.capital }} />
         <div className="h-full flex-1 rounded-r-full" style={{ background: colores.intereses }} />
       </div>
       <span className={`monto truncate text-xs ${suave}`}>
-        {formatearMontoEntero(interesVisto)} de interés · {pctInteres} %
+        {formatearMontoEntero(interesCentavos)} de interés · {pctInteres} %
       </span>
     </div>
   );
 }
-
-/**
- * El segmento de una barra hecha con divs se desliza a su nuevo ancho cuando la tarjeta se
- * ajusta. Va en el SEGMENTO, no en `.animar-barra` (el contenedor que escala al entrar), y sin
- * `animation`: la entrada y el ajuste no se pisan. Con "reducir movimiento", salta.
- */
-const CLASES_DESLIZAR_ANCHO = "motion-safe:transition-[width] motion-safe:duration-600 motion-safe:ease-out";
 
 /** La tool a veces manda la fecha del pago (`2026-10-20`) y a veces una etiqueta ("En 6 meses"). */
 function etiquetaDeHito(periodo: string): string {
