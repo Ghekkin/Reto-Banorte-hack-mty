@@ -32,10 +32,17 @@ function SelectValue({ className, ...props }: SelectPrimitive.Value.Props) {
 function SelectTrigger({
   className,
   size = "default",
+  icono = true,
   children,
   ...props
 }: SelectPrimitive.Trigger.Props & {
   size?: "sm" | "default"
+  /**
+   * Con `false` no se pinta la flecha de la derecha y el trigger pinta la suya como hijo.
+   * Para triggers que no parecen campo de formulario: ver
+   * `components/shell/selector-usuario.tsx`, que llevaba dos flechas juntas.
+   */
+  icono?: boolean
 }) {
   return (
     <SelectPrimitive.Trigger
@@ -48,11 +55,13 @@ function SelectTrigger({
       {...props}
     >
       {children}
-      <SelectPrimitive.Icon
-        render={
-          <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
-        }
-      />
+      {icono && (
+        <SelectPrimitive.Icon
+          render={
+            <ChevronDownIcon className="pointer-events-none size-4 text-muted-foreground" />
+          }
+        />
+      )}
     </SelectPrimitive.Trigger>
   )
 }

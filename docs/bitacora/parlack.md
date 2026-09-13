@@ -1615,3 +1615,22 @@ en la misma conversación (`responder`) y una portada forzada de Ana. Typecheck 
 web 178, mcp 131, catálogo 124, a2ui 117 pruebas. Toque ajeno (contrato y mcp):
 `agente.ts`, `mcp-cliente.ts`, `tipos.ts`, `generar.ts`, `servicio.ts`, `registro.ts`,
 `postgres.ts`.
+
+### 02:27 (dom 13) — El selector de persona, rediseñado
+
+Pedido: "que se vea más bonito". Medido antes en el navegador: dos flechas juntas en el
+trigger (la del `SelectTrigger` y la nuestra), borde gris de campo de formulario, nombre y
+contexto cortados con puntos, y el menú abría 32 px más ancho que el trigger, saliéndose del
+sidebar por los dos lados, con la elegida en el degradado de marca (un segundo bloque rojo
+junto a Maya).
+
+Ahora (`components/shell/selector-usuario.tsx`, prop `variante`): tarjeta `bg-muted` con
+avatar **oscuro** (la persona es `bg-oscuro`, como sus burbujas; el rojo es de Maya), nombre
+completo, contexto en dos renglones y una sola flecha. El menú flota **a la derecha del
+sidebar** (patrón `NavUser` de shadcn), con encabezado "Cambiar de persona", contexto
+completo por persona y la elegida en tinte con palomita roja. Cambio optimista con
+`useOptimistic` + spinner. En móvil: avatar de 48 px en la barra y menú hacia arriba en el
+sheet. `SelectTrigger` ganó `icono={false}`. Verificado con Playwright a 1440 y 390 px
+(sidebar, sheet, barra y Más; teclado; acción retrasada 2 s; "Ana Sofía Treviño" ya no se
+corta). Typecheck y lint en verde, 178 pruebas de web. Doc: `shell-web.md`, sección "El
+selector de persona"; línea del sidebar en la skill `diseno-banorte`.

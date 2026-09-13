@@ -54,6 +54,11 @@ cambiar, todo cambia: los saldos, las tarjetas, y sobre todo **lo que Maya respo
 misma pregunta**. Es la forma más rápida de mostrar que el agente se adapta al contexto en
 vez de repetir una plantilla.
 
+La persona activa se ve al pie del menú lateral: su avatar en negro, su nombre y, completa,
+su situación ("Tarjeta al límite, un pago atrasado"). Al tocarla se abre a un lado la lista
+de las tres, cada una con su situación, y la elegida marcada. En el celular es el avatar de
+arriba a la derecha.
+
 ## Técnico
 
 ### Las cinco secciones
@@ -89,7 +94,7 @@ apps/web/src/
       sidebar-app.tsx           escritorio
       barra-superior.tsx        titulo, subtitulo, trigger y avatar en movil
       barra-pestanas.tsx        movil: 4 pestanas + FAB de Maya
-      selector-usuario.tsx      cambia de perfil demo
+      selector-usuario.tsx      cambia de persona demo (pie del sidebar, avatar en movil, Mas)
     inicio/tarjetas-inicio.tsx  heroe, cuentas, tarjetas, movimientos, atajo a Maya
     productos/
       tarjeta-fisica.tsx        el plastico: degradado de marca, chevrones, chip, red
@@ -263,6 +268,48 @@ sequenceDiagram
 Sin el `revalidatePath` la cookie cambia pero las pantallas siguen mostrando el cache del
 usuario anterior. El id se **valida contra `USUARIOS`** en la server action: llega del
 navegador y termina en una consulta a la base.
+
+### El selector de persona
+
+`components/shell/selector-usuario.tsx`. Es un `Select` de shadcn (Base UI) con una prop
+`variante` que decide la forma y hacia dónde abre el menú:
+
+| Variante | Dónde | Trigger | El menú abre |
+|---|---|---|---|
+| `sidebar` | Pie del sidebar (`sidebar-app.tsx`) | Tarjeta `bg-muted` con avatar, nombre, contexto y `ChevronsUpDown` | Escritorio: **a la derecha**, `align="end"`, `sideOffset={16}`, fuera de la tarjeta blanca (el `NavUser` del bloque `sidebar-07` de shadcn). En el sheet de móvil, arriba |
+| `avatar` | Barra superior en móvil (`barra-superior.tsx`) | Solo el avatar, objetivo táctil de 48 px | Abajo, alineado a la derecha |
+| `tarjeta` (default) | Tarjeta "Tu perfil" de Más | La misma tarjeta, a lo ancho | Abajo, del ancho del trigger |
+
+**El color del avatar dice quién es quién**: oscuro (`bg-oscuro text-white`) es la persona,
+el mismo tono de sus burbujas en el chat (`consola-maya.tsx`); el rojo queda para Maya. En
+el menú, la persona elegida lleva el renglón en `bg-sidebar-accent` (el tinte del ítem
+activo del sidebar), el avatar oscuro y la palomita del propio `SelectItem` en
+`text-primary`; las otras, avatar blanco con aro gris. Al pasar el cursor el renglón se pone
+gris y el nombre rojo, como cualquier item de menú del proyecto. Arriba de la lista, un
+`SelectLabel`: "Cambiar de persona / Maya adapta lo que te muestra a cada una".
+
+Detalles que se midieron en el navegador (Chromium de Playwright, 1440 y 390 px):
+
+- **El contexto nunca se corta con puntos**: es lo que explica por qué la pantalla cambia. En
+  el trigger del sidebar baja a dos renglones (`line-clamp-2` + `whitespace-normal`, porque
+  el trigger base es `whitespace-nowrap`); en el menú (`w-80`) cabe en uno.
+- **El nombre más largo cabe**: "Ana Sofía Treviño" mide 123 px en Geist 14 semibold y el pie
+  del sidebar le deja 128 con `gap-2`, `px-2.5` y `gap-2.5` junto al avatar. Con `gap-3` y
+  `pr-3` le quedaban 120 y se cortaba.
+- **Cambio optimista**: al elegir, `useOptimistic` pinta a la persona nueva en el trigger al
+  instante, con spinner y `aria-busy` mientras la server action escribe la cookie y el
+  `revalidatePath` rearma la pantalla. Probado con la acción retrasada 2 s.
+- `SelectTrigger` (`components/ui/select.tsx`) ganó la prop **`icono`**: con `false` no pinta
+  su `ChevronDownIcon`. Antes el selector ponía el suyo y se veían **dos flechas juntas**.
+- Los `!` del contexto y de las iniciales no son pereza: el `SelectItem` base pinta a todos
+  sus descendientes con `not-data-[variant=destructive]:focus:**:text-accent-foreground`
+  (0,3,0). Sin ellos, al pasar el cursor el contexto se volvía rojo y las iniciales blancas
+  se perdían sobre el oscuro.
+
+Hasta el 2026-09-13 el trigger tenía el borde gris de un campo de formulario, el menú abría
+hacia arriba 32 px más ancho que el trigger (se salía del sidebar por los dos lados), la
+elegida iba con el degradado de marca (un segundo bloque rojo junto al ítem de Maya) y el
+nombre y el contexto se cortaban con puntos en los dos lugares.
 
 ### Navegación en los dos tamaños
 

@@ -271,8 +271,11 @@ Todo flota sobre un lienzo gris claro.
 ### Sidebar flotante
 
 - Tarjeta blanca `rounded-2xl`, con: logo + nombre del producto arriba; **selector de
-  usuario demo** (Beto / Ana) como tarjeta con avatar y `chevron`; etiqueta
-  `MAIN MENU` en mayúsculas diminutas grises; ítems con icono a la izquierda.
+  persona demo** (Beto / Ana / Carmen) al pie, como tarjeta `bg-muted` con avatar oscuro
+  (la persona es `bg-oscuro`; el rojo es de Maya), nombre, contexto completo y
+  `ChevronsUpDown`; su menú abre a la derecha del sidebar
+  (`components/shell/selector-usuario.tsx`); etiqueta `MAIN MENU` en mayúsculas diminutas
+  grises; ítems con icono a la izquierda.
 - **Ítem activo**: fondo `bg-tinte` con texto e icono en `text-primary`, `rounded-xl`.
   No una barra lateral, no subrayado: una píldora rellena.
 - Ítems inactivos: `text-muted-foreground`, hover `bg-muted`.
