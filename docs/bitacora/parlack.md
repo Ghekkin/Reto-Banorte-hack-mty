@@ -1775,3 +1775,23 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   `d156138` desde un `git worktree` limpio (el archivo vuelve a eafe535 + mis 4 clases),
   verificado con `pnpm catalogo`, `pnpm typecheck` y `pnpm test` antes de subir. Issue #31
   (cerrado) con la sugerencia de procedimiento. Avisé a las dos sesiones afectadas.
+
+### 04:41 · Más, rehecha para los jueces
+
+- **Hecho** (`docs/como-funciona/pantalla-mas.md`): `/mas` pasó de perfil + texto + ocho renglones
+  (seis con «pendiente») a seis tarjetas: héroe con el perfil real (nombre completo, edad,
+  ocupación, antigüedad, disponible), las tres personas como `RadioGroup` para cambiar con un
+  toque, cómo funciona Maya en tres pasos con miniaturas, tres preguntas por persona que abren
+  `/maya?intencion=`, datos personales de `banorte.usuarios` (`perfilDe`, correo y teléfono
+  enmascarados en `lib/perfil.ts`, 4 pruebas) y un menú donde lo que no existe dice «Fuera de este
+  prototipo». Usa la `Tarjeta` del catálogo, así que entra con la misma coreografía de los widgets.
+  Verificado en navegador a 360, 1024 y 1440 px; cambio de persona 0.5–1.2 s, cero errores de consola.
+- **Bugs registrados**: #29 (main roto por `transicion.ts`; duplicado de #30, cerrado) y #32
+  (`resumenDe` suma la cuenta de inversión al disponible: Carmen $3.5 M en vez de $669 k). #32 no
+  se arregló porque cambia el héroe de Inicio de Ana y Carmen; Más quitó «Invertido» del héroe para
+  no enseñar el doble conteo.
+- **Toque ajeno**: `components/shell/navegacion.ts` (subtítulo de Más), `lib/datos/consultas.ts`
+  (`perfilDe`, nuevo). Trabajado en el worktree `/root/reto-mas` porque otra sesión tenía a medias
+  `selector-usuario.tsx` y `usuarios.ts` (fotos de las personas).
+- **Pendiente**: cuando lleguen las fotos (`usuario.foto`), ponerlas en el avatar del héroe y de
+  `CambiarPersona` con `AvatarImage`.

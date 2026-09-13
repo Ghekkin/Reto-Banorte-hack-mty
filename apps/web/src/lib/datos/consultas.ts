@@ -271,3 +271,44 @@ export async function categoriasUsadas(usuarioId: string): Promise<{ id: string;
   for (const m of movimientos) vistas.set(m.categoriaId, m.categoria);
   return [...vistas].map(([id, nombre]) => ({ id, nombre })).sort((a, b) => a.nombre.localeCompare(b.nombre, "es-MX"));
 }
+
+export type Perfil = {
+  /** El nombre completo, con los dos apellidos: el de `lib/usuarios.ts` es el corto. */
+  nombreCompleto: string;
+  edad: number;
+  ocupacion: string;
+  ingresoMensualCentavos: number;
+  /** Carmen cobra por proyecto: su ingreso es el promedio de doce meses. */
+  ingresoEsVariable: boolean;
+  ciudad: string;
+  estado: string;
+  segmento: "nomina" | "preferente" | "patrimonial";
+  /** "AAAA-MM-DD". */
+  clienteDesde: string;
+  correo: string;
+  telefono: string;
+};
+
+/**
+ * Quien es la persona, de `banorte.usuarios`: lo que muestra la tarjeta de datos personales
+ * de Mas. Es lo mismo que lee el agente para decidir (edad, ingreso, segmento), asi que la
+ * pantalla ensena con que datos trabaja Maya. `undefined` si la persona no esta en la base.
+ */
+export async function perfilDe(usuarioId: string): Promise<Perfil | undefined> {
+  const filas = await leerTabla("usuarios");
+  const f = filas.find((fila) => fila.id === usuarioId);
+  if (!f) return undefined;
+  return {
+    nombreCompleto: f.nombre!,
+    edad: entero(f.edad),
+    ocupacion: f.ocupacion!,
+    ingresoMensualCentavos: entero(f.ingreso_mensual_centavos),
+    ingresoEsVariable: booleano(f.ingreso_es_variable),
+    ciudad: f.ciudad!,
+    estado: f.estado!,
+    segmento: f.segmento as Perfil["segmento"],
+    clienteDesde: f.cliente_desde!,
+    correo: f.correo!,
+    telefono: f.telefono!,
+  };
+}

@@ -1,156 +1,72 @@
-import Link from "next/link";
-import type { ComponentType, SVGProps } from "react";
+import { CambiarPersona } from "@/components/mas/cambiar-persona";
 import {
-  ChevronRight,
-  CircleHelp,
-  FileText,
-  Receipt,
-  Settings,
-  ShieldCheck,
-  User,
-  Zap,
-} from "lucide-react";
-import { IconoBanorte } from "@/components/marca/logo-banorte";
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { SelectorUsuario } from "@/components/shell/selector-usuario";
-import { formatearMonto } from "@/lib/dinero";
-import { MARCA } from "@/lib/marca";
-import { cuentasDe, resumenDe } from "@/lib/datos/consultas";
+  AvisoDelPrototipo,
+  ComoFuncionaMaya,
+  DatosPersonales,
+  PerfilHeroe,
+  PreguntasSugeridas,
+  TarjetaPersonas,
+  TodoLoDemas,
+} from "@/components/mas/tarjetas-mas";
+import { perfilDe, resumenDe } from "@/lib/datos/consultas";
 import { usuarioActivo } from "@/lib/usuario-activo";
 
 /**
- * Mas: lo que no cabe en las cuatro pestanas.
+ * Mas: quien eres, como funciona Maya y todo lo demas.
  *
- * Perfil y "que es esto" traen contenido real. Pagos, Servicios, Seguridad y Estados de
- * cuenta quedan como estado vacio HONESTO: dicen que no estan en el prototipo en vez de
- * fingir una pantalla. Un boton que no hace nada es peor que un boton que explica por que.
+ * Es la pantalla a la que llega un juez que quiere entender el producto sin que se lo
+ * cuenten: el perfil con sus datos reales, las tres personas para cambiar de situacion con un
+ * toque, los tres pasos de Maya y las preguntas que conviene hacerle a esta persona. Lo que
+ * no esta en el prototipo (pagos, estados de cuenta, seguridad) sigue diciendolo, pero una
+ * vez por mosaico y sin parecer una pantalla a medias.
+ *
+ * La rejilla es la bento de Productos (1 columna en movil, 2 o 3 en escritorio) con
+ * `grid-flow-dense`: en 2 columnas la tarjeta de preguntas sube a llenar el hueco junto a la
+ * de personas, y datos personales va a lo ancho porque es la tercera sola y dejaria un hueco.
+ * En 3 columnas quedan tres filas parejas: perfil + personas, como funciona + preguntas,
+ * datos + accesos. Cada tarjeta va en su hueco (`div`), como en el lienzo de Maya, porque
+ * `Tarjeta` pone su propia envoltura y el `col-span` tiene que ir en el hijo directo.
+ *
+ * El orden de lectura en movil: perfil, personas, como funciona, preguntas, datos, accesos.
  */
 export default async function PaginaMas() {
   const usuario = await usuarioActivo();
-  const [resumen, cuentas] = await Promise.all([resumenDe(usuario.id), cuentasDe(usuario.id)]);
+  const [resumen, perfil] = await Promise.all([resumenDe(usuario.id), perfilDe(usuario.id)]);
 
   return (
-    <div className="animar-lista grid gap-3 md:grid-cols-2 md:gap-4">
-      {/* Perfil: datos reales */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Tu perfil</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <SelectorUsuario usuario={usuario} />
-          <Separator />
-          <div className="flex flex-col gap-3">
-            <Dato etiqueta="Cuentas activas" valor={String(cuentas.length)} />
-            <Dato etiqueta="Disponible" valor={formatearMonto(resumen.disponibleCentavos)} />
-            <Dato etiqueta="Deuda total" valor={formatearMonto(resumen.deudaCentavos)} />
-          </div>
-          <p className="text-xs text-muted-foreground">
-            Cambia de persona para ver cómo {MARCA.nombre} adapta lo que te muestra.
-          </p>
-        </CardContent>
-      </Card>
-
-      {/* Qué es esto: en palabras de la persona, sin siglas técnicas */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Qué es esto</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-3 text-sm">
-          <p>
-            <span className="font-medium">{MARCA.nombre}</span> no responde con párrafos:
-            construye la pantalla que resuelve lo que pediste y ejecuta la operación.
-          </p>
-          <p className="text-muted-foreground">
-            Cada respuesta se arma con tarjetas pensadas para tu dinero, y {MARCA.nombre} elige
-            las que necesitas para resolverlo.
-          </p>
-          <Separator />
-          <p className="text-xs leading-relaxed text-muted-foreground">{MARCA.aviso}</p>
-        </CardContent>
-      </Card>
-
-      {/* Enlaces */}
-      <Card data-ancho="amplio">
-        <CardHeader>
-          <CardTitle className="text-sm font-medium text-muted-foreground">Todo lo demás</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col">
-          <Enlace href="/maya" icono={IconoBanorte} etiqueta="Preguntarle a Maya" disponible />
-          <Enlace href="/movimientos" icono={Receipt} etiqueta="Movimientos" disponible />
-          <Enlace icono={Zap} etiqueta="Pagos y servicios" />
-          <Enlace icono={FileText} etiqueta="Estados de cuenta" />
-          <Enlace icono={User} etiqueta="Datos personales" />
-          <Enlace icono={Settings} etiqueta="Configuración" />
-          <Enlace icono={ShieldCheck} etiqueta="Seguridad" />
-          <Enlace icono={CircleHelp} etiqueta="Ayuda" />
-        </CardContent>
-      </Card>
-    </div>
-  );
-}
-
-function Dato({ etiqueta, valor }: { etiqueta: string; valor: string }) {
-  return (
-    <div className="flex items-baseline justify-between gap-3">
-      <span className="text-sm text-muted-foreground">{etiqueta}</span>
-      <span className="monto text-sm font-medium">{valor}</span>
-    </div>
-  );
-}
-
-/**
- * Un renglon de la lista. Sin `href` no es un enlace: es una fila apagada con la
- * etiqueta "pendiente", que dice la verdad sin prometer nada.
- */
-function Enlace({
-  href,
-  icono: Icono,
-  etiqueta,
-  disponible = false,
-}: {
-  href?: string;
-  icono: ComponentType<SVGProps<SVGSVGElement>>;
-  etiqueta: string;
-  disponible?: boolean;
-}) {
-  const contenido = (
-    <>
-      <Icono className="size-4 shrink-0 text-muted-foreground" />
-      <span className="flex-1 text-sm">{etiqueta}</span>
-      {disponible ? (
-        // El chevron se corre 2 px al pasar el cursor. Es lo minimo que hace falta para
-        // que la fila diga "esto lleva a algun lado" sin agregar texto ni color.
-        <ChevronRight className="size-4 shrink-0 text-muted-foreground transition-transform group-hover:translate-x-0.5" />
-      ) : (
-        <Badge variant="outline" className="shrink-0 rounded-full text-[10px]">
-          pendiente
-        </Badge>
-      )}
-    </>
-  );
-
-  if (!href || !disponible) {
-    return (
-      <div
-        aria-disabled
-        className="flex min-h-12 items-center gap-3 border-b border-borde-sutil px-1 opacity-60 last:border-0"
-      >
-        {contenido}
+    <div className="flex flex-col gap-3 md:gap-4">
+      <div className="animar-lista grid grid-flow-dense gap-3 md:grid-cols-2 md:gap-4 xl:grid-cols-3">
+        {/* La heroe del catalogo no se estira (`self-start`, pensado para el lienzo, donde junto a
+            una grafica quedaba un bloque rojo de 530 px). Aqui su vecina es la lista de personas,
+            casi de su alto: estirada, las dos tarjetas cierran parejas. */}
+        <div className="grid md:col-span-2 [&>[data-tarjeta]]:self-stretch">
+          <PerfilHeroe
+            usuario={usuario}
+            perfil={perfil}
+            disponibleCentavos={resumen.disponibleCentavos}
+            deudaCentavos={resumen.deudaCentavos}
+            hoy={new Date()}
+          />
+        </div>
+        <div className="grid">
+          <TarjetaPersonas>
+            <CambiarPersona usuario={usuario} />
+          </TarjetaPersonas>
+        </div>
+        <div className="grid md:col-span-2">
+          <ComoFuncionaMaya />
+        </div>
+        <div className="grid">
+          <PreguntasSugeridas usuario={usuario} />
+        </div>
+        <div className="grid md:col-span-2 xl:col-span-1">
+          <DatosPersonales perfil={perfil} />
+        </div>
+        <div className="grid md:col-span-2">
+          <TodoLoDemas />
+        </div>
       </div>
-    );
-  }
-
-  return (
-    <Link
-      href={href}
-      // `group` para el chevron. Las dos capas de estado de Material: 8% al pasar el
-      // cursor, 12% al presionar. Sin la segunda, en movil no hay ninguna senal de que
-      // el toque se registro.
-      className="group flex min-h-12 items-center gap-3 border-b border-borde-sutil px-1 transition-colors last:border-0 hover:bg-current/8 active:bg-current/12"
-    >
-      {contenido}
-    </Link>
+      <AvisoDelPrototipo />
+    </div>
   );
 }

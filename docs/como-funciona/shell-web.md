@@ -41,8 +41,9 @@ partidos en bloques con el nombre que la gente usa —*Hoy*, *Ayer*, *Esta seman
 pasada*, *Mes pasado*, *Julio*— y el neto de cada bloque a la derecha, así que "cuánto se me
 fue esta semana" se contesta sin sumar nada. Se puede buscar por comercio y **marcar varias
 categorías a la vez**; al hacerlo, las dos cifras de arriba se recalculan, que es la forma de
-contestar "cuánto llevo en restaurantes y transporte". **Más** sí es una consulta simple: el
-resto de opciones. El peso del proyecto sigue estando en Inicio y en Maya.
+contestar "cuánto llevo en restaurantes y transporte". **Más** es quién es la persona, las tres
+personas para cambiar con un toque, cómo funciona Maya y el resto de opciones
+(`pantalla-mas.md`). El peso del proyecto sigue estando en Inicio y en Maya.
 
 En el celular se navega con una barra abajo de cuatro pestañas, y **Maya al centro, en un
 botón redondo elevado**. Eso no es capricho: si Maya fuera una pestaña más se perdería
@@ -69,7 +70,7 @@ arriba a la derecha.
 | `/productos` | Productos | Server component | Base: cuentas, tarjetas, créditos, portafolio |
 | `/maya` | Maya | Client (streaming) | El agente vía `POST /api/agente` |
 | `/movimientos` | Movimientos | Server + filtro cliente | Base: movimientos, categorías. El `hoy` del dominio lo calcula la página |
-| `/mas` | Más | Server component | Base: resumen; el resto es estático |
+| `/mas` | Más | Server component + `CambiarPersona` (cliente) | Base: resumen y `banorte.usuarios` (`perfilDe`). Ver `pantalla-mas.md` |
 
 `ORDEN_PESTANAS` en [navegacion.ts](../../apps/web/src/components/shell/navegacion.ts) fija
 el orden de la barra inferior con Maya en la posición central.
@@ -294,7 +295,7 @@ navegador y termina en una consulta a la base.
 |---|---|---|---|
 | `sidebar` | Pie del sidebar (`sidebar-app.tsx`) | Tarjeta `bg-muted` con avatar, nombre, contexto y `ChevronsUpDown` | Escritorio: **a la derecha**, `align="end"`, `sideOffset={16}`, fuera de la tarjeta blanca (el `NavUser` del bloque `sidebar-07` de shadcn). En el sheet de móvil, arriba |
 | `avatar` | Barra superior en móvil (`barra-superior.tsx`) | Solo el avatar, objetivo táctil de 48 px | Abajo, alineado a la derecha |
-| `tarjeta` (default) | Tarjeta "Tu perfil" de Más | La misma tarjeta, a lo ancho | Abajo, del ancho del trigger |
+| `tarjeta` (default) | Sin uso desde el 2026-09-13: Más cambia de persona con `CambiarPersona` (`components/mas/`) | La misma tarjeta, a lo ancho | Abajo, del ancho del trigger |
 
 **El color del avatar dice quién es quién**: oscuro (`bg-oscuro text-white`) es la persona,
 el mismo tono de sus burbujas en el chat (`consola-maya.tsx`); el rojo queda para Maya. En
@@ -454,8 +455,9 @@ Verificado al 2026-09-12 11:45, midiendo el DOM en el navegador:
 - ~~El lienzo de Maya es un placeholder.~~ **Ya no**: los 8 componentes del catálogo
   existen, pintan, y el hilo guarda la pantalla de cada turno (ver abajo). El placeholder
   solo sale antes del primer turno.
-- **Pagos, Servicios, Seguridad y Estados de cuenta** están en Más como filas apagadas con
-  la etiqueta "pendiente". No tienen datos: el territorio Pagos quedó fuera del esquema.
+- **Pagos y servicios, Estados de cuenta y Seguridad** están en Más como mosaicos apagados
+  que dicen "Fuera de este prototipo". No tienen datos: el territorio Pagos quedó fuera del
+  esquema. Los datos personales ya no están pendientes: salen de `banorte.usuarios`.
 - ~~Sin `skeleton` de carga.~~ Hay `loading.tsx` en el grupo `(app)`.
 - **Inicio depende del reloj y de la base para su portada.** Sin `DATABASE_URL` o sin
   llave, es la programada de siempre; con todo, la primera visita después de un

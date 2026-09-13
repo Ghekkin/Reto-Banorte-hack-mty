@@ -64,7 +64,7 @@ export const SECCIONES: Seccion[] = [
   {
     href: "/mas",
     etiqueta: "Más",
-    descripcion: "Pagos, servicios, perfil y configuración",
+    descripcion: "Tu perfil y todo lo demás",
     icono: MoreHorizontal,
     grupo: "mas",
   },
