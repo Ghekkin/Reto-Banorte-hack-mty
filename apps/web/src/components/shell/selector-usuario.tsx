@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { ChevronsUpDown } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -59,6 +60,7 @@ export function SelectorUsuario({
   usuario: UsuarioDemo;
   variante?: Variante;
 }) {
+  const router = useRouter();
   const [pendiente, iniciar] = useTransition();
   const [idVisible, mostrarId] = useOptimistic(usuario.id);
   const visible = usuarioPorId(idVisible);
@@ -77,6 +79,8 @@ export function SelectorUsuario({
         iniciar(async () => {
           mostrarId(id);
           await cambiarUsuario(id);
+          router.push("/");
+          router.refresh();
         });
       }}
     >

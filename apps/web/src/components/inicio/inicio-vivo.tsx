@@ -6,7 +6,6 @@ import { Lienzo, type DecoracionDePieza } from "@/components/maya/lienzo";
 import type { PantallaDeInicio } from "@/lib/inicio/almacen";
 import { textoDeEtapa } from "@/lib/widgets/etapas";
 import { etiquetaDe, sugerenciasDe } from "@/lib/widgets/etiquetas";
-import { EvidenciaDeMaya } from "./inicio-de-maya";
 import { PensandoMaya } from "./pensando-maya";
 import { PieDeWidget } from "./pie-de-widget";
 import { BarraFlotanteMaya } from "./tarjetas-inicio";
@@ -89,11 +88,10 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
 
   return (
     <div className="relative flex flex-col gap-3 pb-40 md:gap-4 md:pb-32">
-      <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={alAccionar} decorar={decorar} ocultarSugerenciasEnTarjeta={false} />
+      <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={alAccionar} decorar={decorar} ocultarSugerenciasEnTarjeta={true} />
       {vivo.notaGeneral && (
         <PieDeWidget etiqueta="Inicio" nota={vivo.notaGeneral} alCerrarNota={() => cerrarNota("general")} />
       )}
-      <EvidenciaDeMaya pantalla={pantalla} />
       <BarraFlotanteMaya
         vivo={{
           enviar: (texto) => void preguntar(texto),

@@ -48,11 +48,12 @@ export default async function PaginaInicio() {
   const [usuario, dispositivoId] = await Promise.all([usuarioActivo(), dispositivoActivo()]);
   const inicio = await estadoDelInicio(usuario.id, { dispositivoId });
 
-  if (inicio.activo && inicio.desactualizada) {
+  // Si no hay ninguna portada generada aun, armar la inicial en segundo plano.
+  if (inicio.activo && !inicio.pantalla) {
     after(() => regenerarSiCambio(usuario.id, "visita", { dispositivoId }));
   }
 
-  if (inicio.activo && inicio.pantalla && !inicio.desactualizada) {
+  if (inicio.activo && inicio.pantalla) {
     // Widgets vivos: cada tarjeta se pregunta y cambia en su lugar. La `key` es la
     // generacion: cuando el reloj rearma la portada, el estado vivo del navegador (foco,
     // notas, tarjetas ajustadas) arranca de la nueva en vez de mezclarse con la vieja.

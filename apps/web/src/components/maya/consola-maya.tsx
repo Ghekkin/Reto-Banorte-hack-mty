@@ -146,6 +146,19 @@ export function ConsolaMaya({
   // microfono prendidos en segundo plano.
   useEffect(() => () => void detenerVoz(), [detenerVoz]);
 
+  // Al cambiar usuario se restablecen los disparadores de intención y acción, y se detiene la voz.
+  const ultimoUsuarioId = useRef(usuario.id);
+  useEffect(() => {
+    if (ultimoUsuarioId.current !== usuario.id) {
+      ultimoUsuarioId.current = usuario.id;
+      yaEnviada.current = undefined;
+      yaDisparada.current = false;
+      vozYaIntentada.current = false;
+      setAvisoVoz(undefined);
+      void detenerVoz();
+    }
+  }, [usuario.id, detenerVoz]);
+
   const chips = agente.sugerencias.length > 0 ? agente.sugerencias : (CHIPS_INICIALES[usuario.id] ?? []);
   const hayConversacion = agente.hilo.length > 0 || agente.ocupado;
 

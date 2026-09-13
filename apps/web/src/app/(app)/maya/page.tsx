@@ -27,6 +27,7 @@ export default async function PaginaMaya({
 
   return (
     <ConsolaMaya
+      key={usuario.id}
       usuario={usuario}
       intencionInicial={params.intencion}
       accionInicial={accionDeLaUrl(params.accion)}

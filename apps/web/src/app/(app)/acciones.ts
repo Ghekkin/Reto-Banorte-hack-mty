@@ -2,6 +2,7 @@
 
 import { cookies } from "next/headers";
 import { revalidatePath } from "next/cache";
+import { redirect } from "next/navigation";
 import { almacenEnPostgres } from "@/lib/inicio/almacen";
 import { generarPortada } from "@/lib/inicio/generar";
 import { huellaDe } from "@/lib/inicio/huella";
@@ -29,6 +30,7 @@ export async function cambiarUsuario(id: string): Promise<void> {
   });
 
   revalidatePath("/", "layout");
+  redirect("/");
 }
 
 /** Mas largo que esto no es una pregunta, es un texto pegado. */

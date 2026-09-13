@@ -105,7 +105,9 @@ async function vistaDe(usuarioId: string, dispositivoId: string, deps: Dependenc
     deps.almacen.leer(usuarioId, DISPOSITIVO_COMUN),
   ]);
   if (propia && !vencida(propia, huella, deps)) return { huella, pantalla: propia, vencida: false, destino: dispositivoId };
-  if (huella === huellaComun) {
+
+  const sinAccionesPropias = huella.includes("|a:0:0|");
+  if (huella === huellaComun || sinAccionesPropias) {
     const alDia = Boolean(comun) && !vencida(comun, huella, deps);
     return { huella, pantalla: comun ?? propia, vencida: !alDia, destino: DISPOSITIVO_COMUN };
   }

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
@@ -48,6 +49,23 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
   const { ocultarSugerenciasEnTarjeta } = useConfiguracionCatalogo();
   const debeMostrarSugerencias = !ocultarSugerenciasEnTarjeta && Boolean(sugerencias && sugerencias.length > 0);
 
+  // Si el saludo ya dice "Hola, Ana Sofía", no repetir "Ana Sofía, ..." al inicio del titular
+  const titularLimpio = useMemo(() => {
+    if (!titular) return "";
+    if (saludo) {
+      const nombreEnSaludo = saludo.replace(/^Hola,?\s*/i, "").trim();
+      const primerNombre = nombreEnSaludo.split(" ")[0];
+      if (primerNombre) {
+        const regex = new RegExp(`^(${nombreEnSaludo}|${primerNombre}),?\\s*`, "i");
+        const limpio = titular.replace(regex, "");
+        if (limpio) {
+          return limpio.charAt(0).toUpperCase() + limpio.slice(1);
+        }
+      }
+    }
+    return titular;
+  }, [titular, saludo]);
+
   if (!titular) {
     return (
       <EsqueletoTarjeta etiqueta="Cargando lo que Maya te va a decir">
@@ -71,36 +89,44 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
 
   return (
     <Tarjeta>
-      <CardContent className="grid gap-4 @2xl/tarjeta:grid-cols-[1.6fr_1fr] @2xl/tarjeta:gap-6">
+      <CardContent className="grid gap-4 @2xl/tarjeta:grid-cols-[1.5fr_1fr] @2xl/tarjeta:gap-6">
         <div className="flex min-w-0 flex-col gap-2">
-          {saludo ? <p className="text-xs text-muted-foreground">{saludo}</p> : null}
-          {/* El titular es el elemento mas grande de la tarjeta, como el monto en las
-              demas: es EL dato de esta pieza. Crece con el ancho de la tarjeta, no de la
-              pantalla, para que no se desborde cuando comparte fila con otra. */}
-          <p className="text-balance text-2xl font-semibold leading-tight @md/tarjeta:text-3xl">{titular}</p>
+          {saludo ? (
+            <div className="flex items-center gap-1.5">
+              <span className="size-1.5 rounded-full bg-primary" aria-hidden="true" />
+              <p className="text-xs font-medium text-muted-foreground">{saludo}</p>
+            </div>
+          ) : null}
+          {/* El titular es el elemento más grande de la tarjeta, con jerarquía limpia */}
+          <p className="text-balance text-2xl font-semibold leading-tight text-foreground @md/tarjeta:text-3xl">
+            {titularLimpio}
+          </p>
           {detalle ? (
-            <p className="text-pretty text-sm leading-relaxed text-muted-foreground @md/tarjeta:text-base">
+            <p className="text-pretty text-xs leading-relaxed text-muted-foreground line-clamp-2 @md/tarjeta:text-sm @md/tarjeta:line-clamp-none">
               {detalle}
             </p>
           ) : null}
         </div>
 
         {hayDatos ? (
-          <ul className="animar-filas flex flex-col gap-2 @2xl/tarjeta:border-l @2xl/tarjeta:border-borde-sutil @2xl/tarjeta:pl-6">
+          <div className="animar-filas grid grid-cols-2 gap-2.5 pt-1 @2xl/tarjeta:flex @2xl/tarjeta:flex-col @2xl/tarjeta:justify-center @2xl/tarjeta:border-l @2xl/tarjeta:border-borde-sutil @2xl/tarjeta:pt-0 @2xl/tarjeta:pl-6">
             {datos.map((d) => (
-              <li key={d.etiqueta} className="flex flex-col">
-                <span className="text-xs text-muted-foreground">{d.etiqueta}</span>
-                {/* `?? TONO.neutro` porque `tono` es texto libre: un valor que no esta en el
-                    mapa se pinta neutro en vez de dejar `undefined` en el className. */}
-                <span className={`monto text-lg font-semibold ${TONO[d.tono ?? "neutro"] ?? TONO.neutro}`}>{d.valor}</span>
-              </li>
+              <div
+                key={d.etiqueta}
+                className="flex flex-col justify-between rounded-xl border border-borde-sutil/80 bg-muted/40 p-2.5 transition-colors hover:bg-muted/60"
+              >
+                <span className="truncate text-[11px] font-medium text-muted-foreground">{d.etiqueta}</span>
+                <span className={`monto text-lg font-semibold tracking-tight ${TONO[d.tono ?? "neutro"] ?? TONO.neutro}`}>
+                  {d.valor}
+                </span>
+              </div>
             ))}
-          </ul>
+          </div>
         ) : null}
       </CardContent>
 
       {debeMostrarSugerencias ? (
-        <CardContent className="animar-filas flex flex-wrap gap-2 pt-0">
+        <CardContent className="animar-filas hidden flex-wrap gap-2 pt-0 @md/tarjeta:flex">
           {sugerencias!.map((s) => (
             // Sin `alAccionar` no son botones: en un lienzo de solo lectura (la galeria,
             // una portada sin host que atienda la accion) un boton que no hace nada al

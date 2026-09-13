@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   componentesVisibles,
   estadoVacio,
@@ -187,6 +187,8 @@ export function usarAgente(usuarioId: string) {
   /** La ultima pantalla de ARRIBA que un ajuste cambio, para traerla a la vista. */
   const [pantallaAjustada, setPantallaAjustada] = useState<{ pantalla: string; vez: number }>();
   const conversacionId = useRef(crearId());
+  const peticionActiva = useRef<AbortController | null>(null);
+  const ultimoUsuarioId = useRef(usuarioId);
   /**
    * El historial que viaja al agente sale del hilo, no de un estado paralelo: una sola
    * conversacion, imposible que las dos versiones se separen (contrato agente-cliente:
@@ -205,6 +207,8 @@ export function usarAgente(usuarioId: string) {
 
   /** Cambiar de usuario empieza conversacion nueva y borra la superficie. */
   const reiniciar = useCallback(() => {
+    peticionActiva.current?.abort();
+    peticionActiva.current = null;
     conversacionId.current = crearId();
     fallosReportados.current = 0;
     setEstado(estadoVacio());
@@ -213,6 +217,20 @@ export function usarAgente(usuarioId: string) {
     setRazon(undefined);
     setTransparencia([]);
     setPantallaAjustada(undefined);
+    setOcupado(false);
+  }, []);
+
+  useEffect(() => {
+    if (ultimoUsuarioId.current !== usuarioId) {
+      ultimoUsuarioId.current = usuarioId;
+      reiniciar();
+    }
+  }, [usuarioId, reiniciar]);
+
+  useEffect(() => {
+    return () => {
+      peticionActiva.current?.abort();
+    };
   }, []);
 
   /**
@@ -237,6 +255,9 @@ export function usarAgente(usuarioId: string) {
       let respuestaHablada = "";
       let huboError = false;
       let yaAvisado = false;
+      peticionActiva.current?.abort();
+      const controlador = new AbortController();
+      peticionActiva.current = controlador;
       try {
         const superficie = estado.get(SUPERFICIE);
         // La viva ya esta congelada al final del hilo (no hay turno en vuelo): es la ultima.
@@ -246,6 +267,7 @@ export function usarAgente(usuarioId: string) {
         const respuesta = await fetch("/api/agente", {
           method: "POST",
           headers: { "content-type": "application/json" },
+          signal: controlador.signal,
           body: JSON.stringify({
             usuarioId,
             conversacionId: conversacionId.current,
@@ -346,8 +368,18 @@ export function usarAgente(usuarioId: string) {
           setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: AVISO_DE_FALLO }]);
         }
         return respuestaHablada || "Ya te deje la pantalla en tu conversacion con Maya.";
+      } catch {
+        if (controlador.signal.aborted) return "";
+        if (!respuestaHablada) {
+          respuestaHablada = AVISO_DE_FALLO;
+          setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: AVISO_DE_FALLO }]);
+        }
+        return respuestaHablada;
       } finally {
-        setOcupado(false);
+        if (peticionActiva.current === controlador) {
+          peticionActiva.current = null;
+          setOcupado(false);
+        }
       }
     },
     [estado, hilo, usuarioId],

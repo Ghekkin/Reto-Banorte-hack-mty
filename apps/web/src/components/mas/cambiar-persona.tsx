@@ -1,6 +1,7 @@
 "use client";
 
 import { useOptimistic, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
@@ -27,6 +28,7 @@ import { cn } from "@/lib/utils";
  * accion del selector del sidebar, asi que las dos quedan sincronizadas.
  */
 export function CambiarPersona({ usuario }: { usuario: UsuarioDemo }) {
+  const router = useRouter();
   const [pendiente, iniciar] = useTransition();
   const [idVisible, mostrarId] = useOptimistic(usuario.id);
 
@@ -39,6 +41,8 @@ export function CambiarPersona({ usuario }: { usuario: UsuarioDemo }) {
         iniciar(async () => {
           mostrarId(id);
           await cambiarUsuario(id);
+          router.push("/");
+          router.refresh();
         });
       }}
       aria-label="Persona de la demo"
