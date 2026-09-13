@@ -32,17 +32,27 @@ import { SUPERFICIE, config } from "./config";
  * validacion, el contrato se cumple igual y no depende de las rarezas de cada API.
  */
 
+/**
+ * Un componente, tal como lo puede mandar el modelo. `id` y `component` son OPCIONALES aqui a
+ * proposito (#43): este schema lo valida el AI SDK **antes** de `execute`, y si exigiera `id`, un
+ * componente sin el se rechazaba con un `invalid_union` de decenas de lineas sin que la
+ * normalizacion —que ya sabe ponerle uno— llegara a correr. Paso 23 veces el 2026-09-13, incluido
+ * el primer paso del guion. Lo que falte lo completa `normalizarListaDeComponentes` o lo reporta
+ * con un error corto; las descripciones siguen diciendole al modelo que los mande.
+ */
 const componenteObjeto = z
   .object({
-    id: z.string().describe("Identificador unico del componente"),
-    component: z.string().describe("Nombre del componente"),
+    id: z.string().optional().describe("Identificador unico del componente. Mandalo siempre"),
+    component: z.string().optional().describe("Nombre del componente del catalogo. Mandalo siempre"),
   })
   .passthrough();
 
 export const entradaPintarPantalla = z.object({
+  // Sin `min(10)`: una razon corta (el modelo llego a mandar la palabra "razon") no debe tumbar
+  // la llamada en el SDK. `armarMensajes` usa el `texto` como razon de las tarjetas si esta no
+  // alcanza, y la validacion del catalogo sigue exigiendo una razon real en cada tarjeta (#43).
   razon: z
     .string()
-    .min(10)
     .describe("Una frase en segunda persona: por que ESTA pantalla y no otra, con el dato que lo justifica"),
   texto: z
     .string()
@@ -96,6 +106,8 @@ export function normalizarListaDeComponentes(
   lista: unknown[],
   entrada: EntradaPintarPantalla,
   datos: Record<string, unknown>,
+  /** Donde van los componentes que no se pudieron salvar, con un mensaje corto para el modelo. */
+  errores?: string[],
 ): Componente[] {
   const salida: Componente[] = [];
 
@@ -126,7 +138,7 @@ export function normalizarListaDeComponentes(
 
     // 2. Si el parseo devolvió un array anidado, aplanar
     if (Array.isArray(item)) {
-      salida.push(...normalizarListaDeComponentes(item, entrada, datos));
+      salida.push(...normalizarListaDeComponentes(item, entrada, datos, errores));
       continue;
     }
 
@@ -172,6 +184,16 @@ export function normalizarListaDeComponentes(
             if (comp[k] === undefined) comp[k] = v;
           }
         }
+      }
+
+      // Llaves con comillas o espacios de sobra (`"\"component"`, paso el 2026-09-13): se limpian,
+      // sin pisar una llave limpia que ya exista.
+      limpiarLlaves(comp);
+
+      // Sin `component`: si sus props solo caben en UN componente del catalogo, es ese (#43).
+      if (typeof comp.component !== "string") {
+        const inferido = inferirComponente(comp);
+        if (inferido) comp.component = inferido;
       }
 
       // Si vienen propiedades de objetos anidados serializadas como JSON string, parsearlas
@@ -228,6 +250,8 @@ export function normalizarListaDeComponentes(
         quitarAlias(comp, ["veredicto", "texto", "titulo", "mensaje"], quitadas);
         if (!comp.detalle) comp.detalle = entrada.razon || "Evaluación y recomendaciones financieras";
         if (!comp.sugerencias) comp.sugerencias = entrada.sugerencias ?? [];
+        // El schema acepta hasta 3; una cuarta pregunta sugerida no vale un paso de reintento (#43).
+        if (Array.isArray(comp.sugerencias) && comp.sugerencias.length > 3) comp.sugerencias = comp.sugerencias.slice(0, 3);
       }
 
       // Si es ProyeccionPagoCredito y le faltan props obligatorias:
@@ -696,6 +720,14 @@ export function normalizarListaDeComponentes(
 
       if (typeof comp.component === "string") {
         salida.push(comp as Componente);
+      } else if (errores && propsEspecificas(comp).length > 0) {
+        // Antes se tiraba en silencio y la pantalla salia sin esa tarjeta. Mejor decirselo al
+        // modelo en una linea: es la tarjeta que quiso pintar (#43).
+        const id = typeof comp.id === "string" && !comp.id.startsWith("comp_") ? ` (id "${comp.id}")` : "";
+        errores.push(
+          `componentesJson[${i}]${id} no dice que componente es: falta \`component\`, y sus props ` +
+            `(${propsEspecificas(comp).slice(0, 6).join(", ")}) no alcanzan para saberlo. Pon \`component\` con el nombre del catalogo.`,
+        );
       }
     }
   }
@@ -924,8 +956,12 @@ export type OpcionesDeArmado = {
  * un parametro de lo que ya esta en pantalla sin recrear nada existe `ajustar_pantalla`
  * (`ajustar.ts`), que manda solo los parches y no emite `createSurface`.
  */
-export function armarMensajes(entrada: EntradaPintarPantalla, opciones: OpcionesDeArmado = {}): Armado {
+export function armarMensajes(pedida: EntradaPintarPantalla, opciones: OpcionesDeArmado = {}): Armado {
   const errores: string[] = [];
+  // La razon del turno es la que hereda cada tarjeta que no trae la suya. Si la del modelo no
+  // alcanza (vacia, o la palabra "razon": paso tres veces el 2026-09-13), va el `texto`, que
+  // tambien es una frase con el dato; la validacion del catalogo sigue exigiendo 10 caracteres.
+  const entrada = razonUtil(pedida.razon) || !razonUtil(pedida.texto) ? pedida : { ...pedida, razon: pedida.texto };
 
   const parseados = parsear(entrada.componentesJson, "componentesJson", errores);
   const datosEntrada = entrada.datosJson ? parsear(entrada.datosJson, "datosJson", errores) : undefined;
@@ -942,7 +978,8 @@ export function armarMensajes(entrada: EntradaPintarPantalla, opciones: Opciones
     ...(esObjetoPlano(datosEntrada) ? datosEntrada : {}),
   };
 
-  const normalizados = normalizarListaDeComponentes(parseados, entrada, datos);
+  const normalizados = normalizarListaDeComponentes(parseados, entrada, datos, errores);
+  if (errores.length) return { ok: false, errores };
   if (normalizados.length === 0) return { ok: false, errores: ["componentesJson no contiene componentes validos"] };
 
   const componentes = opciones.podarTarjetas
@@ -1017,10 +1054,36 @@ export function armarMensajes(entrada: EntradaPintarPantalla, opciones: Opciones
  * boton "Aplicar plan" salia deshabilitado.
  */
 export function completarAccion(componente: Componente): void {
-  if (componente.action) return;
   const entrada = CATALOGO.find((c) => c.nombre === componente.component);
-  const nombre = entrada?.acciones?.[0];
-  if (nombre) componente.action = { event: { name: nombre, context: {} } };
+  const permitidas = entrada?.acciones ?? [];
+  if (componente.action) {
+    // Una accion que el catalogo no declara para este componente la rechaza el validador oficial
+    // con `must be equal to one of the allowed values` y el turno paga un paso (#43: el aviso de
+    // «quiero invertir» con `ver_plan_pago`). Se cambia por la permitida que se le parece o, si
+    // no hay una clara, por la de por defecto. La de un componente sin acciones la quita
+    // `quitarPropsNoDeclaradas`, porque su schema no declara `action`.
+    const nombre = (componente.action as { event?: { name?: unknown } }).event?.name;
+    if (typeof nombre !== "string" || permitidas.length === 0 || permitidas.includes(nombre)) return;
+    componente.action = { event: { name: accionParecida(nombre, permitidas) ?? permitidas[0], context: {} } };
+    return;
+  }
+  if (permitidas[0]) componente.action = { event: { name: permitidas[0], context: {} } };
+}
+
+/** Verbos que no distinguen una accion de otra: `ver_plan_pago` y `simular_plan` hablan del mismo plan. */
+const VERBOS_DE_ACCION = new Set(["ver", "simular", "consultar", "aplicar", "elegir", "crear", "confirmar", "programar", "registrar", "cancelar", "rebalancear", "orden", "preguntar"]);
+
+/** La unica accion permitida que comparte un sustantivo con la pedida (`ver_plan_pago` -> `simular_plan`). */
+export function accionParecida(pedida: string, permitidas: readonly string[]): string | undefined {
+  const sustantivos = (nombre: string) => nombre.toLowerCase().split(/[_\s-]+/).filter((p) => p.length > 2 && !VERBOS_DE_ACCION.has(p));
+  const buscadas = new Set(sustantivos(pedida));
+  const parecidas = permitidas.filter((permitida) => sustantivos(permitida).some((p) => buscadas.has(p)));
+  return parecidas.length === 1 ? parecidas[0] : undefined;
+}
+
+/** Una razon que sirve para una tarjeta: texto de al menos 10 caracteres que no es el nombre del campo. */
+function razonUtil(razon: unknown): boolean {
+  return typeof razon === "string" && razon.trim().length >= 10 && razon.trim().toLowerCase() !== "razon";
 }
 
 /**
@@ -1220,6 +1283,52 @@ function propsDeclaradas(nombre: unknown): Set<string> | undefined {
     declaradasPorComponente.set(nombre, ramas ? new Set([...PROPS_COMUNES, ...ramas.flatMap((r) => Object.keys(r.properties ?? {}))]) : undefined);
   }
   return declaradasPorComponente.get(nombre);
+}
+
+/** Las props que no dicen nada de QUE componente es: las lleva cualquiera. */
+const PROPS_GENERICAS = new Set([...PROPS_COMUNES, ...PROPS_DE_ESTRUCTURA, "razon", "ancho", "heroe", "action"]);
+
+/** Las props de un objeto que si distinguen a un componente de otro. */
+function propsEspecificas(comp: Record<string, unknown>): string[] {
+  return Object.keys(comp).filter((prop) => !PROPS_GENERICAS.has(prop));
+}
+
+/**
+ * El componente de un objeto que llego sin `component` (#43), solo si no hay duda:
+ *
+ * 1. Sin props propias y con `children`: es la `Column` del arbol.
+ * 2. Con menos de dos props propias no se infiere nada: `{id, razon, titulo}` puede ser media docena.
+ * 3. Cada componente del catalogo se puntua con cuantas props propias del objeto declara. Gana el
+ *    mejor solo si declara al menos el 60 % de ellas y le saca 2 o mas al segundo; si no, no se
+ *    adivina y el modelo recibe el error corto.
+ *
+ * No se exige que traiga todas las obligatorias: la normalizacion llena varias desde el MCP (el
+ * `alias` de un credito) y la validacion reporta las que sigan faltando.
+ */
+export function inferirComponente(comp: Record<string, unknown>): string | undefined {
+  const propias = propsEspecificas(comp);
+  if (propias.length === 0) return Array.isArray(comp.children) ? "Column" : undefined;
+  if (propias.length < 2) return undefined;
+
+  const puntuados = CATALOGO.map((entrada) => {
+    const declaradas = propsDeclaradas(entrada.nombre);
+    return { nombre: entrada.nombre, coinciden: declaradas ? propias.filter((prop) => declaradas.has(prop)).length : 0 };
+  }).sort((a, b) => b.coinciden - a.coinciden);
+
+  const [mejor, segundo] = puntuados;
+  if (!mejor || mejor.coinciden < Math.max(2, Math.ceil(propias.length * 0.6))) return undefined;
+  if (segundo && segundo.coinciden > mejor.coinciden - 2) return undefined;
+  return mejor.nombre;
+}
+
+/** `"\"component"` -> `component`: quita comillas y espacios de sobra en las llaves, sin pisar una limpia. */
+function limpiarLlaves(comp: Record<string, unknown>): void {
+  for (const llave of Object.keys(comp)) {
+    const limpia = llave.trim().replace(/^["'`]+|["'`]+$/g, "").trim();
+    if (limpia === llave || limpia === "") continue;
+    if (comp[limpia] === undefined) comp[limpia] = comp[llave];
+    delete comp[llave];
+  }
 }
 
 /**

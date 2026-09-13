@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-13 07:05
-implementado-en: apps/web/src/lib/agente/pantalla.ts (normalizarListaDeComponentes, propsDelMcp, comparacionDelMcp, adoptarAlias, quitarPropsNoDeclaradas, nombresParecidos)
+verificado: 2026-09-13 07:40
+implementado-en: apps/web/src/lib/agente/pantalla.ts (entradaPintarPantalla, armarMensajes, normalizarListaDeComponentes, limpiarLlaves, inferirComponente, propsDelMcp, comparacionDelMcp, adoptarAlias, quitarPropsNoDeclaradas, nombresParecidos, completarAccion, accionParecida)
 lenguaje: typescript
 ---
 
@@ -33,6 +33,16 @@ puede ser héroe) o un `portafolioId` a la dona, se quita porque nunca se pintar
 tira en silencio es un nombre que parece un error de dedo de una prop que falta (`datoClav` por
 `datoClave`): ese se deja para que la validación lo nombre y el modelo lo corrija (issue #42).
 
+Y nada de eso sirve si la llamada no llega a la reparación. La puerta de `pintar_pantalla` (el
+schema que revisa la librería del modelo antes de entregarnos la llamada) exigía que cada tarjeta
+trajera su identificador y su nombre; si faltaba uno, rechazaba la llamada entera con un mensaje de
+decenas de líneas y el turno pagaba otro intento, aunque el host sabía ponerle el identificador. Pasó
+23 veces el 13, incluido el primer paso del guion. Ahora la puerta deja pasar la tarjeta y el host
+decide: le pone identificador, deduce el nombre cuando sus datos solo caben en una tarjeta del
+catálogo, recorta una cuarta pregunta sugerida, y si de plano no sabe qué tarjeta es, le contesta al
+modelo en una línea. Igual con los botones: si el modelo le pone a una tarjeta una acción que esa
+tarjeta no tiene, se cambia por la suya en vez de rechazar la pantalla (issue #43).
+
 ## La idea
 
 El modelo no escribe cifras (ADR 0011): las elige de lo que devolvieron las tools. Los widgets de
@@ -44,13 +54,33 @@ anidado), existe una sola vez y la usan los dos caminos.
 
 ## Paso a paso
 
-`normalizarListaDeComponentes(lista, entrada, datos)`, por cada elemento:
+**Antes de todo, la puerta del SDK** (`entradaPintarPantalla`, el `inputSchema` de la tool). En cada
+componente, `id` y `component` son **opcionales** y el resto de las props queda abierto
+(`passthrough`); `razon` es texto sin mínimo. Las descripciones siguen pidiéndole al modelo que los
+mande. Lo que la puerta deja pasar lo decide lo de abajo (#43).
+
+`armarMensajes(entrada)` primero fija la **razón del turno**: si la del modelo no sirve (menos de 10
+caracteres, o la palabra «razon»), usa el `texto` cuando este sí sirve. Es la que heredan las
+tarjetas sin razón propia.
+
+`normalizarListaDeComponentes(lista, entrada, datos, errores)`, por cada elemento:
 
 1. Texto JSON → objeto (rescate de cercas y comas colgantes).
 2. Nombre suelto de un componente → su esqueleto `{ id, component, razon }` (y `heroe` en
    `ProyeccionPagoCredito` y `ComparadorAntesDespues`). Sin cifras: las pone el paso 5.
-3. Aplana props anidadas (`props`, `data`…) y adopta los alias genéricos (`tasaAnual`,
-   `TasaAnualPct` → `tasaAnualPct`, solo si el componente declara `tasaAnualPct`).
+3. Aplana props anidadas (`props`, `data`…), **limpia llaves** con comillas o espacios de sobra
+   (`"\"component"` → `component`, sin pisar una llave limpia), **infiere `component`** si falta
+   (`inferirComponente`, abajo) y adopta los alias genéricos (`tasaAnual`,
+   `TasaAnualPct` → `tasaAnualPct`, solo si el componente declara `tasaAnualPct`). Un objeto que
+   sigue sin `component` y trae props propias no se tira: va a `errores` con una línea
+   («`componentesJson[3]` (id "credito") no dice qué componente es…») y `armarMensajes` devuelve eso
+   solo. Un objeto vacío de props propias se ignora, como antes.
+
+   `inferirComponente(objeto)`: sin props propias y con `children` → `Column`. Con menos de dos props
+   propias (las que no son `id`, `component`, `razon`, `ancho`, `heroe`, `action`, `accessibility`,
+   `weight`, `children`, `child`) → nada. Si no, cada componente del catálogo se puntúa con cuántas
+   props propias del objeto declara (`propsDeclaradas`, de `catalogo.json`); gana el mejor solo si
+   declara al menos el 60 % de ellas y le saca 2 o más al segundo.
 4. **Guarda las props que son enlace** (`esBinding`).
 5. Por componente, completa **solo las props que faltan** con `propsDelMcp(componente, datos)`:
    recorre las fuentes de widgets de ese componente, toma la salida de su tool en `datos` (o
@@ -89,8 +119,16 @@ anidado), existe una sola vez y la usan los dos caminos.
    validación del árbol). El layout no pasa por aquí.
 9. Arma la raíz `Column` con todas las tarjetas.
 
+En `Conclusion`, además, las `sugerencias` se recortan a 3, el máximo de su schema (#43).
+
 Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
-(`validacion-a2ui.md`); lo que falte sale como error hacia el modelo.
+(`validacion-a2ui.md`); lo que falte sale como error hacia el modelo. Justo antes del validador
+oficial, `completarAccion` revisa el botón de cada tarjeta: sin `action`, pone la primera de
+`acciones` del catálogo (como siempre); con una `action` cuyo `event.name` **no** está en `acciones`,
+la cambia por la permitida que comparte un sustantivo con la pedida (`accionParecida`:
+`ver_plan_pago` → `simular_plan`, ignorando verbos como `ver`, `simular`, `consultar`) o, si no hay
+una sola así, por la primera, con `context: {}`. Una permitida se respeta tal cual. La de un
+componente sin `acciones` ya la quitó el paso 8, porque su schema no declara `action` (#43).
 
 ## Entradas y salidas
 
@@ -116,6 +154,13 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
   del otro con el más corto de **4** letras o más (`tipo`/`tipoInvalidez`); o a **2** ediciones o
   menos con el más corto de **5** o más (`metaCentavo`/`metaCentavos`). Solo se compara contra
   props declaradas que **faltan**: si la real ya está, el parecido sobra y se quita.
+- `inferirComponente`: **2** props propias como mínimo; el ganador declara al menos el **60 %** de
+  ellas y le saca **2** o más al segundo. Con esos umbrales, en las 23 llamadas reales infiere
+  `ResumenTarjeta` (×2), `DistribucionPortafolio`, `ProyeccionPagoCredito` y una tarjeta con
+  `maximo`/`titulo`/`eventos` (`Calendario`), y no adivina con `{titulo, detalle}`.
+- `accionParecida`: sustantivos de más de 2 letras, fuera los verbos `ver`, `simular`, `consultar`,
+  `aplicar`, `elegir`, `crear`, `confirmar`, `programar`, `registrar`, `cancelar`, `rebalancear`,
+  `orden`, `preguntar`; gana solo si **una** permitida comparte alguno.
 
 ## Límites y supuestos
 
@@ -132,7 +177,16 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
   nombre declarado (un `heroe` en `PlanDePago` no se pinta como héroe). Es el costo aceptado:
   antes esa pantalla se rechazaba completa y el turno pagaba otra petición.
 - `ajustar_pantalla` (`ajustar.ts`) no pasa por esta normalización: sus parches se validan con
-  `revisarProps`.
+  `revisarProps`. Su `inputSchema` ya aceptaba los parches como texto o arreglo abierto; en las
+  corridas del 13 no hubo ninguna llamada suya rechazada por el SDK, así que no se tocó.
+- Sin `razon` **y** sin `texto` la llamada la sigue rechazando el SDK (2 de las 23 del 13): son
+  obligatorias en el schema porque son lo que Maya le dice a la persona.
+- Inferir `component` puede equivocarse si el modelo mezcla props de dos tarjetas: el margen de 2
+  sobre el segundo lo hace raro, y un error ahí lo reporta la validación de props del inferido.
+- Cambiar una acción no permitida pierde el `context` que puso el modelo: los componentes llenan el
+  suyo al tocarse.
+- Relajar el `inputSchema` cambia las definiciones de tools que se le mandan al modelo: invalida el
+  caché de Gemini una vez.
 
 ## Cómo se probó
 
@@ -158,3 +212,18 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
 - Repetición de las 164 llamadas a `pintar_pantalla` grabadas el 2026-09-13 desde las 00:00: pasan
   141 contra 135 del código anterior. Las 6 que se arreglan son por prop de sobra (`portafolioId`
   ×2, `valorActualCentavos`, `heroe` ×3). Ninguna que pasaba se rechaza ahora.
+- `apps/web/src/lib/agente/__tests__/entrada-pintar-pantalla.spec.ts` (13 pruebas, #43), con
+  llamadas reales de `banorte.corrida_tools` en `fixtures/pintar-rechazadas-43.json`: componentes
+  sin `id` (2382), sin `component` (2851 → `ResumenTarjeta`, 2836 → `ProyeccionPagoCredito`), la
+  llave `"\"component"` (216), una `Conclusion` con 4 sugerencias (2372) y el aviso de «quiero
+  invertir» con `ver_plan_pago` (2929 → `simular_plan`) pasan `entradaPintarPantalla` y
+  `armarMensajes`; un objeto sin `component` que no se puede inferir sale como un solo error corto;
+  una razón «razon» hereda el `texto`; `inferirComponente` no adivina con pocas props o empate.
+  Contra el `pantalla.ts` de `origin/main` (`4f00835` + `974a8d0`) fallan las 13.
+- Repetición de las **23** llamadas del 13 rechazadas por el SDK con `Invalid input for tool
+  pintar_pantalla`: con el código anterior el SDK rechazaba 22 (la otra ya pasaba); ahora pasan
+  **16**, el SDK rechaza 2 (sin `razon` ni `texto`) y 5 vuelven al modelo con errores cortos (3 con
+  `razon`/`titular` de relleno como «razon», 2 con hitos de amortización sin `periodo`).
+- Repetición de las **170** llamadas a `pintar_pantalla` del 13 desde las 00:00: pasan **153**
+  contra 137 del código anterior (15 del SDK y el aviso con acción no permitida). Ninguna que pasaba
+  se rechaza ahora.
