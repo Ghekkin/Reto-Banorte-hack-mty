@@ -37,7 +37,7 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | construido |
 | Inicio: una pregunta cambia una tarjeta en su lugar | construido por aldair (widgets vivos, ADR 0011); `FEATURE_WIDGETS_VIVOS=1` en local y producción desde 2026-09-13 04:10 |
 | Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | en progreso |
-| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | pendiente (el host ya fija las cifras de `proyectar_ahorro`; falta `fechaObjetivo` en la tool) |
+| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | construido: `proyectar_ahorro` con `fechaObjetivo`/`montoObjetivoCentavos`; el host pone meta, aportación y tope. Ensayado: Ana «para diciembre» → $15,950.00 al mes con aviso (7.3 s) |
 | Plan de la tarjeta con cualquier plazo o mensualidad objetivo, y «Aplicar plan» en su lugar | pendiente |
 
 Decisiones que no se vuelven a discutir: los números los calcula una tool MCP (no el componente);

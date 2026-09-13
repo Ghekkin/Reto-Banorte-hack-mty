@@ -141,6 +141,16 @@ const CASOS = [
     pantallaContiene: '"programado":true',
   },
   {
+    // La meta tambien se ajusta en su lugar: «para diciembre» es `fechaObjetivo` y la aportacion
+    // que hace falta (4785000 de faltante en 3 meses = 1595000) la pone el host desde la tool.
+    nombre: "Ana · la meta para diciembre (el simulador cambia en su lugar)",
+    usuario: "usr_ana",
+    texto: "Y el fondo de emergencia lo quiero completar para diciembre",
+    cierre: "ajustar",
+    tools: ["proyectar_ahorro"],
+    pantallaContiene: '"aportacionCentavos":1595000',
+  },
+  {
     nombre: "Ana · quiere empezar a ahorrar",
     usuario: "usr_ana",
     texto: "Quiero empezar a ahorrar",

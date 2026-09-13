@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores) · 2026-09-13 03:05 (abono a capital) · 2026-09-13 03:35 (gastos fuera del banco)
+verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores) · 2026-09-13 03:05 (abono a capital) · 2026-09-13 03:35 (gastos fuera del banco) · 2026-09-13 04:20 (meta por fecha)
 estado: construido
 ---
 
@@ -56,7 +56,7 @@ nada.
 | `consultar_plan` | lectura | el plan aplicado y su calendario de pagos | después de la acción, y en "¿cómo va mi plan?" |
 | `aplicar_plan_pago` | **acción** | el plan, el efecto (antes/después) y un mensaje | solo cuando llega la acción A2UI del mismo nombre |
 | `comparar_periodos` | lectura | gasto por categoría de dos meses, categoría atípica, efecto del plan | "¿en qué se me va el dinero?" |
-| `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios | cuando no hay deuda que resolver |
+| `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios; con `fechaObjetivo`, la aportación que hace falta (`aportacionNecesariaCentavos`) y `aviso` si no le alcanza o la fecha ya pasó | cuando no hay deuda que resolver; «lo quiero para diciembre» / «que sean $80,000» sobre el `SimuladorMeta` en pantalla |
 | `crear_apartado` | **acción** | la meta creada con su fecha objetivo | solo cuando llega la acción A2UI del mismo nombre |
 | `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
 | `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito, `serie` para graficar y `ahorroLiquidoCentavos` (nómina + ahorro de hoy) | "¿cómo voy?", o antes de proponer un plan |
@@ -115,6 +115,12 @@ los abonos) y de la capacidad de ahorro de `proyectar_ahorro`. Sin gastos guarda
 lecturas salen idénticas. Algoritmo, cifras y el límite del efectivo del cajero en
 [`docs/algoritmos/gastos-fuera-del-banco.md`](../algoritmos/gastos-fuera-del-banco.md). Necesita
 la migración `db/migraciones/0006-accion-registrar-gasto-externo.sql`.
+
+El tercero es la meta de ahorro: con el `SimuladorMeta` en pantalla, «que sean $80,000» es
+`proyectar_ahorro` con `montoObjetivoCentavos`, y «lo quiero para diciembre» es `proyectar_ahorro` con
+`fechaObjetivo` (el último día del mes): la tool calcula la aportación que hace falta, proyecta con ella y
+avisa si rebasa lo libre o si la fecha ya pasó. Detalle en
+[`docs/algoritmos/proyeccion-de-ahorro.md`](../algoritmos/proyeccion-de-ahorro.md).
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime

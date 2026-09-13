@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 01:19
+verificado: 2026-09-12 01:19 · 2026-09-13 04:20 (fecha objetivo)
 implementado-en: apps/mcp/src/tools/proyectar-ahorro.ts
 lenguaje: typescript
 ---
@@ -17,6 +17,13 @@ historia: lo que entró menos lo que salió, promediado en tres meses, y nunca m
 su capacidad de pago permite. La segunda es aritmética honesta: dividir lo que falta entre
 la aportación. Se devuelven tres escenarios para que el slider del simulador tenga de dónde
 tirar, y con eso la persona ve la fecha moverse mientras arrastra.
+
+También funciona al revés. Con el simulador en pantalla, Ana dice «lo quiero para diciembre»
+y la pregunta ya no es cuándo llega, sino **cuánto tiene que apartar para llegar a tiempo**.
+Le faltan $47,850 y de hoy (12 de septiembre) al 31 de diciembre caben tres meses: necesita
+$15,950 al mes. Como solo le quedan $4,986.17 libres, la tarjeta se lo dice con esas cifras.
+Si la fecha ya pasó o no deja ni un mes, no se inventa una aportación: se dice, y se proyecta
+con lo que sí le queda libre.
 
 Lo que este cálculo **no** hace es prometer rendimientos. Un apartado guarda dinero, no lo
 invierte. Inventar un interés compuesto haría la fecha más bonita y el producto menos
@@ -49,6 +56,17 @@ corresponde.
    restan del flujo y de la capacidad de buró antes de comparar
    ([gastos-fuera-del-banco.md](gastos-fuera-del-banco.md)).
 4. La aportación es la que pasen; si no, la sugerida de la meta; si no, la capacidad.
+   **Con `fechaObjetivo` gana la fecha** (aunque venga `aportacionCentavos`):
+   1. `M` = cuántos meses caben: el mayor `M` con `hoy + M meses ≤ fechaObjetivo` (`mesesHasta`).
+      Es la misma suma de meses con la que se pone la fecha estimada, así que la proyección
+      nunca cae después de la fecha pedida. Del 12 de septiembre al 31 de diciembre, `M = 3`.
+   2. Si `M ≥ 1`: `aportación = techo(faltante / (M × periodos por mes))` (quincenal = 2). Se
+      devuelve en `aportacionNecesariaCentavos` y con ella se proyecta. Si por mes rebasa la
+      capacidad, `aviso`: «Para llegar al 31 de diciembre necesitas apartar $X al mes, más de
+      los $Y que te quedan libres al mes.» (en quincenal dice las dos cifras).
+   3. Si `M = 0` (ya pasó, o no deja ni un mes): `aportacionNecesariaCentavos: null`, se
+      proyecta con la capacidad y `aviso` dice la fecha más cercana posible (`hoy + 1 mes`) y
+      cuándo llegaría con lo libre.
 5. `meses = techo(faltante / aportación por mes)`, con la quincenal contando doble. Mínimo
    1 mes, tope 480 (40 años).
 6. `fechaEstimada = hoy + meses`.
@@ -64,6 +82,7 @@ corresponde.
 | `montoObjetivoCentavos` | entero, opcional | `6000000` |
 | `aportacionCentavos` | entero, opcional | `500000` |
 | `frecuencia` | `mensual` \| `quincenal` | `mensual` |
+| `fechaObjetivo` | `AAAA-MM-DD`, opcional | `2026-12-31` («para diciembre»: el modelo manda el último día del mes) |
 
 | Salida | Tipo | Ejemplo |
 |---|---|---|
@@ -72,6 +91,8 @@ corresponde.
 | `mesesEstimados` | entero | `12` con $5,000 al mes para $60,000 |
 | `fechaEstimada` | `AAAA-MM-DD` | `2027-09-12` |
 | `escenarios[]` | 3 puntos | mitad / sugerida / vez y media |
+| `aportacionNecesariaCentavos` | entero o `null` | `1595000` para Ana «para diciembre»; `null` sin fecha o si la fecha no deja un mes |
+| `aviso` | texto o `null` | «Para llegar al 31 de diciembre necesitas apartar $15,950.00 al mes, más de los $4,986.17 que te quedan libres al mes.» |
 
 ## Parámetros y umbrales
 
@@ -94,6 +115,11 @@ corresponde.
   aportación explícita. El agente entonces propone el monto, que es lo correcto: la
   decisión es suya, no del cálculo.
 
+- **La fecha objetivo cuenta meses enteros desde hoy.** «Para el 31 de diciembre» y «para el
+  12 de diciembre» dan lo mismo (3 meses); «para el 11 de diciembre», 2. Con quincenal no se
+  cuentan quincenas reales del calendario sino dos por mes, igual que la proyección.
+- **El aviso no bloquea.** Si la aportación que hace falta rebasa lo libre, se proyecta con
+  ella de todos modos: la persona pidió esa fecha y el aviso le dice el costo.
 - **Sin rendimiento y sin inflación.** El objetivo es nominal.
 - **Aportaciones iguales y puntuales.** No modela que un mes no alcance.
 - **La quincenal es "dos por mes"**, no 26 al año. Simplifica la fecha y la diferencia es
@@ -112,3 +138,14 @@ corresponde.
 - `crear_apartado` de $60,000 a $5,000 al mes da 12 meses, y la proyección siguiente ya
   toma esa meta: el ciclo se cierra;
 - no crea dos apartados con el mismo nombre ni acepta una aportación mayor que el objetivo.
+
+`apps/mcp/src/__tests__/ahorro-por-fecha.spec.ts` (fecha objetivo):
+
+- Ana «para diciembre» (2026-12-31): $15,950 al mes, 3 meses, fecha estimada 2026-12-12 y aviso
+  exacto; la meta nueva de $96,000 desde cero pide $32,000;
+- 2027-12-31: $3,190 al mes, 15 meses, sin aviso; para seis fechas, la estimada nunca pasa de la
+  objetivo y un centavo menos ya no llegaría;
+- quincenal: $7,975 por quincena; con fecha y aportación a la vez gana la fecha;
+- fecha pasada y fecha sin un mes: `aportacionNecesariaCentavos: null`, aviso y proyección con lo
+  libre (10 meses);
+- sin fecha, la proyección de siempre con los campos nuevos en `null`.
