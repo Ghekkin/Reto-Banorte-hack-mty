@@ -2,11 +2,13 @@ import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { stepCountIs, streamText, type LanguageModel, type LanguageModelUsage, type ToolSet } from "ai";
 import { config } from "./config";
 import { crearCierre, esToolDeCierre, type CierreDelTurno, type ResultadoAjustar, type ResultadoResponder } from "./cierre";
+import { herramientaVerComponentes, MUTACIONES_DIRECTAS, VER_COMPONENTES } from "./componentes";
 import { mensajesDelTurno } from "./historial";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "./pantalla";
+import { detalleDeComponentes } from "./prompt";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
 
 /**
@@ -147,8 +149,14 @@ export async function* correrTurno(
       peticion.superficie?.arbol?.length
         ? { arbol: peticion.superficie.arbol, dataModel: peticion.superficie.dataModel ?? {} }
         : undefined;
-    const cierre = crearCierre(pantallaActual);
+    const cierre = crearCierre(
+      pantallaActual,
+      config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {},
+    );
     const nombresDeCierre = Object.keys(cierre.herramientas);
+    const toolsDelTurno: ToolSet = config.agenteLigero
+      ? { ...sinMutacionesDirectas(herramientas), [VER_COMPONENTES]: herramientaVerComponentes(), ...cierre.herramientas }
+      : { ...herramientas, ...cierre.herramientas };
 
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
@@ -162,7 +170,7 @@ export async function* correrTurno(
       // persona entra como `user`. Va explicito para que la decision se lea en el codigo y
       // no como un warning que todos aprenden a ignorar.
       allowSystemInMessages: true,
-      tools: { ...herramientas, ...cierre.herramientas },
+      tools: toolsDelTurno,
       stopWhen: [
         stepCountIs(config.maxPasos),
         () => cierre.cerrado(),
@@ -189,7 +197,10 @@ export async function* correrTurno(
       abortSignal: senal,
     });
 
-    uso = resultado.usage;
+    // `totalUsage` y no `usage`: en el AI SDK 5 `usage` es SOLO el ultimo paso, y un turno
+    // hace 2-3 peticiones que reenvian el prompt completo. Con `usage` el log decia ~29k
+    // tokens por turno cuando eran ~83k (medido el 2026-09-13).
+    uso = resultado.totalUsage;
     let prosa = "";
 
     for await (const parte of resultado.fullStream) {
@@ -211,6 +222,8 @@ export async function* correrTurno(
         case "tool-result":
           if (esToolDeCierre(parte.toolName)) {
             yield* emitirCierre(parte.output as ResultadoPintar | ResultadoAjustar | ResultadoResponder, cierre);
+          } else if (parte.toolName === VER_COMPONENTES) {
+            // Es del host, no del MCP: no va a la tira de transparencia como consulta de datos.
           } else {
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.
@@ -304,13 +317,14 @@ export async function* correrTurno(
     // funciona —el turno solo sale mas caro y mas lento—, y el 2026-09-12 el proyecto se
     // quedo sin cuota sin que nadie supiera cuanto costaba un turno. Con estos dos
     // numeros, UNA llamada real dice si el caché pega y cuanto se reenvia por peticion.
-    const consumo = await resultado.usage.catch(() => undefined);
+    const consumo = await resultado.totalUsage.catch(() => undefined);
     console.log(
       JSON.stringify({
         agente: nombreDelModelo(),
         usuario: peticion.usuarioId,
         pasos,
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
+        ligero: config.agenteLigero,
         pintada: cierre.cerrado(),
         cierre: cierre.con() ?? null,
         corte: corte ?? null,
@@ -355,6 +369,19 @@ async function tokensDeCache(uso: Promise<LanguageModelUsage> | undefined): Prom
   } catch {
     return {};
   }
+}
+
+/** Las tools del MCP menos las de mutacion directa: el modelo muta solo con `ejecutar_decision`. */
+function sinMutacionesDirectas(herramientas: ToolSet): ToolSet {
+  const salida: ToolSet = { ...herramientas };
+  for (const nombre of MUTACIONES_DIRECTAS) delete salida[nombre];
+  return salida;
+}
+
+/** `"PlanDePago (plan): opciones.0 ..."` -> el detalle de `PlanDePago`, una vez por componente. */
+function detalleDeLosQueFallaron(errores: string[]): string | undefined {
+  const nombres = [...new Set(errores.map((e) => /^([A-Z][A-Za-z]+) \(/.exec(e)?.[1]).filter((n): n is string => Boolean(n)))];
+  return nombres.length ? detalleDeComponentes(nombres) : undefined;
 }
 
 /** Cuanto tardo una llamada; si no se registro el inicio, 0 en vez de un numero raro. */

@@ -250,7 +250,8 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       );
     }
 
-    const consumo = await resultado.usage.catch(() => undefined);
+    // `totalUsage`: `usage` es solo el ultimo paso (AI SDK 5), y la portada hace 2-3 peticiones.
+    const consumo = await resultado.totalUsage.catch(() => undefined);
     return {
       ok: true,
       mensajes: cierre.tomarMensajes(),

@@ -66,6 +66,9 @@ jobs:
       url: ${{ vars.URL_WEB_PUBLICA }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historia completa: el paso del prompt real compara contra el commit anterior al push.
+          fetch-depth: 0
 
       - name: disparar el deploy y esperar los /health
         env:
@@ -90,11 +93,25 @@ jobs:
       # El 2026-09-12 el tope de gasto de Gemini (50 MXN al mes, issue #12) dejo este paso
       # en rojo en cada push: el deploy se publicaba igual y el rojo tapaba si algo mas se
       # rompia. Un CI que no sabe distinguir lo externo de lo propio deja de servir.
+      #
+      # Y solo corre si el push toco lo que este paso prueba. Un turno real son ~55k tokens de
+      # entrada, y con el commit automatico de cada turno de cuatro personas hubo 96 corridas
+      # del CI el 2026-09-12, casi todas de bitacora y docs: un turno del modelo por cada una.
+      # `workflow_dispatch` lo corre siempre, para verificar a mano.
       - name: un prompt del guion contra la URL publica
         if: vars.URL_WEB_PUBLICA != ''
         env:
           URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
+          ANTES: ${{ github.event.before }}
         run: |
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && git cat-file -e "${ANTES}^{commit}" 2>/dev/null; then
+            if ! git diff --name-only "$ANTES" "$GITHUB_SHA" \
+                | grep -qE '^(apps/web/src/lib/agente/|apps/web/src/app/api/agente/|packages/(catalogo|a2ui|schemas)/|apps/mcp/src/)'; then
+              echo "este push no toca el agente, el catalogo, el motor A2UI ni el MCP: se omite el prompt real (~55k tokens de entrada)"
+              exit 0
+            fi
+          fi
+
           respuesta=$(curl -fsS --max-time 40 -X POST "$URL_WEB_PUBLICA/api/agente" \
             -H 'content-type: application/json' \
             -d '{"usuarioId":"usr_beto","conversacionId":"c_ci","mensajes":[{"rol":"usuario","texto":"Quiero pagar menos intereses de mi tarjeta"}]}') || {

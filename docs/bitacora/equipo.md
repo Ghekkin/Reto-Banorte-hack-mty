@@ -16,6 +16,29 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ---
 
+## 2026-09-13
+
+- **dom 01:45 · hecho + decisión · contrato/demo** — **el gasto de Gemini era casi todo
+  entrada, y un tercio era un bug.** El 12 el proyecto registró 9.4 M tokens de entrada contra
+  250 k de salida. Medido petición por petición: la primera petición de cada turno lleva
+  26,137 tokens (catálogo 6.9k + 21 ejemplos 8.3k + reglas 5k + 25 tools 5.5k), y un turno
+  hacía **3**, porque el prompt pedía `montoCentavos` en `Conclusion` —resto del commit
+  revertido— y cada pantalla se rechazaba una vez (#18). Corregido: **2 peticiones, ~55k de
+  entrada, ~45k desde caché, ~10k sin caché**, y `pnpm probar-guion` pasa 10 de 10.
+
+  **Decisión: el catálogo completo se queda por default.** Se construyó y midió la otra
+  opción —el catálogo como menú y `ver_componentes` para el detalle (`FEATURE_AGENTE_LIGERO=1`)—:
+  baja la entrada a ~31k por turno, pero Gemini cachea mucho peor ese prefijo (8–32k desde
+  caché contra 45k) y en 6 turnos tuvo un JSON roto. Con el caché pegando no ahorra dinero; si
+  el caché vuelve a caer a cero como la mañana del 12, sí (~45 %). Queda detrás del flag.
+
+  **Decisión: el CI ya no manda un turno real en cada push**, solo si el push toca el agente,
+  el catálogo, el motor A2UI o el MCP. El 12 hubo 96 corridas, casi todas de bitácora.
+
+  El log decía ~29k por turno porque leía `usage`, que en el AI SDK 5 es solo el último paso
+  (#17); ahora suma todos. Queda abierto #19: `ProyeccionCrecimiento` nombra
+  `proyectar_inversion`, que se revirtió. Detalle en `docs/como-funciona/agente.md`.
+
 ## 2026-09-12
 
 - **sáb 18:53 · decisión + hecho · contrato** — **el ciclo es LIVE: un turno ya no siempre

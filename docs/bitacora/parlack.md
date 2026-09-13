@@ -1574,3 +1574,32 @@ en realidad es un PNG de 1043×1043) y entró como `src/app/icon.png` y
 `src/app/apple-icon.png`, que es la convención de Next 16 para PNG; el `.ico` viejo
 se fue. Verificado en la web corriendo: `<link rel="icon">` y `apple-touch-icon`
 responden 200 con `image/png`.
+
+### 01:18 (dom 13) — El dev server del VPS se abre por Tailscale
+
+Web (3000) y MCP (3100) ya corrían en modo dev. Por la IP de Tailscale
+(`100.115.81.108`) la página cargaba, pero Next 16 respondía 403 al websocket de HMR y
+a los endpoints del overlay, porque solo confía en `localhost`. Se agregó
+`allowedDevOrigins` en `apps/web/next.config.ts` con esa IP y `**.ts.net`; Next se
+reinició solo y los assets con `Origin` de Tailscale ya responden 200. No afecta el
+build de producción.
+
+### 01:45 (dom 13) — Dónde se iba el input de Gemini
+
+Pedido del equipo: el panel de AI Studio marcaba 9.4 M tokens de entrada el día 12 y el
+tope de gasto se agotaba. Se interceptó el `fetch` a Gemini y se midió petición por
+petición (scripts de un solo uso, fuera del repo). Tres hallazgos y lo que se hizo:
+
+1. **Un tercio era un bug** (#18): `prompt.ts` pedía `montoCentavos` en `Conclusion.datos`
+   y nombraba `simular_credito` y `proyectar_inversion`, restos de lo revertido en `e7dda81`.
+   Cada pantalla se rechazaba una vez. Corregido: el turno baja de 3 a 2 peticiones.
+2. **El log mentía por omisión** (#17): `resultado.usage` es el último paso. Ahora
+   `totalUsage` en `agente.ts` y `inicio/generar.ts`.
+3. **El CI hacía un turno real en cada push**: ahora solo si cambia el agente, el catálogo,
+   el motor A2UI o el MCP (`ci-y-deploy.yml`).
+
+Construido y medido, **apagado por default**: `FEATURE_AGENTE_LIGERO=1` (catálogo como menú +
+`ver_componentes` + sin mutaciones directas). Baja la entrada ~45 %, pero Gemini cachea peor
+ese prefijo; A/B y razones en `docs/como-funciona/agente.md`. Typecheck en verde, 168 pruebas
+de web, guion 10/10 con el modelo real; `reiniciar-estado` antes y después del guion.
+Toque ajeno (contrato): `prompt.ts`, `agente.ts`, `cierre.ts`, `historial.ts`, `pantalla.ts`.

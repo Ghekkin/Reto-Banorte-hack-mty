@@ -62,7 +62,10 @@ export const entradaPintarPantalla = z.object({
 
 export type EntradaPintarPantalla = z.infer<typeof entradaPintarPantalla>;
 
-export type ResultadoPintar = { ok: true; componentes: number } | { ok: false; errores: string[] };
+export type ResultadoPintar =
+  | { ok: true; componentes: number }
+  /** `ayuda`: las props de los componentes que fallaron, para que el reintento no adivine. */
+  | { ok: false; errores: string[]; ayuda?: string };
 
 export const MAX_INTENTOS_DE_PANTALLA = 2;
 

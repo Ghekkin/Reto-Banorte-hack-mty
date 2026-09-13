@@ -239,6 +239,10 @@ solo: la página no cambia, el reloj lo dice en el log y no arranca.
 | Ana | `ProyeccionPagoCredito` (héroe) · `DistribucionPortafolio` · `GastoPorCategoria` · `TermometroSaludFinanciera` | 4 | 23 985 / 16 329 / 1 768 | 11.6 s |
 | Carmen | `DistribucionPortafolio` (héroe) · `GastoPorCategoria` · `TermometroSaludFinanciera` | 5 | 22 676 / 16 347 / 1 142 | 11.0 s |
 
+> Estos números son **del último paso** de cada portada, no del total: hasta el 2026-09-13
+> `generar.ts` leía `resultado.usage` (issue #17). Desde entonces `entrada_tokens` y
+> `cache_tokens` guardan la suma de las 2-3 peticiones.
+
 El caché del proveedor sirve ~16 300 tokens en cada portada: es el system prompt, que las
 tres comparten. Lo que se paga por portada son ~6 000 tokens de entrada nuevos (los datos
 de la persona) y ~1 500 de salida; con un modelo "lite" es una fracción de centavo, y

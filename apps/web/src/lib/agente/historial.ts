@@ -1,5 +1,6 @@
 import type { ModelMessage } from "ai";
 import { esAccionDeMutacion, esBinding, propsDe, type Componente } from "@maya/a2ui";
+import { config } from "./config";
 import { systemPrompt } from "./prompt";
 import type { PeticionAgente } from "./tipos";
 
@@ -35,7 +36,7 @@ export function mensajesDelTurno(peticion: PeticionAgente, panorama?: unknown): 
   const mensajes: ModelMessage[] = [
     {
       role: "system",
-      content: systemPrompt(),
+      content: systemPrompt({ catalogo: config.agenteLigero ? "menu" : "completo" }),
       // El corte del cache va aqui: todo lo de arriba se reusa entre turnos. Claude
       // necesita el breakpoint explicito; Gemini cachea el prefijo estable solo.
       providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },

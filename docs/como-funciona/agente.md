@@ -148,26 +148,81 @@ salen**, no la intención:
 
 Con eso, **nuestro lado es correcto y está fijado**.
 
-**Medido con el modelo real el 2026-09-12 a las 12:10**, con la cuota ya ampliada:
+**Ojo con los números viejos.** Hasta el 2026-09-13 el log y el `fin` reportaban
+`resultado.usage`, que en el AI SDK 5 es **solo el último paso** del turno (issue #17). La
+tabla del 2026-09-12 (20,336 de entrada, 16,276 desde caché, 80 %) medía una sola de las
+2-3 peticiones del turno. Desde el 13 se reporta `totalUsage`: la suma de todas.
 
-| Turno | Entrada | Desde caché | |
-|---|---|---|---|
-| Beto, "quiero pagar menos intereses" | 20,336 | **16,276** | 80 % |
-| El mismo, repetido | 20,336 | **16,276** | 80 % |
-| **Ana**, la misma pregunta (otra persona) | 23,415 | **20,341** | 87 % |
-| Beto, **segundo turno** de la conversación | 21,442 | **16,276** | 76 % |
+### Cuántos tokens de entrada cuesta un turno (medido el 2026-09-13, 01:30)
 
-El prefijo compartido —system prompt + definiciones de tools, ~16,000 tokens— se reusa
-**entre personas y entre turnos**, que es exactamente el diseño. Google cobra los tokens
-cacheados con descuento. La latencia no mejora de forma consistente (5.8–7.7 s con caché
-en turnos equivalentes), así que el beneficio medido es de costo, no de velocidad.
+Casi todo el gasto es **entrada**: el 12 de septiembre el proyecto registró 9.4 M tokens de
+entrada contra 250 k de salida en `gemini-3.8-flash`. Una petición del agente lleva
+siempre lo mismo, y un turno hace 2-3:
 
-**Lo que no se sabe:** en los 55 turnos de la mañana el caché reportó **cero**, con la
-misma forma de petición. Un A/B descartó la única diferencia de código que tocaba la
-petición (`allowSystemInMessages`: sin ella el caché pega igual, 16,276). El cambio fue del
-lado de Google y la causa no se puede determinar desde aquí. Por eso el log de cada turno
-trae `entrada`, `salida` y `cache`: si vuelve a caer a cero, se nota en el siguiente turno
-en vez de en la factura.
+| Parte de cada petición | Tokens |
+|---|---|
+| Reglas del system prompt (quién es Maya, salidas, acciones, formato) | ~5,000 |
+| Catálogo completo con props, tipos y descripciones | 6,918 |
+| Los 21 ejemplos de pantalla (`packages/catalogo/ejemplos`) | 8,294 |
+| Definiciones de las 25 tools | 5,539 |
+| Pregunta + bloque de contexto del turno | ~300 |
+| **Primera petición del turno** | **26,137** |
+
+La segunda petición suma los resultados de las tools (~1-2k), y la tercera, si la hay, la
+pantalla rechazada. Medido interceptando el `fetch` a Gemini y sumando `usageMetadata`,
+con los mismos tres turnos ("quiero pagar menos intereses": Beto dos veces y Ana):
+
+| | Peticiones | Entrada por turno | Desde caché | Sin caché |
+|---|---|---|---|---|
+| Antes (prompt con `montoCentavos`, issue #18) | 3 | ~83,000 | ~24,000 en el último paso | — |
+| Prompt corregido, catálogo completo | **2** | ~55,000 | **~44,800** | **~10,000** |
+| Prompt corregido, `FEATURE_AGENTE_LIGERO=1` | 2-3 | ~31,000 | 8,100–32,500 (irregular) | 10,800–23,000 |
+
+Lo que se lee ahí:
+
+1. **El mayor desperdicio era un bug, no el tamaño del catálogo.** El prompt pedía una prop
+   que el schema ya no aceptaba, cada pantalla se rechazaba una vez y el turno pagaba una
+   petición completa de más. Corregido, el turno baja de 3 a 2 peticiones.
+2. **Con el caché pegando, el prefijo grande es barato.** Google cobra con descuento los
+   tokens servidos desde caché, y con el catálogo completo se sirven ~45k de ~55k.
+3. **El agente ligero baja ~45 % la entrada, pero Gemini cachea peor su prefijo** (más chico
+   y seguido de un resultado de `ver_componentes` que cambia en cada turno). Si el caché pega
+   bien, sale igual o más caro; si el caché no pega —como en los 55 turnos de la mañana del
+   12—, sale ~45 % más barato. En 6 turnos medidos tuvo un JSON mal cerrado (0 con el
+   completo). Por eso está **apagado por default**.
+
+### El agente ligero: el catálogo como menú (`FEATURE_AGENTE_LIGERO=1`)
+
+Para quien lo prenda y para quien lo quiera mejorar:
+
+- **Para cualquiera:** en vez de mandarle al modelo el manual completo de las 21 tarjetas en
+  cada petición, se le manda el índice (para qué sirve cada una y cómo se llaman sus
+  campos). Cuando ya eligió qué tarjetas va a usar, pide el detalle de esas 1-3, en el mismo
+  paso en que pide los datos, así que no cuesta tiempo extra. Si arma una mal, el error le
+  regresa el detalle de esa tarjeta para que el segundo intento salga bien.
+- **Técnico:**
+  - `systemPrompt({ catalogo: "menu" })` en `apps/web/src/lib/agente/prompt.ts`: `menuEnTexto()` (una
+    línea por componente con `cuandoUsarlo`, nombres de props con `?` y acciones) más
+    `Conclusion` completa, porque va en toda pantalla. La portada del Inicio sigue con
+    `systemPrompt()` (completo).
+  - `ver_componentes` (`apps/web/src/lib/agente/componentes.ts`) es una tool del host, no del MCP:
+    devuelve `detalleDeComponentes(nombres)`, las props completas y el ejemplo real de
+    cada componente (el `.jsonl` que se llama como él, si existe). No sale en la tira de
+    transparencia.
+  - `crearCierre(pantalla, { ayudaParaErrores })` (`cierre.ts`): si `pintar_pantalla` se
+    rechaza, el resultado lleva `ayuda` con el detalle de los componentes nombrados en
+    los errores.
+  - Con el flag, el modelo tampoco ve las 5 mutaciones directas (`MUTACIONES_DIRECTAS`):
+    toda acción entra por `ejecutar_decision`. Son ~1,200 tokens por petición.
+  - Pruebas: `apps/web/src/lib/agente/__tests__/catalogo-bajo-demanda.spec.ts`.
+
+### El CI ya no gasta un turno por cada push
+
+El paso "un prompt del guion contra la URL publica" de `.github/workflows/ci-y-deploy.yml`
+hacía un turno real (~55k tokens) en **cada** deploy, y el 12 hubo 96 corridas del CI,
+casi todas por commits de bitácora. Ahora solo corre si el push tocó
+`apps/web/src/lib/agente/`, `apps/web/src/app/api/agente/`, `packages/catalogo|a2ui|schemas/`
+o `apps/mcp/src/`; con `workflow_dispatch` corre siempre.
 
 ### El texto que acompaña la pantalla es un consejo, no una etiqueta
 

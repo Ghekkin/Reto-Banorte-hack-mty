@@ -16,6 +16,8 @@ import {
 import { correrTurno } from "../agente";
 import { herramientasDelMcp } from "../mcp-cliente";
 import type { LineaStream } from "../tipos";
+import { MUTACIONES_DIRECTAS } from "../componentes";
+import { config } from "../config";
 
 /**
  * La pregunta que esta prueba contesta sin gastar una llave: **¿el proveedor acepta los
@@ -97,7 +99,16 @@ describe("el proveedor real con nuestras tools", () => {
     // Las tools del MCP mas las de CIERRE que aplican a este turno. La peticion no trae
     // `superficie`, asi que `crearCierre()` solo registra `pintar_pantalla`: `ajustar_pantalla`
     // y `responder` necesitan una pantalla actual contra la que ajustar o sobre la que hablar.
-    expect(declaraciones.map((d) => d.name).sort()).toEqual([...Object.keys(ENTRADAS), "pintar_pantalla"].sort());
+    // Con `FEATURE_AGENTE_LIGERO=1` se quitan las mutaciones directas —toda accion entra por
+    // `ejecutar_decision`— y se agrega `ver_componentes`, el detalle del catalogo bajo demanda.
+    const esperadas = config.agenteLigero
+      ? [
+          ...Object.keys(ENTRADAS).filter((n) => !(MUTACIONES_DIRECTAS as readonly string[]).includes(n)),
+          "ver_componentes",
+          "pintar_pantalla",
+        ]
+      : [...Object.keys(ENTRADAS), "pintar_pantalla"];
+    expect(declaraciones.map((d) => d.name).sort()).toEqual(esperadas.sort());
 
     // 2. Sin llaves que la API no conoce.
     for (const llave of ["$schema", "additionalProperties", "exclusiveMinimum", "const"]) {
