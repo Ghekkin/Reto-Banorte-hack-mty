@@ -1323,7 +1323,11 @@ export function revisarProps(
     else paraValidar[nombre] = resuelto;
   }
 
-  const errores = [...dineroEscritoAMano(componente, paraValidar)];
+  // Aqui corria `dineroEscritoAMano`, que rechazaba un `$` en `Conclusion.datos[].valor` y pedia
+  // `montoCentavos`. Esa prop llego con el trabajo que se revirtio el 2026-09-12 y el schema de
+  // `main` no la tiene: exige `valor` como texto. Con las dos reglas juntas ninguna pantalla con
+  // montos podia pasar, y el turno moria sin pantalla (issue #21).
+  const errores: string[] = [];
 
   const resultado = entrada.schema.safeParse(paraValidar);
   if (!resultado.success) {
@@ -1345,25 +1349,3 @@ function tieneBinding(valor: unknown): boolean {
   return false;
 }
 
-/**
- * El ultimo cerco contra la cifra escrita a mano.
- *
- * `Conclusion.datos[].valor` es texto libre y tiene que seguirlo siendo (ahi van `+74%` o
- * `39/100`), asi que Zod no puede distinguir un porcentaje de un monto. Pero un valor que
- * empieza con `$` SI es distinguible, y es exactamente el error que llego a pantalla el
- * 2026-09-12: el modelo convirtio 457095 centavos a pesos a mano y escribio `$457,09.50`.
- * El dinero va en `montoCentavos` y lo formatea el componente.
- */
-function dineroEscritoAMano(componente: Componente, props: Record<string, unknown>): string[] {
-  const datos = props.datos;
-  if (!Array.isArray(datos)) return [];
-
-  return datos
-    .filter((d): d is { etiqueta?: unknown; valor: string } => esObjetoPlano(d) && typeof d.valor === "string" && d.valor.trim().startsWith("$"))
-    .map(
-      (d) =>
-        `${componente.component} (${componente.id}): el dato "${String(d.etiqueta ?? "")}" trae el monto ` +
-        `escrito a mano en \`valor\` ("${d.valor}"). El dinero va en \`montoCentavos\` como entero de ` +
-        `centavos (457095, no "$4,570.95") y lo formatea la interfaz.`,
-    );
-}
