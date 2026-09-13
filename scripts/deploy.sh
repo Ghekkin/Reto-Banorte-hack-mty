@@ -87,6 +87,12 @@ esperar() {
 
 disparar "mcp" "$COOLIFY_APP_MCP_UUID"
 disparar "web" "$COOLIFY_APP_WEB_UUID"
+# Docs (apps/docs en docs.ghekkinxmaya.tech) no esta en la ruta critica de la demo: sin
+# su uuid no se despliega, y si Coolify no acepta el deploy se avisa sin tumbar el de
+# web y mcp. Tampoco se espera: su /salud no reporta commit.
+if [ -n "${COOLIFY_APP_DOCS_UUID:-}" ]; then
+  disparar "docs" "$COOLIFY_APP_DOCS_UUID" || echo "    aviso: el deploy de docs no se disparo; web y mcp siguen" >&2
+fi
 
 # El build tarda; darle margen antes de empezar a preguntar.
 sleep 20
