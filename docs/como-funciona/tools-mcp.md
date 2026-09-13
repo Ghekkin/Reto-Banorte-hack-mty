@@ -65,21 +65,57 @@ nada.
 | `analizar_gasto` | lectura | `comparar_periodos` + `detectar_fugas` + topes excedidos, más `patronGasto` | "¿en qué se me va el dinero?" — en vez de las dos por separado |
 | `analizar_ahorro` | lectura | `proyectar_ahorro` + `consultar_inversiones`, más `estadoAhorro` | por su ahorro, su meta o su portafolio — en vez de las dos por separado |
 | `ejecutar_decision` | **acción** | la mutación que corresponda + la lectura posterior, en una sola respuesta | siempre que la acción A2UI sea una de mutación: reemplaza el patrón "mutar y luego leer" |
+| `simular_credito` | lectura | la mensualidad, el plazo y los intereses de un crédito pagado de otra forma | "¿y si lo liquido en un año?", "¿y si abono $2,000 extra?", "puedo pagar $6,000, ¿cuándo termino?" |
+| `proyectar_inversion` | lectura | valor futuro con interés compuesto, los hitos del camino y los tres escenarios | antes de pintar `ProyeccionCrecimiento` o `EscenariosInversion`, siempre |
 
 Las nueve primeras son las del ADR 0004. Las seis siguientes (`diagnostico_salud_financiera`
 hasta `crear_tope_gasto`) son los **Paquetes 1 y 2** del [roadmap del MCP](../arquitectura/roadmap-mcp.md),
 y ninguna inventa un dato nuevo: abren tablas que ya estaban en la base y que ninguna tool
 podía ver. Las tres de Inversiones (`consultar_inversiones`, `consultar_catalogo_inversiones`,
 `consultar_historico_inversion`) completan el viaje de Carmen (enmienda del ADR 0004,
-2026-09-13). Las tres últimas son los **orquestadores del Bloque A**
+2026-09-13). Los **orquestadores del Bloque A**
 (`docs/arquitectura/orquestadores.md`): `analizar_gasto` y `analizar_ahorro` son fachadas
 de lectura (O4) que componen llamando por dentro a las tools atómicas — son las mismas, no
 una segunda versión —, y `ejecutar_decision` es el orquestador de acción (O2).
+
+Las dos últimas son el paquete **"el modelo dejó de inventar"** (2026-09-12), y las dos existen por
+la misma razón: había componentes del catálogo cuyas cifras **ninguna tool calculaba** —los siete
+números de `ProyeccionCrecimiento`, los tres escenarios de `EscenariosInversion`, la mensualidad de
+un plazo distinto en `ProyeccionPagoCredito`— y lo que no tiene tool el modelo lo escribe de memoria.
+En la pantalla de Ana llegó a salir "$504,785 al mes" donde iban $5,503.20. La matemática del crédito
+ya estaba entera en `dominio/finanzas.ts`; la de inversión hubo que escribirla
+([`proyeccion-de-inversion.md`](../algoritmos/proyeccion-de-inversion.md)). Ver
+`docs/issues/2026-09-12-cifras-sin-tool-que-las-calcule.md`.
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
 el total sin juzgarlo. Antes afirmaba un número fijo, y el CI se ponía rojo cada vez que
 alguien agregaba una tool: castigaba trabajo bien hecho.
+
+#### Los parámetros que se pueden variar hablando
+
+Una petición del tipo "compáralo con julio", "¿y si fuera agresivo?" o "¿cuánto junto en 18 meses?"
+no necesita otra pantalla: necesita **el mismo dato con otro parámetro**. Cuando el parámetro no
+existe, el modelo lo resuelve de memoria, así que la lista de lo que se puede pedir es parte del
+contrato:
+
+| Se puede variar | Con qué tool |
+|---|---|
+| el mes analizado y **contra qué mes** | `analizar_gasto` (`periodo`, `periodoAnterior`), `comparar_periodos` |
+| el rango de movimientos, la categoría, cuántos | `consultar_movimientos` |
+| el criterio de suscripción olvidada | `analizar_gasto` / `detectar_fugas` (`mesesSinUso`) |
+| el plazo de una reestructura de **tarjeta** | `simular_reestructura` (`plazosMeses`) |
+| el plazo, el abono extra o la mensualidad de un **crédito** | `simular_credito` |
+| la aportación, el objetivo y el **horizonte** de una meta | `proyectar_ahorro` |
+| el monto, el horizonte y el instrumento de una inversión | `proyectar_inversion` |
+| el **perfil** con el que se calcula el modelo de portafolio | `consultar_inversiones` (`perfil`) |
+| las semanas de histórico de un instrumento | `consultar_historico_inversion` (`semanas`) |
+| el riesgo máximo y el monto disponible del catálogo | `consultar_catalogo_inversiones` |
+
+Y lo que **no** necesita tool: reordenar o recortar una lista que ya está en pantalla. Eso son props
+de vista (`orden`, `limite`) y se cambian con `ajustar_pantalla`, sin volver a consultar nada
+([`ciclo-live.md`](ciclo-live.md)).
+
 
 #### Por qué `panorama_inicial` no decide la pantalla
 

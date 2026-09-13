@@ -5,6 +5,7 @@ import { crearCierre } from "@/lib/agente/cierre";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "@/lib/agente/mcp-cliente";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "@/lib/agente/pantalla";
 import { systemPrompt } from "@/lib/agente/prompt";
+import { esperarDisponibilidadTokens, registrarTokensDeSalida } from "@/lib/agente/limitador";
 import { configInicio } from "./config";
 import { modeloDelInicio, opcionesDelInicio } from "./modelo";
 
@@ -131,6 +132,8 @@ export async function reunirDatos(cliente: Client, usuarioId: string, usadas: Ll
  * Las de accion no estan y no van a estar (ver arriba).
  */
 export const TOOLS_DE_APOYO = [
+  "simular_credito",
+  "proyectar_inversion",
   "simular_reestructura",
   "proyectar_ahorro",
   "consultar_creditos",
@@ -173,7 +176,7 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     // Sin pantalla previa, `crearCierre` solo publica `pintar_pantalla`: en una portada no
     // hay nada que ajustar ni que aclarar, y `responder` con texto seria justo lo contrario
     // de lo que la portada es.
-    const cierre = crearCierre();
+    const cierre = crearCierre(undefined, datos);
     // Al modelo solo le llegan las tools de apoyo y la de pintar. Las de accion no se
     // filtran con `activeTools`: **no estan en el conjunto**, asi que ni un modelo que
     // se las invente puede ejecutarlas desde aqui.
@@ -185,6 +188,7 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     let errores: string[] = [];
     let corte: "timeout" | undefined;
 
+    await esperarDisponibilidadTokens();
     const resultado = streamText({
       model: opciones.modelo ?? modeloDelInicio(),
       // El system prompt va primero y sin datos de la persona, igual que en el turno:
@@ -251,6 +255,9 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     }
 
     const consumo = await resultado.usage.catch(() => undefined);
+    if (consumo?.outputTokens) {
+      registrarTokensDeSalida(consumo.outputTokens);
+    }
     return {
       ok: true,
       mensajes: cierre.tomarMensajes(),
@@ -387,6 +394,9 @@ export function encargoDeConsulta(usuarioId: string, datos: DatosDeLaPortada, pr
     "6. Todo numero sale de los datos de abajo o de una tool. Si te falta algo para una tarjeta, pide",
     "   esas tools AHORA, todas en este mismo paso: en el siguiente solo vas a poder pintar.",
     "7. `texto`: una frase corta, porque el veredicto ya va en `Conclusion` y no se repite.",
+    "8. Formato de `pintar_pantalla`: `componentesJson` es un arreglo de objetos completos, NO de",
+    "   nombres ni de strings. La raiz DEBE ser `{\"id\":\"root\",\"component\":\"Column\",\"children\":[\"...\"]}`",
+    "   y cada tarjeta es un objeto con su `id`, `component`, `razon` y todas sus props.",
     "",
     "datos ya calculados (lo que devolvio cada tool del MCP):",
     ...lineasDeDatos,

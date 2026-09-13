@@ -15,14 +15,34 @@ export const schemaSimuladorMeta = PropsBase.extend({
   nombre: z.string().default("Tu meta").describe("Como se llama la meta: 'Fondo de emergencia'"),
   metaCentavos: Centavos.describe("A cuanto quiere llegar"),
   saldoInicialCentavos: Centavos.default(0).describe("Lo que ya lleva ahorrado para esta meta"),
-  aportacionCentavos: Centavos.describe("La aportacion inicial del slider (la sugerida por proyectar_ahorro)"),
+  aportacionCentavos: Centavos.describe(
+    "La aportacion inicial del slider (la sugerida por proyectar_ahorro). TIENE que caer entre " +
+      "`aportacionMinimaCentavos` y `aportacionMaximaCentavos`: fuera de ahi es un valor que el " +
+      "propio slider no puede representar",
+  ),
   aportacionMinimaCentavos: Centavos.default(50000).describe("Piso del slider"),
   aportacionMaximaCentavos: Centavos.describe("Tope del slider: la capacidad mensual de la persona"),
   frecuencia: Frecuencia.default("mensual"),
   fechaInicio: z.string().optional().describe("AAAA-MM-DD desde donde se cuenta; default: hoy"),
   etiquetaBoton: z.string().default("Crear apartado"),
   heroe: Heroe,
-});
+})
+  // Las tres props se validan JUNTAS porque por separado las tres son validas: el error
+  // esta en la relacion. El 2026-09-12 salio a pantalla una aportacion de $477 con piso de
+  // $500 y tope de $6,629, y nada lo noto. El componente ademas acota, asi que la pantalla
+  // no se rompe; esto existe para que el modelo se entere.
+  .refine((p) => p.aportacionMinimaCentavos < p.aportacionMaximaCentavos, {
+    message: "`aportacionMinimaCentavos` tiene que ser menor que `aportacionMaximaCentavos`",
+  })
+  .refine(
+    (p) =>
+      p.aportacionCentavos >= p.aportacionMinimaCentavos && p.aportacionCentavos <= p.aportacionMaximaCentavos,
+    {
+      message:
+        "`aportacionCentavos` cae fuera del rango del slider: tiene que estar entre " +
+        "`aportacionMinimaCentavos` y `aportacionMaximaCentavos`",
+    },
+  );
 
 export type PropsSimuladorMeta = z.infer<typeof schemaSimuladorMeta>;
 

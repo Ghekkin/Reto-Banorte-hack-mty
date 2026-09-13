@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   componentesVisibles,
   estadoVacio,
@@ -13,6 +13,7 @@ import {
   type MensajeA2UI,
 } from "@maya/a2ui";
 import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente/tipos";
+import { guardarHilo, olvidarHilo, recuperarHilo } from "@/lib/agente/persistencia";
 
 /**
  * El lado del cliente del contrato agente <-> cliente: manda el turno, lee el
@@ -129,7 +130,49 @@ export function usarAgente(usuarioId: string) {
     setSugerencias([]);
     setRazon(undefined);
     setTransparencia([]);
-  }, []);
+    // Y de la sesion tambien: si solo se limpiara la memoria, recargar la pagina resucitaria
+    // la conversacion que se acaba de tirar.
+    olvidarHilo(usuarioId);
+  }, [usuarioId]);
+
+  /**
+   * Rehidratar la conversacion de la sesion.
+   *
+   * Corre una sola vez por usuario y **antes de que la persona pueda escribir**, porque si
+   * llegara despues de un turno le pisaria el hilo nuevo con el viejo. El `usuarioActivo` es
+   * la llave: al cambiar de persona esto vuelve a correr, no encuentra nada suyo (o encuentra
+   * su propia conversacion anterior, que es lo correcto) y el efecto de abajo se encarga del
+   * borrado.
+   */
+  const hidratadoPara = useRef<string | undefined>(undefined);
+  if (hidratadoPara.current !== usuarioId) {
+    hidratadoPara.current = usuarioId;
+    const recuperado = recuperarHilo(usuarioId);
+    if (recuperado) {
+      conversacionId.current = recuperado.conversacionId;
+      // Ajuste de estado durante el render y no en un `useEffect`: con el efecto se pintaria
+      // un fotograma con la conversacion vacia y el hilo apareceria de golpe despues.
+      setEstado(recuperado.estado);
+      setHilo(recuperado.hilo);
+      setSugerencias(recuperado.sugerencias);
+      setRazon(recuperado.razon);
+    } else {
+      // Otro usuario: conversacion nueva, no la de quien estaba antes.
+      conversacionId.current = crearId();
+      fallosReportados.current = 0;
+      setEstado(estadoVacio());
+      setHilo([]);
+      setSugerencias([]);
+      setRazon(undefined);
+      setTransparencia([]);
+    }
+  }
+
+  // Y se guarda cada vez que el hilo cambia. Va en un efecto porque escribir en
+  // `sessionStorage` es un efecto secundario y no puede pasar durante el render.
+  useEffect(() => {
+    guardarHilo(usuarioId, { hilo, conversacionId: conversacionId.current, sugerencias, razon });
+  }, [usuarioId, hilo, sugerencias, razon]);
 
   /**
    * La respuesta hablable del turno: lo que dijo el agente en `texto`, o un fallback si

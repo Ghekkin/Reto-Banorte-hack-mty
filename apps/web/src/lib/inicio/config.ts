@@ -10,7 +10,7 @@ export const configInicio = {
   /** Con `0`, Inicio es la pantalla programada de siempre y no corre ningun modelo. */
   activo: (process.env.FEATURE_INICIO_PERSONALIZADO ?? "1") !== "0",
   /** Id del modelo chico. `gemini-*` o `claude-*`; la llave es la misma del agente. */
-  modelo: process.env.MODELO_INICIO ?? "gemini-3.5-flash-lite",
+  modelo: process.env.MODELO_INICIO ?? "gemini-3.1-flash-lite",
   /** Cada cuantos minutos el reloj revisa a los tres usuarios. */
   cadaMinutos: minutosValidos(process.env.INICIO_CADA_MINUTOS, 10),
   /**

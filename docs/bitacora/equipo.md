@@ -18,6 +18,73 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-12
 
+- **sáb 21:20 · hecho + decisión · mcp + contrato** — **el modelo dejó de inventar cifras.** Salió de
+  una captura del usuario: la tarjeta de Ana decía "necesitarías pagar **$504,785 al mes**" para
+  liquidar su crédito en un año, y "pagas $457,09.50 mensuales". Los datos del MCP estaban bien
+  (`mensualidad(5578308, 0.279, 15)` da exactamente sus $4,570.95 reales); lo que estaba mal era otra
+  cosa, y al buscarla salieron **tres causas distintas**, no una:
+
+  1. **`Conclusion.datos[].valor` era `z.string()`** y su describe pedía la cifra "ya formateada". Era
+     el único lugar del catálogo donde el modelo escribía dinero como texto, y lo hacía por cirugía de
+     cadenas: tomaba los centavos, los agrupaba como pesos (`457095` → `457,095`) y le metía el punto
+     decimal dentro del número ya agrupado. Ahora el dinero va en `montoCentavos` y **formatea el
+     componente**; un `valor` que empieza con `$` se rechaza y vuelve al modelo.
+  2. **Ninguna tool contestaba la pregunta.** `simular_reestructura` exige `tarjetaId` y lanza sin
+     tarjeta; `consultar_creditos` solo lee lo pactado. Así que el modelo hizo la amortización de
+     cabeza. Nacieron **`simular_credito`** (plazo objetivo, abono extra o mensualidad objetivo — las
+     tres direcciones de la misma amortización) y, al inventariar el resto, **`proyectar_inversion`**.
+  3. **`revisarProps` se saltaba las props enlazadas**, y el modelo enlaza casi todo. Ese era el
+     agujero de fondo: en la práctica la mayoría de las props del catálogo **no se validaban nunca**.
+     Ahora se resuelven contra el data model —que viene en la misma llamada— y se validan completas.
+
+  **Lo peor no era lo que se veía.** El usuario pidió analizar todos los casos donde se puede cambiar
+  un parámetro hablando, y al cruzar los 21 componentes contra las 23 tools apareció algo más grave que
+  el crédito: `ProyeccionCrecimiento` exige **siete** cifras numéricas y `EscenariosInversion` **tres
+  escenarios completos**, y no existía ninguna función de valor futuro en todo el servidor. El modelo
+  las inventaba todas, y encima el componente calculaba interés compuesto en el navegador y **calibraba
+  su propia curva contra la cifra inventada**: la gráfica se doblaba para no contradecirla. No se notaba
+  porque el interés compuesto mental cae en un rango creíble — al contrario del $504,785, que se delató
+  solo. Y `ProyeccionCrecimiento` está en la portada esperada de Carmen: estaba en la ruta de la demo.
+
+  **Decisión de honestidad:** el escenario pesimista de `proyectar_inversion` **puede perder dinero** y
+  se reporta con signo negativo y una advertencia explícita (con el ETF de Carmen, −$116,267 a 5 años).
+  El componente tenía un `Math.max(0, …)` que aplastaba la pérdida a cero: una proyección que nunca
+  pierde es propaganda. La convención de los escenarios (tasa ± volatilidad, con datos reales de la
+  tabla `instrumentos`) está documentada como convención y no como pronóstico.
+
+- **sáb 21:20 · hecho · web** — **la conversación con Maya ya no se borra al cambiar de pestaña.** El
+  hilo vivía en `useState` dentro de `/maya`, y navegar desmonta la página. Ahora vive en un provider
+  montado en `(app)/layout.tsx` (que no se desmonta, porque las pestañas usan `next/link`) y se
+  persiste en `sessionStorage`, así que **también sobrevive al F5**. Cambiar de usuario lo limpia y
+  redirige a Inicio.
+
+  La trampa: `calcularSuperficieViva` compara la pantalla viva contra la congelada **por referencia**.
+  Al hidratar desde JSON, el estado tiene que apuntar al MISMO objeto que quedó en el hilo, no a una
+  copia; con dos objetos la última pantalla se pintaría dos veces. Se resuelve persistiendo solo el
+  hilo y **derivando** el estado de él, así que la invariante se cumple por construcción.
+
+- **sáb 21:20 · hecho · contrato** — **`orden` y `limite` en cinco componentes, no en uno.** Al
+  inventariar salió que cuatro componentes listaban colecciones **sin ninguna prop de vista**, así que
+  "muéstrame solo las 3 suscripciones más caras" obligaba a repintar con datos nuevos aunque el
+  componente ya los tuviera. Era asimetría del catálogo, no falta de información. Con esto esas
+  peticiones pasan de repintar a un parche de `ajustar_pantalla`: es el cambio con mejor relación
+  esfuerzo/sensación LIVE del bloque.
+
+- **sáb 21:20 · hecho · infra** — **`MODELO_GEMINI` para sobrevivir a la cuota.** La cuota gratuita es
+  **por modelo**: se agotaron las 20 peticiones diarias de `gemini-3.8-flash` y después los 250,000
+  tokens de `gemini-3.5-flash-lite`. El id del modelo ahora se puede cambiar sin tocar código, igual
+  que ya se podía el de Inicio (`MODELO_INICIO`). Consecuencia honesta: **el guion completo quedó sin
+  verificar** (2 de 10 pasos alcanzaron a correr, y los dos pasaron; los otros 8 con `0 pasos` y error
+  de cuota). Lo que eso deja sin medir es si la validación de props resueltas sube los reintentos.
+
+- **sáb 21:20 · hecho · docs** — seis hallazgos nuevos en `docs/issues/`, cinco resueltos en el mismo
+  bloque y **uno abierto**: en la verificación con navegador, un turno perdió una tarjeta y pintó
+  `⚠ root declara el hijo "conclusion", que no esta en la lista` **dentro de la conversación**. Son dos
+  defectos: se pierde una tarjeta, y un aviso del renderer se filtra a la interfaz de la persona. No se
+  arregló porque se encontró sin cuota para reproducirlo, y arreglar a ciegas la causa raíz de algo que
+  no se puede volver a ver es peor que dejarlo anotado. El aviso filtrado sí es seguro de arreglar sin
+  reproducción.
+
 - **sáb 18:53 · decisión + hecho · contrato** — **el ciclo es LIVE: un turno ya no siempre
   repinta.** El agente cierra con **una de tres tools** (`apps/web/src/lib/agente/cierre.ts`) y
   *cuál elige es la clasificación de intención*, sin llamada extra ni heurísticas sobre el texto:

@@ -88,6 +88,114 @@ export function tablaAmortizacion(montoCentavos: number, tasaAnual: number, plaz
   return filas;
 }
 
+export type LiquidacionConPago = {
+  meses: number | null;
+  totalPagadoCentavos: number | null;
+  totalInteresesCentavos: number | null;
+  nuncaLiquida: boolean;
+  /** La tabla del escenario. Vacia cuando `nuncaLiquida`: no hay tabla que ensenar. */
+  filas: FilaAmortizacion[];
+};
+
+/**
+ * La relacion INVERSA de `mensualidad()`: cuantos meses tarda en liquidarse un saldo si se
+ * paga una cantidad fija al mes.
+ *
+ * `mensualidad()` contesta "cuanto pago si quiero terminar en N meses"; esto contesta
+ * "cuando termino si pago X al mes". Son las dos preguntas que la gente hace de verdad, y
+ * la segunda no tiene forma cerrada limpia con el IVA sobre intereses de por medio, asi
+ * que se itera la amortizacion mes a mes — el mismo patron que `escenarioPagoMinimo`.
+ *
+ * Devuelve tambien las filas para que nadie tenga que repetir esta iteracion afuera: una
+ * segunda copia del bucle es una segunda version de la verdad esperando a divergir.
+ *
+ * `nuncaLiquida` es el caso importante: si el pago no alcanza a cubrir el interes con su
+ * IVA, el saldo crece solo y no hay respuesta. Contestar un numero ahi seria peor que
+ * contestar "asi no se acaba nunca".
+ */
+export function mesesParaLiquidar(
+  saldoCentavos: number,
+  tasaAnual: number,
+  pagoMensualCentavos: number,
+  topeMeses = 600,
+): LiquidacionConPago {
+  const tasaMensual = tasaAnual / 12;
+  const filas: FilaAmortizacion[] = [];
+  let saldo = saldoCentavos;
+  let totalPagado = 0;
+  let totalIntereses = 0;
+  let meses = 0;
+
+  while (saldo > 0 && meses < topeMeses) {
+    const interes = Math.round(saldo * tasaMensual);
+    const iva = Math.round(interes * IVA);
+
+    if (pagoMensualCentavos <= interes + iva) return SIN_LIQUIDACION;
+
+    // El ultimo pago solo cubre lo que falta: no se cobra de mas para cerrar en cero.
+    let pago = Math.min(pagoMensualCentavos, saldo + interes + iva);
+    let capital = pago - interes - iva;
+    let saldoFinal = saldo - capital;
+
+    // El ultimo pago absorbe el residuo, igual que en `tablaAmortizacion`. Sin esto,
+    // pagar exactamente la cuota que devuelve `mensualidad()` deja 5 centavos vivos por
+    // el doble redondeo (interes y luego IVA) y la funcion reporta un mes MAS: 13 en vez
+    // de 12. Un residuo de centavos es un artefacto de redondeo, no un mes de deuda.
+    if (saldoFinal > 0 && saldoFinal <= RESIDUO_MAXIMO) {
+      pago += saldoFinal;
+      capital += saldoFinal;
+      saldoFinal = 0;
+    }
+
+    meses++;
+    filas.push({
+      numeroPago: meses,
+      saldoInicialCentavos: saldo,
+      capitalCentavos: capital,
+      interesCentavos: interes,
+      ivaInteresCentavos: iva,
+      mensualidadCentavos: pago,
+      saldoFinalCentavos: saldoFinal,
+    });
+
+    saldo = saldoFinal;
+    totalPagado += pago;
+    totalIntereses += interes + iva;
+  }
+
+  if (saldo > 0) return SIN_LIQUIDACION;
+
+  return {
+    meses,
+    totalPagadoCentavos: totalPagado,
+    totalInteresesCentavos: totalIntereses,
+    nuncaLiquida: false,
+    filas,
+  };
+}
+
+/** Un peso o menos de saldo vivo es redondeo, no deuda: lo absorbe el ultimo pago. */
+const RESIDUO_MAXIMO = 100;
+
+const SIN_LIQUIDACION: LiquidacionConPago = {
+  meses: null,
+  totalPagadoCentavos: null,
+  totalInteresesCentavos: null,
+  nuncaLiquida: true,
+  filas: [],
+};
+
+/**
+ * Los intereses con IVA que cuesta liquidar un saldo en un plazo dado, sumados de la
+ * tabla de amortizacion y no estimados: es la misma tabla que se le puede ensenar.
+ */
+export function interesesDelPlazo(saldoCentavos: number, tasaAnual: number, plazoMeses: number): number {
+  return tablaAmortizacion(saldoCentavos, tasaAnual, plazoMeses).reduce(
+    (suma, fila) => suma + fila.interesCentavos + fila.ivaInteresCentavos,
+    0,
+  );
+}
+
 /**
  * CAT: la tasa anual que hace que el valor presente de los pagos iguale lo que el
  * cliente recibio de verdad. Es una TIR mensual anualizada y se resuelve por

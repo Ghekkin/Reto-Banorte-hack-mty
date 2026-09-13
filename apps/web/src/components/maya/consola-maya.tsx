@@ -5,8 +5,8 @@ import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo } from "@/components/maya/lienzo";
 import { ProgresoMaya } from "@/components/maya/progreso-maya";
+import { usarAgenteDelContexto } from "@/components/maya/proveedor-agente";
 import type { AccionEntrante } from "@/lib/agente/tipos";
-import { usarAgente } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
 import { vozHabilitada } from "@/lib/voz/flag";
 import { usarConversacionVoz, type HerramientasVoz } from "@/lib/voz/usar-conversacion-voz";
@@ -38,7 +38,9 @@ export function ConsolaMaya({
   /** `?voz=1`: llega desde el boton de voz de Inicio, arranca la sesion sola. */
   vozAuto?: boolean;
 }) {
-  const agente = usarAgente(usuario.id);
+  // La conversacion vive en el layout, no aqui: si viviera aqui, cambiar de pestana la
+  // desmontaria y se perderia el hilo (`components/maya/proveedor-agente.tsx`).
+  const agente = usarAgenteDelContexto();
   const { enviarTexto, enviarAccion } = agente;
 
   // Una sola vez por intención: evita que cada render vuelva a disparar la pregunta

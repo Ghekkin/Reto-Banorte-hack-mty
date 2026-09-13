@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
-import { formatearMonto, formatearPorcentaje } from "../comunes";
+import { formatearMonto, formatearPorcentaje, recortar, sumaDeMontos } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsAlertaFugas } from "./schema";
@@ -22,7 +22,17 @@ import type { PropsAlertaFugas } from "./schema";
  * alerta: tres cosas que gritaban y no informaban.
  */
 export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsComponente, "alAccionar">) {
-  const { totalMensualCentavos, totalAnualCentavos, pctDelIngreso, fugas, heroe = false, razon, alAccionar } = props;
+  const {
+    totalMensualCentavos,
+    totalAnualCentavos,
+    pctDelIngreso,
+    fugas,
+    orden = "monto",
+    limite,
+    heroe = false,
+    razon,
+    alAccionar,
+  } = props;
 
   if (typeof totalMensualCentavos !== "number" || typeof totalAnualCentavos !== "number" || !fugas) {
     return (
@@ -38,6 +48,10 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
 
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
   const sinUso = fugas.filter((f) => f.sinUsoReciente).length;
+  // `orden` y `limite` son props de VISTA: el agente las parchea con `ajustar_pantalla` y
+  // la tarjeta se reacomoda sin volver a consultar nada.
+  const { visibles, fuera } = recortar(ordenar(fugas, orden), limite);
+  const montoFuera = sumaDeMontos(fuera);
 
   return (
     <Tarjeta heroe={heroe}>
@@ -68,7 +82,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
           <p className={`text-sm ${suave}`}>No encontré cargos recurrentes en tus movimientos.</p>
         ) : (
           <ul className="flex flex-col">
-            {fugas.map((f) => (
+            {visibles.map((f) => (
               <li
                 key={f.id}
                 // En una tarjeta angosta no caben nombre, monto y botón en una línea: el botón
@@ -108,6 +122,16 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
                 ) : null}
               </li>
             ))}
+            {fuera.length > 0 ? (
+              // Lo recortado se resume en vez de desaparecer: si no, la suma de las filas no
+              // cuadra con el total del encabezado y quien lo lea no sabra a cual creerle.
+              <li className={`flex items-center justify-between py-3 text-sm ${suave}`}>
+                <span>
+                  y {fuera.length} {fuera.length === 1 ? "cargo mas" : "cargos mas"}
+                </span>
+                <span className="monto">{formatearMonto(montoFuera)}</span>
+              </li>
+            ) : null}
           </ul>
         )}
       </CardContent>
@@ -115,4 +139,25 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
       <PieTarjeta razon={razon} heroe={heroe} />
     </Tarjeta>
   );
+}
+
+/**
+ * El orden de la lista.
+ *
+ * `sinUso` pone primero las que no se usan y, dentro de cada grupo, las mas caras: son las
+ * que conviene cancelar y en ese orden. Sin el segundo criterio, dos suscripciones sin uso
+ * quedarian en el orden en que vinieron, que no significa nada.
+ */
+function ordenar(
+  fugas: NonNullable<PropsAlertaFugas["fugas"]>,
+  orden: NonNullable<PropsAlertaFugas["orden"]>,
+): NonNullable<PropsAlertaFugas["fugas"]> {
+  const copia = [...fugas];
+  if (orden === "nombre") return copia.sort((a, b) => a.concepto.localeCompare(b.concepto, "es"));
+  if (orden === "sinUso") {
+    return copia.sort(
+      (a, b) => Number(b.sinUsoReciente) - Number(a.sinUsoReciente) || b.montoCentavos - a.montoCentavos,
+    );
+  }
+  return copia.sort((a, b) => b.montoCentavos - a.montoCentavos);
 }

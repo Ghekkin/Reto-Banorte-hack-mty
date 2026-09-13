@@ -8,6 +8,13 @@ import { Centavos, FechaISO, IdUsuario } from "../comunes.js";
  */
 export const EntradaConsultarInversiones = z.object({
   usuarioId: IdUsuario,
+  perfil: z
+    .enum(["conservador", "moderado", "agresivo"])
+    .optional()
+    .describe(
+      "Para ver el modelo de OTRO perfil ('¿y si fuera agresivo?'). El perfil real de la persona no " +
+        "cambia: la salida marca `perfilEsHipotetico` y `perfil` sigue siendo el suyo",
+    ),
 });
 export type EntradaConsultarInversiones = z.infer<typeof EntradaConsultarInversiones>;
 
@@ -67,5 +74,12 @@ export const SalidaConsultarInversiones = z.object({
       pesoObjetivoPct: z.number(),
     }),
   ),
+  perfilDelModelo: z.string().describe("De que perfil es el `modeloRecomendado` que se devolvio"),
+  perfilEsHipotetico: z
+    .boolean()
+    .describe(
+      "true cuando el modelo es de un perfil pedido y NO el de la persona. Dilo al pintarlo: si no, " +
+        "parece que su perfil cambio",
+    ),
 });
 export type SalidaConsultarInversiones = z.infer<typeof SalidaConsultarInversiones>;

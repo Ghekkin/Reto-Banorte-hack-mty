@@ -95,7 +95,7 @@ export type Cierre = {
  * Cada turno crea el suyo: guarda los mensajes validados para que el turno los emita en
  * orden, y cuenta los intentos para no reintentar para siempre.
  */
-export function crearCierre(pantallaActual?: PantallaActual): Cierre {
+export function crearCierre(pantallaActual?: PantallaActual, datosBase?: Record<string, unknown>): Cierre {
   let mensajes: MensajeA2UI[] = [];
   let ultima: { razon: string; texto: string; sugerencias: string[] } | undefined;
   let con: CierreDelTurno | undefined;
@@ -111,13 +111,16 @@ export function crearCierre(pantallaActual?: PantallaActual): Cierre {
       execute: (entrada: EntradaPintarPantalla): ResultadoPintar => {
         // En el ultimo intento se poda al tope en vez de rechazar: el modelo ya tuvo su
         // oportunidad de elegir, y una pantalla recortada es mejor que ninguna.
-        const armado = armarMensajes(entrada, { podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1 });
+        const armado = armarMensajes(entrada, {
+          podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1,
+          datosBase,
+        });
         if (!armado.ok) {
           fallidos++;
           return { ok: false, errores: armado.errores };
         }
         mensajes = armado.mensajes;
-        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada) };
+        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada, datosBase) };
         con = "pintar";
         return { ok: true, componentes: armado.componentes };
       },
