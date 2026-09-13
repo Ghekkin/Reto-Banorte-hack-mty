@@ -1785,7 +1785,6 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   verificado con `pnpm catalogo`, `pnpm typecheck` y `pnpm test` antes de subir. Issue #31
   (cerrado) con la sugerencia de procedimiento. Avisé a las dos sesiones afectadas.
 
-<<<<<<< ours
 ### 04:41 · Más, rehecha para los jueces
 
 - **Hecho** (`docs/como-funciona/pantalla-mas.md`): `/mas` pasó de perfil + texto + ocho renglones
@@ -1805,7 +1804,7 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   `selector-usuario.tsx` y `usuarios.ts` (fotos de las personas).
 - **Pendiente**: cuando lleguen las fotos (`usuario.foto`), ponerlas en el avatar del héroe y de
   `CambiarPersona` con `AvatarImage`.
-=======
+
 ### 04:38 (dom 13) — Revisión de costos de API desde las corridas en la base
 
 - **Hecho**: revisión de lo registrado en `banorte.corridas` de 02:12 a 04:35 (274 corridas,
@@ -1841,4 +1840,3 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   así que ahí sale tarjeta + gasto; `pnpm reiniciar-estado` antes de la demo lo regresa a tarjeta + plan.
 - **Móvil**: sin trigger del sidebar en la barra superior (la navegación es la barra de abajo).
 - **En curso**: estado de carga de Inicio mientras Maya piensa (subagente), con Safari en mente.
->>>>>>> theirs
