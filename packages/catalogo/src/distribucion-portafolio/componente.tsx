@@ -10,8 +10,9 @@ import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
-import { Grafica, SEPARADOR, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
+import { Grafica, SEPARADOR, TooltipMonto, formatearMontoCorto } from "../graficas";
 import type { PropsDistribucionPortafolio } from "./schema";
+import { repartirSegmentos } from "./segmentos";
 
 /**
  * En qué está invertido el dinero.
@@ -22,10 +23,10 @@ import type { PropsDistribucionPortafolio } from "./schema";
  * La lista lleva el monto y el peso de cada clase, así que ningún número depende de la
  * dona ni del tooltip.
  *
- * Los colores van por entidad en orden fijo: oscuro, rojo, gris, plata. Nunca rojo junto
- * a rojo claro (ver `graficas.tsx`).
+ * Los colores van por entidad en orden fijo: oscuro, rojo, gris, plata (en la héroe, el blanco a
+ * cuatro opacidades). Nunca rojo junto a rojo claro (ver `graficas.tsx`). Con más de 4 clases, las
+ * 3 más grandes llevan color y el resto va junto en «Otras» (`segmentos.ts`, issue #26).
  */
-const COLORES = [SERIES.principal, SERIES.acento, SERIES.tercera, SERIES.resto, SERIES.tinte];
 
 /** Debajo de esto la desviación respecto al modelo es ruido y no se anuncia. */
 const DESVIACION_MINIMA = 0.05;
@@ -50,7 +51,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
 
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
   const positivo = rendimientoTotalPct >= 0;
-  const datos = clases.map((c, i) => ({ nombre: c.nombre, monto: c.montoCentavos, color: heroe ? `rgb(255 255 255 / ${1 - i * 0.2})` : COLORES[i % COLORES.length]! }));
+  const { segmentos: datos, colorDeClase } = repartirSegmentos(clases, heroe);
   const config = Object.fromEntries(datos.map((d) => [d.nombre, { label: d.nombre, color: d.color }]));
 
   return (
@@ -120,7 +121,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
                 key={c.claseId}
                 className={`flex items-center gap-3 border-b py-2 last:border-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`}
               >
-                <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: datos[i]!.color }} aria-hidden />
+                <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: colorDeClase[i] }} aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.nombre}</span>
                 <span className="flex shrink-0 flex-col items-end">
                   <span className="monto text-sm font-semibold">{formatearMonto(c.montoCentavos)}</span>

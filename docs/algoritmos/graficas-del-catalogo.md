@@ -56,6 +56,25 @@ tenían una barra de dos segmentos y una lista.
    `#666` por omisión, así que cada trazo, relleno, punto y texto de eje se declara
    explícito. La prueba `render.spec.tsx` ("cero hex en el HTML") truena si se olvida uno.
 
+### Colores de la dona (`DistribucionPortafolio`)
+
+5b. Sobre cada fondo se distinguen **4 colores**, no más: en la tarjeta blanca, oscuro → rojo →
+   gris → plata (el tinte, `--chart-5`, es casi blanco y sobre la tarjeta no se ve); en la héroe,
+   el blanco de `--primary-foreground` al 100, 70, 48 y 28 %.
+5c. Con **4 clases o menos**, cada una lleva su color, asignado por monto (la más grande, el
+   primero). Con **más de 4**, las 3 de mayor monto llevan color y el resto se junta en un
+   segmento «Otras (N clases)» con el cuarto color; el cuadrito de cada fila agrupada lleva ese
+   mismo color, así que toda fila de la lista tiene un segmento visible en la dona. La lista sigue
+   mostrando cada clase con su monto y su peso: se agrupa el color, no el número.
+5d. El rango es por monto y no por el orden en que llega la lista: si el modelo manda las clases
+   desordenadas, la más chica igual cae en «Otras». La lista respeta el orden recibido.
+5e. Por qué: hasta el 2026-09-13 la héroe restaba 0.2 de opacidad por clase (`1 - i * 0.2`), así
+   que la sexta quedaba en alfa 0 y las siguientes en negativo; con las 8 clases de Carmen, tres
+   no aparecían ni en la dona ni en la lista (issue #26). Y en la blanca el quinto color era el
+   tinte y desde el sexto se repetían. Código: `repartirSegmentos` en
+   `packages/catalogo/src/distribucion-portafolio/segmentos.ts`; prueba:
+   `__tests__/distribucion-portafolio.spec.tsx`.
+
 ### Ejes y tamaño
 
 6. Sin línea de eje, sin marcas, sin cuadrícula. Texto de eje en `text-xs` gris.
@@ -150,13 +169,14 @@ tenían una barra de dos segmentos y una lista.
 | 35 %, 20 %, 3 meses | pilares | reglas de bolsillo de educación financiera; se mueven en `REFERENCIAS` |
 | 5 % | `DistribucionPortafolio` | debajo, la desviación del modelo no se anuncia en el badge |
 | 3 puntos | `DistribucionPortafolio` | una clase con más de 3 pts de diferencia contra su objetivo se marca en negro |
+| 4 colores | `MAX_COLORES` en `segmentos.ts` | los que se distinguen sobre cada fondo; desde la quinta clase, «Otras» |
 
 ## Límites y supuestos
 
 - La simulación de crecimiento es una aproximación calibrada, no la tabla de la tool. El
   botón "Invertir con este plan" manda la aportación elegida y el cierre simulado; la tool
   vuelve a calcular con su propia convención.
-- Con más de 5 clases de activo la dona repite la plata; el catálogo no espera más de 5.
+- Con más de 4 clases de activo la dona agrupa desde la cuarta en «Otras» (punto 5c): dos clases dentro de «Otras» no se distinguen por color en la dona, solo en la lista.
 - El tooltip de hover existe en escritorio como extra; nada depende de él.
 - Modo oscuro: los tokens `--chart-*` cambian y las gráficas los siguen; no se verificó
   proyectado porque la demo va en claro.

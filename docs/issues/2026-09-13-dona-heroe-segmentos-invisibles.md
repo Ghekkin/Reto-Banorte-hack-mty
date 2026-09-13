@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-13 03:12
 github: 26
+resuelto-en:
 ---
 
 # La dona de `DistribucionPortafolio` como héroe pinta invisibles las clases de la sexta en adelante
@@ -32,3 +33,27 @@ la pantalla, y los huecos se leen como dinero que no aparece.
 **Arreglo sugerido:** repartir la opacidad según cuántas clases hay (de 1 a 0.3 en pasos
 iguales) en vez de restar 0.2 fijo, y agrupar en "Otras" desde la sexta clase para que la
 tarjeta blanca tampoco repita colores.
+
+## Resolución (2026-09-13)
+
+Se siguió el arreglo sugerido, con un tope de 4 colores en vez de 5 (el quinto de la tarjeta blanca
+era el tinte, invisible sobre blanco):
+
+- `packages/catalogo/src/distribucion-portafolio/segmentos.ts` (nuevo, `repartirSegmentos`): con 4
+  clases o menos, cada una con su color por monto; con más, las 3 de mayor monto con color y el
+  resto en un segmento «Otras (N clases)» con el cuarto. Blanca: oscuro, rojo, gris, plata. Héroe:
+  `var(--primary-foreground)` y el blanco al 70, 48 y 28 % (misma sintaxis `rgb(255 255 255 / x)`
+  que ya usan las otras tarjetas héroe). El cuadrito de cada fila lleva el color de su segmento.
+- `componente.tsx` usa esa función; la animación de la dona (`animar-dona`, `entrada="ninguna"`) no
+  se tocó.
+- Prueba nueva `packages/catalogo/src/__tests__/distribucion-portafolio.spec.tsx` (7): con las 8
+  clases de Carmen, en héroe y en blanca, todo cuadrito es visible (alfa ≥ 0.25, sin tinte), hay
+  exactamente 4 colores y de la cuarta clase en adelante comparten el de «Otras»; con 4 clases cada
+  una tiene el suyo; el agrupado es por monto aunque lleguen desordenadas. **Antes del arreglo
+  fallaban 5 de las 7** (alfa 0.2 y luego negativo en héroe, 8 colores; tinte y 5 colores en blanca).
+- Docs: `docs/algoritmos/graficas-del-catalogo.md` (puntos 5b–5e, límites y parámetros) y
+  `docs/como-funciona/componentes-inversion-y-credito.md` (sección de `DistribucionPortafolio`, que
+  además decía `rebalancear_portafolio` como acción; la real es `ver_orden_rebalanceo`).
+
+**No verificado en navegador**: las pruebas son de render en servidor; la dona (Recharts) no pinta
+en jsdom. Falta mirar `/catalogo` y la portada de Carmen a 360 px después del deploy.
