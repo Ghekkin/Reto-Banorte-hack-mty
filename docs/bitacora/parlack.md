@@ -1870,3 +1870,29 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   con apt toca el host de producción, no se hizo). Revisión estática de lo que suele fallar en iOS
   (`requestIdleCallback`, `100vh`, `randomUUID` en http, `AbortSignal.any`): nada en la ruta de la demo.
 - Error propio corregido: `601d733` subió la bitácora con marcadores de conflicto; `85e5060` los quitó.
+
+### 06:21 (dom 13) — "$0.00" en GastoPorCategoria y DetalleCategoria al tocar "Ver Restaurantes"
+
+- **Reporte del usuario** (captura de pantalla): al tocar la sugerencia "Ver Restaurantes", el monto
+  grande de `GastoPorCategoria` ("Gasto de agosto de 2026") y de `DetalleCategoria`
+  ("Restaurantes · agosto de 2026") salía en "$0.00", y el desglose de abajo traía datos de relleno
+  (Restaurantes $6,200 / Supermercado $8,300; "Cargo general" $350) en vez de los reales, aunque el
+  texto de Maya sí decía $7,255.50 bien.
+- **Causa**: `normalizarListaDeComponentes` (`apps/web/src/lib/agente/pantalla.ts`) reparaba
+  `totalCentavos`/`categorias`/`movimientos` de esos dos componentes con `Array.isArray(...)` y
+  `=== undefined` sobre la prop CRUDA, antes de resolver bindings. Un binding `{"path": "..."}` (la
+  forma correcta, ver `packages/catalogo/ejemplos/gasto-por-categoria.jsonl` y
+  `detalle-categoria.jsonl`) no es un array, así que el arreglo se pisaba con el relleno; y
+  `Number({path:...})` es `NaN`, así que `NaN || 0` volvía el total "0".
+- **Arreglado**: guardas con `esBinding` (ya importado de `@maya/a2ui`, antes solo se usaba en
+  `revisarProps`) antes de cada reparación, en los dos componentes. 3 pruebas nuevas
+  (`__tests__/normalizacion-gasto.spec.ts`) con los montos exactos del reporte; 386 pruebas de
+  `apps/web` y las 721 del monorepo en verde, typecheck limpio, `pnpm humo` ok.
+- **Issue #39** (nuevo, abierto): el mismo patrón (falta `esBinding` antes de reparar) sigue sin
+  corregirse en otros ~10 componentes de `pantalla.ts` (`ProyeccionPagoCredito`, `SimuladorMeta`,
+  `DistribucionPortafolio`, etc.) — no se tocaron para no exceder el cambio acotado a hora 34+ del
+  reto. Relacionado con #23 (mismo archivo, cifras inventadas cuando la prop está realmente ausente).
+- **Toque ajeno mientras trabajaba**: `docs/issues/index.md` y `docs/bitacora/parlack.md` tuvieron
+  un rebase con conflicto en vivo de otra sesión (la del reloj de portadas, `29a3efd`) justo cuando
+  iba a commitear; se esperó a que terminara sola en vez de tocar el rebase ajeno, sin pérdida de
+  contenido de ninguna de las dos.

@@ -438,7 +438,7 @@ export function normalizarListaDeComponentes(
         if (!comp.periodo || typeof comp.periodo !== "string") {
           comp.periodo = "2026-08";
         }
-        if (!Array.isArray(comp.categorias) || comp.categorias.length === 0) {
+        if (!esBinding(comp.categorias) && (!Array.isArray(comp.categorias) || comp.categorias.length === 0)) {
           const gastoData = (datos.analizar_gasto ?? {}) as Record<string, unknown>;
           const cats = Array.isArray(gastoData.categorias) ? (gastoData.categorias as Record<string, unknown>[]) : [];
           comp.categorias = cats.length > 0
@@ -453,7 +453,12 @@ export function normalizarListaDeComponentes(
                 { categoriaId: "cat_super", nombre: "Supermercado", montoCentavos: 830000 },
               ];
         }
-        if (comp.totalCentavos === undefined) {
+        // Un binding {"path": "..."} es la forma correcta y documentada de mandar el total
+        // (los ejemplos few-shot lo enlazan a datosJson): se deja intacto y se resuelve
+        // despues, en revisarProps/resolverValor. Tratarlo como numero aqui daba NaN -> 0.
+        if (esBinding(comp.totalCentavos)) {
+          // no tocar: es un binding legitimo
+        } else if (comp.totalCentavos === undefined) {
           comp.totalCentavos = (comp.categorias as { montoCentavos: number }[]).reduce(
             (sum, c) => sum + (Number(c.montoCentavos) || 0),
             0,
@@ -583,11 +588,11 @@ export function normalizarListaDeComponentes(
         if (typeof comp.movimientos === "string") {
           try { comp.movimientos = JSON.parse(comp.movimientos); } catch {}
         }
-        if (!Array.isArray(comp.movimientos) || comp.movimientos.length === 0) {
+        if (!esBinding(comp.movimientos) && (!Array.isArray(comp.movimientos) || comp.movimientos.length === 0)) {
           comp.movimientos = [
             { fecha: "2026-08-15", comercio: "Cargo general", montoCentavos: 35000 },
           ];
-        } else {
+        } else if (Array.isArray(comp.movimientos)) {
           comp.movimientos = (comp.movimientos as Array<Record<string, unknown>>).map((m) => {
             if (typeof m === "string") {
               try { m = JSON.parse(m); } catch { m = { comercio: m }; }
@@ -607,11 +612,15 @@ export function normalizarListaDeComponentes(
             };
           });
         }
-        if (comp.totalCentavos === undefined) {
-          comp.totalCentavos = (comp.movimientos as Array<{ montoCentavos: number }>).reduce(
-            (acc, m) => acc + (m.montoCentavos || 0),
-            0,
-          );
+        if (esBinding(comp.totalCentavos)) {
+          // no tocar: es un binding legitimo, ver comentario igual en GastoPorCategoria
+        } else if (comp.totalCentavos === undefined) {
+          comp.totalCentavos = Array.isArray(comp.movimientos)
+            ? (comp.movimientos as Array<{ montoCentavos: number }>).reduce(
+                (acc, m) => acc + (m.montoCentavos || 0),
+                0,
+              )
+            : 0;
         } else {
           comp.totalCentavos = Math.round(Number(comp.totalCentavos) || 0);
         }
