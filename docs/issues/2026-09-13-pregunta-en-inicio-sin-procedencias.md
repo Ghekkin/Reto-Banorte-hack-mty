@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: web
 encontrado: 2026-09-13 03:55
 github: 27
+resuelto-en: be8630d
 ---
 
 # Con widgets vivos, la pregunta hecha en la barra de Inicio se guarda sin procedencias y el siguiente render la tira
