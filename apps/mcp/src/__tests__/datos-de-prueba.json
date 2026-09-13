@@ -2065,8 +2065,8 @@
    "iva_interes_centavos": "201992",
    "mensualidad_centavos": "1891408",
    "saldo_final_centavos": "138558504",
-   "estatus": "vencido",
-   "fecha_pago": ""
+   "estatus": "pagado",
+   "fecha_pago": "2026-07-10"
   },
   {
    "credito_id": "cred_carmen_hipotecario",
@@ -2078,8 +2078,8 @@
    "iva_interes_centavos": "201372",
    "mensualidad_centavos": "1891408",
    "saldo_final_centavos": "138127041",
-   "estatus": "vencido",
-   "fecha_pago": ""
+   "estatus": "pagado",
+   "fecha_pago": "2026-08-10"
   },
   {
    "credito_id": "cred_carmen_hipotecario",
@@ -2091,8 +2091,8 @@
    "iva_interes_centavos": "200745",
    "mensualidad_centavos": "1891408",
    "saldo_final_centavos": "137691032",
-   "estatus": "vencido",
-   "fecha_pago": ""
+   "estatus": "pagado",
+   "fecha_pago": "2026-09-10"
   },
   {
    "credito_id": "cred_carmen_hipotecario",
@@ -4567,7 +4567,7 @@
    "cuentas_abiertas": "9",
    "pagos_puntuales_pct": "1.0000",
    "atrasos_12m": "0",
-   "deuda_total_centavos": "158051565",
+   "deuda_total_centavos": "156757128",
    "pago_mensual_comprometido_centavos": "3142971",
    "capacidad_pago_mensual_centavos": "882029",
    "nivel_endeudamiento_pct": "0.2733",
@@ -5210,14 +5210,14 @@
    "tarjeta_id": "",
    "alias": "Hipoteca residencia",
    "monto_original_centavos": "165000000",
-   "saldo_insoluto_centavos": "138985469",
+   "saldo_insoluto_centavos": "137691032",
    "tasa_anual": "0.1090",
    "cat": "0.1359",
    "plazo_meses": "240",
-   "pagos_realizados": "98",
+   "pagos_realizados": "101",
    "mensualidad_centavos": "1891408",
    "fecha_contratacion": "2018-04-10",
-   "fecha_proximo_pago": "2026-07-10",
+   "fecha_proximo_pago": "2026-10-10",
    "dias_mora": "0",
    "estatus": "vigente"
   },

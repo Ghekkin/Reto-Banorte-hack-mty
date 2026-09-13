@@ -112,7 +112,12 @@ dominio en `apps/mcp/src/__tests__/`:
    Si esto falla, el encabezado de la cuenta y la tabla de movimientos se contradicen en
    la misma pantalla.
 2. **Toda tabla de amortización cierra en cero**, y `creditos.saldo_insoluto_centavos`
-   es exactamente el saldo que la tabla deja tras los pagos ya realizados.
+   es exactamente el saldo que la tabla deja tras los pagos ya realizados. Además, la fila del
+   crédito y su tabla cuentan la misma historia: `pagos_realizados` es el número de filas
+   `pagado`, `fecha_proximo_pago` es la primera sin pagar, un crédito sin días de mora no tiene
+   filas `vencido`, y `buro.deuda_total_centavos` es la suma de los saldos insolutos
+   (`integridad-creditos.spec.ts`). La hipoteca de Carmen lo rompía hasta la migración 0009
+   (issue #24).
 3. **El pago mínimo de cada tarjeta sigue la misma fórmula** que usa el simulador de
    reestructura, para que la UI no muestre un mínimo y el comparador otro.
 4. **Los pesos objetivo de cada perfil suman 1**, y los pesos reales de cada portafolio

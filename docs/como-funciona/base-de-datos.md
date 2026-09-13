@@ -342,6 +342,12 @@ PK compuesta `(credito_id, numero_pago)`. Índice parcial
 | `estatus` | `TEXT` | `pagado` \| `pendiente` \| `vencido` |
 | `fecha_pago` | `DATE` | **Nullable**: solo en los pagados |
 
+**La migración 0009 corrige un dato del generador** (issue #24): la hipoteca de Carmen tenía los
+pagos 99–101 (julio a septiembre) en `vencido` con el crédito `vigente`, sin mora y con el
+próximo pago en julio, contra un buró 100 % puntual. Quedan `pagado`, el crédito en 101 pagos con
+próximo pago el 2026-10-10 y saldo $1,376,910.32, y `buro.deuda_total_centavos` de Carmen en
+156,757,128. Tras aplicarla hay que reiniciar el MCP (carga las tablas al arrancar).
+
 **Las dos identidades que hacen auditable la tabla**, y son `CHECK` de la base, no una
 promesa del generador:
 

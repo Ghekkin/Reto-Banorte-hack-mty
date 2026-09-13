@@ -327,7 +327,7 @@ describe("programar_abono_capital: el ciclo completo", () => {
     const hipoteca = salida.creditos.find((c) => c.id === "cred_carmen_hipotecario")!;
     expect(auto.pagosRestantes).toBe(12);
     expect(hipoteca.abonoMensualCentavos).toBe(0);
-    expect(hipoteca.pagosRestantes).toBe(142);
+    expect(hipoteca.pagosRestantes).toBe(139);
   });
 
   it("lo que se abona al credito deja de estar disponible para ahorrar", async () => {
