@@ -1,0 +1,27 @@
+---
+title: Catálogo de Componentes A2UI
+description: Índice interactivo de los 21 componentes financieros de @maya/catalogo basados en shadcn/ui.
+---
+
+import ComponentCatalogExplorer from '../../../components/ComponentCatalogExplorer';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Publicación del Catálogo">
+  El catálogo completo se publica automáticamente en formato JSON Schema en 
+  <code>http://localhost:3000/catalogo/v1.json</code>. Este es el <code>catalogId</code> que el agente declara en cada mensaje <code>createSurface</code>.
+</BanorteAlert>
+
+## Explorador de Componentes del Catálogo
+
+<ComponentCatalogExplorer client:load />
+
+---
+
+## Principios de Diseño de Componentes
+
+Cada componente del catálogo respeta los principios acordados en el sistema de diseño:
+
+1. **Una sola idea por tarjeta:** Cada widget se enfoca en resolver un concepto claro (un saldo, una comparativa de plazos o un gráfico de categorías).
+2. **El monto como elemento más grande:** Los importes monetarios utilizan la clase `tabular-nums` y fuentes de tamaño prominente para máxima legibilidad.
+3. **Objetivos táctiles de 48 px:** Todos los botones, interruptores y sliders están optimizados para dedos en dispositivos móviles.
+4. **Semántica de colores Banorte:** El rojo (#EC0029) se reserva exclusivamente para la acción primaria o llamadas de atención por morosidad o fugas críticas.

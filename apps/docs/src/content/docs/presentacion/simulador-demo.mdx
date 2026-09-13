@@ -1,0 +1,19 @@
+---
+title: Simulador de Demo Interactivo
+description: Reproducción interactiva de los 4 pasos del guión de presentación con modelo real.
+---
+
+import DemoFlowSimulator from '../../../components/DemoFlowSimulator';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="success" title="Entorno Interactivo">
+  Utiliza este simulador para experimentar la respuesta de Maya ante cada turno conversacional y verificar cómo los eventos táctiles mutan la interfaz y la base de datos.
+</BanorteAlert>
+
+<DemoFlowSimulator client:load />
+
+## Explicación de los Estados
+
+1. **Estado Inicial (Beto)**: La IA detecta atraso de 12 días y un ratio de utilización de tarjeta del 96.7%. En lugar de redactar recomendaciones abstractas, renderiza el componente `PlanDePago` con alternativas de amortización inmediata.
+2. **Ciclo de Retorno (Action)**: El botón "Aplicar plan" emite una acción tipada hacia `/api/agente`. El backend registra la transacción con clave de idempotencia única y el frontend actualiza la tarjeta con saldo revolvente en cero.
+3. **Persistencia y Adaptabilidad (Ana)**: Cuando un usuario sin tarjeta revolvente introduce la misma frase, Maya detecta que su costo financiero radica en un crédito simple, reorientando el flujo hacia amortización anticipada o creación de apartados con slider interactivo.

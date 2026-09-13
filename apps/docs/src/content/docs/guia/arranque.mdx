@@ -1,0 +1,74 @@
+---
+title: Instalación y Arranque Local
+description: Guía paso a paso para clonar, configurar variables de entorno y levantar la suite de servicios.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Requisitos del Sistema">
+  Se requiere <strong>Node.js 22+</strong> (o Node 24) y el gestor de paquetes <strong>pnpm 10</strong>.
+  En Windows PowerShell, recuerda ejecutar comandos individuales sin el operador <code>&&</code>.
+</BanorteAlert>
+
+## 1. Clonar el Repositorio
+
+```bash
+git clone https://github.com/Ghekkin/Reto-Banorte-hack-mty.git
+cd Reto-Banorte-hack-mty
+```
+
+---
+
+## 2. Variables de Entorno
+
+Copia el archivo de ejemplo `.env.example` a `.env`:
+
+```bash
+cp .env.example .env
+```
+
+Configura las dos variables principales en `.env`:
+* `DATABASE_URL`: Cadena de conexión a PostgreSQL (ej. `postgresql://postgres:contraseña@localhost:5432/reto_banorte`).
+* `GEMINI_API_KEY`: Llave de Google AI Studio para el modelo principal (`gemini-3.8-flash` o `gemini-2.5-flash`).
+* *(Opcional)* `ANTHROPIC_API_KEY`: Llave de Claude para el respaldo.
+
+---
+
+## 3. Instalación de Dependencias
+
+Ejecuta en la raíz del monorepo:
+
+```bash
+pnpm install
+```
+
+---
+
+## 4. Inicialización de la Base de Datos
+
+Si tu base de datos está vacía, pobla las 22 tablas y los datos sintéticos de los perfiles demo:
+
+```bash
+# Aplica las migraciones de esquema
+pnpm datos:migrar
+
+# Restaura los registros de Beto, Ana y Carmen desde el fixture oficial
+pnpm datos:restaurar
+```
+
+---
+
+## 5. Levantar los Servicios
+
+Para levantar la suite completa en simultáneo:
+
+```bash
+pnpm dev
+```
+
+Esto inicia:
+* **Servidor MCP**: en `http://localhost:3100` (con healthcheck en `/health`).
+* **Frontend Web & Agente Host**: en `http://localhost:3000`.
+* **Documentación Astro**: en `http://localhost:4321` (ejecutando `pnpm dev:docs`).
+
+Abre `http://localhost:3000` en tu navegador para interactuar con Maya.

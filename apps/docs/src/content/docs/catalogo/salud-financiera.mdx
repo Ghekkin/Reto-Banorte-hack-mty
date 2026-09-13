@@ -1,0 +1,66 @@
+---
+title: Diagnóstico y Salud Financiera
+description: Widgets de análisis de gastos, detección de gastos atípicos y termómetro de salud financiera.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Dominio Financiero: Diagnóstico Analítico">
+  Proporciona claridad inmediata sobre patrones de gasto, fugas invisibles (gastos hormiga) y semaforización de salud patrimonial.
+</BanorteAlert>
+
+## 1. `GastoPorCategoria`
+
+Gráfica de barras horizontales construida con **Recharts** sobre tokens de Banorte.
+
+```typescript
+export const CategoriaGastoItemSchema = z.object({
+  categoria: z.string(),
+  monto: z.number().nonnegative(),
+  porcentajeDelTotal: z.number().min(0).max(100),
+  esAtipico: z.boolean().default(false),
+});
+
+export const GastoPorCategoriaPropsSchema = z.object({
+  periodoNombre: z.string(),
+  totalGastado: z.number().positive(),
+  categorias: z.array(CategoriaGastoItemSchema).min(1),
+});
+```
+
+* **Regla de Color:** Las barras normales se pintan en gris neutro (`#64748b`); la categoría que exceda su varianza histórica (`esAtipico: true`) se ilumina en rojo Banorte (`#EC0029`) con una etiqueta explicativa.
+
+---
+
+## 2. `TermometroSaludFinanciera`
+
+Medidor integral de 0 a 100 puntos que evalúa liquidez, endeudamiento y capacidad de respuesta ante imprevistos.
+
+```typescript
+export const TermometroSaludPropsSchema = z.object({
+  puntaje: z.number().min(0).max(100),
+  nivel: z.enum(['critico', 'vulnerable', 'estable', 'excelente']),
+  diagnosticoBreve: z.string(),
+  puntosClave: z.array(z.string()),
+});
+```
+
+* **Bandas Cromáticas:**
+  * `0 – 39 (Crítico)`: Rojo Banorte (#EC0029).
+  * `40 – 69 (Vulnerable)`: Ámbar (#f59e0b).
+  * `70 – 84 (Estable)`: Azul grisáceo neutral (#0284c7).
+  * `85 – 100 (Excelente)`: Esmeralda (#10b981).
+
+---
+
+## 3. `Conclusion`
+
+La conclusión sintetizada de Maya como tarjeta de cierre accionable en el lienzo.
+
+```typescript
+export const ConclusionPropsSchema = z.object({
+  resumenSituacion: z.string(),
+  recomendacionInmediata: z.string(),
+  impactoEsperado: z.string(),
+});
+```

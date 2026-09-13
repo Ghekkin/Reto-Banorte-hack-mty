@@ -1,0 +1,56 @@
+---
+title: Amortización y Cálculo de CAT
+description: Formulación matemática de la mensualidad fija, tabla de amortización que cierra en cero y CAT por bisección.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Ubicación en Código">
+  Implementado en <code>apps/mcp/src/lib/financiero/amortizacion.ts</code> con pruebas en <code>apps/mcp/src/__tests__/amortizacion.test.ts</code>.
+</BanorteAlert>
+
+## 1. Cálculo de Mensualidad Fija (Método Francés)
+
+Para una deuda consolidada `P` a una tasa de interés mensual `i = r / 12` durante `n` períodos:
+
+```text
+M = P * [i * (1 + i)^n] / [(1 + i)^n - 1]
+```
+
+Donde:
+* **P**: Saldo revolvente a reestructurar (ej. $47,386.00 MXN).
+* **r**: Tasa de interés anual preferencial pactada (22.5% = 0.225).
+* **n**: Número de mensualidades (12, 18 o 24 meses).
+* **M**: Mensualidad fija pactada (ej. $3,193.35 para 18 meses).
+
+### Cierre Exacto en Cero
+Debido al redondeo a centavos en transacciones financieras reales, la última amortización de capital se ajusta mediante:
+
+```text
+Capital[n] = SaldoInsoluto[n - 1]
+Interes[n] = SaldoInsoluto[n - 1] * i
+Mensualidad[n] = Capital[n] + Interes[n]
+```
+
+Garantizando que el saldo final al mes `n` sea **exactamente $0.00**.
+
+---
+
+## 2. Cálculo del CAT (Costo Anual Total) por Bisección
+
+El CAT se define oficialmente conforme a la metodología de Banco de México (Circular 21/2009) como la tasa de descuento anual `i_CAT` que iguala el valor presente de los pagos con el monto financiado:
+
+```text
+P = Sumatoria(k = 1 hasta n) [ M[k] / (1 + i_CAT)^(k / 12) ]
+```
+
+Dado que esta ecuación no tiene solución analítica cerrada para `n > 4`, utilizamos el **método numérico de bisección**:
+
+1. Definimos el intervalo de búsqueda `[a, b] = [0.01, 3.00]` (CAT entre 1% y 300%).
+2. Evaluamos la función de error `f(x) = Sumatoria [ M[k] / (1 + x)^(k / 12) ] - P`.
+3. Mientras `|b - a| > 10^-6` (tolerancia de 6 decimales) y en menos de 50 iteraciones:
+   * `c = (a + b) / 2`
+   * Si `f(a) * f(c) < 0`, entonces `b = c`; en caso contrario, `a = c`.
+4. El CAT oficial en porcentaje es `c * 100`.
+
+Para la oferta de 18 meses de Beto: **Tasa 22.5% → CAT resultante: 24.9%**, frente al **62.1%** original de la tarjeta.

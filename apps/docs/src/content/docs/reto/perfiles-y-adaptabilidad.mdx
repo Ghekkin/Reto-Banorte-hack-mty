@@ -1,0 +1,51 @@
+---
+title: Perfiles Demo y Adaptabilidad
+description: Demostración técnica del criterio de adaptabilidad (20% de la rúbrica oficial).
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Criterio de Adaptabilidad">
+  El Criterio 2 de la rúbrica evalúa que el sistema no presente pantallas genéricas o estáticas. La misma petición formulada por usuarios con circunstancias financieras distintas debe generar interfaces completamente diferentes.
+</BanorteAlert>
+
+## Los Tres Perfiles Sintéticos en PostgreSQL
+
+Para evaluar la solución en condiciones extremas y representativas de la población mexicana, diseñamos tres perfiles calibrados en `db/schema.sql`:
+
+### 1. Alberto "Beto" Ramírez Solís (Estrés de Deuda Revolvente)
+* **Edad:** 41 años | **Ocupación:** Supervisor de logística.
+* **Ingresos:** $34,500 MXN / mes.
+* **Diagnóstico Financiero:**
+  * Tarjeta Banorte Clásica con saldo de **$47,386 sobre $49,000 de límite (96.7% de uso)**.
+  * Tasa de interés ordinaria del **48.9% anual** y CAT del **62.1%**.
+  * **12 días de mora**, estado de crédito `vencido`.
+  * Pago mínimo de $2,950.73 que solo cubre comisiones e intereses.
+* **Comportamiento de Maya:** Prioriza el rescate crediticio. Otorga una reestructura a tasa preferencial (22.5%) a 12, 18 o 24 meses para congelar el saldo y detener el deterioro en buró.
+
+### 2. Ana Sofía Treviño Cantú (Ahorro y Crédito Simple)
+* **Edad:** 28 años | **Ocupación:** Diseñadora de producto digital.
+* **Ingresos:** $32,000 MXN / mes.
+* **Diagnóstico Financiero:**
+  * Sin tarjeta de crédito revolvente activa.
+  * Crédito personal de $55,783 al 27.9% anual (al corriente).
+  * Excedente de flujo de efectivo: **$6,629 MXN libres al mes**.
+* **Comportamiento de Maya:** Cuando Ana pregunta por "pagar menos intereses", Maya no le inventa una tarjeta ni le ofrece una reestructura innecesaria: analiza su crédito personal y le ofrece acelerar pagos mediante aportaciones a capital o crear un apartado de ahorro programado mediante un simulador con slider.
+
+### 3. Carmen Lira Elizondo (Gestión Patrimonial)
+* **Edad:** 54 años | **Ocupación:** Empresaria y consultora.
+* **Ingresos:** $95,000 MXN / mes.
+* **Diagnóstico Financiero:**
+  * Sin deudas en tarjeta ni créditos de nómina.
+  * Portafolio de inversión diversificado en Cetes, fondos de renta variable y pagarés Banorte por más de $480,000 MXN.
+* **Comportamiento de Maya:** En la portada de Inicio y consultas analíticas, Maya le presenta su gráfica de distribución patrimonial (`DistribucionPortafolio`) y alertas de rebalanceo ante vencimientos de tasa fija.
+
+---
+
+## Matriz de Adaptabilidad en Vivo
+
+| Pregunta del Usuario | Perfil Beto (Endeudado) | Perfil Ana (Liquidez) |
+|---|---|---|
+| *"Quiero pagar menos intereses"* | **`ResumenTarjeta`** (con badge de mora) + **`PlanDePago`** (12/18/24 meses) | **`ProyeccionPagoCredito`** + **`SimuladorMeta`** (slider de ahorro) |
+| *Acción que dispara el botón* | `aplicar_plan_pago` (Reestructura y saldo a $0) | `crear_apartado` (Crea meta de ahorro automático) |
+| *Superficie resultante* | `Calendario` de amortizaciones a tasa fija | `MetaActiva` con barra de avance |

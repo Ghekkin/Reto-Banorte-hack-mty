@@ -1,0 +1,49 @@
+---
+title: Equipo y Roles
+description: Organización del equipo durante el hackathon, distribución de responsabilidades y metodología.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Metodología de Hackathon">
+  Cuatro roles con responsabilidad definida trabajando concurrentemente sobre la rama principal (<code>main</code>), con commits automáticos, bitácoras por turno y tablero de estado continuo.
+</BanorteAlert>
+
+## Distribución de Roles
+
+<CardGrid>
+  <Card title="Rol: Web & Frontend" icon="laptop">
+    **Responsable de:** `apps/web` y `packages/catalogo`.
+    * Construcción de los 21 componentes de catálogo A2UI con shadcn/ui.
+    * Implementación del sistema de diseño institucional Banorte.
+    * Shell web móvil-primero con navegación por pestañas y modo oscuro.
+  </Card>
+  <Card title="Rol: MCP & Datos" icon="seti:graphql">
+    **Responsable de:** `apps/mcp` y `db/`.
+    * Servidor Streamable HTTP en Express con `@modelcontextprotocol/sdk`.
+    * 18 tools (14 de lectura analítica y 4 mutacionales).
+    * Esquema PostgreSQL `banorte` con 22 tablas y datos sintéticos.
+  </Card>
+  <Card title="Rol: Contratos & Agente" icon="setting">
+    **Responsable de:** `packages/a2ui`, `packages/schemas` y orquestador.
+    * Desarrollo del motor propio A2UI v0.9.1 (~1,310 líneas, 112 pruebas).
+    * Validación estricta con Ajv y contratos Zod.
+    * Agente host con streaming JSONL y bridging hacia Gemini y Claude.
+  </Card>
+  <Card title="Rol: Demo & Documentación" icon="open-book">
+    **Responsable de:** Pitch, guión, checklist de calidad y arquitectura.
+    * Cronometraje de los 3 minutos de demo y pitch de 5 minutos.
+    * 10 Decisiones de Arquitectura (ADRs) y análisis de trade-offs.
+    * Documentación técnica integral para jurados y desarrolladores.
+  </Card>
+</CardGrid>
+
+---
+
+## Reglas Innegociables de Desarrollo
+
+1. **Todo se documenta en dos niveles:** Nivel "para cualquiera" (ejecutivo y funcional) y nivel "técnico" (archivos, contratos y schemas).
+2. **Cero alucinaciones numéricas:** Ningún dato monetario o tasa de interés es inventado por el modelo; todo proviene de una tool MCP.
+3. **Persistencia real:** Las acciones del usuario mutan PostgreSQL con clave de idempotencia única; ningún cambio vive solo en la memoria del front.
+4. **Main siempre verde:** Todo commit pasa validación de tipos (`pnpm typecheck`) y pruebas unitarias (`pnpm test`).

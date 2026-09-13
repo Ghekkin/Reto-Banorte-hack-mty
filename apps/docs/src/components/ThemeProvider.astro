@@ -1,0 +1,12 @@
+---
+// Componente de reemplazo para ThemeProvider de Starlight.
+// Fuerza permanentemente el tema blanco institucional de Banorte, sin importar
+// las preferencias del sistema operativo (evita que el SO en modo oscuro cambie a azul/negro).
+---
+
+<script is:inline>
+  document.documentElement.dataset.theme = 'light';
+  try {
+    localStorage.setItem('starlight-theme', 'light');
+  } catch (e) {}
+</script>

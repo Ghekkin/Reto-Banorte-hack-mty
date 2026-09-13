@@ -1,0 +1,26 @@
+---
+title: Rúbrica y Cumplimiento (100 Pts)
+description: Desglose oficial de los 7 criterios de evaluación de Banorte y evidencia técnica demostrable.
+---
+
+import RubricsChecker from '../../../components/RubricsChecker';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Lectura Estratégica de Evaluación">
+  El <strong>45% de la calificación</strong> (Criterios 1 y 2) depende de que la interfaz generada resuelva un problema real y demuestre adaptabilidad ante contextos dispares. El <strong>30%</strong> (Criterios 3 y 4) evalúa la solidez ingenieril del MCP y A2UI.
+</BanorteAlert>
+
+## Matriz Interactiva de Criterios
+
+<RubricsChecker client:load />
+
+---
+
+## Los 4 Entregables Obligatorios
+
+| Entregable | Requisito Oficial | Cumplimiento en el Repositorio | Estado |
+|---|---|---|---|
+| **01 · Demo** | "El flujo completo: intención, UI generada, interacción y la acción que dispara" | `docs/demo/guion-demo.md` con corrida completa verificada contra URL pública. | ✅ Construido |
+| **02 · Código** | "Componentes, servidor MCP y capa A2UI, con instrucciones para correrlo" | Monorepo pnpm con `@maya/a2ui`, `@maya/catalogo`, `@maya/mcp` y `@maya/web`. | ✅ Construido |
+| **03 · Datos** | "Los servicios creados por el equipo, aunque los datos sean sintéticos" | Base PostgreSQL con 22 tablas en esquema `banorte`, migraciones y fixtures. | ✅ Construido |
+| **04 · Técnico** | "Diagrama de arquitectura y trade-offs: modelo, protocolo, infraestructura" | `docs/arquitectura/vision-general.md`, `trade-offs.md` y 10 ADRs formales. | ✅ Construido |

@@ -1,0 +1,55 @@
+---
+title: Detalle de Decisiones de Arquitectura
+description: Análisis exhaustivo de los ADRs críticos del proyecto Maya.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+## ADR 0001: Todo en TypeScript
+
+### Contexto
+Teníamos 36 horas para construir 5 piezas interconectadas (frontend, servidor MCP, capa A2UI, catálogo y contratos de datos). Un equipo políglota (ej. Python en backend y TypeScript en frontend) hubiera obligado a mantener esquemas Pydantic y Zod sincronizados a mano, introduciendo desajustes de tipos en tiempo de ejecución.
+
+### Decisión
+Todo el monorepo se desarrolla en TypeScript con `pnpm` workspaces y Node 22.
+* `@maya/schemas`: Zod define el contrato de entrada y salida de cada tool.
+* `@maya/mcp`: Consume directamente los schemas Zod para validar argumentos.
+* `@maya/web`: Utiliza los mismos tipos inferidos para tipar el stream y los componentes React.
+
+### Consecuencias
+* **Positivas:** Refactorizaciones instantáneas con `pnpm typecheck` en los 5 paquetes en menos de 4 segundos. Cero desajustes entre backend y frontend.
+* **Negativas:** Obliga a implementar algoritmos numéricos directamente en TypeScript sin depender de librerías como Pandas o NumPy.
+
+---
+
+## ADR 0008: Renderer A2UI Propio, Fiel a la Spec
+
+### Contexto
+El reto exige el uso del protocolo A2UI v0.9.1. La implementación oficial disponible públicamente utiliza Lit y Web Components encapsulados con Shadow DOM. En Shadow DOM no es posible inyectar clases de Tailwind CSS v4 ni componer componentes de accesibilidad basados en Radix UI / shadcn/ui.
+
+### Decisión
+Escribimos nuestro propio motor A2UI en TypeScript en `packages/a2ui`:
+1. Valida los mensajes contra los JSON Schemas oficiales de A2UI usando Ajv.
+2. Construye el árbol de componentes y resuelve bindings reactivos de JSON Pointers.
+3. Despacha acciones mediante la estructura oficial `client_to_server.json`.
+4. Supera los 76 casos de conformidad de la suite oficial.
+
+### Consecuencias
+* **Positivas:** Control absoluto de la experiencia visual, soporte de temas claro/oscuro institucional Banorte y tiempos de renderizado de microsegundos sin sobrecarga de Shadow DOM.
+* **Negativas:** Inversión de tiempo en las primeras 8 horas del hackathon para construir el motor y su batería de pruebas.
+
+---
+
+## ADR 0010: PostgreSQL como Única Fuente de Verdad
+
+### Contexto
+Inicialmente evaluamos mantener el estado en archivos JSON locales (ADR 0006) para simplificar el despliegue. Sin embargo, en un hackathon donde los evaluadores prueban concurrencia o reinicios de contenedor, un archivo JSON en disco corre riesgo de corrupción o carreras de escritura.
+
+### Decisión
+PostgreSQL es la fuente obligatoria y única de datos:
+* Si la variable `DATABASE_URL` no está definida, el servidor MCP arroja un error fatal y se detiene.
+* El estado mutable de las decisiones de la IA se escribe en `banorte.acciones_aplicadas` con índice único sobre `idempotency_key`.
+
+### Consecuencias
+* **Positivas:** Transacciones seguras, datos normalizados en 22 tablas y persistencia garantizada ante fallos de servidor.
+* **Negativas:** Requiere una instancia de PostgreSQL activa en local o VPS para levantar el entorno de desarrollo.

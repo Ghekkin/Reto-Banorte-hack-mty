@@ -1,0 +1,45 @@
+---
+title: El Reto Oficial Banorte
+description: Descripción oficial del reto "Interfaces que la IA construye en tiempo real" y sus pilares indispensables.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Definición del Reto">
+  El reto oficial de Banorte en Hack Monterrey 2026 plantea: <strong>"Interfaces que la IA construye en tiempo real"</strong>.
+  El modelo de inteligencia artificial no debe limitarse a redactar párrafos de texto, sino ensamblar la pantalla visual interactiva que resuelve directamente el problema financiero de quien pregunta.
+</BanorteAlert>
+
+## Los Tres Pilares Indispensables
+
+El comité evaluador de Banorte estableció tres componentes obligatorios que deben operar de forma armónica:
+
+1. **LLM al Centro:** El modelo de lenguaje interpreta la intención del usuario, decide qué datos requiere y qué componentes satisfacen el flujo.
+2. **Servidor MCP para Datos y Acciones:** La IA no accede directamente a la base de datos ni ejecuta mutaciones descontroladas. Todo intercambio ocurre a través del protocolo estándar **Model Context Protocol (MCP)** mediante herramientas tipadas.
+3. **Protocolo A2UI para Transmisión de Interfaz:** En vez de generar HTML desestructurado o código React arbitrario, el agente emite especificaciones declarativas bajo el estándar **A2UI (Agent to UI)**, garantizando seguridad, tipado y consistencia estética.
+
+---
+
+## El Ciclo Cerrado de Acción
+
+El reto exige explícitamente que la experiencia no sea de "sólo lectura". Lo que el usuario toca en la interfaz generada debe regresar al agente y producir un cambio cuantificable en el backend:
+
+```
+[Usuario] 
+   ↓ (Pregunta en lenguaje natural)
+[Agente / LLM]
+   ↓ (Llamada a tool MCP)
+[Servidor MCP]
+   ↓ (Consulta datos en PostgreSQL)
+[Agente / LLM]
+   ↓ (Emite JSON A2UI declarativo)
+[Renderer A2UI]
+   ↓ (Pinta componentes del catálogo)
+[Usuario interactúa: botón o slider]
+   ↓ (Despacha evento action de vuelta al agente)
+[Agente invoca tool de mutación en MCP]
+   ↓ (Se actualiza la base de datos)
+[La pantalla se re-renderiza con el nuevo estado]
+```
+
+Si el usuario toca un botón y el agente no es informado, o si la pantalla no refleja el cambio de estado, el ciclo está roto. En **Maya**, este ciclo opera con una velocidad comprobada de 5.8 segundos por vuelta.

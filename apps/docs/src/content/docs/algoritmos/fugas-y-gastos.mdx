@@ -1,0 +1,41 @@
+---
+title: Gastos Atípicos y Detección de Fugas
+description: Heurística estadística para detectar desviaciones en el consumo y suscripciones olvidadas.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Ubicación en Código">
+  Implementado en <code>apps/mcp/src/lib/financiero/categoria-atipica.ts</code>.
+</BanorteAlert>
+
+## El Problema del Gasto más Alto vs Gasto Atípico
+
+Un error habitual en aplicaciones financieras es destacar como "problema" la categoría en la que el usuario gastó más dinero absoluto (por ejemplo, Supermercado o Hipoteca). Eso es un gasto ordinario y esperado.
+
+La verdadera fuga financiera es la categoría que **rompió su patrón histórico de comportamiento**:
+
+```
+Media histórica en Retiros de Efectivo de Beto:   $5,438.00 / mes (σ = $420)
+Gasto registrado en el mes en curso:            $9,500.00
+Desviación observada:                           +74.7% (Z-score > 2.5)
+```
+
+### Algoritmo de Detección
+
+1. Para cada categoría `c`, se calcula la media móvil de los últimos 3 meses `μ_c` y su desviación estándar `σ_c`.
+2. Se calcula el incremento porcentual respecto a la media:
+   ```text
+   Delta_c = (GastoActual_c - μ_c) / μ_c
+   ```
+3. Se calcula el Z-score estadístico:
+   ```text
+   Z_c = (GastoActual_c - μ_c) / σ_c
+   ```
+4. Una categoría se clasifica como `esAtipico: true` si:
+   ```text
+   Delta_c >= 0.35  Y  Z_c >= 2.0
+   ```
+5. Si múltiples categorías cumplen la condición, el algoritmo resalta aquella con mayor monto excedente en pesos absolutos `(GastoActual_c - μ_c)` para priorizar el impacto en el bolsillo.
+
+En la demo de Beto, esta lógica resalta inmediatamente **"Retiros de efectivo (+74.7%)"**, permitiendo a Maya sugerir la limitación de disposiciones en cajero para proteger la reestructura.

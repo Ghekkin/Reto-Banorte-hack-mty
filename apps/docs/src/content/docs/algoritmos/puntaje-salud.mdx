@@ -1,0 +1,46 @@
+---
+title: Scoring de Salud Financiera
+description: Fórmula de evaluación multidimensional de 0 a 100 puntos y bandas cromáticas de alerta.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Ubicación en Código">
+  Implementado en <code>apps/mcp/src/lib/financiero/puntaje-salud.ts</code>.
+</BanorteAlert>
+
+## Dimensiones de Evaluación del Puntaje
+
+El índice de salud financiera cuantifica la estabilidad económica de una persona en una escala de **0 a 100 puntos** combinando cuatro pilares ponderados:
+
+```text
+Score = 0.35 * S_endeudamiento + 0.30 * S_morosidad + 0.20 * S_ahorro + 0.15 * S_diversificacion
+```
+
+### 1. Ratio de Endeudamiento (35 pts)
+Evalúa el porcentaje del ingreso neto mensual comprometido en el servicio de la deuda (DTI - Debt to Income):
+* `DTI <= 0.20`: 35 pts (Excelente).
+* `0.20 < DTI <= 0.35`: 25 pts (Manejable).
+* `0.35 < DTI <= 0.50`: 12 pts (Vulnerable).
+* `DTI > 0.50`: 0 pts (Sobreendeudamiento crítico).
+
+### 2. Historial y Días de Mora (30 pts)
+* 0 días de atraso: 30 pts.
+* 1 a 7 días de atraso: 18 pts.
+* 8 a 29 días de atraso (caso Beto, 12 días): 5 pts.
+* `>= 30` días de mora: 0 pts.
+
+### 3. Tasa de Ahorro y Liquidez (20 pts)
+Mide el porcentaje del ingreso disponible no consumido al cierre de mes:
+
+```text
+TasaAhorro = (IngresoNeto - TotalGastos) / IngresoNeto
+```
+
+### 4. Cobertura de Emergencia y Fondos (15 pts)
+Meses de gasto fijo cubiertos por saldo disponible en cuentas de depósito o pagarés a la vista.
+
+---
+
+## Banda Muerta Antioscilación
+Para evitar que fluctuaciones menores de fin de semana (un pago de servicios o una compra de despensa) alteren bruscamente la categoría del usuario, el algoritmo incorpora una **banda muerta de 3 puntos**: el nivel de semáforo solo se modifica si el nuevo cálculo supera el umbral en al menos `+- 3.0` puntos.

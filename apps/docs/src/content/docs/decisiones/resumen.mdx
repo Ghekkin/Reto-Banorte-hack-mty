@@ -1,0 +1,27 @@
+---
+title: Índice de Decisiones de Arquitectura (ADRs)
+description: Registro formal de decisiones técnicas (Architecture Decision Records) 0001 al 0010.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Registro Inmutable">
+  Conforme a las reglas del repositorio, cada decisión arquitectónica clave se documenta en un archivo ADR numerado que nunca se elimina, asegurando trazabilidad histórica completa para el jurado.
+</BanorteAlert>
+
+## Resumen de los 10 ADRs Oficiales
+
+| ADR | Título | Estado | Decisión Central |
+|---|---|---|---|
+| **0001** | Stack 100% TypeScript | ✅ Aceptado | Monorepo completo en TS (Next.js, Express, MCP, A2UI) para compartir schemas Zod sin duplicidad. |
+| **0002** | Python solo detrás de una tool | ✅ Aceptado | Ningún flujo de la demo depende de Python. Si se requiere ML, va encapsulado detrás de una tool MCP. |
+| **0003** | A2UI como protocolo de interfaz | ✅ Aceptado | Adopción de la especificación oficial A2UI v0.9.1 para desacoplar el razonamiento de la presentación. |
+| **0004** | Caso de uso: 3 intenciones estrictas | ✅ Aceptado | Foco láser en reestructura de deuda, análisis de gasto y fondo de ahorro. Alcance controlado en 36h. |
+| **0005** | Gemini 3.8 Flash principal, Sonnet 5 de respaldo | ✅ Aceptado | Optimización de latencia y costo con fallback transparente a Anthropic. |
+| **0006** | Estado del MCP en JSON | 🔄 Reemplazado | Reemplazado por ADR 0007 y posteriormente por ADR 0010. |
+| **0007** | PostgreSQL como fuente de datos mock | 🔄 Reemplazado | Reemplazado formalmente por ADR 0010 al consolidar PostgreSQL como fuente única. |
+| **0008** | Renderer A2UI propio, fiel a la spec | ✅ Aceptado | Creación de `@maya/a2ui` propio (~1,310 líneas) para compatibilidad total con shadcn y Tailwind v4. |
+| **0009** | Maya como marca del asistente | ✅ Aceptado | Evolución respetuosa del asistente real de Banorte con disclaimers éticos y datos sintéticos. |
+| **0010** | PostgreSQL como única fuente de datos | ✅ Aceptado | Sin DATABASE_URL el MCP no arranca. Persistencia real de estado en `banorte.acciones_aplicadas`. |
+
+[Ver Detalle Completo de las Decisiones →](/decisiones/detalle/)

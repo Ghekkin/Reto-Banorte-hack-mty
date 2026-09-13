@@ -1,0 +1,48 @@
+---
+title: Componentes de Ahorro y Metas
+description: Controles interactivos con sliders, metas de fondo de emergencia y barras de avance.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Dominio Financiero: Ahorro y Liquidez">
+  Utilizados principalmente en perfiles con liquidez positiva (como Ana Sofía) para incentivar la creación de colchones financieros y apartados automáticos.
+</BanorteAlert>
+
+## 1. `SimuladorMeta`
+
+Permite al usuario deslizar una barra para definir una aportación mensual recurrente sin salir de la conversación con Maya.
+
+```typescript
+export const SimuladorMetaPropsSchema = z.object({
+  nombreMeta: z.string(),
+  montoObjetivo: z.number().positive(),
+  aportacionMinima: z.number().positive(),
+  aportacionMaxima: z.number().positive(),
+  aportacionSugerida: z.number().positive(),
+  pasoSlider: z.number().positive().default(500),
+  horizonteCalculadoMeses: z.number().int().positive(),
+  rendimientoProyectadoAnual: z.number().nonnegative().default(11.0), // Cetes Banorte
+});
+```
+
+* **Interacción Dinámica:** El slider actualiza en vivo el número de meses necesarios para llegar a la meta (`Math.ceil(montoObjetivo / aportacion)`), así como el rendimiento proyectado a tasa Cetes.
+* **Acción Emitida:** Despacha `action: "crear_apartado"` con el monto pactado.
+
+---
+
+## 2. `MetaActiva`
+
+Tarjeta de seguimiento que se renderiza una vez que la meta ha sido consolidada en PostgreSQL.
+
+```typescript
+export const MetaActivaPropsSchema = z.object({
+  metaId: z.string(),
+  nombre: z.string(),
+  montoObjetivo: z.number().positive(),
+  montoAcumulado: z.number().nonnegative(),
+  porcentajeAvance: z.number().min(0).max(100),
+  fechaEstimadaCumplimiento: z.string(),
+  frecuenciaAportacion: z.enum(['semanal', 'quincenal', 'mensual']),
+});
+```

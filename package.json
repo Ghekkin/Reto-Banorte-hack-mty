@@ -19,7 +19,10 @@
     "datos:fixture": "node scripts/volcar-fixture.mjs",
     "datos:restaurar": "node scripts/restaurar.mjs",
     "probar-guion": "node scripts/probar-guion.mjs",
-    "probar-inicio": "node scripts/probar-inicio.mjs"
+    "probar-inicio": "node scripts/probar-inicio.mjs",
+    "docs:dev": "pnpm --filter @maya/docs dev",
+    "docs:build": "pnpm --filter @maya/docs build",
+    "docs:preview": "pnpm --filter @maya/docs preview"
   },
   "devDependencies": {
     "pg": "^8.13.1",

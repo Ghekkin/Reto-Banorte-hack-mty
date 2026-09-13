@@ -1,0 +1,41 @@
+---
+title: "Solución Propuesta: Maya"
+description: Cómo transformamos al asistente Maya en un generador visual de superficies financieras vivas.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="success" title="Evolución de Maya">
+  Maya ya es el asistente oficial de Banorte con más de 300 consultas resueltas. Nuestra propuesta no reinventa la marca: <strong>le otorga la superficie gráfica interactiva que siempre necesitó</strong>.
+</BanorteAlert>
+
+## La Hipótesis Central
+
+En la banca tradicional, las interfaces son estáticas: pantallas diseñadas con meses de antelación que obligan al usuario a navegar menús complejos y leer tutoriales cuando atraviesa una dificultad económica.
+
+Nuestra hipótesis es que **la interfaz debe adaptarse al usuario, no el usuario a la interfaz**. Cuando una persona expresa una inquietud como *"Quiero pagar menos intereses"*, el sistema debe:
+
+1. Evaluar si la persona tiene tarjeta revolvente, préstamo personal o excedente de liquidez.
+2. Calcular en el backend las amortizaciones más convenientes a tasa preferencial.
+3. Generar una pantalla personalizada donde comparar plazos sea tan simple como tocar una opción.
+4. Aplicar el plan en un clic y entregar confirmación formal e inmediata.
+
+---
+
+## Diferenciadores frente a Soluciones Convencionales
+
+<CardGrid>
+  <Card title="Sin Alucinaciones de UI" icon="approve-check">
+    Muchos sistemas de UI generativa le piden al LLM generar JSX directamente, lo cual rompe el diseño y genera vulnerabilidades XSS. Maya sólo puede emitir identificadores de componentes previamente registrados y validados por contrato.
+  </Card>
+  <Card title="Protocolo Estándar A2UI" icon="setting">
+    Utilizamos la especificación oficial v0.9.1 de A2UI. Si el día de mañana Banorte decide cambiar el modelo o migrar de frontend, el protocolo permanece intacto.
+  </Card>
+  <Card title="Persistencia Transaccional" icon="seti:graphql">
+    No trabajamos con estado volátil en React. La acción impacta un servidor MCP que actualiza tablas relacionales con transacciones ACID y llaves de idempotencia.
+  </Card>
+  <Card title="Identidad Banorte Fiel" icon="pencil">
+    Diseño móvil-primero con tokens oficiales de Banorte (#EC0029, gris neutral, tipografía legible), garantizando una apariencia indistinguible de la aplicación bancaria de producción.
+  </Card>
+</CardGrid>

@@ -1,0 +1,32 @@
+---
+title: Algoritmos y Lógica Financiera
+description: Lógica matemática, scoring, simulación actuarial y heurísticas de layout de Maya.
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Regla Innegociable de Ingeniería">
+  Toda lógica no trivial (cálculo de CAT, simulación actuarial, detección estadística de fugas y acomodo del lienzo) está documentada con sus fórmulas matemáticas, límites y ubicación en el código fuente.
+</BanorteAlert>
+
+## Algoritmos Implementados en el Repositorio
+
+<CardGrid>
+  <Card title="Amortización y CAT por Bisección" icon="seti:graphql">
+    Cálculo de la mensualidad fija a tasa preferencial, amortización francesa que cierra exactamente en cero y cálculo del Costo Anual Total (CAT) mediante aproximación numérica por bisección.
+    [Ver Algoritmo →](/algoritmos/amortizacion/)
+  </Card>
+  <Card title="Detección de Gastos Atípicos" icon="warning">
+    Identificación de variaciones estadísticas anómalas en consumos mensuales respecto a la media histórica del cliente, diferenciando la fuga de mayor impacto de la categoría de mayor volumen.
+    [Ver Algoritmo →](/algoritmos/fugas-y-gastos/)
+  </Card>
+  <Card title="Proyección Dinámica de Ahorro" icon="pencil">
+    Simulación de acumulación de capital a tasa Cetes Banorte considerando la capacidad real de flujo libre de efectivo y cálculo del horizonte objetivo en meses.
+    [Ver Algoritmo →](/algoritmos/proyeccion-ahorro/)
+  </Card>
+  <Card title="Scoring de Salud Financiera" icon="approve-check">
+    Evaluación multidimensional de 0 a 100 basada en ratio de endeudamiento sobre ingreso neto, puntualidad en buró interno y banda muerta para evitar oscilaciones falsas.
+    [Ver Algoritmo →](/algoritmos/puntaje-salud/)
+  </Card>
+</CardGrid>

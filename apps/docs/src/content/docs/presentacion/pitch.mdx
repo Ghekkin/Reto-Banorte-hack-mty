@@ -1,0 +1,76 @@
+---
+title: Pitch Ejecutivo (5 Minutos)
+description: Estructura, guión hablado, reloj por minutos y respuestas preparadas para el jurado de Banorte.
+---
+
+import PitchDeckViewer from '../../../components/PitchDeckViewer';
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Dinámica de Presentación">
+  <strong>2 personas en tarima:</strong> una persona narra de pie y la otra pilota la máquina. Quien teclea no habla; los prompts se copian y pegan sin improvisar.
+  <br />
+  <strong>Reloj:</strong> 1:00 min (Problema) · 3:00 min (Demo en Vivo) · 1:00 min (Arquitectura y Cierre).
+</BanorteAlert>
+
+## Visor Interactivo de Diapositivas
+
+<PitchDeckViewer client:load />
+
+---
+
+## Guión Hablado Minuto a Minuto
+
+### 0:00 – 1:00 · El Problema: A Maya le falta superficie
+
+> "Banorte ya tiene una asistente extraordinaria que se llama Maya. Resuelve más de trescientas consultas y ejecuta diecisiete operaciones bancarias.
+>
+> Sin embargo, todo eso te lo entrega de la misma manera: un muro de texto y un menú estático. Si quieres pagar menos intereses de tu tarjeta, Maya te lo explica en dos párrafos y después te manda a buscar una opción en otra pantalla.
+>
+> Nuestra tesis en este hackathon es que a Maya no le falta capacidad. **Le falta superficie.**
+>
+> Lo que construimos en estas 36 horas es Maya construyendo la pantalla. No eligiendo entre pantallas que dejamos programadas: **armándola en el instante**, con componentes que diseñamos nosotros, según quién pregunta y en qué situación financiera se encuentra."
+
+---
+
+### 1:00 – 4:00 · La Demo en Vivo
+
+| Momento | Entrada / Acción | Qué dice el orador |
+|---|---|---|
+| **Paso 1** (Beto) | *"Quiero pagar menos intereses de mi tarjeta"* | *"No programamos esta pantalla. Maya pidió los datos al MCP —lo están viendo en la tira superior—, decidió que esto se resuelve con un plan de pago y describió la interfaz en A2UI. Los componentes son nuestros: no puede inventarse uno."* |
+| **Paso 2** (Acción) | Selecciona 18 meses y toca **Aplicar plan** | *"Lo que Beto tocó no fue un botón de una app convencional: fue un mensaje de vuelta a Maya, que ejecutó la operación en el MCP y **volvió a construir la pantalla**. Miren la tarjeta de arriba: es la misma de hace diez segundos y ya no dice lo mismo. El saldo está en cero. **El ciclo se cierra.**"* |
+| **Paso 3** (Contexto) | *"¿Y en qué se me está yendo el dinero?"* | *"Esta pantalla sabe lo que pasó en la anterior. El plan que aplicó hace veinte segundos ya cuenta aquí. No es un dashboard frío: es la misma conversación continua."* |
+| **Paso 4** (Adaptabilidad) | **Misma frase con Ana**: *"Quiero pagar menos intereses de mi tarjeta"* | *"Misma frase, misma Maya, **otra pantalla**. Ana no tiene tarjeta revolvente, así que ofrecerle un plan de reestructura sería absurdo. Maya detecta su crédito personal y le arma un simulador de ahorro. Y aquí hay una segunda acción real: crea su apartado y la meta aparece viva."* |
+
+> **La frase de impacto al terminar la demo:**
+> *"Dos personas, la misma pregunta, dos interfaces completamente distintas, y dos acciones que de verdad cambiaron la base de datos."*
+
+---
+
+### 4:00 – 5:00 · Arquitectura y Cierre
+
+> "Cuatro capas sostienen esto:
+>
+> 1. Un agente con **Gemini 3.8 Flash** que interpreta y orquesta.
+> 2. Un servidor **MCP propio con 18 herramientas**: 14 de lectura y 4 de mutación transaccional.
+> 3. Un motor **A2UI v0.9.1 propio** que escribimos desde cero y que pasa los 76 casos de conformidad de la especificación oficial.
+> 4. Un catálogo de **21 componentes financieros**, que es lo único que Maya tiene permitido pintar.
+>
+> Tres cosas que se pueden auditar de inmediato:
+> - El MCP está público: pueden conectar su propio cliente y correr las tools.
+> - El catálogo está publicado en JSON: pueden ver qué componentes tiene permitidos el agente.
+> - Ningún número de la pantalla lo inventa el LLM: todos provienen de PostgreSQL.
+>
+> Maya ya hacía diecisiete operaciones. Nosotros le dimos dónde mostrarlas. Muchas gracias."
+
+---
+
+## Preguntas Frecuentes del Jurado (Q&A)
+
+### ¿Por qué escribieron su propio renderer A2UI en vez del oficial?
+El renderer oficial de Google/A2UI está desarrollado en Lit con Shadow DOM cerrado. Eso impide inyectar los estilos institucionales de Banorte, las primitivas de accesibilidad de shadcn/ui y los tokens de Tailwind v4. Escribimos nuestro propio motor (~1,310 líneas) y lo validamos contra **sus propios JSON Schema oficiales**, superando los 76 casos de conformidad de la suite v0.9.1.
+
+### ¿El modelo inventa números o tasas de interés?
+**No.** El prompt del sistema prohíbe taxativamente la invención de cifras. Todas las variables monetarias viajan en el Data Model y son provistas por las herramientas del servidor MCP que consultan PostgreSQL. Si una tool falla, la interfaz no se renderiza.
+
+### ¿La acción del usuario realmente persiste en la base de datos?
+**Sí.** Al pulsar "Aplicar plan" o "Crear apartado", la acción despacha un payload `client_to_server` con una clave de idempotencia (`idempotency_key`). El MCP ejecuta una transacción en la tabla `banorte.acciones_aplicadas`. Si el servidor se reinicia, el saldo de la tarjeta continúa en $0 y el plan permanece activo.
