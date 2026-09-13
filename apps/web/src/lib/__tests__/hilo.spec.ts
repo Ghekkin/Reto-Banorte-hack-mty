@@ -6,6 +6,7 @@ import {
   colocarPantalla,
   numerarPantallas,
   pantallasAnteriores,
+  ponerEnPantalla,
   SUPERFICIE,
   type EntradaDelHilo,
 } from "@/lib/agente/usar-agente";
@@ -169,5 +170,30 @@ describe("pantallas anteriores", () => {
       updateDataModel: { surfaceId: SUPERFICIE, path: "/x", value: 1 },
     });
     expect(salida).toBe(hilo);
+  });
+});
+
+/**
+ * Un ajuste a la pantalla ACTUAL tiene que verse en su lugar mientras llega: si la superficie
+ * nueva solo vive en el estado, la consola pinta la pantalla completa otra vez debajo.
+ */
+describe("ponerEnPantalla", () => {
+  it("la superficie parchada queda en su pantalla y ya no hay copia viva", () => {
+    const uno = pantalla("primera");
+    const hilo = [mensaje("hola"), congelada(uno)];
+    const parchada = procesarVarios(new Map([[SUPERFICIE, uno]]), [
+      { version: VERSION_A2UI, updateDataModel: { surfaceId: SUPERFICIE, path: "/credito", value: { mensualidadCentavos: 600000 } } },
+    ]).estado.get(SUPERFICIE)!;
+    expect(calcularSuperficieViva(hilo, parchada)).toBe(parchada); // antes: se pintaba dos veces
+    const salida = ponerEnPantalla(hilo, "p1", parchada);
+    expect(salida[1]).toMatchObject({ tipo: "pantalla", superficie: parchada, transparencia: [] });
+    expect(calcularSuperficieViva(salida, parchada)).toBeUndefined();
+  });
+
+  it("con la misma superficie o un id que no existe, devuelve el hilo igual", () => {
+    const uno = pantalla("primera");
+    const hilo = [congelada(uno)];
+    expect(ponerEnPantalla(hilo, "p1", uno)).toBe(hilo);
+    expect(ponerEnPantalla(hilo, "p4", pantalla("otra"))).toBe(hilo);
   });
 });

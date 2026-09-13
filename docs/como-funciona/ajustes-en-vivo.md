@@ -73,8 +73,13 @@ después del paso 3.
    `totalInteresesEstimadosCentavos` y `amortizacionResumen` con `simulado`; `antes` con `actual`;
    `aviso`, `mensualidadContratoCentavos`, `programado: false`; y el `titular` de la `Conclusion` si
    decía el plazo viejo. Si la tarjeta está en una pantalla de arriba, con `pantalla: "p1"`.
-5. El stream manda `updateDataModel`/`updateComponents` **sin `createSurface`**; la tarjeta no se
-   remonta, re-resuelve sus props, y `usarCambio` resalta lo que cambió.
+5. El stream manda `updateDataModel`/`updateComponents` **sin `createSurface`**; el cliente aplica
+   cada parche directo a la pantalla que ya está en el hilo (`ponerEnPantalla`), la tarjeta no se
+   remonta, re-resuelve sus props, y `usarCambio` resalta lo que cambió. Antes del arreglo del
+   2026-09-13 04:10 el parche solo vivía en el estado, la consola lo veía como «pantalla en curso»
+   y pintaba **la pantalla completa otra vez debajo** durante el turno: para la persona, «se
+   recargó todo». Verificado en navegador (Playwright, Ana): durante el ajuste nunca hay más de una
+   tarjeta de crédito ni más de una pantalla.
 6. Ana toca «Programar este pago» → acción `programar_abono_capital { creditoId, mensualidadCentavos,
    idempotencyKey }`. El contexto del turno le dice al modelo que es *en su lugar*: `ejecutar_decision`
    y `ajustar_pantalla` sobre la misma tarjeta con `programado: true` y `resultadoAccion.despues`. Si
