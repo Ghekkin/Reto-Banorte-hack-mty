@@ -4,7 +4,7 @@ severidad: media
 area: mcp
 encontrado: 2026-09-13 03:15
 github: 24
-resuelto-en:
+resuelto-en: cc1dbfb
 ---
 
 # La hipoteca de Carmen tiene pagos vencidos pero `dias_mora: 0` y `estatus: vigente`
@@ -54,3 +54,5 @@ mora de las filas `vencido` habría contradicho a buró, al diagnóstico de salu
 
 Sin cambios: mensualidades, lo comprometido de buró, capacidad de pago, `panorama_inicial` (campos
 escalares) y el diagnóstico de salud.
+
+**Migración 0009 aplicada** en la base compartida el 2026-09-13 ~06:36 (transacción, verificada con SELECT).

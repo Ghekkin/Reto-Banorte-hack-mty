@@ -4,7 +4,7 @@ severidad: baja
 area: web
 encontrado: 2026-09-13 02:29
 github: 20
-resuelto-en:
+resuelto-en: f1bdbf0
 ---
 
 # El `Spinner` anuncia "Loading" en inglés en los botones de enviar

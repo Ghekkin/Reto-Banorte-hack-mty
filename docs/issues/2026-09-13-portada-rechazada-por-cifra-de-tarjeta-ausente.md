@@ -4,7 +4,7 @@ severidad: media
 area: web
 encontrado: 2026-09-13 04:40
 github: 34
-resuelto-en:
+resuelto-en: e4ca8e7
 ---
 
 # 8 de cada 10 portadas con widgets vivos pagan dos peticiones: la primera cita una tarjeta que no pintó

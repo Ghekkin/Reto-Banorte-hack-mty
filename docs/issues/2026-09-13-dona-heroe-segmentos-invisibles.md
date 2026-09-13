@@ -4,7 +4,7 @@ severidad: alta
 area: web
 encontrado: 2026-09-13 03:12
 github: 26
-resuelto-en:
+resuelto-en: cb2d8dc
 ---
 
 # La dona de `DistribucionPortafolio` como héroe pinta invisibles las clases de la sexta en adelante

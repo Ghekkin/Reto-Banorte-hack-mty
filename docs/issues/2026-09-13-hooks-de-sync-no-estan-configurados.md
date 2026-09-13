@@ -1,5 +1,5 @@
 ---
-estado: abierto
+estado: descartado
 severidad: alta
 area: infra
 encontrado: 2026-09-13 02:38
@@ -33,3 +33,9 @@ con cuatro personas y varias sesiones en la misma copia los `pull --autostash` a
 chocan con trabajo ajeno. Hay que decidir si se restauran los hooks `SessionStart`/`Stop` en
 `.claude/settings.json` o si se corrige `CLAUDE.md` para decir que el sync es manual
 (skill `guardar`).
+
+## Cierre (2026-09-13 06:45)
+
+Descartado por decisión del equipo: ya no se va a desarrollar más, así que el commit y push
+automáticos no hacen falta. El sync manual (`scripts/sync.sh`) sigue disponible. Cerrado en GitHub
+sin arreglo.

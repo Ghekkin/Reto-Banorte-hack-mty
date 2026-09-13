@@ -1896,3 +1896,24 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   un rebase con conflicto en vivo de otra sesión (la del reloj de portadas, `29a3efd`) justo cuando
   iba a commitear; se esperó a que terminara sola en vez de tocar el rebase ajeno, sin pérdida de
   contenido de ninguna de las dos.
+
+### 06:41 (dom 13) — Ronda de arreglo de issues con agentes en paralelo y auditoría de corridas
+
+- **Hecho, un agente por grupo de archivos, cada uno en su worktree sobre origin/main** (typecheck,
+  pruebas que fallan antes y pasan después, `Fixes #N`): #32 `b2650f4` y #20 `f1bdbf0`; #34
+  `e4ca8e7` (la conclusión descarta cifras ilegibles en vez de rechazar la portada); #19 `aebeb47` y
+  #26 `cb2d8dc`; #37 `fd73cb9` (portada compartida `dis_sinacciones00`, sin costo por visitante y
+  sin acciones ajenas); #35 `2ec5df4` (corridas `widget`); #25 `e6f4b43` y #24 `cc1dbfb`; #38
+  `1218e6d` (reloj solo en producción).
+- **Migraciones aplicadas** en la base compartida (solo esas, en transacción): 0008 (CHECK de
+  `corridas.tipo` con `widget`) y 0009 (hipoteca de Carmen al corriente). MCP de producción
+  verificado sirviendo la hipoteca nueva.
+- **Cerrados sin código**: #36 (duplicado de #30), #16 y #8 (ya resueltos), #22 (descartado: el equipo
+  ya no desarrolla).
+- **Auditoría de corridas (06:20–06:40)**: #40 nuevo (`AvisoConsultaNoValida` nunca pinta: 0 de 18;
+  «quiero invertir» con Beto, sin pantalla, 4 veces en producción) y evidencia viva de #39 (NaN en
+  `DistribucionPortafolio`). Los dos, con #23 y #28, en el agente de `pantalla.ts`. Y un `pnpm dev`
+  **fuera del VPS** con código de antes de las 04:05 alterna cada 10 min las portadas de Ana y Beto con
+  producción (huellas distintas: cuenta acciones de todos los dispositivos); comentado en #38.
+- **Ojo**: `e5d8797` (otra sesión) puso `docs/issues/` y `docs/bitacora/` en `.gitignore`: una ficha
+  nueva solo entra con `git add -f`.

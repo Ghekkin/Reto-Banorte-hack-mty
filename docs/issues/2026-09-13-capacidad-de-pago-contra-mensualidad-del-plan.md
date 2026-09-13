@@ -4,7 +4,7 @@ severidad: media
 area: mcp
 encontrado: 2026-09-13 03:15
 github: 25
-resuelto-en:
+resuelto-en: e6f4b43
 ---
 
 # `simular_reestructura` y `aplicar_plan_pago` comparan la mensualidad del plan contra lo LIBRE de buró, sin sumar el mínimo que el plan reemplaza

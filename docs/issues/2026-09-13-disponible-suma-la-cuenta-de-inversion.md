@@ -4,7 +4,7 @@ severidad: media
 area: web
 encontrado: 2026-09-13 04:35
 github: 32
-resuelto-en:
+resuelto-en: b2650f4
 ---
 
 # «Disponible» suma la cuenta de inversión: a Carmen le marca $3,543,842 cuando lo líquido es $669,342

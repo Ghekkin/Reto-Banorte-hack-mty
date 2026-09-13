@@ -4,7 +4,7 @@ severidad: media
 area: web
 github: 19
 encontrado: 2026-09-13 01:32
-resuelto-en:
+resuelto-en: aebeb47
 ---
 
 # `ProyeccionCrecimiento` le dice al modelo que ya llamó `proyectar_inversion`, una tool que no existe en `main`

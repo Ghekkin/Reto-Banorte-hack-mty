@@ -4,7 +4,7 @@ severidad: media
 area: web
 encontrado: 2026-09-13 04:40
 github: 35
-resuelto-en:
+resuelto-en: 2ec5df4
 ---
 
 # Las preguntas a una tarjeta de Inicio (widgets vivos) no dejan corrida ni tokens en la base
@@ -59,3 +59,5 @@ la misma grabadora que usa la portada (`configurar`, `paso`, `toolPedida`/`toolT
 código anterior fallaban 5 de 6 (sin corrida); con el arreglo pasan todas, y `pnpm typecheck` y
 `pnpm --filter @maya/web test` (390 pruebas) quedan en verde. No se probó contra la base real
 porque la migración todavía no está aplicada.
+
+**Migración 0008 aplicada** en la base compartida el 2026-09-13 ~06:36 (transacción, verificada con SELECT).
