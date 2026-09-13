@@ -33,6 +33,8 @@ const OBJETO_DE: Record<string, string> = {
   confirmar_rebalanceo: "portafolio",
   // Migracion 0005: sin ella la base rechaza el insert por el CHECK de `accion`.
   programar_abono_capital: "credito",
+  // Migracion 0006. El objeto es la categoria `ext_<slug>` que el gasto crea.
+  registrar_gasto_externo: "categoria",
 };
 
 /**

@@ -96,6 +96,11 @@ echo "    ahorro a 18 meses: $(echo "$PLANES" | jq -r '.opciones[] | select(.pla
 PAGO_ANA=$(tool simular_pago_credito '{"usuarioId":"usr_ana","creditoId":"cred_ana_personal","mensualidadCentavos":600000}')
 comprobar "Ana pagando \$6,000: pagos que faltan" "11" "$(echo "$PAGO_ANA" | jq -r .simulado.plazoRestanteMeses)"
 
+# Gasto fuera del banco (solo la lectura: la accion necesita la migracion 0006 en la base).
+EXTERNO=$(tool simular_gasto_externo '{"usuarioId":"usr_ana","gastos":[{"nombre":"Renta humo","montoCentavos":350000,"frecuencia":"mensual"}]}')
+comprobar "Ana con \$3,500 de renta: el gasto del mes sube" "350000" \
+  "$(echo "$EXTERNO" | jq -r '.despues.totalCentavos - .antes.totalCentavos')"
+
 GASTO=$(tool comparar_periodos '{"usuarioId":"usr_beto","periodo":"2026-08"}')
 comprobar "gasto de agosto" "3334950" "$(echo "$GASTO" | jq -r .gastoCentavos)"
 

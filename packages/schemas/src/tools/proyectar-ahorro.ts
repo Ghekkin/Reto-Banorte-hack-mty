@@ -29,6 +29,11 @@ export const EntradaProyectarAhorro = z.object({
         "tu una aportacion; `panorama_inicial` te dice la capacidad antes de preguntar.",
     ),
   frecuencia: Frecuencia.optional().describe("Default: mensual"),
+  fechaObjetivo: FechaISO.optional().describe(
+    "«lo quiero para diciembre»: la fecha a la que quiere llegar (AAAA-MM-DD, fin de ese mes). La tool calcula " +
+      "la aportacion que hace falta, la usa para la proyeccion y la devuelve en `aportacionNecesariaCentavos`. " +
+      "Si mandas esto, no mandes `aportacionCentavos`",
+  ),
 });
 export type EntradaProyectarAhorro = z.infer<typeof EntradaProyectarAhorro>;
 
@@ -56,5 +61,13 @@ export const SalidaProyectarAhorro = z.object({
   mesesEstimados: z.number().int(),
   fechaEstimada: FechaISO,
   escenarios: z.array(Escenario).describe("Tres puntos para el slider: conservador, sugerido y agresivo"),
+  aportacionNecesariaCentavos: Centavos.nullable()
+    .optional()
+    .describe("Con `fechaObjetivo`: lo que tiene que apartar por periodo para llegar a esa fecha. null sin fecha"),
+  aviso: z
+    .string()
+    .nullable()
+    .optional()
+    .describe("Si esa aportacion rebasa su capacidad de ahorro o la fecha ya paso: la frase para la tarjeta, tal cual"),
 });
 export type SalidaProyectarAhorro = z.infer<typeof SalidaProyectarAhorro>;

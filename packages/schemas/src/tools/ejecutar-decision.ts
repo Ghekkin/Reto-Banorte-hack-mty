@@ -9,6 +9,7 @@ import { SalidaCrearApartado } from "./crear-apartado.js";
 import { SalidaCrearTopeGasto } from "./crear-tope-gasto.js";
 import { SalidaDetectarFugas } from "./detectar-fugas.js";
 import { SalidaProgramarAbonoCapital } from "./programar-abono-capital.js";
+import { SalidaRegistrarGastoExterno } from "./registrar-gasto-externo.js";
 import { SalidaProyectarAhorro } from "./proyectar-ahorro.js";
 import { SalidaRebalancearPortafolio } from "./rebalancear-portafolio.js";
 
@@ -32,6 +33,7 @@ export const AccionMutacion = z.enum([
   "rebalancear_portafolio",
   "confirmar_rebalanceo",
   "programar_abono_capital",
+  "registrar_gasto_externo",
 ]);
 export type AccionMutacion = z.infer<typeof AccionMutacion>;
 
@@ -57,13 +59,15 @@ export const SalidaEjecutarDecision = z.object({
     SalidaCrearTopeGasto,
     SalidaRebalancearPortafolio,
     SalidaProgramarAbonoCapital,
+    SalidaRegistrarGastoExterno,
   ]),
   estadoPosterior: z
     .union([SalidaConsultarPlan, SalidaProyectarAhorro, SalidaDetectarFugas, SalidaConsultarInversiones, SalidaConsultarCreditos])
     .nullable()
     .describe(
-      "La lectura que normalmente seguiria a la accion. `null` en `crear_tope_gasto`: su propio " +
-        "`resultadoAccion.tope` ya trae el gasto en vivo, releer no agrega nada.",
+      "La lectura que normalmente seguiria a la accion. `null` en `crear_tope_gasto` (su propio " +
+        "`resultadoAccion.tope` ya trae el gasto en vivo) y en `registrar_gasto_externo` (su " +
+        "`resultadoAccion.despues` ya es el gasto del periodo): releer no agrega nada.",
     ),
 });
 

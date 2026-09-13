@@ -1,6 +1,7 @@
 import { aDecimal, aEntero, buscar, filtrar, type Fila } from "../datos/index.js";
 import { abonoVigente, evaluarPedido, simularCredito, type BaseDeCredito, type Evaluacion, type PedidoDePago } from "./abonos.js";
 import { pesos } from "./suscripciones.js";
+import { mensualExternoDe } from "./gastos-externos.js";
 import { sumarMeses } from "./tiempo.js";
 import { capacidadPagoMensual, tarjetaConEstado, usuario, type PlanAplicado, type TarjetaVista } from "./consultas.js";
 
@@ -270,11 +271,14 @@ export function creditoMasCaroId(resumen: ResumenDeDeuda): string | null {
  * Compararla contra la mensualidad total avisaria siempre a Carmen, que ya compromete
  * $31,429 contra $8,820 de holgura. El techo es lo comprometido mas lo que queda libre.
  * Sin buro, el 35 % del ingreso con el que se generaron los datos.
+ *
+ * Los gastos mensuales de fuera del banco (`registrar_gasto_externo`) bajan el techo: ya
+ * vienen restados en `capacidadPagoMensual`, y en el caso sin buro se restan aqui.
  */
 export function techoDeDeudaMensual(usuarioId: string): number {
   const buro = buscar("buro", "usuario_id", usuarioId);
   if (buro) return aEntero(buro.pago_mensual_comprometido_centavos) + capacidadPagoMensual(usuarioId);
-  return Math.round(aEntero(usuario(usuarioId).ingreso_mensual_centavos) * 0.35);
+  return Math.round(aEntero(usuario(usuarioId).ingreso_mensual_centavos) * 0.35) - mensualExternoDe(usuarioId);
 }
 
 export type CargaDeDeuda = {

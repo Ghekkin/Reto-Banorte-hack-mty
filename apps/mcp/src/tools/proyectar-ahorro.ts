@@ -2,6 +2,7 @@ import { EntradaProyectarAhorro, SalidaProyectarAhorro } from "@maya/schemas";
 import { aEntero, filtrar } from "../datos/index.js";
 import { apartadosCreados, capacidadPagoMensual, cuentaDe, planAplicado } from "../dominio/consultas.js";
 import { creditosAPlazo } from "../dominio/creditos.js";
+import { mensualExternoDe } from "../dominio/gastos-externos.js";
 import { hoy, periodoAnterior, periodoDe, sumarMeses } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -123,8 +124,14 @@ function elegirMeta(usuarioId: string, metaId?: string) {
  * capital que haya programado (`programar_abono_capital`): son dinero que ya sale cada mes, y
  * sin descontarlos el simulador de Ana le ofreceria ahorrar lo mismo que acaba de mandar al
  * credito (`docs/como-funciona/ajustes-en-vivo.md`).
+ *
+ * Los gastos MENSUALES de fuera del banco (`registrar_gasto_externo`) salen de los dos lados:
+ * del flujo, porque ningun movimiento los muestra, y de la capacidad de buro, que ya los trae
+ * restados (`capacidadPagoMensual`). `mensualExternoExtraCentavos` es lo que una simulacion
+ * agregaria encima sin guardarlo (`simular_gasto_externo`); negativo si quita uno guardado.
+ * `docs/algoritmos/gastos-fuera-del-banco.md`.
  */
-export function capacidadDeAhorro(usuarioId: string): number {
+export function capacidadDeAhorro(usuarioId: string, mensualExternoExtraCentavos = 0): number {
   const movimientos = filtrar("movimientos", "usuario_id", usuarioId);
   let periodo = periodoDe(hoy());
   let libre = 0;
@@ -144,7 +151,9 @@ export function capacidadDeAhorro(usuarioId: string): number {
   const plan = planAplicado(usuarioId);
   const abonos = creditosAPlazo(usuarioId).reduce((suma, c) => suma + (c.abonoMensualCentavos ?? 0), 0);
   const comprometido = (plan?.mensualidadCentavos ?? 0) + abonos;
-  return Math.max(0, Math.min(delFlujo, capacidadPagoMensual(usuarioId)) - comprometido);
+  const externo = mensualExternoDe(usuarioId) + mensualExternoExtraCentavos;
+  const deBuro = capacidadPagoMensual(usuarioId) - mensualExternoExtraCentavos;
+  return Math.max(0, Math.min(delFlujo - externo, deBuro) - comprometido);
 }
 
 /**

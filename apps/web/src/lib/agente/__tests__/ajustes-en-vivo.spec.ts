@@ -276,3 +276,149 @@ describe("parchesDeterministas: la cifra que ya dio una tool no la copia el mode
     expect(parchesDeterministas(conSimulador, { ejecutar_decision: { accion: "crear_apartado", resultadoAccion: {} } })).toEqual([]);
   });
 });
+
+describe("parchesDeterministas: credito y gasto", () => {
+  const escenario = (meses: number, mensualidad: number, intereses: number) => ({
+    mensualidadCentavos: mensualidad,
+    plazoRestanteMeses: meses,
+    totalInteresesEstimadosCentavos: intereses,
+    fechaLiquidacion: "2027-08-05",
+    amortizacionResumen: [{ numeroPago: 10, periodo: "2026-10-05", capitalCentavos: 449553, interesCentavos: 150447, saldoFinalCentavos: 5128755 }],
+  });
+  const conCredito = {
+    arbol: [
+      { id: "root", component: "Column", children: ["credito"] },
+      {
+        id: "credito",
+        component: "ProyeccionPagoCredito",
+        creditoId: "cred_ana_personal",
+        alias: "Crédito Personal",
+        saldoInsolutoCentavos: 5578308,
+        tasaAnualPct: 0.279,
+        plazoRestanteMeses: 15,
+        totalInteresesEstimadosCentavos: 1278115,
+        amortizacionResumen: [{ numeroPago: 10, periodo: "2026-10-05", capitalCentavos: 306648, interesCentavos: 150447, saldoFinalCentavos: 5271660 }],
+        mensualidadCentavos: { path: "/credito/mensualidadCentavos" },
+        razon: "Tu credito personal cuesta 27.9 % al año",
+      },
+    ],
+    dataModel: { credito: { mensualidadCentavos: 457095 } },
+  };
+
+  it("una simulacion posible escribe el escenario, antes, contrato y programado:false, y pisa lo que copio mal el modelo", () => {
+    const datos = {
+      simular_pago_credito: {
+        creditoId: "cred_ana_personal",
+        posible: true,
+        mensualidadContratoCentavos: 457095,
+        actual: escenario(15, 457095, 1278115),
+        simulado: escenario(11, 600000, 931094),
+        aviso: null,
+      },
+    };
+    const r = armarParches(
+      { razon: RAZON, texto: "Con $6,000.", parchesDatos: [], parchesComponentes: [{ id: "credito", props: { plazoRestanteMeses: 10, razon: "Pagando mas" } }] },
+      conCredito,
+      [],
+      datos,
+    );
+    if (!r.ok) throw new Error(r.errores.join("; "));
+    if (r.ok) {
+      const c = (r.mensajes[0] as { updateComponents: { components: Array<Record<string, unknown>> } }).updateComponents.components[0]!;
+      expect(c).toMatchObject({
+        plazoRestanteMeses: 11,
+        mensualidadCentavos: 600000,
+        antes: { mensualidadCentavos: 457095, plazoRestanteMeses: 15, totalInteresesEstimadosCentavos: 1278115 },
+        mensualidadContratoCentavos: 457095,
+        programado: false,
+        razon: "Pagando mas",
+      });
+    }
+  });
+
+  it("no toca la tarjeta de OTRO credito ni una simulacion imposible", () => {
+    const otro = { ...conCredito, arbol: [conCredito.arbol[0]!, { ...conCredito.arbol[1]!, creditoId: "cred_beto_nomina" }] };
+    const datos = { simular_pago_credito: { creditoId: "cred_ana_personal", posible: true, actual: escenario(15, 1, 1), simulado: escenario(11, 2, 2) } };
+    expect(parchesDeterministas(otro, datos)).toEqual([]);
+    expect(parchesDeterministas(conCredito, { simular_pago_credito: { posible: false, simulado: null } })).toEqual([]);
+  });
+
+  it("tras programar: el escenario de despues y programado:true", () => {
+    const datos = {
+      ejecutar_decision: {
+        accion: "programar_abono_capital",
+        resultadoAccion: {
+          abono: { creditoId: "cred_ana_personal", mensualidadContratoCentavos: 457095 },
+          antes: escenario(15, 457095, 1278115),
+          despues: escenario(11, 600000, 931094),
+        },
+      },
+    };
+    expect(parchesDeterministas(conCredito, datos)[0]!.props).toMatchObject({ programado: true, plazoRestanteMeses: 11 });
+  });
+
+  it("un gasto de fuera del banco simulado escribe categorias, total y antes en la tarjeta de gasto", () => {
+    const conGasto = { arbol: GASTO.arbol, dataModel: GASTO.dataModel };
+    const despues = {
+      totalCentavos: 4720000,
+      categorias: [
+        { nombre: "Renta", montoCentavos: 4520000 },
+        { categoriaId: "ext_apoyo_a_mi_mama", nombre: "Apoyo a mi mamá", montoCentavos: 200000, fueraDelBanco: true, guardado: false, frecuencia: "mensual" },
+      ],
+    };
+    const datos = { simular_gasto_externo: { antes: { totalCentavos: 4520000, categorias: [] }, despues, aviso: null } };
+    expect(parchesDeterministas(conGasto, datos)).toEqual([
+      { id: "gasto", props: { categorias: despues.categorias, totalCentavos: 4720000, antes: { totalCentavos: 4520000 }, aviso: undefined } },
+    ]);
+  });
+});
+
+describe("parchesDeterministas: meta de ahorro", () => {
+  const conMeta = {
+    arbol: [
+      { id: "root", component: "Column", children: ["simulador"] },
+      { id: "simulador", component: "SimuladorMeta", metaCentavos: 6000000, aportacionCentavos: 300000, aportacionMaximaCentavos: 498617, razon: "Tu fondo" },
+    ],
+    dataModel: {},
+  };
+
+  it("«que sean $80,000»: meta, aportacion y tope salen de proyectar_ahorro", () => {
+    const datos = {
+      proyectar_ahorro: { montoObjetivoCentavos: 8000000, saldoInicialCentavos: 0, aportacionCentavos: 300000, capacidadMensualCentavos: 498617, frecuencia: "mensual" },
+    };
+    expect(parchesDeterministas(conMeta, datos)).toEqual([
+      {
+        id: "simulador",
+        props: { metaCentavos: 8000000, saldoInicialCentavos: 0, aportacionCentavos: 300000, aportacionMaximaCentavos: 498617, frecuencia: "mensual" },
+      },
+    ]);
+  });
+
+  it("si la fecha pide mas de lo que cabe, el tope sube hasta la aportacion para que el slider la muestre", () => {
+    const datos = { proyectar_ahorro: { montoObjetivoCentavos: 8000000, aportacionCentavos: 2000000, capacidadMensualCentavos: 498617 } };
+    expect(parchesDeterministas(conMeta, datos)[0]!.props).toMatchObject({ aportacionCentavos: 2000000, aportacionMaximaCentavos: 2000000 });
+  });
+});
+
+describe("las cifras deterministas salen solo de las tools de ESTE turno", () => {
+  it("una simulacion vieja guardada en el data model con el nombre de su tool no se reaplica", async () => {
+    const vieja = { antes: { totalCentavos: 1 }, despues: { totalCentavos: 999, categorias: [{ nombre: "Vieja", montoCentavos: 999 }] }, aviso: null };
+    const superficie = { ...ACTUAL, anteriores: undefined, arbol: GASTO.arbol, dataModel: { ...GASTO.dataModel, simular_gasto_externo: vieja } };
+    const lineas = await recolectar(
+      correrTurno(peticion({ superficie }), {
+        modelo: modeloGuionizado([
+          pasoConTool("ajustar_pantalla", {
+            razon: "Pediste verlo ordenado por variacion",
+            texto: "Ordenado.",
+            parchesDatos: "[]",
+            parchesComponentes: JSON.stringify([{ id: "gasto", props: { orden: "variacion" } }]),
+          }),
+        ]),
+        herramientas: sinTools(),
+      }),
+    );
+    const texto = JSON.stringify(lineas.filter((l) => l.tipo === "a2ui"));
+    expect(texto).toContain('"orden":"variacion"');
+    expect(texto).not.toContain("Vieja");
+  });
+});

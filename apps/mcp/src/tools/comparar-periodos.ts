@@ -1,6 +1,7 @@
 import { EntradaCompararPeriodos, SalidaCompararPeriodos } from "@maya/schemas";
 import { aBooleano, aEntero, filtrar, type Fila } from "../datos/index.js";
 import { categoria, interesesQueSeEvitan, planAplicado, tarjetaConEstado } from "../dominio/consultas.js";
+import { categoriasExternas } from "../dominio/gastos-externos.js";
 import { hoy, periodoAnterior, ultimoMesCerrado } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -14,6 +15,11 @@ import type { DefinicionDeTool } from "./registro.js";
  *
  * Que cuenta como gasto y como se elige la categoria atipica:
  * `docs/algoritmos/categoria-atipica.md`.
+ *
+ * **Los gastos fuera del banco** que la persona guardo (`registrar_gasto_externo`) entran
+ * como categorias `ext_…` con `fueraDelBanco: true`: suman al total y a la participacion,
+ * pero nunca son la atipica (no hay historia contra la cual medirlos). Sin gastos guardados
+ * la salida es identica a la de antes. `docs/algoritmos/gastos-fuera-del-banco.md`.
  */
 
 /** Traspasos propios y aportaciones a inversion NO son gasto: solo mueven el dinero. */
@@ -46,8 +52,9 @@ export const compararPeriodos: DefinicionDeTool = {
     const delAnterior = gastoPorCategoria(movimientos, anterior);
     const base = lineaBase(movimientos, periodo);
 
-    const gastoTotal = suma(delPeriodo);
-    const gastoAnterior = suma(delAnterior);
+    const externas = categoriasExternas(entrada.usuarioId, periodo, anterior);
+    const gastoTotal = suma(delPeriodo) + externas.reduce((s, c) => s + c.montoCentavos, 0);
+    const gastoAnterior = suma(delAnterior) + externas.reduce((s, c) => s + c.montoAnteriorCentavos, 0);
 
     const ids = [...new Set([...delPeriodo.keys(), ...delAnterior.keys()])];
     const categorias = ids
@@ -73,6 +80,17 @@ export const compararPeriodos: DefinicionDeTool = {
     const atipica = elegirAtipica(categorias, base);
     for (const c of categorias) c.esAtipica = c.categoriaId === atipica;
 
+    // Se agregan DESPUES de elegir la atipica: una categoria de fuera del banco no compite.
+    const conExternas = [
+      ...categorias,
+      ...externas.map((c) => ({
+        ...c,
+        variacionPct: variacion(c.montoCentavos, c.montoAnteriorCentavos),
+        participacionPct: gastoTotal === 0 ? 0 : Number((c.montoCentavos / gastoTotal).toFixed(4)),
+        esAtipica: false,
+      })),
+    ].sort((a, b) => b.montoCentavos - a.montoCentavos);
+
     return SalidaCompararPeriodos.parse({
       periodo,
       periodoAnterior: anterior,
@@ -80,7 +98,7 @@ export const compararPeriodos: DefinicionDeTool = {
       gastoCentavos: gastoTotal,
       gastoAnteriorCentavos: gastoAnterior,
       variacionPct: variacion(gastoTotal, gastoAnterior),
-      categorias,
+      categorias: conExternas,
       categoriaAtipicaId: atipica,
       efectoDelPlan: efectoDelPlan(entrada.usuarioId, delPeriodo),
     });
@@ -180,7 +198,7 @@ function suma(mapa: Map<string, number>): number {
 }
 
 /** Variacion relativa. Sin base previa se reporta 0: "infinito por ciento" no dice nada. */
-function variacion(ahora: number, antes: number): number {
+export function variacion(ahora: number, antes: number): number {
   if (antes === 0) return 0;
   return Number(((ahora - antes) / antes).toFixed(4));
 }

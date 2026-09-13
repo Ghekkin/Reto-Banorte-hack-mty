@@ -9,7 +9,7 @@ import { useEffect, useState } from "react";
  *
  * Con el ciclo live (`ajustar_pantalla`) la tarjeta ya no se vuelve a pintar: el agente
  * parchea sus props y la MISMA tarjeta re-renderiza, sin esqueleto y sin la entrada de
- * `animar-entrada`. Es lo correcto —nada parpadea, nada se pierde—, pero tiene un costo: la
+ * `animar-tarjeta`. Es lo correcto —nada parpadea, nada se pierde—, pero tiene un costo: la
  * persona escribe «¿y si pago $6,000 al mes?», el plazo pasa de 15 a 11 meses, y si no
  * estaba mirando justo ese número **no se entera de qué cambió**. Un cambio que no se ve es,
  * para quien lo pidió, un cambio que no pasó.
@@ -87,6 +87,16 @@ export function cuentaComoCambio(antes: unknown, ahora: unknown): boolean {
  */
 export function clasesResaltado(activo: boolean, heroe = false): string {
   const base = "-mx-1 rounded-md px-1 motion-safe:transition-colors motion-safe:duration-200 motion-safe:ease-out";
+  if (!activo) return base;
+  return `${base} ${heroe ? "bg-white/25" : "bg-tinte"}`;
+}
+
+/**
+ * El mismo tinte para un BLOQUE que ya trae su padding y su radio (una fila de lista), en vez
+ * de un número suelto: sin `-mx-1 px-1 rounded-md`, que pelearían con los de la fila.
+ */
+export function clasesResaltadoBloque(activo: boolean, heroe = false): string {
+  const base = "motion-safe:transition-colors motion-safe:duration-200 motion-safe:ease-out";
   if (!activo) return base;
   return `${base} ${heroe ? "bg-white/25" : "bg-tinte"}`;
 }

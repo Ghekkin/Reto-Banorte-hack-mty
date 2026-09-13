@@ -5,6 +5,7 @@ import { crearApartado } from "./crear-apartado.js";
 import { crearTopeGasto } from "./crear-tope-gasto.js";
 import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
 import { programarAbonoCapital } from "./programar-abono-capital.js";
+import { registrarGastoExterno } from "./registrar-gasto-externo.js";
 import { consultarCreditos } from "./consultar-creditos.js";
 import { consultarInversiones } from "./consultar-inversiones.js";
 import { consultarPlan } from "./consultar-plan.js";
@@ -32,6 +33,7 @@ const TOOLS_DE_MUTACION: Record<AccionMutacion, DefinicionDeTool> = {
   rebalancear_portafolio: rebalancearPortafolio,
   confirmar_rebalanceo: rebalancearPortafolio,
   programar_abono_capital: programarAbonoCapital,
+  registrar_gasto_externo: registrarGastoExterno,
 };
 
 export const ejecutarDecision: DefinicionDeTool = {
@@ -40,7 +42,7 @@ export const ejecutarDecision: DefinicionDeTool = {
   descripcion:
     "ORQUESTADOR DE ACCION: recibe el nombre de la accion tal como llega del `action` de la interfaz " +
     "(`aplicar_plan_pago`, `crear_apartado`, `cancelar_suscripcion`, `crear_tope_gasto`, `rebalancear_portafolio` " +
-    "o `programar_abono_capital`) " +
+    "`programar_abono_capital` o `registrar_gasto_externo`) " +
     "y su `context` (incluida `idempotencyKey`), la ejecuta, y devuelve YA la lectura posterior en la misma respuesta. " +
     "Usala SIEMPRE que la accion que llegue de la interfaz sea una de esas, en vez de llamar la " +
     "tool de mutacion y despues la de lectura por separado: no reimplementa nada, solo despacha y relee.",
@@ -60,8 +62,8 @@ export const ejecutarDecision: DefinicionDeTool = {
 
 /**
  * La lectura que hoy el agente pide en un paso aparte tras cada accion. `crear_tope_gasto`
- * no tiene una: su propio `resultadoAccion.tope` ya trae el gasto en vivo, releer no
- * agrega nada.
+ * y `registrar_gasto_externo` no tienen una: su propio resultado ya trae el gasto en vivo
+ * (`tope`, `despues`), releer no agrega nada.
  */
 async function leerEstadoPosterior(
   accion: AccionMutacion,
@@ -78,6 +80,9 @@ async function leerEstadoPosterior(
     case "cancelar_suscripcion":
       return detectarFugas.manejar({ usuarioId });
     case "crear_tope_gasto":
+      return null;
+    case "registrar_gasto_externo":
+      // Su `resultadoAccion.despues` ya es el gasto del periodo con lo guardado: releer no agrega nada.
       return null;
     case "rebalancear_portafolio":
     case "confirmar_rebalanceo":

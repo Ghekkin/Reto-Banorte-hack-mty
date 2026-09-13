@@ -88,6 +88,7 @@ quien.
 - [Amortización, CAT y reestructura](algoritmos/amortizacion.md) — mensualidad, tabla que cierra en cero, CAT por bisección, escenario de pago mínimo
 - [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
 - [Abono a capital](algoritmos/abono-a-capital.md) — «¿y si pago $6,000 al mes?» sobre un crédito a plazo: la simulación que reproduce la tabla del banco al centavo, la cuota para liquidar en N meses, qué no es posible (pagar menos, tardar más) y cuándo se avisa que aprieta
+- [Gastos fuera del banco](algoritmos/gastos-fuera-del-banco.md) — «también pago $3,500 de renta en efectivo»: cómo un gasto que el banco no ve entra al gasto del mes, qué le resta a la capacidad de pago y de ahorro, cuándo se avisa, y por qué el efectivo del cajero puede contarse dos veces
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto

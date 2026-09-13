@@ -195,6 +195,10 @@ async function* turno(
             ...(peticion.superficie.pantalla ? { pantalla: peticion.superficie.pantalla } : {}),
           }
         : undefined;
+    // Solo lo que devolvieron las tools en ESTE turno: `parchesDeterministas` no puede leer el
+    // data model de la pantalla, donde una simulacion vieja guardada con el nombre de su tool se
+    // volveria a aplicar en cualquier ajuste posterior.
+    const datosDelTurno: Record<string, unknown> = {};
     const datosBase: Record<string, unknown> = {
       ...(peticion.superficie?.dataModel ?? {}),
       ...(panorama ? { panorama_inicial: panorama } : {}),
@@ -204,6 +208,7 @@ async function* turno(
       {
         ...(config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {}),
         datosBase,
+        datosDelTurno,
         anteriores: peticion.superficie?.anteriores ?? [],
       },
     );
@@ -311,6 +316,7 @@ async function* turno(
           } else {
             if (parte.output && typeof parte.output === "object" && !("error" in (parte.output as Record<string, unknown>))) {
               datosBase[parte.toolName] = parte.output;
+              datosDelTurno[parte.toolName] = parte.output;
             }
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.

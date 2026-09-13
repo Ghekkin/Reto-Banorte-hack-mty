@@ -34,7 +34,7 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Crédito a plazo: simular mensualidad o plazo y ajustar `ProyeccionPagoCredito` | construido |
 | Crédito a plazo: «Programar este pago» (abono a capital mensual) en la misma tarjeta | construido |
 | Ajustar una tarjeta de una pantalla **anterior** del hilo | construido |
-| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | pendiente |
+| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | en progreso |
 | Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | pendiente |
 | Plan de la tarjeta con cualquier plazo o mensualidad objetivo, y «Aplicar plan» en su lugar | pendiente |
 
@@ -81,6 +81,21 @@ después del paso 3.
    en esa pantalla está `SimuladorMeta`, en la misma llamada baja su `aportacionMaximaCentavos` a
    `resultadoAccion.capacidadAhorro.despuesCentavos`: el abono ya no está libre para ahorrar
    (`proyectar_ahorro` también lo descuenta).
+
+### Las cifras de una tool no las copia el modelo
+
+`parchesDeterministas` (`apps/web/src/lib/agente/ajustar.ts`) escribe en la tarjeta, **lo haya
+parcheado el modelo o no**, las props que salen de una tool llamada en el mismo turno: el escenario
+de `simular_pago_credito` o de `programar_abono_capital` en `ProyeccionPagoCredito` (del mismo
+crédito), `despues` de `simular_gasto_externo` o `registrar_gasto_externo` en `GastoPorCategoria`,
+y el tope de `SimuladorMeta` desde `capacidadAhorro`. El modelo sigue decidiendo **qué** tarjeta
+tocar y escribe los textos (`razon`, la `Conclusion`); los números los pone el host.
+
+Por qué: en el ensayo real del 2026-09-13 03:30 el modelo bajó bien la aportación del simulador pero
+puso de tope `520000`, un número que ninguna tool dijo. Y las listas largas (`categorias`,
+`amortizacionResumen`) son lo que un modelo recorta al copiar
+(`docs/como-funciona/bug-gasto-total-no-cuadra.md`). La tabla completa está en el comentario de la
+función; las pruebas, en `ajustes-en-vivo.spec.ts`.
 
 ### Entradas y salidas
 

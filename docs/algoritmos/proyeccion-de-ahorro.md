@@ -44,7 +44,10 @@ corresponde.
    demo creó cuentan como metas.
 2. `faltante = objetivo − lo que ya lleva`.
 3. Calcula la capacidad: promedio de `max(0, ingresos − gastos)` de los últimos tres meses,
-   acotado por la capacidad de buró, menos la mensualidad del plan si hay uno.
+   acotado por la capacidad de buró, menos la mensualidad del plan si hay uno (y los abonos a
+   capital programados). Los gastos **mensuales fuera del banco** que la persona guardó se
+   restan del flujo y de la capacidad de buró antes de comparar
+   ([gastos-fuera-del-banco.md](gastos-fuera-del-banco.md)).
 4. La aportación es la que pasen; si no, la sugerida de la meta; si no, la capacidad.
 5. `meses = techo(faltante / aportación por mes)`, con la quincenal contando doble. Mínimo
    1 mes, tope 480 (40 años).

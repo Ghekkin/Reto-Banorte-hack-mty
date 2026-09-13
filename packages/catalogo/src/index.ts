@@ -1,4 +1,4 @@
-import { registrar } from "@maya/a2ui";
+import { definirAcciones, registrar } from "@maya/a2ui";
 import { AlertaFugas } from "./alerta-fugas/componente";
 import { entradaAlertaFugas } from "./alerta-fugas/schema";
 import { Calendario } from "./calendario/componente";
@@ -88,6 +88,10 @@ export const CATALOGO: EntradaCatalogo[] = [
 ];
 
 export function registrarCatalogo(): void {
+  // Las acciones de cada componente, para que el renderer deje pasar las que no son la de su
+  // `action` (p. ej. «Guardar gasto» en `GastoPorCategoria`, cuya `action` es tocar una fila).
+  // Un nombre que el catalogo no declara se ignora (`accionesDe`, packages/a2ui/src/registro.ts).
+  for (const entrada of CATALOGO) definirAcciones(entrada.nombre, entrada.acciones ?? []);
   registrar("ResumenTarjeta", ResumenTarjeta as never);
   registrar("PlanDePago", PlanDePago as never);
   registrar("Confirmacion", Confirmacion as never);

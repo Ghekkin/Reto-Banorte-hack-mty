@@ -121,44 +121,154 @@ export function elegirPantalla(
 }
 
 /**
- * Los parches que NO se le dejan al modelo porque la cifra ya la dio una tool y copiarla mal
- * es inventar un numero.
+ * Los parches que NO se le dejan al modelo, porque la cifra ya la dio una tool en este turno y
+ * copiarla mal es inventar un numero.
  *
  * Paso de verdad el 2026-09-13 03:30, ensayando «Programar este pago» con Ana: el modelo bajo
  * bien `aportacionCentavos` del `SimuladorMeta` a lo que devolvio la accion, pero puso
- * `aportacionMaximaCentavos: 520000`, un numero que ninguna tool dijo. Asi que, si en el turno
- * `ejecutar_decision` programo un abono y trae `capacidadAhorro`, cada `SimuladorMeta` de la
- * pantalla recibe su tope (y su aportacion y su piso recortados al tope) desde ese dato, lo haya
- * parcheado el modelo o no. Lo que el modelo mando para esas props se pisa; lo demas, se respeta.
+ * `aportacionMaximaCentavos: 520000`, un numero que ninguna tool dijo. Y las listas largas
+ * (`categorias`, `amortizacionResumen`) son justo lo que un modelo recorta o redondea al
+ * copiarlas (`docs/como-funciona/bug-gasto-total-no-cuadra.md`).
+ *
+ * Asi que, cuando el turno trae el resultado de una de estas tools, las props que salen de ese
+ * resultado se escriben aqui, lo haya parcheado el modelo o no; lo demas que mando (textos,
+ * `razon`, la `Conclusion`) se respeta:
+ *
+ * | Tool del turno | Tarjeta | Props |
+ * |---|---|---|
+ * | `simular_pago_credito` posible | `ProyeccionPagoCredito` del mismo credito | escenario `simulado`, `antes`, contrato, `aviso`, `programado: false` |
+ * | `ejecutar_decision` → `programar_abono_capital` | la misma | escenario `despues`, `antes`, `programado: true` |
+ * | `simular_gasto_externo` | `GastoPorCategoria` | `categorias`, `totalCentavos` de `despues`, `antes`, `aviso` |
+ * | `ejecutar_decision` → `registrar_gasto_externo` | la misma | `despues` ya guardado, `antes`, sin aviso |
+ * | `proyectar_ahorro` | `SimuladorMeta` | meta, lo ahorrado, aportacion, tope (nunca debajo de la aportacion), frecuencia |
+ * | cualquier accion con `capacidadAhorro` | `SimuladorMeta` | tope, y aportacion y piso recortados al tope |
+ *
+ * Sin ninguna de esas tools en el turno, no agrega nada.
  */
 export function parchesDeterministas(
   pantalla: PantallaActual,
   datosDelTurno: Record<string, unknown> = {},
 ): Array<{ id: string; props: Record<string, unknown> }> {
-  const decision = datosDelTurno.ejecutar_decision as
-    | { accion?: string; resultadoAccion?: { capacidadAhorro?: { despuesCentavos?: unknown } } }
-    | undefined;
-  const tope = decision?.accion === "programar_abono_capital" ? decision.resultadoAccion?.capacidadAhorro?.despuesCentavos : undefined;
-  if (typeof tope !== "number") return [];
+  const salida: Array<{ id: string; props: Record<string, unknown> }> = [];
+  const agregar = (id: string, props: Record<string, unknown>) => {
+    const ya = salida.find((p) => p.id === id);
+    if (ya) Object.assign(ya.props, props);
+    else salida.push({ id, props });
+  };
+  const valorDe = (c: Componente, prop: string) => {
+    const v = (c as Record<string, unknown>)[prop];
+    return esBinding(v) ? leer(pantalla.dataModel, v.path) : v;
+  };
+  const deTipo = (nombre: string) => pantalla.arbol.filter((c) => c.component === nombre);
 
-  return pantalla.arbol
-    .filter((c) => c.component === "SimuladorMeta")
-    .map((c) => {
-      const valor = (prop: string) => {
-        const v = (c as Record<string, unknown>)[prop];
-        return esBinding(v) ? leer(pantalla.dataModel, v.path) : v;
-      };
-      const aportacion = valor("aportacionCentavos");
-      const minimo = valor("aportacionMinimaCentavos");
-      return {
-        id: c.id,
-        props: {
-          aportacionMaximaCentavos: tope,
-          ...(typeof aportacion === "number" && aportacion > tope ? { aportacionCentavos: tope } : {}),
-          ...(typeof minimo === "number" && minimo > tope ? { aportacionMinimaCentavos: tope } : {}),
+  const decision = objeto(datosDelTurno.ejecutar_decision);
+  const accion = decision?.accion;
+  const resultado = objeto(decision?.resultadoAccion);
+
+  // Credito: la simulacion del turno, o el abono recien programado.
+  const simulacion = objeto(datosDelTurno.simular_pago_credito);
+  const credito =
+    accion === "programar_abono_capital" && resultado?.despues
+      ? {
+          creditoId: objeto(resultado.abono)?.creditoId,
+          escenario: objeto(resultado.despues),
+          antes: objeto(resultado.antes),
+          contrato: objeto(resultado.abono)?.mensualidadContratoCentavos,
+          aviso: undefined,
+          programado: true,
+        }
+      : simulacion?.posible === true && simulacion.simulado
+        ? {
+            creditoId: simulacion.creditoId,
+            escenario: objeto(simulacion.simulado),
+            antes: objeto(simulacion.actual),
+            contrato: simulacion.mensualidadContratoCentavos,
+            aviso: typeof simulacion.aviso === "string" ? simulacion.aviso : undefined,
+            programado: false,
+          }
+        : undefined;
+  if (credito?.escenario && credito.antes) {
+    for (const c of deTipo("ProyeccionPagoCredito")) {
+      const id = valorDe(c, "creditoId");
+      if (typeof id === "string" && typeof credito.creditoId === "string" && id !== credito.creditoId) continue;
+      const e = credito.escenario;
+      agregar(c.id, {
+        mensualidadCentavos: e.mensualidadCentavos,
+        plazoRestanteMeses: e.plazoRestanteMeses,
+        totalInteresesEstimadosCentavos: e.totalInteresesEstimadosCentavos,
+        fechaLiquidacion: e.fechaLiquidacion,
+        amortizacionResumen: e.amortizacionResumen,
+        antes: {
+          mensualidadCentavos: credito.antes.mensualidadCentavos,
+          plazoRestanteMeses: credito.antes.plazoRestanteMeses,
+          totalInteresesEstimadosCentavos: credito.antes.totalInteresesEstimadosCentavos,
         },
-      };
-    });
+        ...(typeof credito.contrato === "number" ? { mensualidadContratoCentavos: credito.contrato } : {}),
+        aviso: credito.aviso,
+        programado: credito.programado,
+      });
+    }
+  }
+
+  // Gasto: la simulacion del turno, o lo recien guardado.
+  const gastoSimulado = objeto(datosDelTurno.simular_gasto_externo);
+  const gasto =
+    accion === "registrar_gasto_externo" && resultado?.despues
+      ? { despues: objeto(resultado.despues), antes: objeto(resultado.antes), aviso: undefined }
+      : gastoSimulado?.despues
+        ? {
+            despues: objeto(gastoSimulado.despues),
+            antes: objeto(gastoSimulado.antes),
+            aviso: typeof gastoSimulado.aviso === "string" ? gastoSimulado.aviso : undefined,
+          }
+        : undefined;
+  if (gasto?.despues && Array.isArray(gasto.despues.categorias)) {
+    for (const c of deTipo("GastoPorCategoria")) {
+      agregar(c.id, {
+        categorias: gasto.despues.categorias,
+        totalCentavos: gasto.despues.totalCentavos,
+        ...(typeof gasto.antes?.totalCentavos === "number" ? { antes: { totalCentavos: gasto.antes.totalCentavos } } : {}),
+        aviso: gasto.aviso,
+      });
+    }
+  }
+
+  // La meta: «que sean $80,000» o «lo quiero para diciembre» se proyectan con `proyectar_ahorro`,
+  // y la tarjeta se queda con lo que la tool uso. El tope nunca queda debajo de la aportacion: si
+  // la fecha pide mas de lo que cabe, el slider tiene que poder mostrarlo (y la tool avisa).
+  const proyeccion = objeto(datosDelTurno.proyectar_ahorro);
+  if (proyeccion && typeof proyeccion.montoObjetivoCentavos === "number" && typeof proyeccion.aportacionCentavos === "number") {
+    const capacidad = typeof proyeccion.capacidadMensualCentavos === "number" ? proyeccion.capacidadMensualCentavos : 0;
+    for (const c of deTipo("SimuladorMeta")) {
+      agregar(c.id, {
+        metaCentavos: proyeccion.montoObjetivoCentavos,
+        ...(typeof proyeccion.saldoInicialCentavos === "number" ? { saldoInicialCentavos: proyeccion.saldoInicialCentavos } : {}),
+        aportacionCentavos: proyeccion.aportacionCentavos,
+        aportacionMaximaCentavos: Math.max(capacidad, proyeccion.aportacionCentavos),
+        ...(proyeccion.frecuencia === "mensual" || proyeccion.frecuencia === "quincenal" ? { frecuencia: proyeccion.frecuencia } : {}),
+      });
+    }
+  }
+
+  // Lo que puede apartar al mes, tras cualquier accion que lo cambie.
+  const tope = objeto(resultado?.capacidadAhorro)?.despuesCentavos;
+  if (typeof tope === "number") {
+    for (const c of deTipo("SimuladorMeta")) {
+      const aportacion = valorDe(c, "aportacionCentavos");
+      const minimo = valorDe(c, "aportacionMinimaCentavos");
+      agregar(c.id, {
+        aportacionMaximaCentavos: tope,
+        ...(typeof aportacion === "number" && aportacion > tope ? { aportacionCentavos: tope } : {}),
+        ...(typeof minimo === "number" && minimo > tope ? { aportacionMinimaCentavos: tope } : {}),
+      });
+    }
+  }
+
+  return salida;
+}
+
+function objeto(valor: unknown): Record<string, unknown> | undefined {
+  return typeof valor === "object" && valor !== null && !Array.isArray(valor) ? (valor as Record<string, unknown>) : undefined;
 }
 
 export function armarParches(

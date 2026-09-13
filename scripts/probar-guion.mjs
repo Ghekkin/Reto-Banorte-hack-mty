@@ -61,6 +61,27 @@ const CASOS = [
     componentes: ["GastoPorCategoria"],
   },
   {
+    // Un gasto que el banco no ve cambia la MISMA tarjeta de gasto (ajustes-en-vivo.md).
+    nombre: "Beto · le da $2,000 a su mama (la tarjeta de gasto cambia en su lugar)",
+    usuario: "usr_beto",
+    texto: "También le doy $2,000 al mes a mi mamá en efectivo",
+    cierre: "ajustar",
+    tools: ["simular_gasto_externo"],
+    pantallaContiene: '"fueraDelBanco":true',
+  },
+  {
+    nombre: "Beto · Guardar gasto (accion real, en la misma tarjeta)",
+    usuario: "usr_beto",
+    accion: {
+      name: "registrar_gasto_externo",
+      sourceComponentId: "@GastoPorCategoria",
+      context: { gastos: [{ nombre: "Apoyo a mi mamá", montoCentavos: 200000, frecuencia: "mensual" }] },
+    },
+    cierre: "ajustar",
+    toolsAlternativas: ["ejecutar_decision", "registrar_gasto_externo"],
+    pantallaContiene: '"guardado":true',
+  },
+  {
     nombre: "Beto · detalle de una categoria",
     usuario: "usr_beto",
     texto: "¿Que movimientos hubo en retiros de efectivo?",
