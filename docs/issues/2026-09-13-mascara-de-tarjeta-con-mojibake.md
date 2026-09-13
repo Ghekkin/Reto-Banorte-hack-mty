@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-13 04:05
 github: 28
+resuelto-en: 8060918
 ---
 
 # La tarjeta de Inicio dice `ÔÇóÔÇóÔÇóÔÇó 4821` en vez de `•••• 4821`
@@ -29,3 +30,7 @@ dispositivo donde se va a ver.
 
 **Arreglo sugerido:** cambiar el literal por `•••• 4821`, y revisar el resto del relleno de
 `pantalla.ts` con el issue #23 (cifras inventadas).
+
+## Resolución
+
+Resuelto en `8060918`. La máscara sale de `consultar_tarjeta.tarjeta` (el código anterior la leía sin el `tarjeta` anidado y siempre caía al literal roto). Se corrigieron además los otros 13 textos con mojibake del archivo, incluida la descripción de tool que ve el modelo; ningún otro archivo de `apps/web/src`, `packages` ni `apps/mcp/src` tiene mojibake.

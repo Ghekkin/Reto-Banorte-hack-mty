@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-13 06:35
 github: 40
+resuelto-en: 8060918
 ---
 
 # `AvisoConsultaNoValida` nunca pinta: el host le agrega `motivo` y `sugerencias`, que su schema no tiene
@@ -40,3 +41,7 @@ peticiones pagadas. Y contamina la conversación: la siguiente pregunta del guio
 **Arreglo:** quitar ese relleno (no inventar props que el schema no declara) y, si hace falta llenar
 algo obligatorio, usar los nombres reales (`explicacion`, `alternativasSugeridas`) con datos del
 resultado de `orientar_consulta_no_valida`.
+
+## Resolución
+
+Resuelto en `8060918`. El host ya no agrega `motivo` ni `sugerencias`; lo que falta se llena solo con props del schema tomadas de `orientar_consulta_no_valida`. Se revisó toda prop que escribe la normalización contra el schema de su componente: ninguna queda fuera. Prueba con los argumentos reales de `cor_8b16275bd37741cdbb601853`. Repetidas las 142 `pintar_pantalla` del día: 15 avisos pasan ahora. **Verificado con el modelo real en producción** (06:57): «quiero invertir» (Beto) pinta `AvisoConsultaNoValida` + `ResumenTarjeta` + `PlanDePago`.

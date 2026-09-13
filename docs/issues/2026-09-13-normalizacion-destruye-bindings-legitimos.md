@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-13 06:17
 github: 39
+resuelto-en: 8060918
 ---
 
 # `normalizarListaDeComponentes` sigue tratando bindings legítimos como datos faltantes en otros componentes
@@ -49,3 +50,7 @@ literal: el monto grande sale en 0/cifra de relleno mientras el texto de Maya di
 Relacionado con #23 (que documenta el mismo archivo inventando cifras cuando la prop está
 realmente ausente); esto es un mecanismo distinto — la prop SÍ viene, pero como binding legítimo, y
 la reparación la destruye igual.
+
+## Resolución
+
+Resuelto en `8060918` con un paso genérico para todo componente: las props que son binding (`{path}`) se apartan antes de reparar y se reponen intactas al final, y un valor calculado que da `NaN` se quita en vez de pintarse. Los escenarios de `ComparadorAntesDespues` conservan sus bindings anidados. Prueba: `DistribucionPortafolio` con `rendimientoTotalPct`, `valorTotalCentavos` y `aportadoCentavos` como bindings pasa. **Verificado con el modelo real en producción** (06:57): «¿Cómo va mi portafolio?» (Carmen) pinta en 2 pasos.

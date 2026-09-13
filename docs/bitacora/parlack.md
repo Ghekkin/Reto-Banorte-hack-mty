@@ -1917,3 +1917,19 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   producción (huellas distintas: cuenta acciones de todos los dispositivos); comentado en #38.
 - **Ojo**: `e5d8797` (otra sesión) puso `docs/issues/` y `docs/bitacora/` en `.gitignore`: una ficha
   nueva solo entra con `git add -f`.
+
+### 07:30 (dom 13) — Segunda ronda: auditoría → #41–#45, ensayo real en producción y `estable`
+
+- **Resueltos, un agente por archivo en paralelo**: #23, #28, #39 y #40 `8060918` (`pantalla.ts` sin cifras
+  inventadas, bindings intactos, aviso que pinta); #41 `a4134cd` (enum de `tipoInvalidez`); #42 `4f00835` (alias
+  y props no declaradas); #43 `108e722` (`inputSchema` de `pintar_pantalla` abierto, inferencia de `component`,
+  acciones no permitidas); #44 `12ac74e` (pregunta por estado de producto pinta; el diagnóstico original estaba
+  mal: `responder` era correcto); #45 `d9840cc` (`proyectar_ahorro` reconoce la meta activa por su objetivo).
+- **Ensayo del guion contra producción con el modelo real** (`--aislado`): a las 06:54 con `8060918` pasaron 14 de 17
+  (salieron #43, #44, #45); a las 07:25 con `108e722` **17 de 17**, más 3 de 3 extra en 2 pasos cada uno («quiero
+  invertir» con Beto, «¿cómo va mi portafolio?» con Carmen y cripto fuera de política).
+- **`estable` → `108e722`** (07:29). Para presentar si `main` se rompe: `git checkout estable`.
+- **Abierto**: #46 (baja): `salud` se protege como parecida a `saludo` y cuesta un reintento en «simulador de ahorro».
+  Agente trabajándolo.
+- **Fuera de mi control**: el `pnpm dev` externo con código viejo (comentado en #38) y `974a8d0`, que no es de esta
+  ronda (otra sesión seguía empujando).
