@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-13 06:43
-implementado-en: apps/web/src/lib/agente/pantalla.ts (normalizarListaDeComponentes, propsDelMcp, comparacionDelMcp)
+verificado: 2026-09-13 07:05
+implementado-en: apps/web/src/lib/agente/pantalla.ts (normalizarListaDeComponentes, propsDelMcp, comparacionDelMcp, adoptarAlias, quitarPropsNoDeclaradas, nombresParecidos)
 lenguaje: typescript
 ---
 
@@ -26,6 +26,13 @@ Y la reparación respeta una forma legítima de mandar un dato: el **enlace** al
 (`{"path": "/portafolio/rendimientoTotalPct"}`). Un enlace se deja como enlace; se resuelve
 después, al validar (issue #39).
 
+Por último, **lo que sobra se quita**. El validador del catálogo rechaza la pantalla entera por una
+sola prop que el componente no tiene. Si el modelo escribe `tasaAnual` en vez de `tasaAnualPct`, el
+host pone el dato donde va y borra el nombre viejo; si le pone `heroe` a un plan de pago (que no
+puede ser héroe) o un `portafolioId` a la dona, se quita porque nunca se pintaría. Lo que **no** se
+tira en silencio es un nombre que parece un error de dedo de una prop que falta (`datoClav` por
+`datoClave`): ese se deja para que la validación lo nombre y el modelo lo corrija (issue #42).
+
 ## La idea
 
 El modelo no escribe cifras (ADR 0011): las elige de lo que devolvieron las tools. Los widgets de
@@ -42,7 +49,8 @@ anidado), existe una sola vez y la usan los dos caminos.
 1. Texto JSON → objeto (rescate de cercas y comas colgantes).
 2. Nombre suelto de un componente → su esqueleto `{ id, component, razon }` (y `heroe` en
    `ProyeccionPagoCredito` y `ComparadorAntesDespues`). Sin cifras: las pone el paso 5.
-3. Aplana props anidadas (`props`, `data`…) y alias de nombre (`tasaAnual` → `tasaAnualPct`).
+3. Aplana props anidadas (`props`, `data`…) y adopta los alias genéricos (`tasaAnual`,
+   `TasaAnualPct` → `tasaAnualPct`, solo si el componente declara `tasaAnualPct`).
 4. **Guarda las props que son enlace** (`esBinding`).
 5. Por componente, completa **solo las props que faltan** con `propsDelMcp(componente, datos)`:
    recorre las fuentes de widgets de ese componente, toma la salida de su tool en `datos` (o
@@ -62,9 +70,24 @@ anidado), existe una sola vez y la usan los dos caminos.
      `panorama_inicial.perfil.ingresoMensualCentavos`.
    - `ProyeccionCrecimiento`, `EscenariosInversion`, `RiesgoRendimiento`: ninguna tool los llena
      todavía; solo se derivan totales cuando vienen sus sumandos.
-7. **Repone los enlaces** del paso 4 tal cual, y quita cualquier prop que haya quedado en `NaN`
-   (una cuenta hecha sobre un enlace o un texto): la validación la reporta como faltante.
-8. Arma la raíz `Column` con todas las tarjetas.
+   Los alias por componente (`veredicto`/`texto`/`titulo`/`mensaje` → `titular`;
+   `objetivoCentavos` → `metaCentavos`; `aportacionMensualCentavos` → `aportacionCentavos`; en el
+   comparador `title`, `ahorro*`, `mesesAhorrados`/`ahorroMeses`, `actual`/`antes`/`escenario1`,
+   `estrategia`/`despues`/`escenario2`/`propuesta`; en fugas `totalMensual`, `totalAnual`,
+   `pct_del_ingreso` y sus formas con `_`) pasan por `adoptarAlias`/`quitarAlias`: el primero con
+   valor llena la prop real si falta, y **todos se borran** salvo que el alias sea también prop
+   declarada de ese componente (`antes` es alias en el comparador y prop real de
+   `GastoPorCategoria`). Lo borrado se anota en `quitadas`.
+7. **Repone los enlaces** del paso 4 tal cual, **menos los de `quitadas`** (un alias enlazado no
+   vuelve), y quita cualquier prop que haya quedado en `NaN` (una cuenta hecha sobre un enlace o un
+   texto): la validación la reporta como faltante.
+8. **`quitarPropsNoDeclaradas`**: toda prop que el catálogo publicado no le permite al componente
+   (las de su schema más `id`, `component`, `accessibility` y `weight`; `propsDeclaradas()` las lee
+   de `catalogo.json`, lo mismo que mira el validador oficial) se quita, **salvo** que
+   `nombresParecidos` la empareje con una prop declarada que falta. Esa se deja para que la
+   validación diga «la propiedad "X" no existe». `children` y `child` nunca se tocan (las revisa la
+   validación del árbol). El layout no pasa por aquí.
+9. Arma la raíz `Column` con todas las tarjetas.
 
 Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
 (`validacion-a2ui.md`); lo que falte sale como error hacia el modelo.
@@ -89,6 +112,10 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
   que declara el catálogo.
 - Los montos en pesos menores a 1 000 que el modelo manda en fugas y movimientos se pasan a
   centavos (heurística previa, sin cambio).
+- `nombresParecidos(a, b)`, después de pasar a minúsculas y quitar `_` y `-`: iguales; uno prefijo
+  del otro con el más corto de **4** letras o más (`tipo`/`tipoInvalidez`); o a **2** ediciones o
+  menos con el más corto de **5** o más (`metaCentavo`/`metaCentavos`). Solo se compara contra
+  props declaradas que **faltan**: si la real ya está, el parecido sobra y se quita.
 
 ## Límites y supuestos
 
@@ -99,6 +126,13 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
 - Los textos de relleno sin cifras (etiquetas, «Aplicar plan», «Camino actual») se conservan.
 - Un enlace dentro de un arreglo (una fila de fugas) no se protege en el paso 4; solo los de
   primer nivel y los de los escenarios del comparador.
+- El paso 8 solo mira el primer nivel del componente: una llave de más dentro de una opción o de
+  una fila la sigue reportando la validación.
+- Quitar una prop de sobra puede esconder una intención del modelo que no se parece a ningún
+  nombre declarado (un `heroe` en `PlanDePago` no se pinta como héroe). Es el costo aceptado:
+  antes esa pantalla se rechazaba completa y el turno pagaba otra petición.
+- `ajustar_pantalla` (`ajustar.ts`) no pasa por esta normalización: sus parches se validan con
+  `revisarProps`.
 
 ## Cómo se probó
 
@@ -114,3 +148,13 @@ Después, `armarMensajes` valida contra el catálogo y los JSON Schema oficiales
   2026-09-13: pasan 116 (antes 99). Se arreglaron 18 (15 avisos de #40, 3 portafolios con
   enlaces de #39) y una se rechaza ahora: una portada de Beto cuyo `consultar_creditos` no traía
   la amortización, que antes salía con hitos, tasa e intereses inventados.
+- `apps/web/src/lib/agente/__tests__/normalizacion-alias.spec.ts` (42 pruebas, #42): cada alias
+  reconocido, en un componente por lo demás válido, deja la prop real, desaparece y la pantalla
+  pasa `armarMensajes` (con el validador oficial); un alias enlazado no reaparece; `antes` sigue
+  en `GastoPorCategoria`; los dos rechazos reales por prop inexistente de hoy (`portafolioId` en
+  `DistribucionPortafolio`, `heroe` en `PlanDePago`) pasan; un nombre mal escrito de una opcional
+  sigue rechazado con su nombre, y el de una obligatoria sigue saliendo como faltante. Contra el
+  `pantalla.ts` de `8060918` fallan 26 de las 33 que no dependen de `nombresParecidos`.
+- Repetición de las 164 llamadas a `pintar_pantalla` grabadas el 2026-09-13 desde las 00:00: pasan
+  141 contra 135 del código anterior. Las 6 que se arreglan son por prop de sobra (`portafolioId`
+  ×2, `valorActualCentavos`, `heroe` ×3). Ninguna que pasaba se rechaza ahora.

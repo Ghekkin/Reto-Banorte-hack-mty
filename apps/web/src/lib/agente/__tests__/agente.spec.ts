@@ -799,12 +799,15 @@ describe("armarMensajes", () => {
   });
 
   it("rechaza dos heroes en la misma pantalla", () => {
+    // Con componentes que SI declaran `heroe`: a uno que no lo declara (Confirmacion) la
+    // normalizacion se lo quita, porque nunca se pintaria como heroe (#42).
+    const meta = { nombre: "Fondo de emergencia", metaCentavos: 9600000, acumuladoCentavos: 4815000, razon: base.razon, heroe: true };
     const r = armarMensajes({
       ...base,
       componentesJson: JSON.stringify([
         { id: "root", component: "Column", children: ["a", "b"] },
-        { id: "a", component: "Confirmacion", titulo: "T", detalle: "D", razon: base.razon, heroe: true },
-        { id: "b", component: "Confirmacion", titulo: "T", detalle: "D", razon: base.razon, heroe: true },
+        { id: "a", component: "MetaActiva", ...meta },
+        { id: "b", component: "MetaActiva", ...meta },
       ]),
     });
     expect(r.ok).toBe(false);

@@ -199,13 +199,11 @@ export function normalizarListaDeComponentes(
         }
       }
 
-      // Normalizar aliases comunes de props
-      if (comp.TasaAnualPct !== undefined && comp.tasaAnualPct === undefined) {
-        comp.tasaAnualPct = comp.TasaAnualPct;
-      }
-      if (comp.tasaAnual !== undefined && comp.tasaAnualPct === undefined) {
-        comp.tasaAnualPct = comp.tasaAnual;
-      }
+      // Los alias que se reconocen llenan la prop real y se quitan: la validacion oficial es
+      // estricta y un alias que se queda rechaza la pantalla aunque la prop ya este puesta (#42).
+      // `quitadas` evita que el paso de los enlaces los vuelva a poner al final.
+      const quitadas = new Set<string>();
+      adoptarAlias(comp, "tasaAnualPct", ["TasaAnualPct", "tasaAnual"], quitadas);
 
       if (!comp.id || typeof comp.id !== "string") {
         comp.id = comp.component === "Column" ? ID_RAIZ : `comp_${i}`;
@@ -227,10 +225,7 @@ export function normalizarListaDeComponentes(
         if (!comp.titular) {
           comp.titular = (comp.veredicto as string) ?? (comp.texto as string) ?? (comp.titulo as string) ?? (comp.mensaje as string) ?? entrada.texto ?? "Situación financiera";
         }
-        delete comp.veredicto;
-        delete comp.texto;
-        delete comp.titulo;
-        delete comp.mensaje;
+        quitarAlias(comp, ["veredicto", "texto", "titulo", "mensaje"], quitadas);
         if (!comp.detalle) comp.detalle = entrada.razon || "Evaluación y recomendaciones financieras";
         if (!comp.sugerencias) comp.sugerencias = entrada.sugerencias ?? [];
       }
@@ -250,8 +245,8 @@ export function normalizarListaDeComponentes(
 
       // Si es SimuladorMeta y le faltan props obligatorias:
       if (comp.component === "SimuladorMeta") {
-        completar(comp, "metaCentavos", comp.objetivoCentavos);
-        completar(comp, "aportacionCentavos", comp.aportacionMensualCentavos);
+        adoptarAlias(comp, "metaCentavos", ["objetivoCentavos"], quitadas);
+        adoptarAlias(comp, "aportacionCentavos", ["aportacionMensualCentavos"], quitadas);
         const mcp = propsDelMcp("SimuladorMeta", datos);
         for (const prop of ["metaCentavos", "aportacionCentavos", "aportacionMinimaCentavos", "aportacionMaximaCentavos"]) {
           completar(comp, prop, mcp[prop]);
@@ -266,17 +261,18 @@ export function normalizarListaDeComponentes(
         if (!comp.titulo || typeof comp.titulo !== "string") {
           comp.titulo = (typeof comp.title === "string" ? comp.title : undefined) || "Comparativa de pago";
         }
+        quitarAlias(comp, ["title"], quitadas);
 
         // Los dos caminos salen de una simulacion real del turno, o no salen (#23).
         const mcp = comparacionDelMcp(datos);
 
-        completar(comp, "ahorroNetoCentavos", comp.ahorroCentavos ?? comp.ahorro ?? comp.ahorroNeto);
+        adoptarAlias(comp, "ahorroNetoCentavos", ["ahorroCentavos", "ahorro", "ahorroNeto"], quitadas);
         completar(comp, "ahorroNetoCentavos", mcp.ahorroNetoCentavos);
         if (comp.ahorroNetoCentavos !== undefined && !esBinding(comp.ahorroNetoCentavos)) {
           comp.ahorroNetoCentavos = Math.max(0, Math.round(Number(comp.ahorroNetoCentavos) || 0));
         }
 
-        completar(comp, "ahorroTiempoMeses", comp.mesesAhorrados ?? comp.ahorroMeses);
+        adoptarAlias(comp, "ahorroTiempoMeses", ["mesesAhorrados", "ahorroMeses"], quitadas);
         completar(comp, "ahorroTiempoMeses", mcp.ahorroTiempoMeses);
         if (comp.ahorroTiempoMeses !== undefined && !esBinding(comp.ahorroTiempoMeses)) {
           comp.ahorroTiempoMeses = Math.max(0, Math.round(Number(comp.ahorroTiempoMeses) || 0));
@@ -297,6 +293,7 @@ export function normalizarListaDeComponentes(
           String(estrRaw.etiqueta || estrRaw.nombre || "Con estrategia Maya"),
           String(estrRaw.descripcion || estrRaw.detalle || "Con la estrategia que te propone Maya"),
         );
+        quitarAlias(comp, ["actual", "antes", "escenario1", "estrategia", "despues", "escenario2", "propuesta"], quitadas);
       }
 
       // Si es PlanDePago y le faltan props obligatorias:
@@ -479,6 +476,7 @@ export function normalizarListaDeComponentes(
         } else if (!esBinding(comp.pctDelIngreso) && Number.isFinite(Number(comp.pctDelIngreso))) {
           comp.pctDelIngreso = Number(Number(comp.pctDelIngreso).toFixed(4));
         }
+        quitarAlias(comp, ["totalMensual", "total_mensual_centavos", "totalAnual", "total_anual_centavos", "pct_del_ingreso"], quitadas);
       }
 
       // Si es DetalleCategoria y le faltan props obligatorias:
@@ -686,12 +684,15 @@ export function normalizarListaDeComponentes(
         if (comp.horizonteMeses !== undefined) comp.horizonteMeses = Math.round(Number(comp.horizonteMeses) || 0);
       }
 
-      for (const [prop, valor] of enlazadas) comp[prop] = valor;
+      for (const [prop, valor] of enlazadas) {
+        if (!quitadas.has(prop)) comp[prop] = valor;
+      }
       // Y una cuenta hecha sobre un binding o un texto da NaN: se quita en vez de pintarla. La
       // validacion la reporta como faltante y el modelo la corrige (#39).
       for (const [prop, valor] of Object.entries(comp)) {
         if (typeof valor === "number" && Number.isNaN(valor)) delete comp[prop];
       }
+      quitarPropsNoDeclaradas(comp);
 
       if (typeof comp.component === "string") {
         salida.push(comp as Componente);
@@ -1197,6 +1198,98 @@ function salidaAnidada(tool: string, datos: Record<string, unknown>): unknown {
 /** Pone `valor` en `prop` solo si el modelo no la mando y hay un valor real que poner. */
 function completar(comp: Record<string, unknown>, prop: string, valor: unknown): void {
   if (comp[prop] === undefined && valor !== undefined && valor !== null) comp[prop] = valor;
+}
+
+/** Las que todo componente puede llevar: `ComponentCommon` de A2UI y `CatalogComponentCommon` nuestro. */
+const PROPS_COMUNES = ["id", "component", "accessibility", "weight"];
+/** Estructura del arbol: si sobran, que las reporte la validacion del arbol, no se tiran aqui. */
+const PROPS_DE_ESTRUCTURA = new Set(["children", "child"]);
+
+const declaradasPorComponente = new Map<string, Set<string> | undefined>();
+
+/**
+ * Las props que el catalogo PUBLICADO le permite a un componente: exactamente lo que acepta el
+ * validador oficial (`unevaluatedProperties: false` sobre las ramas del `allOf`). `undefined` para
+ * lo que no es tarjeta del catalogo (layout): eso no se toca aqui.
+ */
+function propsDeclaradas(nombre: unknown): Set<string> | undefined {
+  if (typeof nombre !== "string" || !CATALOGO.some((c) => c.nombre === nombre)) return undefined;
+  if (!declaradasPorComponente.has(nombre)) {
+    const componentes = catalogoPublicado.components as unknown as Record<string, { allOf?: Array<{ properties?: Record<string, unknown> }> }>;
+    const ramas = componentes[nombre]?.allOf;
+    declaradasPorComponente.set(nombre, ramas ? new Set([...PROPS_COMUNES, ...ramas.flatMap((r) => Object.keys(r.properties ?? {}))]) : undefined);
+  }
+  return declaradasPorComponente.get(nombre);
+}
+
+/**
+ * Un alias que manda el modelo (`tasaAnual` por `tasaAnualPct`) llena la prop real si falta y el
+ * componente la declara, y se quita siempre que el alias no sea tambien una prop del componente
+ * (#42). En el orden en que vienen: el primero con valor gana.
+ */
+function adoptarAlias(comp: Record<string, unknown>, prop: string, alias: readonly string[], quitadas: Set<string>): void {
+  const declaradas = propsDeclaradas(comp.component);
+  if (!declaradas) return;
+  if (declaradas.has(prop)) {
+    for (const nombre of alias) completar(comp, prop, comp[nombre]);
+  }
+  quitarAlias(comp, alias, quitadas);
+}
+
+/** Quita los alias ya leidos, salvo el que el componente declare como prop propia. */
+function quitarAlias(comp: Record<string, unknown>, alias: readonly string[], quitadas: Set<string>): void {
+  const declaradas = propsDeclaradas(comp.component);
+  if (!declaradas) return;
+  for (const nombre of alias) {
+    if (declaradas.has(nombre) || !(nombre in comp)) continue;
+    delete comp[nombre];
+    quitadas.add(nombre);
+  }
+}
+
+/**
+ * El ultimo paso de la normalizacion: una prop que el schema del componente no declara no se pinta
+ * nunca, y el validador oficial rechaza la pantalla entera por ella (hoy: `portafolioId` en
+ * `DistribucionPortafolio`, `heroe` en `PlanDePago`). Se quita, **salvo** que se parezca a una prop
+ * declarada que falta: eso es un nombre mal escrito que el modelo tiene que corregir, y se deja
+ * para que la validacion lo nombre («la propiedad "tasaAnual" no existe») en vez de desaparecerlo
+ * en silencio. Una obligatoria mal escrita se reporta igual como faltante (#42).
+ */
+function quitarPropsNoDeclaradas(comp: Record<string, unknown>): void {
+  const declaradas = propsDeclaradas(comp.component);
+  if (!declaradas) return;
+  const faltantes = [...declaradas].filter((prop) => comp[prop] === undefined);
+  for (const prop of Object.keys(comp)) {
+    if (declaradas.has(prop) || PROPS_DE_ESTRUCTURA.has(prop)) continue;
+    if (faltantes.some((faltante) => nombresParecidos(prop, faltante))) continue;
+    delete comp[prop];
+  }
+}
+
+/**
+ * `true` si dos nombres de prop parecen el mismo mal escrito: iguales sin mayusculas ni `_`/`-`,
+ * uno prefijo del otro (`tasaAnual` / `tasaAnualPct`, `tipo` / `tipoInvalidez`), o a dos ediciones
+ * o menos (`metaCentavo` / `metaCentavos`). Umbrales en `docs/algoritmos/normalizacion-de-pantalla.md`.
+ */
+export function nombresParecidos(a: string, b: string): boolean {
+  const x = a.toLowerCase().replace(/[_-]/g, "");
+  const y = b.toLowerCase().replace(/[_-]/g, "");
+  if (x === y) return true;
+  const corto = Math.min(x.length, y.length);
+  if (corto >= 4 && (x.startsWith(y) || y.startsWith(x))) return true;
+  return corto >= 5 && distanciaDeEdicion(x, y) <= 2;
+}
+
+function distanciaDeEdicion(a: string, b: string): number {
+  let previa = Array.from({ length: b.length + 1 }, (_, j) => j);
+  for (let i = 1; i <= a.length; i++) {
+    const actual = [i];
+    for (let j = 1; j <= b.length; j++) {
+      actual[j] = Math.min(previa[j] + 1, actual[j - 1] + 1, previa[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    previa = actual;
+  }
+  return previa[b.length];
 }
 
 type Escenario = { mensualidadCentavos?: number; costoTotalCentavos?: number; tiempoMeses?: number };
