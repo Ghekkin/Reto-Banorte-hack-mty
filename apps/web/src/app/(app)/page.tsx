@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { InicioDeMaya } from "@/components/inicio/inicio-de-maya";
+import { InicioVivo } from "@/components/inicio/inicio-vivo";
 import { RefrescoDelInicio } from "@/components/inicio/refresco-del-inicio";
 import {
   BarraFlotanteMaya,
@@ -9,6 +10,7 @@ import {
   TarjetaSaldo,
 } from "@/components/inicio/tarjetas-inicio";
 import { cuentasDe, movimientosRecientes, resumenDe, tarjetasDe } from "@/lib/datos/consultas";
+import { configInicio } from "@/lib/inicio/config";
 import { estadoDelInicio, regenerarSiCambio } from "@/lib/inicio/servicio";
 import { usuarioActivo } from "@/lib/usuario-activo";
 
@@ -41,6 +43,12 @@ export default async function PaginaInicio() {
   }
 
   if (inicio.activo && inicio.pantalla && !inicio.desactualizada) {
+    // Widgets vivos: cada tarjeta se pregunta y cambia en su lugar. La `key` es la
+    // generacion: cuando el reloj rearma la portada, el estado vivo del navegador (foco,
+    // notas, tarjetas ajustadas) arranca de la nueva en vez de mezclarse con la vieja.
+    if (configInicio.widgetsVivos && Object.keys(inicio.pantalla.procedencias).length > 0) {
+      return <InicioVivo key={inicio.pantalla.generadaEn} pantalla={inicio.pantalla} />;
+    }
     return (
       <div className="relative pb-24 md:pb-20">
         <InicioDeMaya pantalla={inicio.pantalla} nombre={usuario.nombre} />

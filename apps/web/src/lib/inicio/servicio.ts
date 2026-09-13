@@ -1,4 +1,5 @@
 import { USUARIOS } from "@/lib/usuarios";
+import { componentesDe as tarjetasDe } from "@/lib/widgets/pantalla-viva";
 import { almacenEnPostgres, type Almacen, type PantallaDeInicio } from "./almacen";
 import { configInicio } from "./config";
 import { generarPortada, type OpcionesDeGeneracion, type PortadaGenerada } from "./generar";
@@ -37,6 +38,8 @@ export type Dependencias = {
   huella: (usuarioId: string) => Promise<string>;
   generar: (usuarioId: string, opciones?: OpcionesDeGeneracion) => Promise<PortadaGenerada>;
   activo: () => boolean;
+  /** Si Inicio se arma con widgets vivos. Inyectable para las pruebas. */
+  widgets?: () => boolean;
 };
 
 const porDefecto: Dependencias = {
@@ -44,6 +47,7 @@ const porDefecto: Dependencias = {
   huella: huellaDe,
   generar: generarPortada,
   activo: inicioActivo,
+  widgets: () => configInicio.widgetsVivos,
 };
 
 export function inicioActivo(): boolean {
@@ -55,7 +59,7 @@ export async function estadoDelInicio(usuarioId: string, deps: Dependencias = po
   if (!deps.activo()) return { activo: false, desactualizada: false };
   try {
     const [pantalla, huella] = await Promise.all([deps.almacen.leer(usuarioId), deps.huella(usuarioId)]);
-    return { activo: true, pantalla, huella, desactualizada: !pantalla || pantalla.huella !== huella };
+    return { activo: true, pantalla, huella, desactualizada: vencida(pantalla, huella, deps) };
   } catch (error) {
     // Sin base no hay portada ni forma de saber si cambio: la pagina programada sigue.
     console.warn(`[inicio] no pude leer la portada de ${usuarioId}: ${error instanceof Error ? error.message : String(error)}`);
@@ -99,7 +103,7 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     return { hecho: "fallo", motivo: detalle };
   }
 
-  if (!forzar && anterior && anterior.huella === huella) {
+  if (!forzar && !vencida(anterior, huella, deps)) {
     registrar({ inicio: usuarioId, motivo, hecho: "sin-cambios", huella, ms: Date.now() - inicio });
     return { hecho: "sin-cambios", pantalla: anterior, ms: Date.now() - inicio };
   }
@@ -126,6 +130,8 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
       salidaTokens: portada.salidaTokens,
       cacheTokens: portada.cacheTokens,
       ms: portada.ms,
+      procedencias: portada.procedencias,
+      referencias: portada.referencias,
     });
     registrar({
       inicio: usuarioId,
@@ -146,6 +152,26 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     registrar({ inicio: usuarioId, motivo, hecho: "fallo", detalle: `no se pudo guardar: ${detalle}`, ms: Date.now() - inicio });
     return { hecho: "fallo", motivo: detalle, pantalla: anterior };
   }
+}
+
+/**
+ * Si hay que rearmar: no hay portada, o se armo con otros datos, o —solo con widgets vivos
+ * encendidos— se armo sin procedencias y por eso no admite preguntas por tarjeta.
+ *
+ * El modo NO entra a la huella a proposito. La base es la misma en local y en produccion, y
+ * una portada de widgets es A2UI normal que el modo anterior pinta sin problema; si el modo
+ * cambiara la huella, un entorno con el flag y otro sin el se rearmarian la portada el uno al
+ * otro en cada tick, pagando modelo cada vez. Asi, el que tiene el flag la rearma UNA vez y
+ * el otro la ve al dia.
+ */
+function vencida(pantalla: PantallaDeInicio | undefined, huella: string, deps: Dependencias): boolean {
+  if (!pantalla || pantalla.huella !== huella) return true;
+  if (!deps.widgets?.()) return false;
+  // Sin procedencias, o con procedencias de OTRA portada: un proceso sin esta version pudo
+  // rearmarla sin tocar esa columna. Cada procedencia tiene que nombrar una tarjeta que este.
+  const ids = Object.keys(pantalla.procedencias ?? {});
+  const tarjetas = tarjetasDe(pantalla.mensajes);
+  return ids.length === 0 || ids.some((id) => tarjetas.get(id)?.component !== pantalla.procedencias[id]?.componente);
 }
 
 /** Los tres usuarios, uno tras otro: es un reloj, no una carrera contra el proveedor. */

@@ -4,6 +4,7 @@ import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender, PiezaDeRaiz } from "@maya/a2ui";
 import { ProveedorCatalogo } from "@maya/catalogo";
 import { LayoutGrid } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
 import { registrarComponentes } from "@/lib/registrar-componentes";
 import { CLASES_REJILLA, clasesDePieza, tamanoDePieza } from "@/lib/rejilla";
 
@@ -29,6 +30,20 @@ import { CLASES_REJILLA, clasesDePieza, tamanoDePieza } from "@/lib/rejilla";
  */
 registrarComponentes();
 
+/**
+ * Lo que quien aloja el lienzo le agrega a una pieza sin tocar la tarjeta: es como Inicio
+ * muestra que una tarjeta se esta consultando, que acaba de cambiar, y la nota de Maya y el
+ * boton "Preguntar sobre esto" debajo de ella (`components/inicio/pie-de-widget.tsx`).
+ * La conversacion no lo usa.
+ */
+export type DecoracionDePieza = {
+  estado?: "cargando" | "actualizada";
+  /** Texto del velo mientras se consulta; por omision "Consultando al banco…". */
+  aviso?: string;
+  /** Lo que va debajo de la tarjeta, dentro de su mismo hueco. */
+  debajo?: React.ReactNode;
+};
+
 export function Lienzo({
   superficie,
   conversacionId,
@@ -36,6 +51,7 @@ export function Lienzo({
   alFallar,
   vacio,
   ocultarSugerenciasEnTarjeta = true,
+  decorar,
 }: {
   superficie: EstadoSuperficie | undefined;
   conversacionId: string;
@@ -49,6 +65,7 @@ export function Lienzo({
    * abajo como opciones interactivas de la conversación.
    */
   ocultarSugerenciasEnTarjeta?: boolean;
+  decorar?: (pieza: PiezaDeRaiz) => DecoracionDePieza | undefined;
 }) {
   const hayAlgo = superficie && superficie.componentes.size > 0;
 
@@ -61,7 +78,7 @@ export function Lienzo({
             conversacionId={conversacionId}
             alAccionar={alAccionar}
             alFallar={alFallar}
-            disponer={(piezas) => <Rejilla piezas={piezas} />}
+            disponer={(piezas) => <Rejilla piezas={piezas} decorar={decorar} />}
           />
         ) : (
           vacio
@@ -72,17 +89,54 @@ export function Lienzo({
 }
 
 /** Las piezas de primer nivel, cada una en su hueco. Ver `@/lib/rejilla`. */
-function Rejilla({ piezas }: { piezas: PiezaDeRaiz[] }) {
+function Rejilla({ piezas, decorar }: { piezas: PiezaDeRaiz[]; decorar?: (pieza: PiezaDeRaiz) => DecoracionDePieza | undefined }) {
   const tamanos = piezas.map((p) => tamanoDePieza(p.componente, p.ancho));
   const tarjetas = tamanos.filter((t) => t !== "completa").length;
 
   return (
     <div className={`animar-lista ${CLASES_REJILLA}`}>
-      {piezas.map((pieza, i) => (
-        <div key={pieza.clave} data-pieza={pieza.id} data-tamano={tamanos[i]} className={clasesDePieza(tamanos[i]!, tarjetas)}>
-          {pieza.nodo}
-        </div>
-      ))}
+      {piezas.map((pieza, i) => {
+        const deco = decorar?.(pieza);
+        if (!deco) {
+          return (
+            <div key={pieza.clave} data-pieza={pieza.id} data-tamano={tamanos[i]} className={clasesDePieza(tamanos[i]!, tarjetas)}>
+              {pieza.nodo}
+            </div>
+          );
+        }
+        return (
+          <div
+            key={pieza.clave}
+            data-pieza={pieza.id}
+            data-tamano={tamanos[i]}
+            data-estado={deco.estado}
+            className={`${clasesDePieza(tamanos[i]!, tarjetas)} flex flex-col gap-2`}
+          >
+            {/* El resaltado va en un anillo del hueco y no en la tarjeta: la tarjeta es del
+                catalogo y no sabe que vive en Inicio. */}
+            <div
+              className={`relative rounded-2xl transition-shadow duration-200 ease-out ${
+                deco.estado === "actualizada" ? "ring-2 ring-primary/40 ring-offset-2 ring-offset-lienzo" : ""
+              }`}
+              aria-busy={deco.estado === "cargando" || undefined}
+            >
+              {pieza.nodo}
+              {deco.estado === "cargando" && (
+                <div
+                  role="status"
+                  className="animar-entrada absolute inset-0 grid place-items-center rounded-2xl bg-card/80"
+                >
+                  <span className="flex items-center gap-2 rounded-full border border-borde-sutil bg-card px-4 py-2 text-sm text-foreground shadow-sm">
+                    <Spinner className="size-4 text-primary" />
+                    {deco.aviso ?? "Consultando al banco…"}
+                  </span>
+                </div>
+              )}
+            </div>
+            {deco.debajo}
+          </div>
+        );
+      })}
     </div>
   );
 }

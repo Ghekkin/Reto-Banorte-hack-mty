@@ -111,7 +111,7 @@ export function partirEnTitular(texto: string): { titular: string; detalle?: str
  * El "¿Por que veo esto?" ya no vive aqui: ahora es el pie de la tarjeta `Conclusion`,
  * como en cualquier otra tarjeta del catalogo.
  */
-function EvidenciaDeMaya({ pantalla }: { pantalla: PantallaDeInicio }) {
+export function EvidenciaDeMaya({ pantalla }: { pantalla: PantallaDeInicio }) {
   const tools = pantalla.tools.map((t) => t.replace(/!$/, ""));
 
   return (

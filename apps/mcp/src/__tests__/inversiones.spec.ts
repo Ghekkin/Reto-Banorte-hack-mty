@@ -183,3 +183,29 @@ describe("consultar_historico_inversion", () => {
     ).rejects.toThrow(/no existe el instrumento/);
   });
 });
+
+describe("simular_rebalanceo", () => {
+  it("Carmen: las mismas ordenes que ejecutaria rebalancear_portafolio, sin tocar el estado", async () => {
+    const { simularRebalanceo } = await import("../tools/simular-rebalanceo.js");
+    const { SalidaSimularRebalanceo } = await import("@maya/schemas");
+    const { calcularMovimientosRebalanceo } = await import("../dominio/inversiones.js");
+
+    const res = SalidaSimularRebalanceo.parse(await simularRebalanceo.manejar({ usuarioId: "usr_carmen" }));
+    expect(res.portafolio.valorTotalCentavos).toBe(281073746);
+    expect(res.sinDesviacion).toBe(false);
+    expect(res.movimientos.length).toBeGreaterThan(0);
+    expect(res.movimientos).toEqual(calcularMovimientosRebalanceo("usr_carmen").movimientos);
+    // Ventas primero: liberar liquidez antes de comprar.
+    const primeraCompra = res.movimientos.findIndex((m) => m.tipo === "compra");
+    expect(res.movimientos.slice(primeraCompra).every((m) => m.tipo === "compra")).toBe(true);
+
+    // Es lectura: pedirla dos veces da lo mismo.
+    const otra = SalidaSimularRebalanceo.parse(await simularRebalanceo.manejar({ usuarioId: "usr_carmen" }));
+    expect(otra).toEqual(res);
+  });
+
+  it("sin portafolio, lo dice en vez de inventar ordenes", async () => {
+    const { simularRebalanceo } = await import("../tools/simular-rebalanceo.js");
+    await expect(async () => simularRebalanceo.manejar({ usuarioId: "usr_beto" })).rejects.toThrow(/portafolio/);
+  });
+});

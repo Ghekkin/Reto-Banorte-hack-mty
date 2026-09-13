@@ -114,3 +114,16 @@ describe("vigencia del habito detectado", () => {
     expect(salida.habito.vigente).toBe(true);
   });
 });
+
+describe("diagnostico_salud_financiera: ahorro liquido", () => {
+  it("es el saldo de HOY de nomina + ahorro, y cuadra con los meses de fondo del mes", async () => {
+    const salida = await diagnostico("usr_ana");
+    // Nomina 18,423.50 + ahorro 48,150.00; la de inversion no cuenta.
+    expect(salida.ahorroLiquidoCentavos).toBe(1842350 + 4815000);
+  });
+
+  it("Beto: casi nada liquido, igual que dice su fondo de emergencia", async () => {
+    const salida = await diagnostico("usr_beto");
+    expect(salida.ahorroLiquidoCentavos).toBe(218740 + 63200);
+  });
+});

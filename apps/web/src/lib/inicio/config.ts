@@ -9,6 +9,19 @@
 export const configInicio = {
   /** Con `0`, Inicio es la pantalla programada de siempre y no corre ningun modelo. */
   activo: (process.env.FEATURE_INICIO_PERSONALIZADO ?? "1") !== "0",
+  /**
+   * Con `1`, Inicio se arma con widgets vivos (`docs/como-funciona/widgets-vivos.md`): cada
+   * tarjeta con su fuente del MCP, cifras que pone el servidor, y preguntas que cambian UNA
+   * tarjeta en su lugar en vez de rearmar el dashboard. Con `0`, todo es como antes.
+   */
+  widgetsVivos: process.env.FEATURE_WIDGETS_VIVOS === "1",
+  /**
+   * El modelo que contesta una pregunta sobre una tarjeta. Por omision el mismo chico de la
+   * portada: el trabajo es elegir una fuente y un parametro, y medido el 2026-09-13 el
+   * "lite" cierra una tool en ~0.5 s donde `gemini-3.8-flash` tardaba de 7 a 20 s. En una
+   * interaccion en vivo, eso es la diferencia entre "la tarjeta cambio" y "se trabo".
+   */
+  modeloWidgets: process.env.MODELO_WIDGETS ?? process.env.MODELO_INICIO ?? "gemini-3.5-flash-lite",
   /** Id del modelo chico. `gemini-*` o `claude-*`; la llave es la misma del agente. */
   modelo: process.env.MODELO_INICIO ?? "gemini-3.5-flash-lite",
   /** Cada cuantos minutos el reloj revisa a los tres usuarios. */

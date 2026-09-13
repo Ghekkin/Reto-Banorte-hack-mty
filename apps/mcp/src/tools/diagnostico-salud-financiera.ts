@@ -1,4 +1,6 @@
 import { EntradaDiagnosticoSaludFinanciera, SalidaDiagnosticoSaludFinanciera } from "@maya/schemas";
+import { aEntero } from "../datos/index.js";
+import { cuentasDe } from "../dominio/consultas.js";
 import { calificacionDe, mesYAnterior, tendenciaDe, vigenciaDelHabito } from "../dominio/salud.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -55,6 +57,7 @@ export const diagnosticoSaludFinanciera: DefinicionDeTool = {
       gastoEsencialPct: mes.gastoEsencialPct,
       gastoDiscrecionalPct: mes.gastoDiscrecionalPct,
       mesesFondoEmergencia: mes.mesesFondoEmergencia,
+      ahorroLiquidoCentavos: ahorroLiquido(entrada.usuarioId),
       habito: {
         texto: mes.habitoDetectado,
         vigente: habito.vigente,
@@ -69,3 +72,15 @@ export const diagnosticoSaludFinanciera: DefinicionDeTool = {
     });
   },
 };
+
+/**
+ * El dinero liquido de HOY: nomina + ahorro activas. Es la misma base de
+ * `mesesFondoEmergencia` (con los datos de Ana: (18,423.50 + 48,150) / 24,164.50 = 2.76),
+ * pero al dia en vez de al cierre del mes diagnosticado. Las de inversion no cuentan: no
+ * se retiran de un dia para otro.
+ */
+function ahorroLiquido(usuarioId: string): number {
+  return cuentasDe(usuarioId)
+    .filter((c) => c.tipo === "nomina" || c.tipo === "ahorro")
+    .reduce((suma, c) => suma + aEntero(c.saldo_centavos), 0);
+}

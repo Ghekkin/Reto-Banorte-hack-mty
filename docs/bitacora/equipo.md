@@ -16,6 +16,18 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ---
 
+## 2026-09-13
+
+- **dom 02:45 · decisión + hecho · aldair** — **Widgets vivos en Inicio: preguntarle a una
+  tarjeta y que cambie en su lugar, con cifras que solo pone el MCP** (ADR 0011). Respuesta a la
+  revisión con Banorte («cada pregunta se siente como cambiar de ppt»). El modelo elige la fuente
+  y los parámetros de cada tarjeta; el servidor consulta el MCP y un adaptador pone las cifras;
+  el texto pasa por un verificador; un auditor re-consulta antes de mostrar. Detrás de
+  `FEATURE_WIDGETS_VIVOS` (default 0). Para el pitch: la portada usa un tercio de los tokens de
+  entrada y una cuarta parte de los de salida (el modelo ya no copia datos), y la pregunta sobre
+  una tarjeta cierra en 1–2.5 s. Pendiente: llevar la misma regla a
+  `/maya` (issue registrado). Detalle: `docs/como-funciona/widgets-vivos.md`.
+
 ## 2026-09-12
 
 - **sáb 18:53 · decisión + hecho · contrato** — **el ciclo es LIVE: un turno ya no siempre

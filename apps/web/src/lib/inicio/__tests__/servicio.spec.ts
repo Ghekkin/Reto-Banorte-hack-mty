@@ -50,7 +50,7 @@ function almacenEnMemoria(inicial?: PantallaDeInicio): Almacen & { filas: Map<st
     filas,
     leer: async (usuarioId) => filas.get(usuarioId),
     guardar: async (p: PantallaNueva) => {
-      const guardada = { ...p, generadaEn: new Date().toISOString() };
+      const guardada = { ...p, generadaEn: new Date().toISOString(), procedencias: p.procedencias ?? {}, referencias: p.referencias ?? [], ajustadaEn: null };
       filas.set(p.usuarioId, guardada);
       return guardada;
     },
@@ -61,6 +61,9 @@ function guardada(usuarioId: string, huella: string): PantallaDeInicio {
   return {
     usuarioId,
     huella,
+    procedencias: {},
+    referencias: [],
+    ajustadaEn: null,
     mensajes: MENSAJES,
     texto: "vieja",
     razon: "vieja",
@@ -225,6 +228,41 @@ describe("estadoDelInicio", () => {
     expect((await estadoDelInicio("usr_beto", deps({ almacen: almacenEnMemoria() }))).desactualizada).toBe(true);
     const inactivo = await estadoDelInicio("usr_beto", deps({ almacen: almacenEnMemoria(), activo: () => false }));
     expect(inactivo).toEqual({ activo: false, desactualizada: false });
+  });
+});
+
+describe("widgets vivos encendidos", () => {
+  const procedencia = {
+    widgetId: "c",
+    fuente: "tarjeta",
+    componente: "ResumenTarjeta",
+    tool: "consultar_tarjeta",
+    parametros: {},
+    variantes: {},
+    argumentos: { usuarioId: "usr_beto" },
+    huella: "h",
+    en: "2026-09-13T07:00:00.000Z",
+  };
+
+  it("una portada sin procedencias se rearma UNA vez, aunque la huella sea la misma", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
+    const d = deps({ almacen, widgets: () => true });
+    expect((await estadoDelInicio("usr_beto", d)).desactualizada).toBe(true);
+    almacen.filas.set("usr_beto", { ...guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"), procedencias: { c: procedencia } });
+    expect((await estadoDelInicio("usr_beto", d)).desactualizada).toBe(false);
+  });
+
+  it("con procedencias de OTRA portada (otro proceso la rearmo sin esa columna), tambien", async () => {
+    const almacen = almacenEnMemoria({
+      ...guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"),
+      procedencias: { c: { ...procedencia, componente: "PlanDePago" } },
+    });
+    expect((await estadoDelInicio("usr_beto", deps({ almacen, widgets: () => true }))).desactualizada).toBe(true);
+  });
+
+  it("con el flag apagado, una portada sin procedencias esta al dia: los dos modos no se pelean la base", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
+    expect((await estadoDelInicio("usr_beto", deps({ almacen, widgets: () => false }))).desactualizada).toBe(false);
   });
 });
 

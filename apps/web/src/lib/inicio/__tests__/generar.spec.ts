@@ -170,3 +170,43 @@ describe("encargoDePortada", () => {
     expect(encargo.trim().endsWith("Termina llamando `pintar_pantalla` exactamente una vez.")).toBe(true);
   });
 });
+
+describe("generarPortada en modo widgets", () => {
+  it("pinta por fuentes: el modelo no escribe cifras y la portada trae procedencias", async () => {
+    const { llamarFalso } = await import("@/lib/widgets/__tests__/mcp-falso");
+    const { consultaHecha } = await import("@/lib/widgets/consultor");
+    const llamar = llamarFalso("usr_beto");
+    const tarjeta = await llamar("consultar_tarjeta", { usuarioId: "usr_beto" });
+    const portada = await generarPortada("usr_beto", {
+      widgets: true,
+      modelo: modeloGuionizado([
+        pasoConTool("pintar_widgets", {
+          razon: "Tu tarjeta esta al limite y con atraso",
+          texto: "Hoy lo urgente es tu tarjeta.",
+          conclusion: {
+            titular: "Tu tarjeta está al límite: conviene diferirla.",
+            datos: [{ etiqueta: "Saldo", widget: "tarjeta", campo: "saldoCentavos" }],
+          },
+          widgets: [
+            { id: "tarjeta", fuente: "tarjeta", heroe: true, razon: "Tu tarjeta es lo mas urgente" },
+            { id: "plan", fuente: "plan_de_pago", razon: "Diferir baja tu mensualidad" },
+          ],
+        }),
+      ]),
+      llamar,
+      datos: DATOS,
+      sembradas: [consultaHecha("consultar_tarjeta", { usuarioId: "usr_beto" }, tarjeta.resultado, true, 3)],
+      nombreDelModelo: "modelo-de-prueba",
+    });
+
+    expect(portada.ok, portada.ok ? "" : portada.motivo).toBe(true);
+    if (!portada.ok) return;
+    expect(Object.keys(portada.procedencias ?? {})).toEqual(["tarjeta", "plan"]);
+    expect(portada.referencias).toEqual([{ etiqueta: "Saldo", widget: "tarjeta", campo: "saldoCentavos", tono: "neutro" }]);
+    // La tarjeta salio del prefetch sembrado: no se volvio a pedir. El plan si se consulto.
+    const pedidas = llamar.mock.calls.map(([tool]) => tool);
+    expect(pedidas.filter((t) => t === "consultar_tarjeta")).toHaveLength(1);
+    expect(pedidas).toContain("simular_reestructura");
+    expect(portada.tools).toEqual(["simular_reestructura"]);
+  });
+});

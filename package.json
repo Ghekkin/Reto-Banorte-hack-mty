@@ -18,7 +18,8 @@
     "datos:fixture": "node scripts/volcar-fixture.mjs",
     "datos:restaurar": "node scripts/restaurar.mjs",
     "probar-guion": "node scripts/probar-guion.mjs",
-    "probar-inicio": "node scripts/probar-inicio.mjs"
+    "probar-inicio": "node scripts/probar-inicio.mjs",
+    "probar-widgets": "node scripts/probar-widgets.mjs"
   },
   "devDependencies": {
     "pg": "^8.13.1",

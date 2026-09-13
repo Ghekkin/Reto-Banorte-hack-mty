@@ -66,6 +66,11 @@ export const SalidaDiagnosticoSaludFinanciera = z.object({
   gastoEsencialPct: z.number(),
   gastoDiscrecionalPct: z.number(),
   mesesFondoEmergencia: z.number().describe("Cuantos meses de gasto cubre su ahorro liquido"),
+  // Opcional porque llego despues (widgets vivos, 2026-09-13): `TermometroSaludFinanciera`
+  // pinta "ahorro acumulado" y ninguna tool lo devolvia, asi que el modelo lo estimaba.
+  ahorroLiquidoCentavos: Centavos.optional().describe(
+    "Saldo HOY de sus cuentas de nomina y ahorro activas: el dinero liquido con el que cuenta",
+  ),
   habito: z.object({
     texto: z.string().describe("La frase del diagnostico, ya redactada"),
     vigente: z.boolean().describe("false: el dato en el que se basa ya cambio. NO lo pintes"),

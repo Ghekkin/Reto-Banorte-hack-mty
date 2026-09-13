@@ -57,7 +57,7 @@ nada.
 | `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios | cuando no hay deuda que resolver |
 | `crear_apartado` | **acción** | la meta creada con su fecha objetivo | solo cuando llega la acción A2UI del mismo nombre |
 | `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
-| `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito y `serie` para graficar | "¿cómo voy?", o antes de proponer un plan |
+| `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito, `serie` para graficar y `ahorroLiquidoCentavos` (nómina + ahorro de hoy) | "¿cómo voy?", o antes de proponer un plan |
 | `consultar_creditos` | lectura | toda la deuda (créditos + tarjeta), mensualidad total, ratio, el más caro por CAT | "¿cuánto debo en total?", y antes de comprometer capacidad de pago |
 | `detectar_fugas` | lectura | suscripciones y cargos recurrentes que se escapan, con lo que costarían al año | "¿en qué se me va el dinero sin darme cuenta?" |
 | `cancelar_suscripcion` | **acción** | la suscripción cancelada y lo que se deja de pagar | solo cuando llega la acción A2UI del mismo nombre |
@@ -75,6 +75,21 @@ podía ver. Las tres de Inversiones (`consultar_inversiones`, `consultar_catalog
 (`docs/arquitectura/orquestadores.md`): `analizar_gasto` y `analizar_ahorro` son fachadas
 de lectura (O4) que componen llamando por dentro a las tools atómicas — son las mismas, no
 una segunda versión —, y `ejecutar_decision` es el orquestador de acción (O2).
+
+**Dos agregados para los widgets vivos (2026-09-13, ADR 0011).** En Inicio con
+`FEATURE_WIDGETS_VIVOS=1` ninguna cifra de una tarjeta la escribe el modelo: sale de una tool.
+Dos tarjetas no tenían de dónde: `TermometroSaludFinanciera` pinta "ahorro acumulado" y ninguna
+tool lo devolvía, y `OrdenRebalanceo` se muestra ANTES de confirmar pero las órdenes solo se
+calculaban dentro de la acción. Por eso:
+
+| Tool | Clase | Qué devuelve | Para qué |
+|---|---|---|---|
+| `simular_rebalanceo` | lectura | las órdenes de compra y venta que `rebalancear_portafolio` ejecutaría, sin ejecutarlas (mismo `calcularMovimientosRebalanceo`), el valor y la desviación | la tarjeta `OrdenRebalanceo` previa a confirmar |
+| `diagnostico_salud_financiera.ahorroLiquidoCentavos` | campo nuevo, opcional | saldo de hoy de las cuentas de nómina y ahorro activas | `montoAhorradoCentavos` del termómetro |
+
+Pruebas: `apps/mcp/src/__tests__/inversiones.spec.ts` (`simular_rebalanceo` da las mismas órdenes
+que el cálculo de la acción y no toca el estado) y `salud.spec.ts` (el ahorro líquido de Ana y de
+Beto). Ver `docs/como-funciona/widgets-vivos.md`.
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime

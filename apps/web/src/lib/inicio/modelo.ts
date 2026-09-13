@@ -25,7 +25,21 @@ export function hayLlaveDelInicio(): boolean {
 }
 
 export function modeloDelInicio(): LanguageModel {
-  return proveedorDelInicio() === "claude" ? anthropic(configInicio.modelo) : google(configInicio.modelo);
+  return modeloPorId(configInicio.modelo);
+}
+
+/** Cualquier id de modelo: `claude-*` con la llave de Anthropic, lo demas con la de Google. */
+export function modeloPorId(id: string): LanguageModel {
+  return id.startsWith("claude") ? anthropic(id) : google(id);
+}
+
+/**
+ * Pensamiento minimo en Gemini para los widgets vivos: elegir una fuente y un parametro no
+ * necesita razonar. Medido el 2026-09-13 con `gemini-3.5-flash-lite`, cierra la tool en
+ * 0.5-0.9 s cuando el proveedor responde normal, contra 7-9 s con el nivel por omision.
+ */
+export function opcionesDeWidgets(id: string): { google?: { thinkingConfig: { thinkingLevel: string } } } {
+  return id.startsWith("gemini") ? { google: { thinkingConfig: { thinkingLevel: "minimal" } } } : {};
 }
 
 /**

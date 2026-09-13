@@ -5,8 +5,12 @@ import { crearCierre } from "@/lib/agente/cierre";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "@/lib/agente/mcp-cliente";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "@/lib/agente/pantalla";
 import { systemPrompt } from "@/lib/agente/prompt";
+import type { Procedencias, ReferenciaDeDato } from "@/lib/widgets/armar";
+import { consultaHecha, crearConsultor, type Consulta, type Llamar } from "@/lib/widgets/consultor";
+import { crearCierreDePortada } from "@/lib/widgets/pintar";
+import { promptDeWidgets } from "@/lib/widgets/prompt";
 import { configInicio } from "./config";
-import { modeloDelInicio, opcionesDelInicio } from "./modelo";
+import { modeloDelInicio, opcionesDeWidgets, opcionesDelInicio } from "./modelo";
 
 /**
  * Arma la portada de una persona: la pantalla de Inicio que ve al abrir la app, sin
@@ -49,6 +53,15 @@ export type OpcionesDeGeneracion = {
    * superficie de fallo, y el que se usa menos es el que nadie prueba.
    */
   pregunta?: string;
+  /**
+   * Arma la portada por fuentes (`pintar_widgets`) en vez de con `pintar_pantalla`. Por
+   * omision lo decide `FEATURE_WIDGETS_VIVOS`; las pruebas lo fijan.
+   */
+  widgets?: boolean;
+  /** Para pruebas del modo widgets: como se llama al MCP, sin abrir conexion. */
+  llamar?: Llamar;
+  /** Para pruebas del modo widgets: el prefetch ya hecho, con sus argumentos. */
+  sembradas?: Consulta[];
 };
 
 export type PortadaGenerada =
@@ -65,6 +78,10 @@ export type PortadaGenerada =
       pasos: number;
       ms: number;
       modelo: string;
+      /** Solo en modo widgets: de donde salio cada tarjeta. */
+      procedencias?: Procedencias;
+      /** Solo en modo widgets: a que tarjeta y campo apunta cada cifra de la conclusion. */
+      referencias?: ReferenciaDeDato[];
     }
   | { ok: false; motivo: string; tools: string[]; pasos: number; ms: number; modelo: string };
 
@@ -91,10 +108,18 @@ const MESES_DE_FONDO = 3;
  * Una tool que falle entra como `{ error }` y el modelo lo lee: la portada sale con lo
  * que si hay.
  */
-export async function reunirDatos(cliente: Client, usuarioId: string, usadas: LlamadaRegistrada[]): Promise<DatosDeLaPortada> {
+export async function reunirDatos(
+  cliente: Client,
+  usuarioId: string,
+  usadas: LlamadaRegistrada[],
+  /** Si viene, cada llamada se guarda con sus argumentos: el modo widgets la reusa como cache. */
+  sembradas?: Consulta[],
+): Promise<DatosDeLaPortada> {
   const pedir = async (nombre: string, argumentos: Record<string, unknown>) => {
-    const r = await llamarTool(cliente, nombre, { usuarioId, ...argumentos });
+    const completos = { usuarioId, ...argumentos };
+    const r = await llamarTool(cliente, nombre, completos);
     usadas.push({ nombre, ms: r.ms, ok: r.ok, mutacion: false });
+    sembradas?.push(consultaHecha(nombre, completos, r.resultado, r.ok, r.ms));
     return [nombre, r.resultado] as const;
   };
 
@@ -145,6 +170,7 @@ export const TOOLS_DE_APOYO = [
 /** Dos entregas invalidas y se corta, como en el turno de conversacion. */
 
 export async function generarPortada(usuarioId: string, opciones: OpcionesDeGeneracion = {}): Promise<PortadaGenerada> {
+  if (opciones.widgets ?? configInicio.widgetsVivos) return generarPortadaDeWidgets(usuarioId, opciones);
   const inicio = Date.now();
   const usadas: LlamadaRegistrada[] = [];
   const modeloNombre = opciones.nombreDelModelo ?? configInicio.modelo;
@@ -397,4 +423,161 @@ export function encargoDeConsulta(usuarioId: string, datos: DatosDeLaPortada, pr
 
 function esObjeto(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+// --- Modo widgets (FEATURE_WIDGETS_VIVOS) ----------------------------------------------
+
+/**
+ * La portada armada por fuentes: el modelo elige tarjetas, fuentes y parametros con
+ * `pintar_widgets`, y las cifras las pone el servidor con lo que devuelve el MCP
+ * (`lib/widgets/`, ADR 0011).
+ *
+ * Mismo prefetch que el modo de siempre, y sus resultados se siembran en el consultor: si
+ * la tarjeta de gasto pide `analizar_gasto {}`, ya esta en la mano y no cuesta otra
+ * llamada. No hay paso de consulta para el modelo: los datos que necesita para ELEGIR ya
+ * vienen en el encargo, y los de las tarjetas los trae el servidor. Por eso el bucle
+ * fuerza `pintar_widgets` desde el primer paso, con un paso extra para corregir.
+ */
+async function generarPortadaDeWidgets(usuarioId: string, opciones: OpcionesDeGeneracion): Promise<PortadaGenerada> {
+  const inicio = Date.now();
+  const usadas: LlamadaRegistrada[] = [];
+  const modeloNombre = opciones.nombreDelModelo ?? configInicio.modelo;
+  const timeoutMs = opciones.timeoutMs ?? configInicio.timeoutMs;
+  let cliente: Client | undefined;
+  let pasos = 0;
+
+  const fallo = (motivo: string): PortadaGenerada => ({
+    ok: false,
+    motivo,
+    tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
+    pasos,
+    ms: Date.now() - inicio,
+    modelo: modeloNombre,
+  });
+
+  try {
+    const sembradas: Consulta[] = opciones.sembradas ? [...opciones.sembradas] : [];
+    let llamar = opciones.llamar;
+    let datos = opciones.datos;
+    if (!llamar || !datos) {
+      cliente = await conectarMcp();
+      const abierto = cliente;
+      llamar ??= (tool, argumentos) => llamarTool(abierto, tool, argumentos);
+      datos ??= await reunirDatos(abierto, usuarioId, usadas, sembradas);
+    }
+
+    const consultor = crearConsultor({ usuarioId, llamar, sembradas, alTerminar: (l) => usadas.push(l) });
+    const cierre = crearCierreDePortada(consultor);
+    let errores: string[] = [];
+    let corte: "timeout" | undefined;
+
+    const resultado = streamText({
+      model: opciones.modelo ?? modeloDelInicio(),
+      messages: [
+        {
+          role: "system",
+          content: promptDeWidgets(),
+          providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+        },
+        { role: "user", content: encargoDeWidgets(usuarioId, datos, sembradas) },
+      ],
+      allowSystemInMessages: true,
+      tools: cierre.herramientas,
+      toolChoice: { type: "tool", toolName: "pintar_widgets" },
+      stopWhen: [stepCountIs(configInicio.maxPasos), () => cierre.cerrado(), () => cierre.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA],
+      // Elegir fuentes no necesita razonar; las cifras no las calcula el modelo.
+      providerOptions: opciones.modelo ? {} : opcionesDeWidgets(modeloNombre),
+      abortSignal: AbortSignal.timeout(timeoutMs),
+    });
+
+    for await (const parte of resultado.fullStream) {
+      switch (parte.type) {
+        case "tool-result": {
+          const salida = parte.output as { ok: boolean; errores?: string[] };
+          if (!salida.ok) errores = salida.errores ?? [];
+          break;
+        }
+        case "finish-step":
+          pasos++;
+          break;
+        case "error":
+          return fallo(`el modelo fallo: ${parte.error instanceof Error ? parte.error.message : String(parte.error)}`);
+        case "abort":
+          corte = "timeout";
+          break;
+        default:
+          break;
+      }
+    }
+
+    const pantalla = cierre.resultado();
+    if (corte === "timeout" && !pantalla) return fallo(`la generacion paso de ${timeoutMs / 1000} s y se corto`);
+    if (!pantalla) {
+      return fallo(errores.length ? `la portada vino invalida: ${errores.join("; ")}` : `el modelo no entrego la portada en ${pasos} paso(s)`);
+    }
+
+    const consumo = await resultado.usage.catch(() => undefined);
+    return {
+      ok: true,
+      mensajes: pantalla.mensajes,
+      texto: pantalla.texto,
+      razon: pantalla.razon,
+      sugerencias: pantalla.sugerencias,
+      procedencias: pantalla.procedencias,
+      referencias: pantalla.referencias,
+      tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
+      entradaTokens: consumo?.inputTokens ?? null,
+      salidaTokens: consumo?.outputTokens ?? null,
+      cacheTokens: consumo?.cachedInputTokens ?? null,
+      pasos,
+      ms: Date.now() - inicio,
+      modelo: modeloNombre,
+    };
+  } catch (error) {
+    const abortado = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+    return fallo(abortado ? `la generacion paso de ${timeoutMs / 1000} s y se corto` : error instanceof Error ? error.message : String(error));
+  } finally {
+    await cliente?.close().catch(() => undefined);
+  }
+}
+
+/**
+ * El encargo de la portada por fuentes. La escalera es la misma que la de
+ * `encargoDePortada` —el orden ES la urgencia—, pero cada escalon nombra FUENTES y no
+ * componentes con props.
+ */
+export function encargoDeWidgets(usuarioId: string, datos: DatosDeLaPortada, sembradas: readonly Consulta[] = []): string {
+  const lineasDeDatos = Object.entries(datos).map(([tool, valor]) => `${tool}: ${JSON.stringify(valor)}`);
+  const simulacion = sembradas.find((c) => c.tool === "proyectar_ahorro" && c.ok);
+  const objetivo = simulacion?.argumentos.montoObjetivoCentavos;
+  return [
+    "--- contexto del turno ---",
+    `usuarioId: ${usuarioId}`,
+    "",
+    "MODO PORTADA. Arma el INICIO de esta persona: lo primero que ve al abrir la app. Responde «¿cómo estoy",
+    "hoy y qué me conviene hacer?». Llama `pintar_widgets` exactamente una vez.",
+    "",
+    "1. `conclusion`: tu lectura en una frase (`titular`), el porqué y la recomendación (`detalle`), el",
+    "   `saludo` «Hola, <primer nombre>» (el nombre está en `panorama_inicial.perfil.nombre`), 3 preguntas de",
+    "   seguimiento (`sugerencias`) y hasta 3 cifras de apoyo en `datos`, cada una por REFERENCIA:",
+    '   {"etiqueta":"Uso de tu línea","widget":"tarjeta","campo":"saldoCentavos","tono":"alerta"}.',
+    "2. `widgets`: EXACTAMENTE 2 tarjetas. Recorre esta escalera DE ARRIBA A ABAJO y quédate con el PRIMER caso",
+    "   que aplique; no la saltes porque otro caso te parezca más interesante:",
+    "   a) tarjeta de crédito al límite (`usoDelLimite` >= 0.5) o con mora -> `tarjeta` (heroe) y `plan_de_pago`;",
+    "      si ya `tienePlanActivo`, `tarjeta` y la siguiente que aplique;",
+    "   b) sin tarjeta pero con créditos con saldo -> `credito` (heroe) y `simulador_meta`. Sin tarjeta NO es sin",
+    "      deuda: mientras tenga saldo insoluto paga intereses cada mes;",
+    "   c) SIN deuda y con portafolio desviado de su modelo -> `portafolio` (heroe) y `rebalanceo`;",
+    "   d) topes excedidos o fugas -> `fugas` o `gasto_del_mes`;",
+    "   e) meta activa -> `meta_activa`; sin meta y con capacidad de ahorro -> `simulador_meta`.",
+    "   Si el caso solo da una tarjeta, la otra es contexto: `gasto_del_mes` o `salud`.",
+    "3. Una sola tarjeta con `heroe: true`: la primera de la escalera.",
+    objetivo !== undefined
+      ? `4. \`proyectar_ahorro\` ya se consultó con montoObjetivoCentavos=${String(objetivo)} (tres meses de su gasto): si usas \`simulador_meta\`, pasa {"montoObjetivoCentavos":${String(objetivo)},"nombre":"Fondo de emergencia"}.`
+      : "4. Si usas `simulador_meta` y no tiene meta, propón como objetivo tres meses de su gasto (`analizar_gasto.gasto.gastoCentavos` x 3).",
+    "5. `texto`: una frase corta, sin repetir el titular.",
+    "",
+    "datos para decidir (lo que devolvió cada tool del MCP):",
+    ...lineasDeDatos,
+  ].join("\n");
 }

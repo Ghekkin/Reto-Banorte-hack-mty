@@ -313,7 +313,7 @@ export function armarMensajes(entrada: EntradaPintarPantalla, opciones: Opciones
  * sin `action` en dos corridas seguidas, aun con la regla escrita en el prompt, y el
  * boton "Aplicar plan" salia deshabilitado.
  */
-function completarAccion(componente: Componente): void {
+export function completarAccion(componente: Componente): void {
   if (componente.action) return;
   const entrada = CATALOGO.find((c) => c.nombre === componente.component);
   const nombre = entrada?.acciones?.[0];

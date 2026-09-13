@@ -53,6 +53,9 @@ function pantallaDelEjemplo(archivo = EJEMPLO): PantallaDeInicio {
     cacheTokens: 12000,
     ms: 5200,
     generadaEn: new Date(Date.now() - 4 * 60_000).toISOString(),
+    procedencias: {},
+    referencias: [],
+    ajustadaEn: null,
   };
 }
 

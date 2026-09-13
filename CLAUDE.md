@@ -122,7 +122,7 @@ el campo nuevo es opcional.
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
-| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010) | existe |
+| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/` (0004: procedencias de los widgets vivos). **Los datos viven en PostgreSQL, no en el repo** (ADR 0010) | existe |
 | `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
@@ -130,8 +130,8 @@ el campo nuevo es opcional.
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |
-| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell, `/api/agente` (stream JSONL), **6 rutas `/api/*` de lectura para consumidores externos** (`docs/como-funciona/api-rest-lectura.md`), `/catalogo/v1.json`, `src/lib/agente/` (agente real con el AI SDK y **las tres salidas del turno**: `pintar_pantalla`, `ajustar_pantalla`, `responder`; `docs/como-funciona/ciclo-live.md`), `src/lib/inicio/` (**la portada que arma un modelo chico**, con reloj en `instrumentation.ts`; `docs/como-funciona/inicio-personalizado.md`) | construido; 155 pruebas |
-| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre PostgreSQL (esquema `banorte`), estado mutable en `acciones_aplicadas` | **18 tools** (14 lectura + 4 acción), 103 pruebas |
+| `apps/web/` (`@maya/web`) | Host Next.js 16 + Tailwind v4 + shadcn: shell, `/api/agente` (stream JSONL), **6 rutas `/api/*` de lectura para consumidores externos** (`docs/como-funciona/api-rest-lectura.md`), `/catalogo/v1.json`, `src/lib/agente/` (agente real con el AI SDK y **las tres salidas del turno**: `pintar_pantalla`, `ajustar_pantalla`, `responder`; `docs/como-funciona/ciclo-live.md`), `src/lib/inicio/` (**la portada que arma un modelo chico**, con reloj en `instrumentation.ts`; `docs/como-funciona/inicio-personalizado.md`), `src/lib/widgets/` + `POST /api/inicio/widget` (**widgets vivos**: preguntarle a una tarjeta y que cambie en su lugar, con cifras que solo pone el MCP, detrás de `FEATURE_WIDGETS_VIVOS`; `docs/como-funciona/widgets-vivos.md`, ADR 0011) | construido; 229 pruebas |
+| `apps/mcp/` (`@maya/mcp`) | Servidor MCP Streamable HTTP: `/health`, `/mcp`, capa de datos sobre PostgreSQL (esquema `banorte`), estado mutable en `acciones_aplicadas` | **25 tools** (incluye `simular_rebalanceo`, de lectura, para los widgets vivos), 135 pruebas |
 | `packages/a2ui/` (`@maya/a2ui`) | Motor A2UI propio: `validar`, `esquema` (ajv sobre los schemas oficiales), `procesar`, `bindings`, `arbol`, `registro`, `<Superficie>`, layout (ADR 0008) | **construido**: 112 pruebas, incluidos los casos de conformidad oficiales de `spec/` |
 | `packages/catalogo/` (`@maya/catalogo`) | Catálogo A2UI propio; `catalogo.json` se genera desde los schemas Zod | **21 componentes propios** + 4 de layout, 124 pruebas |
 | `packages/schemas/` (`@maya/schemas`) | Schemas Zod de las tools MCP | **15 de 15** |
@@ -149,6 +149,7 @@ pnpm test                      # vitest en los 5 paquetes
 pnpm humo                      # prueba de humo del MCP (necesita `pnpm dev` corriendo)
 pnpm probar-guion              # ensaya los 9 pasos del guion con el MODELO REAL (necesita llave y `pnpm dev`)
 pnpm probar-inicio             # rearma las 3 portadas de Inicio con el modelo chico real y las revisa
+pnpm probar-widgets [url]      # preguntas por tarjeta con el modelo real: sin rearmar, auditoría en 0 (servidor con FEATURE_WIDGETS_VIVOS=1)
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
 pnpm reiniciar-estado          # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
 pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)

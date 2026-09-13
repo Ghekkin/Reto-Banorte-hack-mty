@@ -50,6 +50,8 @@ quien.
 - [0007 — PostgreSQL como fuente de datos mock, CSV commiteados, fallback en memoria](decisiones/0007-postgresql-como-fuente-de-datos-mock.md) *(reemplazado por el 0010)*
 - [0008 — Renderer A2UI propio, fiel a la spec](decisiones/0008-renderer-a2ui-propio.md)
 - [0009 — El agente se llama Maya](decisiones/0009-maya-como-marca-del-agente.md)
+- [0010 — PostgreSQL es la única fuente de datos](decisiones/0010-postgres-unica-fuente-de-datos.md)
+- [0011 — En Inicio, las cifras de una tarjeta solo las pone el MCP](decisiones/0011-cifras-solo-del-mcp.md) — el modelo elige qué consultar; adaptadores, verificador y auditor
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
@@ -74,7 +76,8 @@ quien.
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 - [El ciclo LIVE](como-funciona/ciclo-live.md) — las tres salidas del turno (aclarar, ajustar lo que ya se ve sin recrearlo, repintar), el tope de 3 tarjetas y por qué el motor A2UI ya lo soportaba
-- [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard
+- [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard (sin widgets vivos)
+- [Widgets vivos](como-funciona/widgets-vivos.md) — preguntarle a UNA tarjeta y que cambie en su lugar, con cifras que solo pone el MCP: fuentes, `modificar_widget` / `reemplazar_widget` / `responder`, y el auditor que re-consulta antes de mostrar (`FEATURE_WIDGETS_VIVOS`)
 - [El bug del gasto que no cuadraba](como-funciona/bug-gasto-total-no-cuadra.md) — un total contra seis de once categorías, por qué el culpable era el ejemplo del few-shot y no el código, y las pruebas que ahora lo cazan
 
 ### Algoritmos
@@ -90,6 +93,8 @@ quien.
 - [La portada de Maya](algoritmos/portada-de-maya.md) — la huella que decide cuándo rearmar y la escalera de urgencia con la que se eligen las tarjetas
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 - [Intención y parcheo](algoritmos/intencion-y-parcheo.md) — cómo se clasifica una pregunta de seguimiento sin clasificador, el tope de tarjetas con su poda determinista, qué valida un parche y quién gana el slider cuando la persona y el agente no coinciden
+- [Adaptadores de widget](algoritmos/adaptadores-de-widget.md) — las 13 fuentes: qué tool llena qué tarjeta, qué parámetros acepta el modelo y las cuatro únicas cifras derivadas
+- [Verificación de cifras](algoritmos/verificacion-de-cifras.md) — cómo se comprueba que cada número de una frase de Maya existe en lo que devolvió el MCP, con el redondeo que muestra
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

@@ -24,6 +24,7 @@ import { ejecutarDecision } from "./ejecutar-decision.js";
 import { orientarConsultaNoValida } from "./orientar-consulta-no-valida.js";
 import { consultarSugerenciasInversion } from "./consultar-sugerencias-inversion.js";
 import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
+import { simularRebalanceo } from "./simular-rebalanceo.js";
 
 /**
  * Las tools del servidor. El orden es el del viaje que la demo cuenta: primero saber
@@ -39,7 +40,7 @@ import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
  *           simular_reestructura · consultar_plan · comparar_periodos · proyectar_ahorro ·
  *           diagnostico_salud_financiera · consultar_creditos · detectar_fugas ·
  *           consultar_inversiones · consultar_catalogo_inversiones · consultar_historico_inversion ·
- *           analizar_gasto · analizar_ahorro
+ *           analizar_gasto · analizar_ahorro · simular_rebalanceo
  * Accion:   aplicar_plan_pago (fase 1) · crear_apartado (fase 3) ·
  *           cancelar_suscripcion (fase 2) · crear_tope_gasto (fase 2) · ejecutar_decision
  *
@@ -74,6 +75,7 @@ export const TOOLS: DefinicionDeTool[] = [
   consultarHistoricoInversion,
   orientarConsultaNoValida,
   consultarSugerenciasInversion,
+  simularRebalanceo,
   rebalancearPortafolio,
 ];
 

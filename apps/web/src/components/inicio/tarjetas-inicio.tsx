@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useState, useTransition } from "react";
-import { ArrowRight, ArrowUp } from "lucide-react";
+import { ArrowRight, ArrowUp, X } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -217,19 +217,42 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
  * (los ~8 s del modelo) Y el re-render del servidor. Con un estado propio, la barra se
  * habilitaba en cuanto la accion resolvia y la pantalla vieja seguia ahi medio segundo.
  */
-export function BarraFlotanteMaya() {
-  const [texto, setTexto] = useState("");
-  const [fallo, setFallo] = useState<string>();
-  const [enviando, iniciar] = useTransition();
+/**
+ * El modo vivo de la barra (`FEATURE_WIDGETS_VIVOS`): quien la aloja decide que pasa con la
+ * pregunta. La barra solo pinta el foco ("Sobre: Plan de pago"), la etapa de la consulta y
+ * las preguntas sugeridas. Sin esto, la barra sigue como antes: `preguntarEnInicio`.
+ */
+export type BarraViva = {
+  enviar: (texto: string) => void;
+  ocupado: boolean;
+  /** "Consultando simular_reestructura…": lo que se esta haciendo ahora mismo. */
+  estado?: string;
+  foco?: { etiqueta: string; alQuitar: () => void };
+  sugerencias: string[];
+  fallo?: string;
+  alDescartarFallo: () => void;
+};
 
-  function enviar() {
-    const limpio = texto.trim();
+export function BarraFlotanteMaya({ vivo }: { vivo?: BarraViva } = {}) {
+  const [texto, setTexto] = useState("");
+  const [falloPropio, setFalloPropio] = useState<string>();
+  const [enviandoPropio, iniciar] = useTransition();
+  const enviando = vivo ? vivo.ocupado : enviandoPropio;
+  const fallo = vivo ? vivo.fallo : falloPropio;
+
+  function enviar(pregunta = texto) {
+    const limpio = pregunta.trim();
     if (!limpio || enviando) return;
-    setFallo(undefined);
+    if (vivo) {
+      vivo.enviar(limpio);
+      setTexto("");
+      return;
+    }
+    setFalloPropio(undefined);
     iniciar(async () => {
       const r = await preguntarEnInicio(limpio);
       if (r.ok) setTexto("");
-      else setFallo(r.motivo);
+      else setFalloPropio(r.motivo);
     });
   }
 
@@ -241,10 +264,30 @@ export function BarraFlotanteMaya() {
       {fallo && (
         <p
           role="status"
-          className="animar-entrada pointer-events-auto max-w-2xl rounded-xl border border-oscuro bg-card px-3 py-2 text-xs text-foreground shadow-md"
+          className="animar-entrada pointer-events-auto flex max-w-2xl items-center gap-2 rounded-xl border border-oscuro bg-card px-3 py-2 text-sm text-foreground shadow-md"
         >
           {fallo}
+          {vivo && (
+            <Button variant="ghost" size="icon" onClick={vivo.alDescartarFallo} aria-label="Descartar" className="size-8 rounded-full">
+              <X className="size-4" />
+            </Button>
+          )}
         </p>
+      )}
+      {vivo && !enviando && vivo.sugerencias.length > 0 && (
+        <div className="animar-cascada pointer-events-auto flex max-w-2xl flex-wrap justify-center gap-2">
+          {vivo.sugerencias.map((s) => (
+            <Button
+              key={s}
+              variant="outline"
+              size="sm"
+              onClick={() => enviar(s)}
+              className="animar-entrada min-h-12 rounded-full bg-card/95 text-sm shadow-sm backdrop-blur-md hover:bg-tinte md:min-h-9"
+            >
+              {s}
+            </Button>
+          ))}
+        </div>
       )}
       <form
         onSubmit={(e) => {
@@ -256,13 +299,31 @@ export function BarraFlotanteMaya() {
         <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground shadow-xs">
           <IconoBanorte className="size-4" />
         </span>
+        {vivo?.foco && (
+          // Todo el chip es el boton de quitar el foco: un blanco de 36 px como los demas
+          // controles de la barra, y no una "x" de 24 px dentro de un badge.
+          <Button
+            type="button"
+            variant="ghost"
+            onClick={vivo.foco.alQuitar}
+            aria-label={`Dejar de preguntar sobre ${vivo.foco.etiqueta.toLowerCase()}`}
+            className="h-9 max-w-40 shrink-0 gap-1 rounded-full bg-tinte pl-3 pr-2 text-sm text-primary hover:bg-tinte-fuerte hover:text-primary"
+          >
+            <span className="truncate">{vivo.foco.etiqueta}</span>
+            <X aria-hidden className="size-3.5" />
+          </Button>
+        )}
         <input
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
           disabled={enviando}
           placeholder={
-            enviando ? "Maya está armando tu pantalla…" : "Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
+            enviando
+              ? (vivo?.estado ?? "Maya está armando tu pantalla…")
+              : vivo?.foco
+                ? `Pregúntale a Maya sobre ${vivo.foco.etiqueta.toLowerCase()}…`
+                : "Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
           }
           aria-label="Pregúntale a Maya"
           className="min-w-0 flex-1 bg-transparent px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-70"

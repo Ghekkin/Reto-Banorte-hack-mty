@@ -2,6 +2,36 @@
 
 ## 2026-09-13
 
+- **02:45 · hecho** — **Widgets vivos** construidos de punta a punta detrás de
+  `FEATURE_WIDGETS_VIVOS` (plan en `docs/equipo/plan-widgets-vivos.md`, fases 0 a 7). Viene de
+  la revisión con Banorte: preguntar en Inicio se sentía como cambiar de diapositiva, y el equipo
+  pidió que las cifras tras un cambio salieran del MCP y no de Gemini. Quedó: `lib/widgets/`
+  (13 fuentes con adaptador, consultor con lista blanca, `pintar_widgets`, turno con
+  `modificar_widget`/`reemplazar_widget`/`responder`, verificador de cifras, auditor),
+  `POST /api/inicio/widget` en stream, migración 0004, y la UI (`InicioVivo`, pie por tarjeta,
+  velo solo en la tarjeta en foco). ADR 0011 y `docs/como-funciona/widgets-vivos.md`.
+- **02:40 · nota** — Medido: la portada por fuentes cuesta ~7–8.5 mil tokens de entrada y
+  300–400 de salida en 2–6 s (antes ~22 mil / 1–1.7 mil en 7.7–11.6 s). `pnpm probar-widgets`
+  con el modelo real: 6 de 6, 1.1–2.4 s por pregunta, auditoría en 0 diferencias. 605 pruebas
+  en verde (web 229, mcp 135).
+- **02:10 · decisión** — El turno de widgets va con `gemini-3.5-flash-lite` y
+  `thinkingLevel: minimal` (`MODELO_WIDGETS`): `gemini-3.8-flash` tardaba 7–20 s en cerrar una
+  tool. Esa noche el proveedor tuvo varianza alta (mismo turno trivial: 0.5 s, 8 s, >30 s), así
+  que un intento que no cierra en 11 s se repite una vez; todas las tools del turno son de lectura.
+- **01:55 · decisión** — El modo NO entra a la huella del Inicio. La base es compartida con
+  producción; con el modo en la huella, local (flag en 1) y producción (flag en 0) se habrían
+  rearmado la portada uno al otro en cada tick. En su lugar, `vencida` trata como vencida una
+  portada sin procedencias solo donde el flag está encendido.
+- **01:30 · toque-ajeno** — Dominio `contrato` y `web`: `lib/agente/pantalla.ts` exporta
+  `completarAccion`; `components/maya/lienzo.tsx` recibe `decorar` (opcional, la conversación no
+  lo usa); `BarraFlotanteMaya` tiene un modo `vivo` (sin él, igual que antes). MCP:
+  `simular_rebalanceo` (lectura) y `ahorroLiquidoCentavos` en `diagnostico_salud_financiera`.
+- **01:15 · nota** — Registrado `docs/issues/2026-09-13-cifras-escritas-por-el-modelo-en-maya.md`:
+  en `/maya` las props con cifras las sigue escribiendo el modelo (portadas guardadas con
+  «$2,954,065» por $29,540.65). Sin número de GitHub: no hay `gh` en esta máquina.
+- **01:00 · a-medias** — Fase 8 del plan (llevar las fuentes a `/maya`) no se hizo; es el issue
+  de arriba. Para ver los widgets vivos en local: `FEATURE_WIDGETS_VIVOS=1` en `.env`, reiniciar
+  `pnpm dev`, y la primera visita rearma las portadas.
 - **00:00 · inicio** — Retomo rol `mcp`. El pedido: higiene documental del backend
   MCP tras una evaluación de estado.
 - **00:00 · hecho** — Corregidos tres docs que quedaron mintiendo tras el `git pull`

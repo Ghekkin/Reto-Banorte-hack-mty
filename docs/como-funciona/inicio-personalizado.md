@@ -189,6 +189,23 @@ Hasta el 2026-09-12 el host la pintaba **siempre**, sin mirar el árbol, así qu
 conclusiones en la misma pantalla: la del modelo y encima una pobre hecha con una frase corta. El
 detalle está en `componente-conclusion.md`.
 
+### Con widgets vivos (`FEATURE_WIDGETS_VIVOS=1`)
+
+Lo que sigue en esta sección y en «La consulta desde Inicio» describe el modo **anterior**. Con
+el flag encendido, dos cosas cambian y el resto (reloj, huella, prefetch, una generación en
+vuelo, el rearmado tras una acción) es igual:
+
+- **La portada se arma por fuentes**: `generarPortada` delega en `generarPortadaDeWidgets`, el
+  modelo llama `pintar_widgets` y las cifras de cada tarjeta las pone un adaptador con lo que
+  devolvió el MCP. Se guardan `procedencias` y `referencias` (migración 0004).
+- **Una pregunta ya no borra el pizarrón**: la barra y el botón «Preguntar sobre esto» de cada
+  tarjeta van a `POST /api/inicio/widget`, que cambia UNA tarjeta en su lugar o contesta con una
+  nota. `preguntarEnInicio` no se usa.
+
+Todo el detalle está en [Widgets vivos](widgets-vivos.md) y en el
+[ADR 0011](../decisiones/0011-cifras-solo-del-mcp.md). Una portada del modo anterior se considera
+vencida en un servidor con el flag encendido (no tiene procedencias) y se rearma una vez.
+
 ### La consulta desde Inicio: el pizarrón que se borra
 
 La barra de abajo (`BarraFlotanteMaya`) **era una maqueta**: el `onKeyDown` hacía
