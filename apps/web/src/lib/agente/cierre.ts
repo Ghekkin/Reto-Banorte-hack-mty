@@ -167,7 +167,7 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
         "agregar, quitar ni cambiar tarjetas: para eso es `pintar_pantalla`.",
       inputSchema: entradaAjustarPantalla,
       execute: (entrada: EntradaAjustarPantalla): ResultadoAjustar => {
-        const armado = armarParches(entrada, pantallaActual, opciones.anteriores);
+        const armado = armarParches(entrada, pantallaActual, opciones.anteriores, opciones.datosBase);
         if (!armado.ok) {
           fallidos++;
           return { ok: false, errores: armado.errores };

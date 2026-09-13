@@ -77,7 +77,10 @@ después del paso 3.
    remonta, re-resuelve sus props, y `usarCambio` resalta lo que cambió.
 6. Ana toca «Programar este pago» → acción `programar_abono_capital { creditoId, mensualidadCentavos,
    idempotencyKey }`. El contexto del turno le dice al modelo que es *en su lugar*: `ejecutar_decision`
-   y `ajustar_pantalla` sobre la misma tarjeta con `programado: true` y `resultadoAccion.despues`.
+   y `ajustar_pantalla` sobre la misma tarjeta con `programado: true` y `resultadoAccion.despues`. Si
+   en esa pantalla está `SimuladorMeta`, en la misma llamada baja su `aportacionMaximaCentavos` a
+   `resultadoAccion.capacidadAhorro.despuesCentavos`: el abono ya no está libre para ahorrar
+   (`proyectar_ahorro` también lo descuenta).
 
 ### Entradas y salidas
 

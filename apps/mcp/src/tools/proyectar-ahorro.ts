@@ -124,7 +124,7 @@ function elegirMeta(usuarioId: string, metaId?: string) {
  * sin descontarlos el simulador de Ana le ofreceria ahorrar lo mismo que acaba de mandar al
  * credito (`docs/como-funciona/ajustes-en-vivo.md`).
  */
-function capacidadDeAhorro(usuarioId: string): number {
+export function capacidadDeAhorro(usuarioId: string): number {
   const movimientos = filtrar("movimientos", "usuario_id", usuarioId);
   let periodo = periodoDe(hoy());
   let libre = 0;

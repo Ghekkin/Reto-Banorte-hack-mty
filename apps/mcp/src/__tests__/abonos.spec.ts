@@ -334,9 +334,11 @@ describe("programar_abono_capital: el ciclo completo", () => {
     const capacidad = async () =>
       (await proyectarAhorro.manejar({ usuarioId: "usr_ana", montoObjetivoCentavos: 9600000 })) as { capacidadMensualCentavos: number };
     const antes = (await capacidad()).capacidadMensualCentavos;
-    const { abono } = await programar("usr_ana", "cred_ana_personal", 600000, "c_ahorro:1");
+    const { abono, capacidadAhorro } = await programar("usr_ana", "cred_ana_personal", 600000, "c_ahorro:1");
     const despues = (await capacidad()).capacidadMensualCentavos;
     expect(despues).toBe(Math.max(0, antes - abono.abonoMensualCentavos));
+    // La accion lo devuelve, para que el agente baje el tope del simulador en el mismo ajuste.
+    expect(capacidadAhorro).toEqual({ antesCentavos: antes, despuesCentavos: despues });
   });
 
   it("`reiniciarEstado` lo borra: vuelve el contrato", async () => {

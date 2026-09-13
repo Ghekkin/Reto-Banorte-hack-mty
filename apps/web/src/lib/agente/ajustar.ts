@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VERSION_A2UI, leer, type Componente, type MensajeA2UI } from "@maya/a2ui";
+import { VERSION_A2UI, esBinding, leer, type Componente, type MensajeA2UI } from "@maya/a2ui";
 import { CATALOGO } from "@maya/catalogo";
 import { SUPERFICIE } from "./config";
 import { nombresPermitidos, revisarProps } from "./pantalla";
@@ -120,10 +120,52 @@ export function elegirPantalla(
   };
 }
 
+/**
+ * Los parches que NO se le dejan al modelo porque la cifra ya la dio una tool y copiarla mal
+ * es inventar un numero.
+ *
+ * Paso de verdad el 2026-09-13 03:30, ensayando «Programar este pago» con Ana: el modelo bajo
+ * bien `aportacionCentavos` del `SimuladorMeta` a lo que devolvio la accion, pero puso
+ * `aportacionMaximaCentavos: 520000`, un numero que ninguna tool dijo. Asi que, si en el turno
+ * `ejecutar_decision` programo un abono y trae `capacidadAhorro`, cada `SimuladorMeta` de la
+ * pantalla recibe su tope (y su aportacion y su piso recortados al tope) desde ese dato, lo haya
+ * parcheado el modelo o no. Lo que el modelo mando para esas props se pisa; lo demas, se respeta.
+ */
+export function parchesDeterministas(
+  pantalla: PantallaActual,
+  datosDelTurno: Record<string, unknown> = {},
+): Array<{ id: string; props: Record<string, unknown> }> {
+  const decision = datosDelTurno.ejecutar_decision as
+    | { accion?: string; resultadoAccion?: { capacidadAhorro?: { despuesCentavos?: unknown } } }
+    | undefined;
+  const tope = decision?.accion === "programar_abono_capital" ? decision.resultadoAccion?.capacidadAhorro?.despuesCentavos : undefined;
+  if (typeof tope !== "number") return [];
+
+  return pantalla.arbol
+    .filter((c) => c.component === "SimuladorMeta")
+    .map((c) => {
+      const valor = (prop: string) => {
+        const v = (c as Record<string, unknown>)[prop];
+        return esBinding(v) ? leer(pantalla.dataModel, v.path) : v;
+      };
+      const aportacion = valor("aportacionCentavos");
+      const minimo = valor("aportacionMinimaCentavos");
+      return {
+        id: c.id,
+        props: {
+          aportacionMaximaCentavos: tope,
+          ...(typeof aportacion === "number" && aportacion > tope ? { aportacionCentavos: tope } : {}),
+          ...(typeof minimo === "number" && minimo > tope ? { aportacionMinimaCentavos: tope } : {}),
+        },
+      };
+    });
+}
+
 export function armarParches(
   entrada: EntradaAjustarPantalla,
   actual: PantallaActual,
   anteriores: PantallaActual[] = [],
+  datosDelTurno: Record<string, unknown> = {},
 ): Ajustado {
   const errores: string[] = [];
   const elegida = elegirPantalla(entrada.pantalla, actual, anteriores);
@@ -136,6 +178,17 @@ export function armarParches(
       ? []
       : parsearArreglo(entrada.parchesComponentes, "parchesComponentes", errores);
   if (errores.length) return { ok: false, errores };
+
+  for (const fijo of parchesDeterministas(pantalla, datosDelTurno)) {
+    const delModelo = parchesComponentes.find((p) => (p as { id?: unknown }).id === fijo.id) as
+      | { id: string; props?: Record<string, unknown> }
+      | undefined;
+    if (delModelo && typeof delModelo.props === "object" && delModelo.props !== null) {
+      Object.assign(delModelo.props, fijo.props);
+    } else {
+      parchesComponentes.push(fijo);
+    }
+  }
 
   if (parchesDatos.length === 0 && parchesComponentes.length === 0) {
     return {

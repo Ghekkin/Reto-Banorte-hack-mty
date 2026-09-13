@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { correrTurno } from "../agente";
-import { armarParches } from "../ajustar";
+import { armarParches, parchesDeterministas } from "../ajustar";
 import { ACCIONES_EN_SU_LUGAR } from "../cierre";
 import { instruccionDeAccion, mensajesDelTurno } from "../historial";
 import { esquemaPeticion, type LineaStream, type PantallaAnterior, type PeticionAgente } from "../tipos";
@@ -215,5 +215,64 @@ describe("esquemaPeticion", () => {
     expect(esquemaPeticion.safeParse({ ...peticion(), pantallaDeLaAccion: "principal" }).success).toBe(false);
     const cuatro = [1, 2, 3, 4].map((n) => ({ ...GASTO, pantalla: `p${n}` }));
     expect(esquemaPeticion.safeParse(peticion({ superficie: { ...ACTUAL, anteriores: cuatro } })).success).toBe(false);
+  });
+});
+
+describe("parchesDeterministas: la cifra que ya dio una tool no la copia el modelo", () => {
+  const conSimulador = {
+    arbol: [
+      { id: "root", component: "Column", children: ["simulador"] },
+      {
+        id: "simulador",
+        component: "SimuladorMeta",
+        metaCentavos: 9600000,
+        aportacionCentavos: { path: "/ahorro/sugerida" },
+        aportacionMaximaCentavos: 498617,
+        razon: "Te sobran $4,986.17 al mes",
+      },
+    ],
+    dataModel: { ahorro: { sugerida: 450000 } },
+  };
+  const programo = {
+    ejecutar_decision: {
+      accion: "programar_abono_capital",
+      resultadoAccion: { capacidadAhorro: { antesCentavos: 498617, despuesCentavos: 355712 } },
+    },
+  };
+
+  it("tras programar un abono, el tope del simulador sale de capacidadAhorro y la aportacion se recorta", () => {
+    expect(parchesDeterministas(conSimulador, programo)).toEqual([
+      { id: "simulador", props: { aportacionMaximaCentavos: 355712, aportacionCentavos: 355712 } },
+    ]);
+  });
+
+  it("pisa lo que invento el modelo para esas props y respeta lo demas", () => {
+    const r = armarParches(
+      {
+        razon: RAZON,
+        texto: "Programado.",
+        parchesDatos: [],
+        parchesComponentes: [{ id: "simulador", props: { aportacionMaximaCentavos: 520000, razon: "Te quedan libres" } }],
+      },
+      conSimulador,
+      [],
+      programo,
+    );
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      const componentes = (r.mensajes[0] as { updateComponents: { components: Array<Record<string, unknown>> } }).updateComponents.components;
+      expect(componentes[0]).toMatchObject({ aportacionMaximaCentavos: 355712, aportacionCentavos: 355712, razon: "Te quedan libres" });
+    }
+  });
+
+  it("si el modelo no toco el simulador, el host lo agrega", () => {
+    const r = armarParches({ razon: RAZON, texto: "Programado.", parchesDatos: [{ path: "/ahorro/sugerida", value: 300000 }] }, conSimulador, [], programo);
+    expect(r.ok).toBe(true);
+    if (r.ok) expect(JSON.stringify(r.mensajes)).toContain('"aportacionMaximaCentavos":355712');
+  });
+
+  it("sin una accion de abono en el turno no agrega nada", () => {
+    expect(parchesDeterministas(conSimulador, {})).toEqual([]);
+    expect(parchesDeterministas(conSimulador, { ejecutar_decision: { accion: "crear_apartado", resultadoAccion: {} } })).toEqual([]);
   });
 });

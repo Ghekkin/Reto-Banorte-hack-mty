@@ -36,5 +36,13 @@ export const SalidaProgramarAbonoCapital = z.object({
   despues: EscenarioDePago.describe("Como queda: las props nuevas de `ProyeccionPagoCredito`"),
   ahorroInteresesCentavos: Centavos,
   mesesMenos: z.number().int(),
+  capacidadAhorro: z
+    .object({ antesCentavos: Centavos, despuesCentavos: Centavos })
+    .optional()
+    .describe(
+      "Lo que puede apartar al mes antes y despues de programar (el abono ya no esta libre). Si en la " +
+        "pantalla hay `SimuladorMeta`, ajusta su `aportacionMaximaCentavos` a `despuesCentavos` (y " +
+        "`aportacionCentavos` si quedo arriba). Falta en un reintento con la misma llave",
+    ),
 });
 export type SalidaProgramarAbonoCapital = z.infer<typeof SalidaProgramarAbonoCapital>;

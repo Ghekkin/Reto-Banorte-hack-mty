@@ -3,6 +3,7 @@ import { aplicarAccion } from "../datos/index.js";
 import { abonosProgramados, type AbonoProgramado } from "../dominio/abonos.js";
 import { compararPago, creditoAPlazoDe } from "../dominio/creditos.js";
 import { pesos } from "../dominio/suscripciones.js";
+import { capacidadDeAhorro } from "./proyectar-ahorro.js";
 import type { DefinicionDeTool } from "./registro.js";
 
 /**
@@ -61,6 +62,9 @@ export const programarAbonoCapital: DefinicionDeTool = {
       despues,
     };
 
+    // Lo que puede apartar al mes cambia con el abono: la tarjeta de la meta, si esta en
+    // pantalla, tiene que bajar su tope en el mismo ajuste (`docs/como-funciona/ajustes-en-vivo.md`).
+    const ahorroAntes = capacidadDeAhorro(entrada.usuarioId);
     const resultado = await aplicarAccion({
       id: credito.id,
       tipo: "programar_abono_capital",
@@ -74,7 +78,8 @@ export const programarAbonoCapital: DefinicionDeTool = {
       // La llave se uso en otro credito, o llego a la vez por otro camino: no se guardo nada.
       return respuesta(abono, false, true, MENSAJE_REPETIDO);
     }
-    return respuesta(abono, true, false, mensajeDe(abono, comparacion.carga.aviso));
+    const capacidadAhorro = { antesCentavos: ahorroAntes, despuesCentavos: capacidadDeAhorro(entrada.usuarioId) };
+    return { ...respuesta(abono, true, false, mensajeDe(abono, comparacion.carga.aviso)), capacidadAhorro };
   },
 };
 
