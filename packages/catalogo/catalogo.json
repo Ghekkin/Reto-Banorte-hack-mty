@@ -1303,7 +1303,7 @@
     },
     "TermometroSaludFinanciera": {
       "type": "object",
-      "description": "La persona pregunta '¿Cómo están mis finanzas?', '¿Cuál es mi diagnóstico?' o el agente resume su salud integral antes de proponer metas. Muestra el score 0-100 y pilares. Dispara mejorar_salud_financiera.",
+      "description": "La persona pregunta '¿Cómo están mis finanzas?', '¿Cuál es mi diagnóstico?' o el agente resume su salud integral antes de proponer metas. Muestra el score 0-100 y pilares. Dispara ver_como_mejorar.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -1474,7 +1474,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: mejorar_salud_financiera.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: ver_como_mejorar.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -1487,7 +1487,7 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "mejorar_salud_financiera"
+                            "ver_como_mejorar"
                           ]
                         }
                       }
@@ -1515,7 +1515,7 @@
     },
     "ComparadorAntesDespues": {
       "type": "object",
-      "description": "La persona duda sobre la conveniencia de una recomendación financiera o necesita ver el contraste directo de qué gana si actúa hoy frente a no hacer nada. Dispara aplicar_estrategia.",
+      "description": "La persona duda sobre la conveniencia de una recomendación financiera o necesita ver el contraste directo de qué gana si actúa hoy frente a no hacer nada. Dispara elegir_estrategia.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -1697,7 +1697,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: aplicar_estrategia.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: elegir_estrategia.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -1710,7 +1710,7 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "aplicar_estrategia"
+                            "elegir_estrategia"
                           ]
                         }
                       }
@@ -2319,7 +2319,7 @@
     },
     "ProyeccionCrecimiento": {
       "type": "object",
-      "description": "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo. Pasa el desglose entre aportado y rendimientos con los hitos temporales. Dispara simular_inversion.",
+      "description": "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo: **ya llamaste proyectar_inversion** y pasas sus cifras tal como vinieron (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`). NUNCA calcules tú un valor futuro: la tarjeta simula la curva en el navegador y la calibra contra el cierre que mandes, así que un cierre inventado dobla la gráfica para taparlo. Si pide otro plazo, otra tasa u otro capital, vuelve a llamar la tool; la aportación mensual sí la resuelve el slider. Dispara elegir_plan_inversion.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -2508,7 +2508,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: simular_inversion.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: elegir_plan_inversion.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -2521,7 +2521,7 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "simular_inversion"
+                            "elegir_plan_inversion"
                           ]
                         }
                       }
@@ -2801,7 +2801,7 @@
     },
     "DistribucionPortafolio": {
       "type": "object",
-      "description": "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio.",
+      "description": "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara ver_orden_rebalanceo para revisar las órdenes sugeridas. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -2954,7 +2954,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: rebalancear_portafolio.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: ver_orden_rebalanceo.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -2967,7 +2967,7 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "rebalancear_portafolio"
+                            "ver_orden_rebalanceo"
                           ]
                         }
                       }
@@ -2990,7 +2990,7 @@
     },
     "OrdenRebalanceo": {
       "type": "object",
-      "description": "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara confirmar_rebalanceo.",
+      "description": "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara rebalancear_portafolio. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3149,7 +3149,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: confirmar_rebalanceo.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: rebalancear_portafolio, confirmar_rebalanceo.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -3162,6 +3162,7 @@
                       "properties": {
                         "name": {
                           "enum": [
+                            "rebalancear_portafolio",
                             "confirmar_rebalanceo"
                           ]
                         }
@@ -3186,7 +3187,7 @@
     },
     "RiesgoRendimiento": {
       "type": "object",
-      "description": "La persona busca alternativas de inversión y quiere comparar el rendimiento que obtendría asumiendo más o menos riesgo. Ordena los productos de menor a mayor riesgo. Dispara seleccionar_instrumento.",
+      "description": "La persona busca alternativas de inversión y quiere comparar el rendimiento que obtendría asumiendo más o menos riesgo. Ordena los productos de menor a mayor riesgo. Dispara elegir_instrumento.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3349,7 +3350,7 @@
               ]
             },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: seleccionar_instrumento.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: elegir_instrumento.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -3362,7 +3363,7 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "seleccionar_instrumento"
+                            "elegir_instrumento"
                           ]
                         }
                       }

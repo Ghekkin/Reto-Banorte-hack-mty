@@ -8,6 +8,8 @@ import {
   SalidaDetectarFugas,
   SalidaEjecutarDecision,
   SalidaProyectarAhorro,
+  SalidaRebalancearPortafolio,
+  SalidaConsultarInversiones,
 } from "@maya/schemas";
 import { reiniciarEstado } from "../datos/index.js";
 import { analizarAhorro } from "../tools/analizar-ahorro.js";
@@ -160,11 +162,30 @@ describe("ejecutar_decision: el mismo estado que los 3 pasos manuales", () => {
     expect(resultado.tope.gastadoActualCentavos).toBeGreaterThan(0);
   });
 
+  it("rebalancear_portafolio: ejecuta operaciones, muta estado y relee consultar_inversiones sin desviacion", async () => {
+    const compuesto = SalidaEjecutarDecision.parse(
+      await ejecutarDecision.manejar({
+        usuarioId: "usr_carmen",
+        accion: "rebalancear_portafolio",
+        context: { idempotencyKey: LLAVE },
+      }),
+    );
+    expect(compuesto.accion).toBe("rebalancear_portafolio");
+    const resultado = SalidaRebalancearPortafolio.parse(compuesto.resultadoAccion);
+    expect(resultado.aplicado).toBe(true);
+    expect(resultado.movimientos.length).toBeGreaterThan(0);
+    expect(resultado.portafolio.desviacionDespuesPct).toBe(0);
+
+    const inversiones = SalidaConsultarInversiones.parse(compuesto.estadoPosterior);
+    expect(inversiones.tienePortafolio).toBe(true);
+    expect(inversiones.portafolio?.desviacionModeloPct).toBe(0);
+  });
+
   it("una accion desconocida falla claro, no lanza hacia afuera del contrato de tool", async () => {
     await expect(
       ejecutarDecision.manejar({
         usuarioId: "usr_ana",
-        accion: "rebalancear",
+        accion: "accion_inventada" as any,
         context: {},
       }),
     ).rejects.toThrow();

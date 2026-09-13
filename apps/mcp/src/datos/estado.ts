@@ -29,6 +29,8 @@ const OBJETO_DE: Record<string, string> = {
   crear_tope_gasto: "categoria",
   cancelar_suscripcion: "suscripcion",
   rebalancear: "portafolio",
+  rebalancear_portafolio: "portafolio",
+  confirmar_rebalanceo: "portafolio",
 };
 
 /**
@@ -50,12 +52,19 @@ export function marcarBaseNoDisponible(): void {
 }
 
 /**
- * Sin `DATABASE_URL` no hay base contra la que escribir, y eso **solo pasa en las
- * pruebas**: el servidor no arranca sin base (`inicializarDatos`). En ese caso las
- * acciones viven en esta copia y nada mas, que es justo lo que una prueba necesita.
+ * Sin `DATABASE_URL` no hay base contra la que escribir.
+ * Además, bajo entorno de pruebas (VITEST o NODE_ENV === 'test'), forzamos `sinBase()`
+ * para garantizar de forma determinista el aislamiento estipulado en el ADR 0010:
+ * ninguna corrida de tests (aunque tenga DATABASE_URL exportada en la shell) tocará
+ * ni truncará la tabla `banorte.acciones_aplicadas` de la demo.
  */
 function sinBase(): boolean {
-  return config.urlPostgres === "" || !baseDisponible;
+  return (
+    config.urlPostgres === "" ||
+    !baseDisponible ||
+    Boolean(process.env.VITEST) ||
+    process.env.NODE_ENV === "test"
+  );
 }
 
 type FilaAccion = {
@@ -71,7 +80,7 @@ type FilaAccion = {
 function desdeFila(f: FilaAccion): AccionAplicada {
   return {
     id: f.objeto_id,
-    tipo: f.accion,
+    tipo: f.accion === "rebalancear" ? "rebalancear_portafolio" : f.accion,
     usuarioId: f.usuario_id,
     idempotencyKey: f.idempotency_key ?? "",
     aplicadaEn: typeof f.aplicada_en === "string" ? f.aplicada_en : new Date(f.aplicada_en).toISOString(),
@@ -107,6 +116,11 @@ export async function aplicarAccion(
     return { aplicado: true, yaEstaba: false };
   }
 
+  const tipoParaDb =
+    accion.tipo === "rebalancear_portafolio" || accion.tipo === "confirmar_rebalanceo"
+      ? "rebalancear"
+      : accion.tipo;
+
   const { rows } = await obtenerPool().query<{ id: string }>(
     `insert into banorte.acciones_aplicadas
        (usuario_id, accion, objeto_tipo, objeto_id, contexto, resultado, idempotency_key, aplicada_en)
@@ -115,7 +129,7 @@ export async function aplicarAccion(
      returning id`,
     [
       accion.usuarioId,
-      accion.tipo,
+      tipoParaDb,
       objetoTipo,
       accion.id,
       JSON.stringify(accion.datos),
@@ -131,7 +145,14 @@ export async function aplicarAccion(
 
 /** Las acciones de un usuario, opcionalmente de un tipo. */
 export function accionesDe(usuarioId: string, tipo?: string): AccionAplicada[] {
-  return cache.filter((a) => a.usuarioId === usuarioId && (!tipo || a.tipo === tipo));
+  return cache.filter((a) => {
+    if (a.usuarioId !== usuarioId) return false;
+    if (!tipo) return true;
+    if (tipo === "rebalancear_portafolio" || tipo === "rebalancear") {
+      return a.tipo === "rebalancear_portafolio" || a.tipo === "rebalancear" || a.tipo === "confirmar_rebalanceo";
+    }
+    return a.tipo === tipo;
+  });
 }
 
 /** Vuelve al punto de partida: `pnpm reiniciar-estado`, antes de cada ensayo. */

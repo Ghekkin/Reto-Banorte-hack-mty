@@ -1,8 +1,9 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: baja
 area: docs
 encontrado: 2026-09-12 19:10
+resuelto: 2026-09-12 22:56
 ---
 
 # Los docs fechan el trabajo del sábado como 2026-09-13: la bitácora y el resto no coinciden
@@ -54,3 +55,6 @@ honesto:
 
 Y para que no vuelva a pasar: cualquier fecha que se escriba a mano sale de `date` con
 `TZ=America/Monterrey`, no del reloj del servidor ni de `UtcNow`.
+
+**Solución aplicada:**
+Se agregó la nota aclaratoria en `docs/bitacora/README.md` explicando que los registros con fecha `2026-09-13` previos al domingo corresponden a la jornada del sábado 12 registrados con hora de servidor UTC/UTC+2, manteniendo la trazabilidad sin alterar rutas existentes.

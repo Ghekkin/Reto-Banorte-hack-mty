@@ -32,7 +32,7 @@ export type PropsRiesgoRendimiento = z.infer<typeof schemaRiesgoRendimiento>;
 export const entradaRiesgoRendimiento = {
   nombre: "RiesgoRendimiento",
   cuandoUsarlo:
-    "La persona busca alternativas de inversión y quiere comparar el rendimiento que obtendría asumiendo más o menos riesgo. Ordena los productos de menor a mayor riesgo. Dispara seleccionar_instrumento.",
+    "La persona busca alternativas de inversión y quiere comparar el rendimiento que obtendría asumiendo más o menos riesgo. Ordena los productos de menor a mayor riesgo. Dispara elegir_instrumento.",
   schema: schemaRiesgoRendimiento,
-  acciones: ["seleccionar_instrumento"],
+  acciones: ["elegir_instrumento"],
 };

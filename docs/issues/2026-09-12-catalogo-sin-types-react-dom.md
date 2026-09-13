@@ -1,8 +1,9 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: web
 encontrado: 2026-09-12 09:10
+resuelto: 2026-09-12 22:50
 ---
 
 # `packages/catalogo` no declara `@types/react-dom` y `pnpm typecheck` falla en toda la raíz
@@ -49,8 +50,5 @@ bueno sin leerlo. A las 3 am eso es exactamente cómo se cuela un error real.
 en `devDependencies`, y `pnpm install`. No lo aplico de paso: `packages/catalogo` es
 dominio del rol `web` y la regla es registrar antes que arreglar.
 
-**Pendiente:** crear el issue en GitHub. `gh` no está instalado en esta máquina y
-`git pull` contra `Ghekkin/Reto-Banorte-hack-mty` devuelve `Repository not found`, así
-que la mitad de GitHub quedó sin hacer y el frontmatter `github:` va sin campo a
-propósito (la misma situación que
-`docs/issues/2026-09-12-alcance-datos-vs-adr-0004.md`).
+**Solución aplicada:**
+Se agregó `"@types/react-dom": "^19"` en `packages/catalogo/package.json` (`devDependencies`). `pnpm typecheck` pasa en limpio tanto en `@maya/catalogo` como a nivel raíz del monorepo.

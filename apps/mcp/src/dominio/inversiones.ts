@@ -1,4 +1,4 @@
-import { aDecimal, aEntero, buscar, filtrar, tabla, type Fila } from "../datos/index.js";
+import { aDecimal, aEntero, accionesDe, buscar, filtrar, tabla, type Fila } from "../datos/index.js";
 import { usuario } from "./consultas.js";
 
 export type PerfilInversion = {
@@ -99,6 +99,8 @@ export function portafolioDeInversion(usuarioId: string): PortafolioResumen | nu
   const activo = filas.find((p) => p.estatus === "activo");
   if (!activo) return null;
 
+  const rebalanceado = accionesDe(usuarioId, "rebalancear_portafolio").length > 0;
+
   return {
     id: activo.id!,
     nombre: activo.nombre ?? "",
@@ -107,7 +109,29 @@ export function portafolioDeInversion(usuarioId: string): PortafolioResumen | nu
     aportadoCentavos: aEntero(activo.aportado_centavos),
     rendimientoAcumuladoCentavos: aEntero(activo.rendimiento_acumulado_centavos),
     rendimientoPct: aDecimal(activo.rendimiento_pct),
-    desviacionModeloPct: aDecimal(activo.desviacion_modelo_pct),
+    desviacionModeloPct: rebalanceado ? 0 : aDecimal(activo.desviacion_modelo_pct),
+    fechaApertura: activo.fecha_apertura ?? "",
+  };
+}
+
+/**
+ * Consulta el portafolio por su identificador directo en `portafolios`.
+ */
+export function portafolioDeInversionPorId(portafolioId: string): PortafolioResumen | null {
+  const activo = buscar("portafolios", "id", portafolioId);
+  if (!activo) return null;
+  const rebalanceado = activo.usuario_id
+    ? accionesDe(activo.usuario_id, "rebalancear_portafolio").length > 0
+    : false;
+  return {
+    id: activo.id!,
+    nombre: activo.nombre ?? "",
+    perfil: activo.perfil ?? "",
+    valorActualCentavos: aEntero(activo.valor_actual_centavos),
+    aportadoCentavos: aEntero(activo.aportado_centavos),
+    rendimientoAcumuladoCentavos: aEntero(activo.rendimiento_acumulado_centavos),
+    rendimientoPct: aDecimal(activo.rendimiento_pct),
+    desviacionModeloPct: rebalanceado ? 0 : aDecimal(activo.desviacion_modelo_pct),
     fechaApertura: activo.fecha_apertura ?? "",
   };
 }
@@ -117,10 +141,20 @@ export function portafolioDeInversion(usuarioId: string): PortafolioResumen | nu
  */
 export function posicionesDePortafolio(portafolioId: string): PosicionDetalle[] {
   const filas = filtrar("posiciones", "portafolio_id", portafolioId);
+  const filaPortafolio = buscar("portafolios", "id", portafolioId);
+  const usuarioId = filaPortafolio?.usuario_id;
+  const valorTotalCentavos = aEntero(filaPortafolio?.valor_actual_centavos);
+  const rebalanceado = usuarioId ? accionesDe(usuarioId, "rebalancear_portafolio").length > 0 : false;
 
   return filas
     .map((pos) => {
       const inst = buscar("instrumentos", "id", pos.instrumento_id ?? "");
+      const pesoObjetivo = aDecimal(pos.peso_objetivo_pct);
+      const pesoActual = rebalanceado ? pesoObjetivo : aDecimal(pos.peso_pct);
+      const valorMercado = rebalanceado
+        ? Math.round(valorTotalCentavos * pesoObjetivo)
+        : aEntero(pos.valor_mercado_centavos);
+      const costo = aEntero(pos.costo_centavos);
       return {
         id: pos.id!,
         instrumentoId: pos.instrumento_id ?? "",
@@ -132,14 +166,101 @@ export function posicionesDePortafolio(portafolioId: string): PosicionDetalle[] 
         titulos: aDecimal(pos.titulos),
         precioPromedioCentavos: aEntero(pos.precio_promedio_compra_centavos),
         precioActualCentavos: aEntero(pos.precio_actual_centavos),
-        costoCentavos: aEntero(pos.costo_centavos),
-        valorMercadoCentavos: aEntero(pos.valor_mercado_centavos),
-        plusvaliaCentavos: aEntero(pos.plusvalia_centavos),
-        pesoPct: aDecimal(pos.peso_pct),
-        pesoObjetivoPct: aDecimal(pos.peso_objetivo_pct),
+        costoCentavos: costo,
+        valorMercadoCentavos: valorMercado,
+        plusvaliaCentavos: valorMercado - costo,
+        pesoPct: pesoActual,
+        pesoObjetivoPct: pesoObjetivo,
       };
     })
     .sort((a, b) => b.valorMercadoCentavos - a.valorMercadoCentavos);
+}
+
+export type MovimientoRebalanceoCalculado = {
+  tipo: "compra" | "venta";
+  instrumentoClave: string;
+  claseActivo: string;
+  montoCentavos: number;
+  pesoAnteriorPct: number;
+  pesoNuevoPct: number;
+};
+
+const ETIQUETAS_CLASE_ACTIVO: Record<string, string> = {
+  deuda_gubernamental: "Deuda gubernamental",
+  deuda_corporativa: "Deuda corporativa",
+  pagare: "Pagaré bancario",
+  fondo_deuda: "Fondo de deuda",
+  fondo_renta_variable: "Renta variable",
+  etf: "ETF",
+  renta_variable: "Renta variable",
+};
+
+export function calcularMovimientosRebalanceo(
+  usuarioId: string,
+  portafolioId?: string,
+): {
+  portafolio: PortafolioResumen;
+  desviacionAntesPct: number;
+  movimientos: MovimientoRebalanceoCalculado[];
+} {
+  const portafolio = portafolioId
+    ? portafolioDeInversionPorId(portafolioId)
+    : portafolioDeInversion(usuarioId);
+
+  if (!portafolio) {
+    throw new Error(`No se encontró un portafolio activo para el usuario ${usuarioId}`);
+  }
+
+  // Las posiciones de partida (antes de rebalancear):
+  const filas = filtrar("posiciones", "portafolio_id", portafolio.id);
+  const total = portafolio.valorActualCentavos;
+
+  const operaciones: MovimientoRebalanceoCalculado[] = [];
+
+  for (const pos of filas) {
+    const inst = buscar("instrumentos", "id", pos.instrumento_id ?? "");
+    const pesoAnt = aDecimal(pos.peso_pct);
+    const pesoObj = aDecimal(pos.peso_objetivo_pct);
+    const montoAnt = Math.round(total * pesoAnt);
+    const montoObj = Math.round(total * pesoObj);
+    const dif = montoObj - montoAnt;
+
+    if (Math.abs(dif) < 100) continue; // Menos de 1 peso
+
+    const clase = ETIQUETAS_CLASE_ACTIVO[inst?.tipo ?? ""] ?? "Inversión";
+
+    if (dif < 0) {
+      operaciones.push({
+        tipo: "venta",
+        instrumentoClave: inst?.clave ?? pos.instrumento_id ?? "",
+        claseActivo: clase,
+        montoCentavos: Math.abs(dif),
+        pesoAnteriorPct: pesoAnt,
+        pesoNuevoPct: pesoObj,
+      });
+    } else {
+      operaciones.push({
+        tipo: "compra",
+        instrumentoClave: inst?.clave ?? pos.instrumento_id ?? "",
+        claseActivo: clase,
+        montoCentavos: dif,
+        pesoAnteriorPct: pesoAnt,
+        pesoNuevoPct: pesoObj,
+      });
+    }
+  }
+
+  // Ventas primero (liberar liquidez antes de comprar), luego compras, de mayor monto a menor
+  operaciones.sort((a, b) => {
+    if (a.tipo !== b.tipo) return a.tipo === "venta" ? -1 : 1;
+    return b.montoCentavos - a.montoCentavos;
+  });
+
+  return {
+    portafolio,
+    desviacionAntesPct: portafolio.desviacionModeloPct,
+    movimientos: operaciones,
+  };
 }
 
 /**

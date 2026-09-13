@@ -1,8 +1,9 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-12 15:05
+resuelto: 2026-09-12 22:45
 github: 16
 ---
 
@@ -29,3 +30,12 @@ Con los botones que suenan a vista el modelo improvisa mejor: "Mejorar mi salud 
 2. `aplicar_estrategia` en `ComparadorAntesDespues` es la reestructura: puede disparar `aplicar_plan_pago` con el plazo.
 3. Quitar el botón de `OrdenRebalanceo` mientras no haya tool, o agregar `rebalancear_portafolio` al MCP como mutación real con su lectura posterior.
 4. Regla dura en el agente: si la acción no es una de las cuatro de `ejecutar_decision`, prohibido pintar `Confirmacion`.
+
+**Solución implementada (2026-09-12):**
+- Se creó e integró la tool de mutación real `rebalancear_portafolio` en MCP (`apps/mcp/src/tools/rebalancear-portafolio.ts`), con schema en `@maya/schemas` y orquestación en `ejecutar_decision`.
+- Persiste en `banorte.acciones_aplicadas` (con idempotencia por `idempotencyKey`), actualizando el portafolio a `desviacionModeloPct = 0` y alineando los pesos de cada posición al objetivo.
+- La lectura posterior de `ejecutar_decision` relee automáticamente con `consultar_inversiones`, cerrando el ciclo de 2 pasos.
+- `OrdenRebalanceo` ahora emite `rebalancear_portafolio` (mutación real confirmada).
+- Los widgets de navegación/exploración fueron renombrados a prefijos `ver_` o `elegir_` (`ver_orden_rebalanceo`, `elegir_estrategia`, `elegir_instrumento`, `elegir_plan_inversion`, `ver_como_mejorar`) para que `esAccionDeMutacion` los clasifique correctamente como vistas sin intentar llamar `ejecutar_decision` erróneamente.
+- Todos los tests unitarios e integrales en MCP, Catálogo y Web pasan al 100%.
+

@@ -34,3 +34,6 @@ Tipos de entrada: `inicio`, `cierre`, `hecho`, `a-medias`, `toque-ajeno`, `nota`
   lo piden). Entre medias, cuando pase algo que otro necesitaría saber.
 - Frases cortas. Rutas concretas. Nada de "avancé en el front".
 - Las decisiones van a `equipo.md`, no a la personal, aunque las hayas tomado tú.
+
+> **Nota sobre convención de fechas:**
+> Las entradas y archivos con fecha `2026-09-13` generadas antes del domingo 13 por la mañana corresponden a trabajos realizados durante el sábado 12 (hora de Monterrey, UTC-6) registrados con la fecha del reloj del servidor (UTC+2 / UTC). Todas las horas oficiales del proyecto son hora local de Monterrey.

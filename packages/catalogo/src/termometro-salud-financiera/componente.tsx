@@ -209,7 +209,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
           <Button
             className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
-            onClick={() => alAccionar({ accion: "mejorar_salud_financiera", puntajeSalud, calificacion })}
+            onClick={() => alAccionar({ accion: "ver_como_mejorar", puntajeSalud, calificacion })}
           >
             Mejorar mi salud financiera <ArrowRight />
           </Button>

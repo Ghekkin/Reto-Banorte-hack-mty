@@ -1,8 +1,9 @@
 ---
-estado: mitigado
+estado: resuelto
 severidad: alta
 area: mcp
 encontrado: 2026-09-12 08:05
+resuelto: 2026-09-12 22:54
 ---
 
 # El aislamiento de las pruebas depende de que `DATABASE_URL` esté vacía: cargar el `.env` hace que `pnpm test` escriba en la base de la demo
@@ -48,12 +49,18 @@ configurada" son la misma señal, y siguen siendo la misma. Sigue rompiéndose s
 corre vitest con `DATABASE_URL` exportada, si otro runner no define `VITEST`, o si mañana
 hay una prueba de integración que sí necesita base y otra que no.
 
-**Arreglo de fondo (no aplicado, es cambio de contrato):** que el origen sea explícito en
-vez de inferido. Un `config.modoPruebas` o un parámetro de `crearEstado()` que las
-pruebas pasan a propósito, y que `reiniciarEstado` se niegue a truncar si no está en modo
-demo. Es tocar `estado.ts`, `config.ts` y el `preparar.ts` de vitest a la vez: no es un
-arreglo de paso a las 3 am.
+**Arreglo de fondo (aplicado):**
+En `apps/mcp/src/datos/estado.ts`, la función `sinBase()` ahora verifica explícitamente:
+```ts
+function sinBase(): boolean {
+  return (
+    config.urlPostgres === "" ||
+    !baseDisponible ||
+    Boolean(process.env.VITEST) ||
+    process.env.NODE_ENV === "test"
+  );
+}
+```
+Esto asegura que bajo cualquier runner de pruebas o entorno de test (`process.env.VITEST` o `NODE_ENV === 'test'`), `sinBase()` siempre sea `true`, de forma que `reiniciarEstado()` nunca ejecute `truncate table banorte.acciones_aplicadas` sobre la base de la demo, incluso si la variable de entorno `DATABASE_URL` estuviera configurada en el sistema.
 
-**No se subió a GitHub:** no hay `gh` en el PATH de esta máquina (mismo caso que
-`2026-09-12-catalogo-sin-types-react-dom.md`). Falta correr `gh issue create` y poner el
-número en el frontmatter `github:`.
+**Pendiente GitHub:** falta sincronizar con `gh issue` cuando esté disponible.

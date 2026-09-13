@@ -94,7 +94,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
           <Button
             className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
-            onClick={() => alAccionar({ accion: "aplicar_estrategia", ahorroNetoCentavos })}
+            onClick={() => alAccionar({ accion: "elegir_estrategia", ahorroNetoCentavos })}
           >
             Aplicar estrategia <ArrowRight />
           </Button>

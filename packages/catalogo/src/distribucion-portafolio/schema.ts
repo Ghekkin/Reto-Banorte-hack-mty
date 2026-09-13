@@ -30,7 +30,7 @@ export type PropsDistribucionPortafolio = z.infer<typeof schemaDistribucionPorta
 export const entradaDistribucionPortafolio = {
   nombre: "DistribucionPortafolio",
   cuandoUsarlo:
-    "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio.",
+    "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara ver_orden_rebalanceo para revisar las órdenes sugeridas. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
   schema: schemaDistribucionPortafolio,
-  acciones: ["rebalancear_portafolio"],
+  acciones: ["ver_orden_rebalanceo"],
 };

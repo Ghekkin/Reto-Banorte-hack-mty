@@ -30,7 +30,7 @@ export type PropsProyeccionCrecimiento = z.infer<typeof schemaProyeccionCrecimie
 export const entradaProyeccionCrecimiento = {
   nombre: "ProyeccionCrecimiento",
   cuandoUsarlo:
-    "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo. Pasa el desglose entre aportado y rendimientos con los hitos temporales. Dispara simular_inversion.",
+    "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo: **ya llamaste proyectar_inversion** y pasas sus cifras tal como vinieron (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`). NUNCA calcules tú un valor futuro: la tarjeta simula la curva en el navegador y la calibra contra el cierre que mandes, así que un cierre inventado dobla la gráfica para taparlo. Si pide otro plazo, otra tasa u otro capital, vuelve a llamar la tool; la aportación mensual sí la resuelve el slider. Dispara elegir_plan_inversion.",
   schema: schemaProyeccionCrecimiento,
-  acciones: ["simular_inversion"],
+  acciones: ["elegir_plan_inversion"],
 };

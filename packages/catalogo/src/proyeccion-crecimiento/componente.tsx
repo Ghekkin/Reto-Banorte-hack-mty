@@ -282,7 +282,7 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
             className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
             onClick={() =>
-              alAccionar({ accion: "simular_inversion", aportacionMensualCentavos: aportacion, valorFinalEstimadoCentavos: final.total })
+              alAccionar({ accion: "elegir_plan_inversion", aportacionMensualCentavos: aportacion, valorFinalEstimadoCentavos: final.total })
             }
           >
             Invertir con este plan <ArrowRight />

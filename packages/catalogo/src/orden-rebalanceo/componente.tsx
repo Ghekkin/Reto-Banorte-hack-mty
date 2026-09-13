@@ -92,7 +92,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
           <Button
             className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
-            onClick={() => alAccionar({ accion: "confirmar_rebalanceo", portafolioId, totalOperaciones: movimientos.length })}
+            onClick={() => alAccionar({ accion: "rebalancear_portafolio", portafolioId, totalOperaciones: movimientos.length })}
           >
             Confirmar rebalanceo <ArrowRight />
           </Button>

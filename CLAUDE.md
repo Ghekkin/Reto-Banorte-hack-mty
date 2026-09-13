@@ -59,8 +59,11 @@ commits no dicen quién los hizo. Al irte, skill `cerrar`.
    la demo se presenta desde `git checkout estable`.
 5. **Commit y push son automáticos.** El hook `Stop` corre `scripts/sync.sh --auto`
    al final de cada turno: commit de lo pendiente con prefijo `[nombre/rol]`, pull
-   con rebase, push. Para un commit con nombre propio, skill `guardar`. Nunca
-   `--force` sobre `main`. Los commits que resuelven un issue llevan `Fixes #N`.
+   con rebase, push. Para un commit con nombre propio, skill `guardar`. Si haces un
+   commit manual, hazlo **siempre por rutas explícitas** (`git commit -- <rutas>`):
+   el índice `.git/index` es compartido entre sesiones y un `git commit` a secas
+   puede llevarse trabajo a medias de otro compañero. Nunca `--force` sobre `main`.
+   Los commits que resuelven un issue llevan `Fixes #N`.
 6. **Sin acentos en nombres de archivo**; kebab-case, en español.
 7. **Las bitácoras se escriben conforme pasa.** `docs/bitacora/equipo.md` para
    decisiones e ideas del equipo; `docs/bitacora/<nombre>.md` para el hilo de cada

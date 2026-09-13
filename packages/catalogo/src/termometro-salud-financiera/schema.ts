@@ -25,7 +25,7 @@ export type PropsTermometroSaludFinanciera = z.infer<typeof schemaTermometroSalu
 export const entradaTermometroSaludFinanciera = {
   nombre: "TermometroSaludFinanciera",
   cuandoUsarlo:
-    "La persona pregunta '¿Cómo están mis finanzas?', '¿Cuál es mi diagnóstico?' o el agente resume su salud integral antes de proponer metas. Muestra el score 0-100 y pilares. Dispara mejorar_salud_financiera.",
+    "La persona pregunta '¿Cómo están mis finanzas?', '¿Cuál es mi diagnóstico?' o el agente resume su salud integral antes de proponer metas. Muestra el score 0-100 y pilares. Dispara ver_como_mejorar.",
   schema: schemaTermometroSaludFinanciera,
-  acciones: ["mejorar_salud_financiera"],
+  acciones: ["ver_como_mejorar"],
 };

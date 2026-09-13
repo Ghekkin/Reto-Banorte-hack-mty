@@ -145,7 +145,7 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
           <Button
             className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
             size="lg"
-            onClick={() => alAccionar({ accion: "rebalancear_portafolio", valorTotalCentavos })}
+            onClick={() => alAccionar({ accion: "ver_orden_rebalanceo", valorTotalCentavos })}
           >
             Rebalancear al modelo <ArrowRight />
           </Button>

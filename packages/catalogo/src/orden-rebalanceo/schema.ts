@@ -29,7 +29,7 @@ export type PropsOrdenRebalanceo = z.infer<typeof schemaOrdenRebalanceo>;
 export const entradaOrdenRebalanceo = {
   nombre: "OrdenRebalanceo",
   cuandoUsarlo:
-    "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara confirmar_rebalanceo.",
+    "La persona confirma que desea rebalancear su portafolio patrimonial para volver a su asignación recomendada. Muestra las órdenes de venta y compra. Dispara rebalancear_portafolio. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
   schema: schemaOrdenRebalanceo,
-  acciones: ["confirmar_rebalanceo"],
+  acciones: ["rebalancear_portafolio", "confirmar_rebalanceo"],
 };

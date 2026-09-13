@@ -128,7 +128,7 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
             size="lg"
             onClick={() =>
               alAccionar({
-                accion: "seleccionar_instrumento",
+                accion: "elegir_instrumento",
                 instrumentoId: seleccionado.id,
                 clave: seleccionado.clave,
                 rendimientoAnualEsperado: seleccionado.rendimientoAnualEsperado,

@@ -33,3 +33,6 @@ que otro pueda jalar tu cambio ya.
 
 - `git push --force` sobre `main`.
 - Commitear `.env`, credenciales o datos reales de personas.
+- `git commit` sin rutas explícitas si haces commit manual fuera de `scripts/sync.sh`:
+  el índice `.git/index` es compartido entre sesiones y se lleva trabajo ajeno preparado.
+  Usa siempre `git commit -- <rutas>`.

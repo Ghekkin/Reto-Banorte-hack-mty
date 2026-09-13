@@ -23,6 +23,7 @@ import { analizarAhorro } from "./analizar-ahorro.js";
 import { ejecutarDecision } from "./ejecutar-decision.js";
 import { orientarConsultaNoValida } from "./orientar-consulta-no-valida.js";
 import { consultarSugerenciasInversion } from "./consultar-sugerencias-inversion.js";
+import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
 
 /**
  * Las tools del servidor. El orden es el del viaje que la demo cuenta: primero saber
@@ -73,11 +74,12 @@ export const TOOLS: DefinicionDeTool[] = [
   consultarHistoricoInversion,
   orientarConsultaNoValida,
   consultarSugerenciasInversion,
+  rebalancearPortafolio,
 ];
 
 export function registrarTools(server: McpServer): void {
   for (const tool of TOOLS) registrarTool(server, tool);
 }
 
-export { registrarTool };
+export { registrarTool, rebalancearPortafolio };
 export type { DefinicionDeTool };

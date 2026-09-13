@@ -6,6 +6,8 @@ import {
   SalidaConsultarTarjeta,
   SalidaCrearApartado,
   SalidaProyectarAhorro,
+  SalidaRebalancearPortafolio,
+  SalidaConsultarInversiones,
 } from "@maya/schemas";
 import { reiniciarEstado } from "../datos/index.js";
 import { aplicarPlanPago } from "../tools/aplicar-plan-pago.js";
@@ -14,6 +16,8 @@ import { consultarPlan } from "../tools/consultar-plan.js";
 import { consultarTarjeta } from "../tools/consultar-tarjeta.js";
 import { crearApartado } from "../tools/crear-apartado.js";
 import { proyectarAhorro } from "../tools/proyectar-ahorro.js";
+import { rebalancearPortafolio } from "../tools/rebalancear-portafolio.js";
+import { consultarInversiones } from "../tools/consultar-inversiones.js";
 
 /**
  * El tercer paso del reto: la accion ocurre y **la lectura posterior devuelve otra
@@ -259,5 +263,59 @@ describe("crear_apartado y proyectar_ahorro", () => {
         idempotencyKey: "c_prueba:2026-09-13T06:00:00Z",
       }),
     ).rejects.toThrow(/mayor que una sola aportacion/);
+  });
+});
+
+describe("rebalancear_portafolio: el ciclo completo", () => {
+  it("antes del rebalanceo el portafolio de Carmen tiene desviacion", async () => {
+    const antes = SalidaConsultarInversiones.parse(await consultarInversiones.manejar({ usuarioId: "usr_carmen" }));
+    expect(antes.tienePortafolio).toBe(true);
+    expect(antes.portafolio?.desviacionModeloPct).toBeGreaterThan(0.05);
+  });
+
+  it("ejecuta de verdad el rebalanceo y deja la desviacion en 0", async () => {
+    const salida = SalidaRebalancearPortafolio.parse(
+      await rebalancearPortafolio.manejar({
+        usuarioId: "usr_carmen",
+        idempotencyKey: LLAVE,
+      }),
+    );
+    expect(salida.aplicado).toBe(true);
+    expect(salida.yaEstaba).toBe(false);
+    expect(salida.movimientos.length).toBeGreaterThan(0);
+    expect(salida.portafolio.desviacionDespuesPct).toBe(0);
+
+    // Lectura posterior
+    const despues = SalidaConsultarInversiones.parse(await consultarInversiones.manejar({ usuarioId: "usr_carmen" }));
+    expect(despues.portafolio?.desviacionModeloPct).toBe(0);
+    // Cada posicion ahora tiene su peso alineado al peso objetivo
+    for (const pos of despues.posiciones) {
+      expect(pos.pesoPct).toBe(pos.pesoObjetivoPct);
+    }
+  });
+
+  it("es idempotente: con la misma llave avisa que ya estaba", async () => {
+    await rebalancearPortafolio.manejar({
+      usuarioId: "usr_carmen",
+      idempotencyKey: LLAVE,
+    });
+    const segunda = SalidaRebalancearPortafolio.parse(
+      await rebalancearPortafolio.manejar({
+        usuarioId: "usr_carmen",
+        idempotencyKey: LLAVE,
+      }),
+    );
+    expect(segunda.aplicado).toBe(false);
+    expect(segunda.yaEstaba).toBe(true);
+  });
+
+  it("reiniciarEstado restaura la desviacion original", async () => {
+    await rebalancearPortafolio.manejar({
+      usuarioId: "usr_carmen",
+      idempotencyKey: LLAVE,
+    });
+    await reiniciarEstado();
+    const restaurado = SalidaConsultarInversiones.parse(await consultarInversiones.manejar({ usuarioId: "usr_carmen" }));
+    expect(restaurado.portafolio?.desviacionModeloPct).toBeGreaterThan(0.05);
   });
 });

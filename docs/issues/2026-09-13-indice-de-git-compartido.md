@@ -1,8 +1,9 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: infra
 encontrado: 2026-09-13 14:10
+resuelto: 2026-09-12 22:52
 github: 8
 ---
 
@@ -70,3 +71,7 @@ git -C /tmp/publicar cherry-pick <mi-commit>
 git -C /tmp/publicar push origin HEAD:main
 git worktree remove --force /tmp/publicar
 ```
+
+**Solución aplicada:**
+1. Se agregó en `CLAUDE.md` bajo la regla 5 la instrucción clara de hacer commits manuales con rutas explícitas (`git commit -- <rutas>`).
+2. Se actualizó la skill `guardar` (`.claude/skills/guardar/SKILL.md`) en la sección de "Nunca" advirtiendo no usar `git commit` sin rutas explícitas para no llevarse trabajo de otras sesiones concurrentes.

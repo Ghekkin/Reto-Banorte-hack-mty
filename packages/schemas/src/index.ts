@@ -36,3 +36,4 @@ export * from "./tools/analizar-ahorro.js";
 export * from "./tools/ejecutar-decision.js";
 export * from "./tools/orientar-consulta-no-valida.js";
 export * from "./tools/consultar-sugerencias-inversion.js";
+export * from "./tools/rebalancear-portafolio.js";

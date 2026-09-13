@@ -28,7 +28,7 @@ export type PropsComparadorAntesDespues = z.infer<typeof schemaComparadorAntesDe
 export const entradaComparadorAntesDespues = {
   nombre: "ComparadorAntesDespues",
   cuandoUsarlo:
-    "La persona duda sobre la conveniencia de una recomendación financiera o necesita ver el contraste directo de qué gana si actúa hoy frente a no hacer nada. Dispara aplicar_estrategia.",
+    "La persona duda sobre la conveniencia de una recomendación financiera o necesita ver el contraste directo de qué gana si actúa hoy frente a no hacer nada. Dispara elegir_estrategia.",
   schema: schemaComparadorAntesDespues,
-  acciones: ["aplicar_estrategia"],
+  acciones: ["elegir_estrategia"],
 };

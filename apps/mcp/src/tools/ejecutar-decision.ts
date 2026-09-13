@@ -3,6 +3,8 @@ import { aplicarPlanPago } from "./aplicar-plan-pago.js";
 import { cancelarSuscripcion } from "./cancelar-suscripcion.js";
 import { crearApartado } from "./crear-apartado.js";
 import { crearTopeGasto } from "./crear-tope-gasto.js";
+import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
+import { consultarInversiones } from "./consultar-inversiones.js";
 import { consultarPlan } from "./consultar-plan.js";
 import { detectarFugas } from "./detectar-fugas.js";
 import { proyectarAhorro } from "./proyectar-ahorro.js";
@@ -13,7 +15,7 @@ import type { DefinicionDeTool } from "./registro.js";
  *
  * Las acciones que mutan estado se llaman igual que su tool
  * (`esAccionDeMutacion` en `packages/a2ui/src/acciones.ts`), asi que la tabla de
- * despacho es literal: el `accion` que llega es uno de estos cuatro nombres.
+ * despacho es literal: el `accion` que llega es uno de estos nombres.
  *
  * Recibe la accion y su `context` tal como salieron de la interfaz, despacha a la tool
  * de mutacion que corresponde (sin reimplementar su logica: llama su `manejar`), y
@@ -25,6 +27,8 @@ const TOOLS_DE_MUTACION: Record<AccionMutacion, DefinicionDeTool> = {
   crear_apartado: crearApartado,
   cancelar_suscripcion: cancelarSuscripcion,
   crear_tope_gasto: crearTopeGasto,
+  rebalancear_portafolio: rebalancearPortafolio,
+  confirmar_rebalanceo: rebalancearPortafolio,
 };
 
 export const ejecutarDecision: DefinicionDeTool = {
@@ -32,9 +36,9 @@ export const ejecutarDecision: DefinicionDeTool = {
   titulo: "Ejecutar la decision que vino de la interfaz",
   descripcion:
     "ORQUESTADOR DE ACCION: recibe el nombre de la accion tal como llega del `action` de la interfaz " +
-    "(`aplicar_plan_pago`, `crear_apartado`, `cancelar_suscripcion` o `crear_tope_gasto`) y su `context` " +
-    "(incluida `idempotencyKey`), la ejecuta, y devuelve YA la lectura posterior en la misma respuesta. " +
-    "Usala SIEMPRE que la accion que llegue de la interfaz sea una de esas cuatro, en vez de llamar la " +
+    "(`aplicar_plan_pago`, `crear_apartado`, `cancelar_suscripcion`, `crear_tope_gasto` o `rebalancear_portafolio`) " +
+    "y su `context` (incluida `idempotencyKey`), la ejecuta, y devuelve YA la lectura posterior en la misma respuesta. " +
+    "Usala SIEMPRE que la accion que llegue de la interfaz sea una de esas, en vez de llamar la " +
     "tool de mutacion y despues la de lectura por separado: no reimplementa nada, solo despacha y relee.",
   clase: "accion",
   entrada: EntradaEjecutarDecision.shape,
@@ -71,5 +75,8 @@ async function leerEstadoPosterior(
       return detectarFugas.manejar({ usuarioId });
     case "crear_tope_gasto":
       return null;
+    case "rebalancear_portafolio":
+    case "confirmar_rebalanceo":
+      return consultarInversiones.manejar({ usuarioId });
   }
 }
