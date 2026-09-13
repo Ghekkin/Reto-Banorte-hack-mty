@@ -366,7 +366,14 @@ export function armarParches(
       continue;
     }
     // El componente COMPLETO, no solo lo que cambia: `updateComponents` reemplaza por id.
-    fusionados.push({ ...viejo, ...(p.props as Record<string, unknown>) });
+    // `null` en un parche es «quita esta prop» (vuelve a su default): el 2026-09-13, al guardar
+    // un gasto, el modelo mando `etiquetaBoton: null` para esconder el boton, el schema lo
+    // rechazo y el turno gasto un paso de mas. Una prop opcional ausente es lo que quiso decir.
+    const fusionado: Record<string, unknown> = { ...viejo, ...(p.props as Record<string, unknown>) };
+    for (const [llave, valor] of Object.entries(p.props as Record<string, unknown>)) {
+      if (valor === null) delete fusionado[llave];
+    }
+    fusionados.push(fusionado as Componente);
   }
 
   if (fusionados.length) {

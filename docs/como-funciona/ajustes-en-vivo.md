@@ -34,8 +34,10 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Crédito a plazo: simular mensualidad o plazo y ajustar `ProyeccionPagoCredito` | construido |
 | Crédito a plazo: «Programar este pago» (abono a capital mensual) en la misma tarjeta | construido |
 | Ajustar una tarjeta de una pantalla **anterior** del hilo | construido |
-| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | en progreso |
-| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | pendiente |
+| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | construido |
+| Inicio: una pregunta cambia una tarjeta en su lugar | construido por aldair (widgets vivos, ADR 0011); `FEATURE_WIDGETS_VIVOS=1` en local y producción desde 2026-09-13 04:10 |
+| Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | en progreso |
+| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | pendiente (el host ya fija las cifras de `proyectar_ahorro`; falta `fechaObjetivo` en la tool) |
 | Plan de la tarjeta con cualquier plazo o mensualidad objetivo, y «Aplicar plan» en su lugar | pendiente |
 
 Decisiones que no se vuelven a discutir: los números los calcula una tool MCP (no el componente);
@@ -101,6 +103,22 @@ puso de tope `520000`, un número que ninguna tool dijo. Y las listas largas (`c
 `amortizacionResumen`) son lo que un modelo recorta al copiar
 (`docs/como-funciona/bug-gasto-total-no-cuadra.md`). La tabla completa está en el comentario de la
 función; las pruebas, en `ajustes-en-vivo.spec.ts`.
+
+### Flujo paso a paso: «también le doy $2,000 al mes a mi mamá en efectivo»
+
+1. Beto tiene en pantalla `GastoPorCategoria` (agosto, $33,349.50).
+2. El modelo llama `simular_gasto_externo { gastos: [{ nombre: "Apoyo a mi mamá", montoCentavos: 200000,
+   frecuencia: "mensual" }] }` y cierra con `ajustar_pantalla` sobre esa tarjeta. El host escribe
+   `categorias`, `totalCentavos` ($35,349.50) y `antes` desde la tool; la fila nueva sale arriba con
+   «Fuera del banco · sin guardar» y aparece «Guardar gasto».
+3. «Guardar gasto» es la **segunda acción** de la tarjeta (`registrar_gasto_externo`, declarada en su
+   catálogo; `definirAcciones` en `packages/a2ui/src/registro.ts`). Se atiende en su lugar: la fila
+   queda guardada, el botón se va, y lo mensual resta capacidad de pago y de ahorro desde ahí.
+4. Un `null` en un parche de props **quita** esa prop (el modelo lo usa para esconder el botón).
+
+Ensayado con el modelo real (2026-09-13 04:15): 3 de 3 (9.1 s, 6.7 s, 12.1 s). Algoritmo y límites
+(el efectivo que ya salió del cajero se cuenta dos veces, a propósito):
+`docs/algoritmos/gastos-fuera-del-banco.md`.
 
 ### Entradas y salidas
 

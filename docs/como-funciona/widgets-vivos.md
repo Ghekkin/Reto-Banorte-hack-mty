@@ -25,7 +25,9 @@ la nota lo dice: «Cifras verificadas con el banco». Si Maya escribe un número
 ese número también se revisa contra lo que el banco contestó; uno inventado no llega a tu
 pantalla.
 
-Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como antes.
+Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como antes. **Está
+prendido en local y en producción desde el 2026-09-13 04:10** (a pedido del usuario: «no me gusta que
+borre todo en el inicio»); `pnpm probar-widgets` pasó 6 de 6 con el modelo real antes de prenderlo.
 
 ## Técnico
 

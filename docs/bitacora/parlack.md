@@ -1713,3 +1713,26 @@ Queda: al recargar `/maya` la conversación no se restaura (ya se guarda con su 
 Antes de abrir la liga al público, `pnpm reiniciar-estado`: con acciones en `comun`, cada
 dispositivo nuevo arma su propia portada.
 
+
+### 04:20 (dom 13) — Ajustes en vivo: fase 2, el «se recarga todo», Inicio vivo e integración
+
+- **Fase 2 en `main`** (`e3ab640`): gastos fuera del banco. Beto con el modelo real, 3 de 3:
+  «también le doy $2,000 al mes a mi mamá» cambia la misma tarjeta de gasto ($33,349.50 →
+  $35,349.50) y «Guardar gasto» la registra (segunda acción declarada en el catálogo). Migración
+  0006 aplicada. `parchesDeterministas`: las cifras de las tools del turno las escribe el host
+  (Gemini inventó `aportacionMaximaCentavos: 520000` en un ensayo), leyendo solo las tools de ESE
+  turno. `null` en un parche = quitar la prop.
+- **El usuario vio «se recarga toda la página»** al ajustar el crédito: cada parche sin
+  `createSurface` hacía que la consola pintara la pantalla completa otra vez debajo durante el
+  turno. Arreglado con `ponerEnPantalla` (`cdfda32`); verificado con Playwright: nunca más de una
+  tarjeta ni pantalla. «Liquidarlo en 12 meses» también funciona ($5,503.21, $2,525.82 de ahorro;
+  una corrida tardó 15.2 s por el proveedor).
+- **Integración** con lo que subió aldair (widgets vivos, ADR 0011, 6.6k líneas): un solo
+  conflicto (`tools/index.ts`), dos migraciones 0005 que conviven (idempotentes). 808 pruebas en
+  verde con el árbol integrado; la fase 2 se verificó aislada sobre `HEAD` (worktree temporal) para
+  no subir las animaciones a medias de otra sesión.
+- **Inicio**: el usuario pidió que no borre todo. Prendí `FEATURE_WIDGETS_VIVOS=1` en local (reinicio
+  del next-server tocando `next.config.ts`) y en producción (Coolify env + restart, verificado
+  dentro del contenedor) tras `probar-widgets` 6 de 6. Transición de valores al ajustar: en curso
+  (subagente), coordinado con la sesión que hace las animaciones de entrada.
+- Limpieza: borré de la base las filas de ensayo (abono de Ana, gasto de Beto) y rearmé sus portadas.

@@ -120,6 +120,15 @@ const CASOS = [
     pantallaContiene: "600000",
   },
   {
+    // El otro parametro de la tarjeta: en cuantos meses terminar de pagar.
+    nombre: "Ana · liquidarlo en 12 meses (el plazo tambien es parametro)",
+    usuario: "usr_ana",
+    texto: "Mejor quiero liquidarlo en 12 meses",
+    cierre: "ajustar",
+    tools: ["simular_pago_credito"],
+    pantallaContiene: '"plazoRestanteMeses":12',
+  },
+  {
     nombre: "Ana · Programar este pago (accion real, en la misma tarjeta)",
     usuario: "usr_ana",
     accion: {

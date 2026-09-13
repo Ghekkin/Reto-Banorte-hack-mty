@@ -422,3 +422,23 @@ describe("las cifras deterministas salen solo de las tools de ESTE turno", () =>
     expect(texto).not.toContain("Vieja");
   });
 });
+
+describe("null en un parche de props", () => {
+  it("quita la prop en vez de rechazar el parche", () => {
+    const pantalla = {
+      arbol: [
+        { id: "root", component: "Column", children: ["gasto"] },
+        { ...GASTO.arbol[1]!, etiquetaBoton: "Guardar gasto", periodo: "2026-08", totalCentavos: 4520000, categorias: [{ nombre: "Renta", montoCentavos: 4520000 }] },
+      ],
+      dataModel: {},
+    };
+    const r = armarParches(
+      { razon: RAZON, texto: "Guardado.", parchesDatos: [], parchesComponentes: [{ id: "gasto", props: { etiquetaBoton: null } }] },
+      pantalla,
+    );
+    if (!r.ok) throw new Error(r.errores.join("; "));
+    const c = (r.mensajes[0] as { updateComponents: { components: Array<Record<string, unknown>> } }).updateComponents.components[0]!;
+    expect(c).not.toHaveProperty("etiquetaBoton");
+    expect(c).toMatchObject({ id: "gasto", totalCentavos: 4520000 });
+  });
+});

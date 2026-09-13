@@ -120,6 +120,20 @@ acción). "La portada también se enteró."
 > pestañas: es la misma conversación, y el plan que aplicó hace veinte segundos ya cuenta
 > aquí."
 
+Opcional (20 s): **Prompt 2b** (Beto), con esa tarjeta enfrente:
+
+```
+También le doy $2,000 al mes a mi mamá en efectivo
+```
+
+| Momento | Qué se ve |
+|---|---|
+| ~7 s | **La misma tarjeta de gasto cambia**: arriba aparece «Apoyo a mi mamá · Fuera del banco · sin guardar», el total pasa de **$33,349.50 a $35,349.50** y aparece **Guardar gasto** |
+| Toca **Guardar gasto**, ~10 s | La fila queda guardada y el botón se va. Maya dice cuánto le queda libre para su plan |
+
+> "El banco no ve ese dinero; Beto se lo dijo a Maya y la tarjeta que ya estaba lo sumó. Desde
+> ahora cuenta para lo que Maya le recomiende."
+
 ### 2:20–2:50 · Adaptabilidad: la misma pregunta, otra persona
 
 Se cambia el perfil a **Ana** en el sidebar. **Prompt 3**, idéntico al primero:
@@ -188,6 +202,7 @@ Se arrastra el slider del **simulador** (la segunda tarjeta) y se toca **Crear a
 1. `Quiero pagar menos intereses de mi tarjeta` (Beto)
 2. `¿Y en qué se me está yendo el dinero?` (Beto)
 3. `Quiero pagar menos intereses de mi tarjeta` (Ana)
+2b. `También le doy $2,000 al mes a mi mamá en efectivo` (Beto) → tocar **Guardar gasto**
 4. `¿Y si pago $6,000 al mes?` (Ana) → tocar **Programar este pago**
 
 ## Criterios de aceptación
