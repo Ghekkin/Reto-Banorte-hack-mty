@@ -38,3 +38,16 @@ apps/mcp/estado.*.json
 
 # material del reto (PDFs, videos): pesado y no versionable
 .orca/
+
+# documentacion interna de desarrollo (coordinacion de equipo y contexto del reto):
+# no es parte del entregable publico. Nota: como estas rutas ya estaban trackeadas
+# al momento de agregar el patron, git sigue versionando sus cambios (.gitignore
+# no destrackea archivos existentes, solo evita volver a trackear NUEVOS archivos
+# ahi). Untrackearlas de verdad (`git rm --cached`) queda pendiente hasta que el
+# equipo confirme que ya no las necesita sincronizadas via git.
+docs/tablero.md
+docs/bitacora/
+docs/issues/
+docs/equipo/
+docs/reto/
+docs/demo/
