@@ -85,7 +85,7 @@ describe("el proveedor real con nuestras tools", () => {
         conversacionId: "c_prueba",
         mensajes: [{ rol: "usuario", texto: "Quiero pagar menos intereses" }],
       },
-      { modelo: google("gemini-3.8-flash"), herramientas },
+      { modelo: google("gemini-3.1-flash-lite"), herramientas },
     )) {
       lineas.push(linea);
     }

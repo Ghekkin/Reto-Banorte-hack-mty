@@ -213,7 +213,7 @@ Inicio personalizado (`after(() => regenerarSiCambio(usuarioId, "accion"))`).
 
 ### Modelo y proveedor
 
-`MODELO=gemini` (default) → `google("gemini-3.8-flash")` con
+`MODELO=gemini` (default) → `google("gemini-3.1-flash-lite")` con
 `thinkingConfig.thinkingLevel` desde `GEMINI_THINKING`; `MODELO=claude` →
 `anthropic("claude-sonnet-5")` (ADR 0005). Nada más en el código sabe cuál es el modelo.
 Sin llave, el agente sirve el turno de ejemplo y lo dice en el stream.
