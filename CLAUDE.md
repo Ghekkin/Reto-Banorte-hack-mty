@@ -126,7 +126,7 @@ el campo nuevo es opcional.
 | `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `corridas.mjs` (lee corridas, chat y registros), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
-| `apps/*/Dockerfile` | Imágenes de web y mcp; se construyen desde la raíz del repo | existe |
+| `apps/*/Dockerfile` | Imágenes de web, mcp y docs; se construyen desde la raíz del repo | existe |
 | `.claude/settings.json` | Hooks `SessionStart` y `Stop`, permisos para git/gh/scripts | existe |
 | `.claude/skills/` | Skills del repo (tabla abajo) | existe |
 | `.agents/skills/` | Skills oficiales de shadcn/ui instaladas con `pnpm dlx skills add shadcn/ui`; enlazadas desde `.claude/skills/`. `skills-lock.json` fija la versión | existe |

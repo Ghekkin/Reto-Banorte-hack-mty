@@ -629,3 +629,14 @@ Tres cosas que conviene saber:
 Los dominios de `sslip.io` siguen vivos como alias, así que nada de lo anterior se rompe.
 Las variables `URL_WEB_PUBLICA` y `URL_MCP_PUBLICA` del repo ya apuntan al `.tech`. Commit publicado: `1152b8b`. Pasos y verificación en
 `docs/arquitectura/deploy.md` → "El dominio `.tech`". Cuenta para el premio de .Tech.
+
+## dom 13 · 03:33 — La documentación está publicada en `docs.ghekkinxmaya.tech`
+
+https://docs.ghekkinxmaya.tech sirve `apps/docs` (pitch, guion, simulador, rúbrica,
+arquitectura y catálogo) con HTTPS. Es estático con nginx, así que la imagen pesa 77 MB
+y no le suma disco al VPS.
+
+**Se actualiza sola**: cada push a `main` que pasa el CI también redespliega docs. Si
+el build de docs falla, no tumba el deploy de web ni mcp; el sitio sigue con la versión
+anterior y el error se ve en Coolify. Detalle en `docs/arquitectura/deploy.md` → "El
+sitio de docs".

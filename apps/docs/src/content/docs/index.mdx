@@ -3,7 +3,7 @@ title: Maya — Interfaces que la IA construye en tiempo real
 description: Documentación técnica y presentación de Maya para el Reto Banorte × Hack Monterrey 2026.
 template: splash
 hero:
-  tagline: "Un agente financiero que no responde con texto: interpreta tu necesidad, orquesta tools en un servidor MCP propio, describe la pantalla con A2UI v0.9.1 y la renderiza al instante. Cada acción del usuario muta la base de datos y transforma la experiencia."
+  tagline: "Agente autónomo que orquesta tools en un servidor MCP propio y sintetiza pantallas adaptativas con A2UI v0.9.1."
   actions:
     - text: Ver Pitch & Demo en Vivo
       link: /presentacion/pitch/
@@ -19,63 +19,50 @@ hero:
       variant: minimal
 ---
 
-import { Card, CardGrid, Badge } from '@astrojs/starlight/components';
 import DemoFlowSimulator from '../../components/DemoFlowSimulator';
 import ArchitectureExplorer from '../../components/ArchitectureExplorer';
+import EngineeringBento from '../../components/EngineeringBento';
+import DocumentationDirectory from '../../components/DocumentationDirectory';
 import BanorteAlert from '../../components/BanorteAlert';
 
-<BanorteAlert type="info" title="Prototipo de Hackathon Oficial">
-  Construido para el <strong>Reto Banorte × Hack Monterrey 2026</strong>. Evoluciona la asistente <strong>Maya</strong> de Banorte de un chatbot de texto a un generador de interfaces táctiles adaptativas con ciclo de acción cerrado. Todos los datos son sintéticos y no representan clientes reales.
+<BanorteAlert type="info" title="Prototipo de Hackathon Oficial · Reto Banorte × Hack Monterrey 2026">
+  Evoluciona a <strong>Maya</strong> de Banorte de un chatbot conversacional pasivo a un <strong>motor generador de interfaces táctiles reactivas</strong> con ciclo de acción cerrado y persistencia en PostgreSQL. Todos los datos de demostración son sintéticos y se ejecutan en local.
 </BanorteAlert>
 
-## Métricas Clave de Ingeniería
+{/* 1. Bento Asimétrico de Métricas Técnicas y Rigor de Ingeniería */}
+<EngineeringBento client:load />
 
-<CardGrid stagger>
-  <Card title="18 Tools MCP Propias" icon="seti:graphql">
-    14 herramientas de lectura analítica y **4 tools de acción mutacional** sobre PostgreSQL (reestructurar, apartar, pausar fugas).
-  </Card>
-  <Card title="21 Componentes A2UI" icon="pencil">
-    Catálogo financiero propio basado en shadcn/ui y tokens Banorte (#EC0029). Tipado en Zod y validado con Ajv.
-  </Card>
-  <Card title="Motor A2UI v0.9.1 Propio" icon="setting">
-    ~1,310 líneas de TypeScript sin librerías externas de UI generativa. Pasa el 100% de los 76 casos de conformidad oficiales.
-  </Card>
-  <Card title="Cero Alucinaciones Numéricas" icon="approve-check">
-    El modelo nunca inventa tasas ni saldos. Los números viajan en el Data Model y provienen de PostgreSQL (22 tablas).
-  </Card>
-</CardGrid>
+<hr />
 
----
+{/* 2. Simulador Interactivo del Guión de Demostración (3 minutos en vivo) */}
+<div style={{ margin: '2rem 0' }}>
+  <div style={{ marginBottom: '1.25rem' }}>
+    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#171717', letterSpacing: '-0.025em', margin: 0 }}>
+      Simulación Interactiva del Guión de Demo
+    </h2>
+    <p style={{ fontSize: '0.95rem', color: '#64748b', margin: '0.35rem 0 0' }}>
+      Recorre paso a paso la secuencia en vivo de 3 minutos ejecutada con modelo real y PostgreSQL.
+    </p>
+  </div>
+  <DemoFlowSimulator client:load />
+</div>
 
-## Prueba Interactiva del Flujo de la Demo
+<hr />
 
-<DemoFlowSimulator client:load />
+{/* 3. Explorador Interactivo de las 4 Capas de la Arquitectura */}
+<div style={{ margin: '2rem 0' }}>
+  <div style={{ marginBottom: '1.25rem' }}>
+    <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#171717', letterSpacing: '-0.025em', margin: 0 }}>
+      Arquitectura del Sistema en 4 Capas
+    </h2>
+    <p style={{ fontSize: '0.95rem', color: '#64748b', margin: '0.35rem 0 0' }}>
+      Inspecciona la interacción entre el Host Next.js, Servidor MCP, Motor A2UI y la base de datos PostgreSQL.
+    </p>
+  </div>
+  <ArchitectureExplorer client:load />
+</div>
 
----
+<hr />
 
-## La Arquitectura en 4 Capas
-
-<ArchitectureExplorer client:load />
-
----
-
-## Estructura de la Documentación
-
-<CardGrid>
-  <Card title="Presentación & Pitch" icon="open-book">
-    Guión cronometrado de 5 minutos, diapositivas interactivas y rúbrica oficial evaluada punto por punto.
-    [Ver Pitch →](/presentacion/pitch/)
-  </Card>
-  <Card title="El Reto Banorte" icon="information">
-    Entregables oficiales, lectura estratégica de la rúbrica y demostración de adaptabilidad por perfil de usuario.
-    [Ver Reto →](/reto/contexto/)
-  </Card>
-  <Card title="Arquitectura Técnica" icon="laptop">
-    Detalle del motor A2UI, servidor MCP Streamable HTTP, esquema PostgreSQL y los 10 ADRs de diseño.
-    [Ver Arquitectura →](/arquitectura/vision-general/)
-  </Card>
-  <Card title="Catálogo de Componentes" icon="puzzle">
-    Especificación de los 21 widgets financieros del catálogo, schemas Zod, eventos y soporte táctil móvil.
-    [Ver Catálogo →](/catalogo/resumen/)
-  </Card>
-</CardGrid>
+{/* 4. Directorio de Documentación Estructurado por Audiencia */}
+<DocumentationDirectory client:load />

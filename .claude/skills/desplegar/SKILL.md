@@ -22,6 +22,7 @@ solo como premio lateral.
 ```
 https://ghekkinxmaya.tech                   → apps/web  :3000  health /api/health
 https://mcp.ghekkinxmaya.tech               → apps/mcp  :3100  health /health, MCP en /mcp
+https://docs.ghekkinxmaya.tech              → apps/docs :80    nginx estatico, health /salud
 postgres-reto-banorte                        → Postgres :5432 interno, :5437 público
 ```
 

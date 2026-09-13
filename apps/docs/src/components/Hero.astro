@@ -1,0 +1,536 @@
+---
+/**
+ * Hero Rediseñado con directrices de taste-skill (Anti-Slop):
+ * - Anti-center bias: Layout Asimétrico 60/40 en Desktop (Split-screen)
+ * - Hero Stack Discipline: Máximo 4 elementos de texto (Eyebrow, Headline, Subtext <= 20 palabras, CTAs)
+ * - Hero Viewport Discipline: Cabe en la ventana inicial sin desborde
+ * - Visual Asset Real: En vez de un texto centrado vacío, incluye tarjeta de telemetría en vivo del agente
+ * - Botones táctiles: WCAG AA contrast, 1 sola línea en desktop, efecto físico :active
+ */
+const { data } = Astro.locals.starlightRoute.entry;
+const { title = data.title, tagline } = data.hero || {};
+---
+
+<section class="maya-hero">
+  <div class="maya-hero-container">
+    {/* Columna Izquierda: Mensaje y Acciones */}
+    <div class="maya-hero-content">
+      {/* 1. Eyebrow institucional */}
+      <div class="maya-hero-eyebrow">
+        <span class="maya-hero-dot"></span>
+        <span class="maya-hero-badge">RETO BANORTE × HACK MONTERREY 2026</span>
+        <span class="maya-hero-chip">PROTOTIPO OFICIAL</span>
+      </div>
+
+      {/* 2. Headline: Máximo 2 líneas en desktop, tracking tight */}
+      <h1 class="maya-hero-title">
+        Interfaces financieras generadas por IA en <span class="maya-hero-accent">tiempo real</span>
+      </h1>
+
+      {/* 3. Subtext: Conciso (19 palabras), alto impacto */}
+      <p class="maya-hero-subtext">
+        Agente autónomo que orquesta tools en un servidor MCP propio y sintetiza pantallas adaptativas con A2UI v0.9.1.
+      </p>
+
+      {/* 4. CTAs: Botones en una línea con jerarquía clara y sin intenciones duplicadas */}
+      <div class="maya-hero-actions">
+        <a href="/presentacion/pitch/" class="maya-btn maya-btn-primary">
+          <span>Ver Pitch &amp; Demo (5 min)</span>
+          <svg class="maya-btn-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+            <polyline points="12 5 19 12 12 19"></polyline>
+          </svg>
+        </a>
+
+        <a href="/arquitectura/vision-general/" class="maya-btn maya-btn-secondary">
+          <span>Explorar Arquitectura</span>
+        </a>
+
+        <a href="/presentacion/rubrica/" class="maya-btn-link">
+          <span>Rúbrica (100 pts) →</span>
+        </a>
+      </div>
+
+      {/* Tira de Credenciales de Ingeniería */}
+      <div class="maya-hero-credentials">
+        <div class="cred-item">
+          <span class="cred-num">18</span>
+          <span class="cred-label">Tools MCP</span>
+        </div>
+        <div class="cred-sep"></div>
+        <div class="cred-item">
+          <span class="cred-num">21</span>
+          <span class="cred-label">Widgets A2UI</span>
+        </div>
+        <div class="cred-sep"></div>
+        <div class="cred-item">
+          <span class="cred-num">100%</span>
+          <span class="cred-label">76 Pruebas Spec</span>
+        </div>
+        <div class="cred-sep"></div>
+        <div class="cred-item">
+          <span class="cred-num">22</span>
+          <span class="cred-label">Tablas Postgres</span>
+        </div>
+      </div>
+    </div>
+
+    {/* Columna Derecha: Tarjeta de Telemetría Real del Agente Maya */}
+    <div class="maya-hero-visual" aria-hidden="true">
+      <div class="maya-telemetry-card">
+        <div class="telemetry-header">
+          <div class="telemetry-status">
+            <span class="pulse-dot"></span>
+            <span class="telemetry-title">CICLO CERRADO DE ACCIÓN</span>
+          </div>
+          <span class="telemetry-badge">EN VIVO · 10.5s</span>
+        </div>
+
+        <div class="telemetry-body">
+          {/* Paso 1: Entrada */}
+          <div class="telemetry-step">
+            <div class="step-badge">1. INPUT</div>
+            <div class="step-content">
+              <span class="step-role">👤 Beto (Mora 12d):</span>
+              <p class="step-prompt">"Quiero pagar menos intereses de mi tarjeta"</p>
+            </div>
+          </div>
+
+          {/* Paso 2: Orquestación MCP */}
+          <div class="telemetry-step">
+            <div class="step-badge mcp-badge">2. MCP</div>
+            <div class="step-content">
+              <span class="step-code">mcp.simular_reestructura({`{ saldo: 47386, mora: 12 }`})</span>
+              <div class="step-tag">Cero alucinación · PostgreSQL verificado</div>
+            </div>
+          </div>
+
+          {/* Paso 3: Síntesis A2UI */}
+          <div class="telemetry-step">
+            <div class="step-badge a2ui-badge">3. A2UI</div>
+            <div class="step-content">
+              <span class="step-code">emit(createSurface: ['ResumenTarjeta', 'PlanDePago'])</span>
+              <div class="surface-preview">
+                <div class="mini-card mini-card-highlight">
+                  <div class="mini-card-title">Banorte Clásica •••• 4821</div>
+                  <div class="mini-card-val">$47,386.00 <span class="mini-sub">48.9% Tasa</span></div>
+                </div>
+                <div class="mini-card">
+                  <div class="mini-card-title">Reestructura Sugerida</div>
+                  <div class="mini-card-val mini-green">18m · 22.5% (-$14,650)</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Paso 4: Mutación de Datos */}
+          <div class="telemetry-step">
+            <div class="step-badge db-badge">4. DB</div>
+            <div class="step-content">
+              <span class="step-code">INSERT INTO banorte.acciones_aplicadas...</span>
+              <span class="step-meta">Trazabilidad auditada en cada click</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<style>
+  .maya-hero {
+    position: relative;
+    padding: 1.5rem 0 2.5rem;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 2rem;
+  }
+
+  .maya-hero-container {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 2.5rem;
+    align-items: center;
+  }
+
+  @media (min-width: 960px) {
+    .maya-hero-container {
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 3rem;
+    }
+  }
+
+  .maya-hero-content {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  /* Eyebrow */
+  .maya-hero-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    margin-bottom: 1.25rem;
+  }
+
+  .maya-hero-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #ec0029;
+    box-shadow: 0 0 0 2px rgba(236, 0, 41, 0.2);
+  }
+
+  .maya-hero-badge {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #475569;
+    letter-spacing: 0.04em;
+  }
+
+  .maya-hero-chip {
+    background-color: #ec0029;
+    color: #ffffff;
+    font-size: 0.65rem;
+    font-weight: 800;
+    padding: 0.1rem 0.45rem;
+    border-radius: 999px;
+    letter-spacing: 0.05em;
+  }
+
+  /* Headline */
+  .maya-hero-title {
+    font-size: clamp(2rem, 3.8vw, 3.1rem) !important;
+    font-weight: 800 !important;
+    line-height: 1.12 !important;
+    letter-spacing: -0.03em !important;
+    color: #171717 !important;
+    margin: 0 0 1rem 0 !important;
+  }
+
+  .maya-hero-accent {
+    color: #ec0029;
+    position: relative;
+    display: inline-block;
+  }
+
+  /* Subtext */
+  .maya-hero-subtext {
+    font-size: clamp(1rem, 1.25vw, 1.15rem);
+    line-height: 1.6;
+    color: #475569;
+    max-width: 58ch;
+    margin: 0 0 1.75rem 0;
+  }
+
+  /* Actions */
+  .maya-hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.85rem;
+    margin-bottom: 2rem;
+  }
+
+  .maya-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.35rem;
+    border-radius: 0.5rem;
+    font-size: 0.92rem;
+    font-weight: 700;
+    text-decoration: none !important;
+    white-space: nowrap;
+    transition: all 0.15s ease-out;
+    cursor: pointer;
+  }
+
+  .maya-btn:active {
+    transform: scale(0.98);
+  }
+
+  .maya-btn-primary {
+    background-color: #ec0029;
+    color: #ffffff !important;
+    border: 1px solid #c00020;
+    box-shadow: 0 2px 8px rgba(236, 0, 41, 0.22);
+  }
+
+  .maya-btn-primary:hover {
+    background-color: #c00020;
+    box-shadow: 0 4px 14px rgba(236, 0, 41, 0.32);
+  }
+
+  .maya-btn-secondary {
+    background-color: #ffffff;
+    color: #171717 !important;
+    border: 1px solid #cbd5e1;
+  }
+
+  .maya-btn-secondary:hover {
+    border-color: #ec0029;
+    color: #ec0029 !important;
+    background-color: #ffe8ec;
+  }
+
+  .maya-btn-link {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #ec0029 !important;
+    text-decoration: none !important;
+    padding: 0.5rem 0.75rem;
+    border-radius: 0.5rem;
+    transition: background-color 0.15s ease;
+  }
+
+  .maya-btn-link:hover {
+    background-color: #ffe8ec;
+    color: #c00020 !important;
+  }
+
+  .maya-btn-icon {
+    transition: transform 0.15s ease;
+  }
+
+  .maya-btn-primary:hover .maya-btn-icon {
+    transform: translateX(3px);
+  }
+
+  /* Credentials */
+  .maya-hero-credentials {
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    padding-top: 1.25rem;
+    border-top: 1px solid #f1f5f9;
+    width: 100%;
+  }
+
+  .cred-item {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .cred-num {
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #171717;
+    line-height: 1.1;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  .cred-label {
+    font-size: 0.72rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    margin-top: 0.15rem;
+  }
+
+  .cred-sep {
+    width: 1px;
+    height: 24px;
+    background-color: #e2e8f0;
+  }
+
+  /* Visual Column (Telemetry Card) */
+  .maya-hero-visual {
+    width: 100%;
+  }
+
+  .maya-telemetry-card {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.85rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    overflow: hidden;
+  }
+
+  .telemetry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e2e8f0;
+    padding: 0.75rem 1rem;
+  }
+
+  .telemetry-status {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+
+  .pulse-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #16a34a;
+    box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.2);
+  }
+
+  .telemetry-title {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: #171717;
+    letter-spacing: 0.04em;
+  }
+
+  .telemetry-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #b45309;
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+    padding: 0.15rem 0.5rem;
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+  }
+
+  .telemetry-body {
+    padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+  }
+
+  .telemetry-step {
+    display: flex;
+    gap: 0.75rem;
+    align-items: flex-start;
+  }
+
+  .step-badge {
+    font-size: 0.68rem;
+    font-weight: 800;
+    padding: 0.2rem 0.45rem;
+    border-radius: 4px;
+    background-color: #171717;
+    color: #ffffff;
+    flex-shrink: 0;
+    letter-spacing: 0.03em;
+  }
+
+  .mcp-badge {
+    background-color: #334155;
+  }
+
+  .a2ui-badge {
+    background-color: #ec0029;
+  }
+
+  .db-badge {
+    background-color: #047857;
+  }
+
+  .step-content {
+    flex: 1;
+    font-size: 0.82rem;
+    color: #171717;
+  }
+
+  .step-role {
+    font-weight: 700;
+    color: #64748b;
+    font-size: 0.76rem;
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+
+  .step-prompt {
+    margin: 0;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
+    padding: 0.35rem 0.6rem;
+    border-radius: 0.35rem;
+    color: #0f172a;
+  }
+
+  .step-code {
+    display: block;
+    font-family: ui-monospace, SFMono-Regular, monospace;
+    font-size: 0.76rem;
+    color: #0f172a;
+    background-color: #f1f5f9;
+    padding: 0.3rem 0.5rem;
+    border-radius: 0.35rem;
+    border-left: 3px solid #ec0029;
+  }
+
+  .step-tag {
+    font-size: 0.72rem;
+    color: #16a34a;
+    font-weight: 600;
+    margin-top: 0.25rem;
+  }
+
+  .step-meta {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin-top: 0.2rem;
+    display: block;
+  }
+
+  .surface-preview {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.5rem;
+    margin-top: 0.4rem;
+  }
+
+  .mini-card {
+    background-color: #f8f9fa;
+    border: 1px solid #e2e8f0;
+    border-radius: 0.4rem;
+    padding: 0.4rem 0.6rem;
+  }
+
+  .mini-card-highlight {
+    border-color: #ec0029;
+    background-color: #fff5f6;
+  }
+
+  .mini-card-title {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: #475569;
+  }
+
+  .mini-card-val {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #171717;
+  }
+
+  .mini-sub {
+    font-size: 0.65rem;
+    color: #b91c1c;
+    font-weight: 600;
+  }
+
+  .mini-green {
+    color: #15803d;
+  }
+
+  @media (max-width: 640px) {
+    .maya-hero-credentials {
+      flex-wrap: wrap;
+      gap: 0.75rem;
+    }
+    .cred-sep {
+      display: none;
+    }
+    .surface-preview {
+      grid-template-columns: 1fr;
+    }
+  }
+</style>

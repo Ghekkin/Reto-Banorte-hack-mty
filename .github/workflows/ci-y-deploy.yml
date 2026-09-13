@@ -5,7 +5,8 @@
 # el build fallan, el deploy no se dispara.
 #
 # Secretos del repo (Settings -> Secrets and variables -> Actions):
-#   COOLIFY_URL, COOLIFY_TOKEN, COOLIFY_APP_WEB_UUID, COOLIFY_APP_MCP_UUID
+#   COOLIFY_URL, COOLIFY_TOKEN, COOLIFY_APP_WEB_UUID, COOLIFY_APP_MCP_UUID,
+#   COOLIFY_APP_DOCS_UUID (opcional: sin el, docs no se despliega)
 # Variables:
 #   URL_WEB_PUBLICA, URL_MCP_PUBLICA
 name: ci y deploy
@@ -76,6 +77,7 @@ jobs:
           COOLIFY_TOKEN: ${{ secrets.COOLIFY_TOKEN }}
           COOLIFY_APP_WEB_UUID: ${{ secrets.COOLIFY_APP_WEB_UUID }}
           COOLIFY_APP_MCP_UUID: ${{ secrets.COOLIFY_APP_MCP_UUID }}
+          COOLIFY_APP_DOCS_UUID: ${{ secrets.COOLIFY_APP_DOCS_UUID }}
           URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
           URL_MCP_PUBLICA: ${{ vars.URL_MCP_PUBLICA }}
         run: scripts/deploy.sh

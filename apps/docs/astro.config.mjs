@@ -8,6 +8,11 @@ export default defineConfig({
   integrations: [
     starlight({
       title: 'Maya · Reto Banorte',
+      logo: {
+        src: './src/assets/banorte-logo.svg',
+        alt: 'Banorte',
+        replacesTitle: false,
+      },
       description:
         'Documentación técnica y presentación de Maya — Interfaces financieras generadas por IA en tiempo real (Hack Monterrey 2026 · Reto Banorte).',
       defaultLocale: 'root',
@@ -21,6 +26,7 @@ export default defineConfig({
       components: {
         ThemeProvider: './src/components/ThemeProvider.astro',
         ThemeSelect: './src/components/ThemeSelect.astro',
+        Hero: './src/components/Hero.astro',
       },
       head: [
         {

@@ -35,7 +35,7 @@ y las dos anteriores. No toca datos ni volúmenes.
 | Dominio | **`ghekkinxmaya.tech`** (desde 2026-09-13 03:10; registros A del apex, `mcp` y `docs` → la IP). Los de `sslip.io` siguen vivos como alias |
 | URL web | `https://ghekkinxmaya.tech` (alias: `https://maya.157.173.204.174.sslip.io`) |
 | URL MCP | `https://mcp.ghekkinxmaya.tech/mcp` (health en `/health`; alias: `https://maya-mcp.157.173.204.174.sslip.io`) |
-| `docs.ghekkinxmaya.tech` | El registro A ya existe, reservado para `apps/docs`; todavía no hay app en Coolify que lo sirva |
+| URL docs | `https://docs.ghekkinxmaya.tech` (`apps/docs`, Astro estático con nginx; desde 2026-09-13 03:30) |
 | Commit desplegado | el último de `main` que haya pasado el workflow |
 | Último deploy | 2026-09-13 08:50 (web + mcp) |
 | Cómo entrar | SSH como `root` al VPS; secretos en `/opt/reto/.env` (fuera del repo) |
@@ -84,17 +84,17 @@ el VPS. Uuids en el mismo archivo: `COOLIFY_PROJECT_UUID`, `COOLIFY_SERVER_UUID`
 curl -s -H "Authorization: Bearer $COOLIFY_TOKEN" $COOLIFY_URL/api/v1/databases/$COOLIFY_DB_UUID | jq .status
 ```
 
-### Las dos aplicaciones
+### Las aplicaciones
 
-| | `maya-web` | `maya-mcp` |
-|---|---|---|
-| uuid Coolify | `pyqpejvneeyxzfvpilj5fcxn` | `a7ld8ya2e0g3ye3pjjlz542f` |
-| Dockerfile | `apps/web/Dockerfile` | `apps/mcp/Dockerfile` |
-| Puerto | 3000 | 3100 |
-| Health | `/api/health` | `/health` |
-| Dominio | `https://ghekkinxmaya.tech`, `https://maya.157.173.204.174.sslip.io` | `https://mcp.ghekkinxmaya.tech`, `https://maya-mcp.157.173.204.174.sslip.io` |
+| | `maya-web` | `maya-mcp` | `maya-docs` |
+|---|---|---|---|
+| uuid Coolify | `pyqpejvneeyxzfvpilj5fcxn` | `a7ld8ya2e0g3ye3pjjlz542f` | `ngtlggmf3psu1gjtuk54ycd7` |
+| Dockerfile | `apps/web/Dockerfile` | `apps/mcp/Dockerfile` | `apps/docs/Dockerfile` |
+| Puerto | 3000 | 3100 | 80 (nginx) |
+| Health | `/api/health` | `/health` | `/salud` (no reporta commit) |
+| Dominio | `https://ghekkinxmaya.tech`, `https://maya.157.173.204.174.sslip.io` | `https://mcp.ghekkinxmaya.tech`, `https://maya-mcp.157.173.204.174.sslip.io` | `https://docs.ghekkinxmaya.tech` |
 
-Las dos se construyen **desde la raíz del repo** (`base_directory: /`): el Dockerfile
+Las tres se construyen **desde la raíz del repo** (`base_directory: /`): el Dockerfile
 copia los manifiestos del workspace primero y el código después, para que la capa de
 `pnpm install` se reuse entre deploys.
 
@@ -273,6 +273,7 @@ Secretos y variables del repo (`gh secret list`, `gh variable list`):
 | `COOLIFY_TOKEN` | secret | Token **limitado a `deploy` + `read`**, no root (ver abajo) |
 | `COOLIFY_APP_WEB_UUID`, `COOLIFY_APP_MCP_UUID` | secret | Los uuid de arriba |
 | `URL_WEB_PUBLICA`, `URL_MCP_PUBLICA` | variable | Para los healthchecks y el smoke test |
+| `COOLIFY_APP_DOCS_UUID` | secret | Opcional: con él, `deploy.sh` también redespliega docs |
 
 **El token de Actions no es el token root.** Se creó uno aparte,
 `maya-github-actions` (id 14), con abilities `["deploy","read"]`: puede disparar
@@ -349,14 +350,51 @@ Mientras no había registro `mcp`, Traefik servía su certificado por defecto
 deploy, que recreó el contenedor; si no hay deploy en camino,
 `POST /api/v1/applications/<uuid>/restart` hace lo mismo.
 
-Para publicar `apps/docs` en `docs.ghekkinxmaya.tech`: crear la app en Coolify dentro de
-`reto-banorte`, darle ese dominio y comprobar el certificado igual que arriba.
+### El sitio de docs (2026-09-13 03:30)
+
+`apps/docs` es un sitio **estático** (Astro + Starlight): no necesita Node en
+producción. `apps/docs/Dockerfile` construye con `node:22-alpine` copiando solo los
+manifiestos y `apps/docs`, y la imagen final es `nginx:1.27-alpine` con `dist/`
+(77 MB, contra ~1 GB de la web). Un push que no toca `apps/docs` reusa todas las capas,
+así que no le suma disco al VPS (issue #15). `apps/docs/nginx.conf` sirve `ruta/index.html`,
+la página 404 de Starlight, cache larga para `/_astro/` y `/salud` para el healthcheck.
+
+Dos trampas que salieron al probar la imagen antes de subirla:
+
+- En `nginx:alpine`, `localhost` resuelve a `::1` y nginx con `listen 80` solo escucha
+  IPv4: el healthcheck con `wget http://localhost/…` falla para siempre y el contenedor
+  se queda en `starting`. Por eso el `HEALTHCHECK` usa `127.0.0.1` y el conf agrega
+  `listen [::]:80` (el healthcheck de Coolify sí pregunta por `localhost`).
+- `/ruta` sin barra redirige a `/ruta/`. Detrás de Traefik, nginx no sabe que afuera es
+  https y mandaba un `Location` absoluto con `http://`: `absolute_redirect off`.
+
+La app se creó por API (`POST /api/v1/applications/private-deploy-key`, con la misma
+deploy key, `destination_uuid` y ajustes de build que web y mcp). `site` en
+`astro.config.mjs` apunta al dominio real, para el `canonical` y el sitemap.
+
+**Se redespliega sola**: `scripts/deploy.sh` la dispara si existe
+`COOLIFY_APP_DOCS_UUID` (secreto del repo y `/opt/reto/.env`). No está en la ruta
+crítica: si Coolify no acepta su deploy, el script avisa y sigue con web y mcp, y no
+espera su `/salud` porque no reporta commit. Si su build falla, sigue sirviendo la
+versión anterior; se ve en el panel.
+
+Verificado desde fuera:
+
+```
+https://docs.ghekkinxmaya.tech/                     → 200, canonical al dominio
+https://docs.ghekkinxmaya.tech/presentacion/pitch/  → 200 (y las 32 páginas del build)
+https://docs.ghekkinxmaya.tech/pagefind/pagefind.js → 200 (búsqueda)
+https://docs.ghekkinxmaya.tech/no-existe            → 404 con la página de Starlight
+https://docs.ghekkinxmaya.tech/guia/despliegue      → 301 a /guia/despliegue/ (relativo)
+http://docs.ghekkinxmaya.tech/                      → 302 a https
+certificado                                          → Let's Encrypt, CN docs.ghekkinxmaya.tech, vence 12-dic
+```
 
 ### Pendiente
 
 - [x] Dominio `.tech` para la web: `https://ghekkinxmaya.tech` (arriba).
 - [x] MCP en `https://mcp.ghekkinxmaya.tech` (arriba).
-- [ ] Publicar `apps/docs` en `docs.ghekkinxmaya.tech` (el registro A ya existe).
+- [x] `apps/docs` publicado en `https://docs.ghekkinxmaya.tech` (arriba).
 - [ ] Llave de Gemini en las variables de `maya-web`
       (`GOOGLE_GENERATIVE_AI_API_KEY`): hoy está vacía y el agente publicado responde
       con la pantalla de ejemplo. Se pone en Coolify (app → Environment Variables);
