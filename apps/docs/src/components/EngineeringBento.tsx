@@ -3,7 +3,7 @@ import { ShieldCheck, Cpu, Database, LayoutGrid, CheckCircle2, ArrowRight } from
 
 export default function EngineeringBento() {
   return (
-    <div style={{ margin: '2.5rem 0' }}>
+    <div className="not-content" style={{ margin: '2.5rem 0' }}>
       {/* Título de la sección con ritmo tipográfico */}
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#171717', letterSpacing: '-0.025em', margin: 0 }}>
@@ -36,7 +36,6 @@ export default function EngineeringBento() {
             justifyContent: 'space-between',
             alignItems: 'center',
             gap: '1.5rem',
-            borderLeft: '4px solid #EC0029',
           }}
         >
           <div style={{ flex: '1 1 360px', maxWidth: '640px' }}>
@@ -186,7 +185,7 @@ export default function EngineeringBento() {
           </div>
         </div>
 
-        {/* Celda 4: Cero Alucinación Numérica (Full Width Contrast Tile) */}
+        {/* Celda 4: Integridad Numérica (Full Width Contrast Tile) */}
         <div
           style={{
             gridColumn: '1 / -1',
@@ -219,10 +218,10 @@ export default function EngineeringBento() {
             </div>
             <div>
               <div style={{ fontSize: '0.92rem', fontWeight: 800, color: '#171717' }}>
-                Cero Alucinación Numérica: Principio de Arquitectura No Negociable
+                Determinismo e Integridad Numérica: Principio de Arquitectura No Negociable
               </div>
               <div style={{ fontSize: '0.82rem', color: '#64748b' }}>
-                El LLM nunca sintetiza saldos, tasas de interés ni plazos en texto plano. Todos los valores numéricos provienen del Data Model poblado por PostgreSQL (22 tablas).
+                El LLM nunca sintetiza saldos, tasas de interés ni plazos de forma arbitraria. Todos los valores numéricos provienen del Data Model poblado por PostgreSQL (22 tablas).
               </div>
             </div>
           </div>

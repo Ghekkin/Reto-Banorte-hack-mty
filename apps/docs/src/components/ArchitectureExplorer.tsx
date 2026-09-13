@@ -104,7 +104,7 @@ const ARCHITECTURE_NODES: NodeDetail[] = [
       'Tarjetas de crédito, amortización, sliders de simulación y gráficos Recharts.',
       'Esquemas Zod declarativos para props y acciones permitidas.',
       'Generación automática de catalogo.json servido en /catalogo/v1.json.',
-      'Restricción absoluta de alucinación visual: el LLM solo puede componer componentes registrados.',
+      'Restricción estricta de componentes: el LLM solo puede instanciar componentes registrados.',
     ],
     contracts: 'Zod schemas por componente con validación de props en tiempo de render',
     keyHighlight:
@@ -134,6 +134,7 @@ export default function ArchitectureExplorer() {
 
   return (
     <div
+      className="not-content"
       style={{
         border: '1px solid #e2e8f0',
         borderRadius: '1rem',
@@ -178,12 +179,12 @@ export default function ArchitectureExplorer() {
                 padding: '0.75rem 0.9rem',
                 borderRadius: '0.75rem',
                 textAlign: 'left',
-                border: isSelected ? '2px solid #EC0029' : '1px solid #e2e8f0',
+                border: isSelected ? '1px solid #ec0029' : '1px solid #e2e8f0',
                 backgroundColor: isSelected ? '#ffffff' : '#f8f9fa',
                 color: isSelected ? '#171717' : '#475569',
                 cursor: 'pointer',
                 transition: 'all 0.15s ease',
-                boxShadow: isSelected ? '0 2px 8px rgba(236, 0, 41, 0.12)' : 'none',
+                boxShadow: isSelected ? '0 0 0 1px #ec0029, 0 2px 8px rgba(236, 0, 41, 0.08)' : 'none',
               }}
             >
               <div
@@ -299,7 +300,6 @@ export default function ArchitectureExplorer() {
           style={{
             backgroundColor: '#f8f9fa',
             border: '1px solid #e2e8f0',
-            borderLeft: '4px solid #EC0029',
             color: '#1e293b',
             borderRadius: '0.6rem',
             padding: '0.75rem 1rem',
@@ -320,9 +320,9 @@ export default function ArchitectureExplorer() {
         <div
           style={{
             backgroundColor: '#fff5f6',
-            borderLeft: '3px solid #EC0029',
-            padding: '0.6rem 0.9rem',
-            borderRadius: '0 0.5rem 0.5rem 0',
+            border: '1px solid #fecdd3',
+            padding: '0.75rem 1rem',
+            borderRadius: '0.6rem',
             fontSize: '0.85rem',
             color: '#960014',
             display: 'flex',

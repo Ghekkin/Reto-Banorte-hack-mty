@@ -149,6 +149,7 @@ export default function ComponentCatalogExplorer() {
 
   return (
     <div
+      className="not-content"
       style={{
         border: '1px solid #e2e8f0',
         borderRadius: '1rem',

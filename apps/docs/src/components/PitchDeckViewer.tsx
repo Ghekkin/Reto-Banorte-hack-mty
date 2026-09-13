@@ -34,9 +34,9 @@ export default function PitchDeckViewer() {
           <div
             style={{
               backgroundColor: '#fff5f6',
-              borderLeft: '4px solid #EC0029',
+              border: '1px solid #fecdd3',
               padding: '1.25rem',
-              borderRadius: '0 0.75rem 0.75rem 0',
+              borderRadius: '0.75rem',
             }}
           >
             <div style={{ fontSize: '1.2rem', fontWeight: 800, color: '#960014', marginBottom: '0.5rem' }}>
@@ -51,7 +51,7 @@ export default function PitchDeckViewer() {
               <div style={{ fontWeight: 700, color: '#dc2626', marginBottom: '0.25rem' }}>❌ El Paradigma Actual</div>
               <div style={{ fontSize: '0.85rem', color: '#666' }}>Chatbot tradicional de texto: respuestas planas, navegación rota y cero resolución visual inmediata.</div>
             </div>
-            <div style={{ backgroundColor: '#ffffff', border: '2px solid #EC0029', borderRadius: '0.75rem', padding: '1rem', color: '#171717' }}>
+            <div style={{ backgroundColor: '#ffffff', border: '1px solid #fecdd3', borderRadius: '0.75rem', padding: '1rem', color: '#171717', boxShadow: '0 2px 8px rgba(236, 0, 41, 0.05)' }}>
               <div style={{ fontWeight: 700, color: '#EC0029', marginBottom: '0.25rem' }}>✨ Nuestra Tesis</div>
               <div style={{ fontSize: '0.85rem', color: '#333' }}>La IA no contesta: <strong>arma la pantalla</strong> que resuelve el problema en el instante en que preguntas.</div>
             </div>
@@ -129,7 +129,7 @@ export default function PitchDeckViewer() {
       subtitle: 'Ana hace exactamente la misma pregunta: resultado 100% distinto',
       content: (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          <div style={{ backgroundColor: '#ffffff', border: '2px solid #EC0029', borderRadius: '0.75rem', padding: '1.25rem', color: '#171717' }}>
+          <div style={{ backgroundColor: '#ffffff', border: '1px solid #fecdd3', borderRadius: '0.75rem', padding: '1.25rem', color: '#171717' }}>
             <div style={{ fontWeight: 700, color: '#EC0029', marginBottom: '0.4rem' }}>
               Misma frase: "Quiero pagar menos intereses de mi tarjeta"
             </div>
@@ -157,7 +157,7 @@ export default function PitchDeckViewer() {
       number: 5,
       timeRange: '3:40 – 4:30',
       title: 'Arquitectura e Ingeniería Comprobable',
-      subtitle: 'Sin trucos, sin mocks en memoria, sin alucinaciones de UI',
+      subtitle: 'Sin trucos, sin mocks en memoria, interfaz 100% tipada y verificada',
       content: (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
           <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1rem', color: '#171717' }}>
@@ -191,7 +191,7 @@ export default function PitchDeckViewer() {
       title: 'Cierre: El Futuro de la Banca Generativa',
       subtitle: 'Maya ya hacía diecisiete operaciones. Nosotros le dimos dónde mostrarlas.',
       content: (
-        <div style={{ textAlign: 'center', padding: '1.5rem', backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '2px solid #EC0029', color: '#171717' }}>
+        <div style={{ textAlign: 'center', padding: '1.5rem', backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid #fecdd3', color: '#171717', boxShadow: '0 4px 14px rgba(236, 0, 41, 0.06)' }}>
           <div style={{ fontSize: '1.6rem', fontWeight: 900, color: '#EC0029', marginBottom: '0.75rem' }}>
             Maya · Interfaces en Tiempo Real
           </div>
@@ -212,6 +212,7 @@ export default function PitchDeckViewer() {
 
   return (
     <div
+      className="not-content"
       style={{
         border: '1px solid #e2e8f0',
         borderRadius: '1rem',

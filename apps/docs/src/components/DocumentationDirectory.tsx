@@ -44,7 +44,7 @@ const SECTIONS: DirectoryCardProps[] = [
   },
   {
     title: 'Catálogo de Componentes A2UI',
-    description: '21 widgets interactivos financieros con tokens Banorte, esquemas Zod, eventos táctiles y garantías de renderizado sin alucinaciones.',
+    description: '21 widgets interactivos financieros con tokens Banorte, esquemas Zod, eventos táctiles y garantías de renderizado determinista.',
     href: '/catalogo/resumen/',
     badge: 'UI / UX',
     targetAudience: 'Para Diseñadores & Frontend',
@@ -55,7 +55,7 @@ const SECTIONS: DirectoryCardProps[] = [
 
 export default function DocumentationDirectory() {
   return (
-    <div style={{ margin: '3rem 0 1rem' }}>
+    <div className="not-content" style={{ margin: '3rem 0 1rem' }}>
       <div style={{ marginBottom: '1.5rem' }}>
         <h2 style={{ fontSize: '1.75rem', fontWeight: 800, color: '#171717', letterSpacing: '-0.025em', margin: 0 }}>
           Exploración de la Documentación

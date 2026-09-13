@@ -51,7 +51,7 @@ const RUBRIC_ITEMS: RubricCriterion[] = [
     name: 'Calidad de la solución de IA',
     weight: 15,
     evaluation:
-      'El agente interpreta la intención financiera, invoca las tools MCP requeridas y genera A2UI v0.9.1 restringido estrictamente a los 21 componentes de nuestro catálogo, sin alucinar datos numéricos.',
+      'El agente interpreta la intención financiera, invoca las tools MCP requeridas y genera A2UI v0.9.1 restringido estrictamente a los 21 componentes de nuestro catálogo, garantizando absoluta precisión en los datos numéricos.',
     evidence: [
       'Arquitectura con Vercel AI SDK + Gemini 3.8 Flash (y fallback transparente a Claude Sonnet 3.5).',
       'Orquestación de tools determinista: el agente nunca inventa tasas, saldos o mensualidades.',
@@ -133,6 +133,7 @@ export default function RubricsChecker() {
 
   return (
     <div
+      className="not-content"
       style={{
         border: '1px solid #e2e8f0',
         borderRadius: '1rem',
