@@ -177,8 +177,11 @@ la pantalla se leía como "un chat con tarjetas pegadas" en lugar de un dashboar
 
 Ahora es **`Conclusion`** (`packages/catalogo/src/conclusion/`), una tarjeta del catálogo
 como las demás: titular en `text-2xl`, detalle, hasta 3 cifras de apoyo y las sugerencias
-como botones. La evidencia (modelo, tools, tiempo) bajó a una línea de `text-xs` **debajo**
-del dashboard: es información para el jurado, no para la persona.
+como botones. La evidencia (modelo, tools, tiempo) bajó primero a una línea de `text-xs`
+**debajo** del dashboard, y el 2026-09-13 **se quitó de la pantalla**: decía
+`gemini-3.1-flash-lite · 6 tools del MCP · 36.7 s · hace 21 min`, que es información para el
+equipo y el jurado, no para la persona. Esos datos siguen guardados con la portada
+(`banorte.pantallas_inicio`) y salen en `GET /api/inicio`.
 
 **La pinta el modelo; el host solo si falta.** Los dos encargos le piden al modelo que la primera
 tarjeta sea `Conclusion`, y la suya gana porque es la rica (titular, detalle, hasta 3 cifras,
@@ -295,7 +298,8 @@ pnpm probar-inicio https://maya.157.173.204.174.sslip.io   # contra lo publicado
   rearma; `forzar`; dos peticiones a la vez comparten una generación; si el modelo falla la
   anterior se queda; inactivo no toca nada.
 - `inicio-pinta.spec.ts`: `InicioDeMaya` renderiza el `.jsonl` de ejemplo sin componentes
-  desconocidos, con el saludo, la evidencia y las sugerencias.
+  desconocidos, con el saludo y las sugerencias, y **sin texto técnico** (ni modelo, ni
+  tools, ni tiempos).
 
 **En producción (2026-09-12 16:25, commit `5b9fbae`)**: el contenedor arrancó con
 `{"inicio":"reloj","cadaMinutos":10,"modelo":"gemini-3.5-flash-lite"}`, la primera revisión

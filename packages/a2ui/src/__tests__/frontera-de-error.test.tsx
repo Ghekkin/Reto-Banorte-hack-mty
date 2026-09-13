@@ -55,7 +55,9 @@ describe("un componente que truena al pintar", () => {
       const html = contenedor.innerHTML;
       expect(html).toContain("estoy bien");
       expect(html).toContain("Esta tarjeta no se pudo mostrar");
-      expect(html).toContain("prop con la forma equivocada");
+      // El motivo va a la consola, no a la pantalla de la persona.
+      expect(html).not.toContain("prop con la forma equivocada");
+      expect(html).not.toContain("Roto");
     } finally {
       await act(async () => raiz.unmount());
       console.error = silencio;

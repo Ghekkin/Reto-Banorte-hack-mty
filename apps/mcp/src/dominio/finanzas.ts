@@ -50,14 +50,50 @@ export type FilaAmortizacion = {
  * ajusta para que el saldo final sea exactamente 0.
  */
 export function tablaAmortizacion(montoCentavos: number, tasaAnual: number, plazoMeses: number): FilaAmortizacion[] {
+  return amortizarConCuota(montoCentavos, tasaAnual, mensualidad(montoCentavos, tasaAnual, plazoMeses), plazoMeses);
+}
+
+/** Tope de seguridad de `simularConCuota`: 100 anios. Ningun credito de la demo se acerca. */
+const TOPE_MESES_SIMULACION = 1200;
+
+/**
+ * La misma tabla, pero con la CUOTA fija como dato y sin plazo: se paga `cuotaCentavos`
+ * cada mes hasta que el saldo llega a cero, y el ultimo pago es solo lo que falta.
+ * Es la tabla de un credito que ya va a medias (se parte del saldo insoluto) y la de un
+ * abono a capital (la cuota es la del contrato mas el abono).
+ *
+ * Contra los datos: con `saldo_insoluto_centavos` y `mensualidad_centavos` reproduce al
+ * centavo las filas pendientes de `banorte.amortizaciones` de los cuatro creditos a plazo
+ * (`abonos.spec.ts`). Detalle en `docs/algoritmos/abono-a-capital.md`.
+ *
+ * `null` si la cuota no cubre ni el interes con IVA del primer mes: la deuda no bajaria nunca.
+ */
+export function simularConCuota(saldoCentavos: number, tasaAnual: number, cuotaCentavos: number): FilaAmortizacion[] | null {
+  if (saldoCentavos <= 0) return [];
+  const interes = Math.round(saldoCentavos * (tasaAnual / 12));
+  if (cuotaCentavos <= interes + Math.round(interes * IVA)) return null;
+  // Se deja correr un mes de mas: si llega a ese, fue el cierre forzado y no un pago real.
+  const filas = amortizarConCuota(saldoCentavos, tasaAnual, cuotaCentavos, TOPE_MESES_SIMULACION + 1);
+  return filas.length > TOPE_MESES_SIMULACION ? null : filas;
+}
+
+/**
+ * El ciclo que comparten las dos tablas. `cerrarEn` fuerza el cierre en ese pago (el
+ * plazo de `tablaAmortizacion`); antes de eso, cierra en cuanto el capital alcanza al saldo.
+ */
+function amortizarConCuota(
+  montoCentavos: number,
+  tasaAnual: number,
+  cuota: number,
+  cerrarEn: number,
+): FilaAmortizacion[] {
   const tasaMensualSinIva = tasaAnual / 12;
-  const cuota = mensualidad(montoCentavos, tasaAnual, plazoMeses);
 
   const filas: FilaAmortizacion[] = [];
   let saldo = montoCentavos;
 
-  for (let n = 1; n <= plazoMeses; n++) {
-    const esUltimo = n === plazoMeses;
+  for (let n = 1; n <= cerrarEn; n++) {
+    const esUltimo = n === cerrarEn;
     const interes = Math.round(saldo * tasaMensualSinIva);
     const ivaInteres = Math.round(interes * IVA);
 

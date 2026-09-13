@@ -137,11 +137,36 @@ Quiero pagar menos intereses de mi tarjeta
 > guion decía "no tiene deuda revolvente, así que el simulador", y con un crédito al 41 %
 > de CAT esa respuesta era peor consejo que la que Maya da ahora. La pantalla compuesta es
 > la honesta, y es la que sale de forma consistente (3 de 3 corridas con el modelo real).
-> La espera es más larga que la de Beto porque son dos tarjetas con datos; la tira
-> LLM · MCP · A2UI la cubre.
+> La espera es más larga que la de Beto porque son dos tarjetas con datos; el renglón
+> "Consultando tus datos… / Armando tu pantalla…" la cubre. (La tira LLM · MCP · A2UI ya
+> no está en la UI desde el 2026-09-13: si el jurado pregunta por las piezas, se enseñan
+> en la pestaña de red, en la respuesta de `/api/agente`.)
+
+**Prompt 4** (Ana), con esa pantalla enfrente:
+
+```
+¿Y si pago $6,000 al mes?
+```
+
+| Momento | Qué se ve |
+|---|---|
+| ~2–3 s | **No aparece otra pantalla.** La MISMA tarjeta del crédito cambia en su lugar: la mensualidad pasa a **$6,000.00** («$4,570.95 del contrato + $1,429.05 a capital»), los números que se movieron se iluminan, y debajo: **«Terminas en 11 meses (antes 15)»** y **«Pagas $3,470.21 menos de intereses»**. Aparece el botón **Programar este pago** |
+
+Se toca **Programar este pago**.
+
+| Momento | Qué se ve |
+|---|---|
+| ~3 s | La misma tarjeta pasa a **«Abono programado»**, sin botón, con los 11 meses ya aplicados. Sin pantalla de confirmación: la tarjeta que cambió es la confirmación |
+
+> "No le pedí otra pantalla: le pedí otro número. **La interfaz que ya estaba se ajustó**, y
+> el cambio se volvió real con un toque. Los $3,470 los calculó el banco, con la misma
+> fórmula de su tabla de pagos; el modelo solo decidió qué tarjeta tocar."
+
+> Estado: **pendiente de ensayar con el modelo real** (2026-09-13 03:05). Suma ~20 s al
+> bloque de Ana; si el pitch no da, se corta el apartado de abajo y se queda este, que es el
+> que muestra la interfaz ajustándose. `docs/como-funciona/ajustes-en-vivo.md`.
 
 Se arrastra el slider del **simulador** (la segunda tarjeta) y se toca **Crear apartado**.
-La tarjeta del crédito no tiene botón: todavía no hay tool que simule un abono a capital.
 
 | Momento | Qué se ve |
 |---|---|
@@ -163,6 +188,7 @@ La tarjeta del crédito no tiene botón: todavía no hay tool que simule un abon
 1. `Quiero pagar menos intereses de mi tarjeta` (Beto)
 2. `¿Y en qué se me está yendo el dinero?` (Beto)
 3. `Quiero pagar menos intereses de mi tarjeta` (Ana)
+4. `¿Y si pago $6,000 al mes?` (Ana) → tocar **Programar este pago**
 
 ## Criterios de aceptación
 
@@ -174,6 +200,8 @@ Cada paso cumple, o es issue `alta`:
 - [ ] Tras aplicar el plan, `ResumenTarjeta` **vuelve cambiada** y el atraso desaparece.
 - [ ] El prompt 2 refleja el plan aplicado en el prompt 1.
 - [ ] El prompt 3 con Ana produce un componente **distinto** al del prompt 1 con Beto.
+- [ ] El prompt 4 **no apila otra pantalla**: la tarjeta del crédito cambia en su lugar a 11 meses y $3,470.21 menos de intereses.
+- [ ] «Programar este pago» deja la misma tarjeta en «Abono programado», sin `Confirmacion` nueva.
 - [ ] Ana crea el apartado y vuelve `MetaActiva`.
 - [ ] Cero errores en consola en toda la corrida.
 - [ ] Un prompt fuera de guion no rompe nada.

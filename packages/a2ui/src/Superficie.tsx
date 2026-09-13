@@ -4,7 +4,7 @@ import { Component, Fragment, createElement, useEffect, useRef, type ErrorInfo, 
 import { arbol, type Nodo } from "./arbol";
 import { resolver } from "./bindings";
 import { emitirAccion } from "./acciones";
-import { nombres, obtener } from "./registro";
+import { accionesDe, nombres, obtener } from "./registro";
 import { propsDe, type Accion, type EstadoSuperficie, type Tema } from "./tipos";
 
 /**
@@ -153,7 +153,13 @@ export function Superficie({
     const hijos = nodo.hijos.map((h) => <Fragment key={h.clave}>{pintar(h)}</Fragment>);
 
     const manejador = componente.action
-      ? (contextoExtra?: Record<string, unknown>) => {
+      ? (contextoExtra?: Record<string, unknown>, nombre?: string) => {
+          // Una accion distinta a la declarada solo si el catalogo la declara para este
+          // componente (`accionesDe`, registro.ts): el componente no se inventa acciones.
+          if (nombre !== undefined && nombre !== componente.action?.event?.name && !accionesDe(componente.component).includes(nombre)) {
+            console.warn(`[a2ui] ${componente.component} intento disparar "${nombre}", que su catalogo no declara`);
+            return;
+          }
           const accion = emitirAccion({
             componente,
             surfaceId: superficie!.id,
@@ -161,6 +167,7 @@ export function Superficie({
             item,
             conversacionId,
             contextoExtra,
+            nombre,
           });
           if (accion) alAccionar(accion);
         }
@@ -244,11 +251,11 @@ class FronteraDeError extends Component<{ nombre: string; id: string; children: 
   override render(): ReactNode {
     if (this.state.error) {
       return (
+        // El nombre del componente y el mensaje del error ya salieron por la consola en
+        // `componentDidCatch`: en la pantalla de la persona no van.
         <div className="rounded-2xl border border-oscuro p-4 text-sm">
           <p className="font-medium">Esta tarjeta no se pudo mostrar.</p>
-          <p className="text-muted-foreground">
-            <code>{this.props.nombre}</code>: {this.state.error.message}
-          </p>
+          <p className="text-muted-foreground">Lo demás de la pantalla sigue funcionando.</p>
         </div>
       );
     }

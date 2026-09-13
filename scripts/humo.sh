@@ -92,6 +92,10 @@ PLANES=$(tool simular_reestructura '{"usuarioId":"usr_beto"}')
 comprobar "plazo recomendado" "18" "$(echo "$PLANES" | jq -r .plazoRecomendado)"
 echo "    ahorro a 18 meses: $(echo "$PLANES" | jq -r '.opciones[] | select(.plazoMeses==18) | .ahorroVsMinimoCentavos') centavos"
 
+# Abono a capital (solo la lectura: la accion necesita la migracion 0005 en la base).
+PAGO_ANA=$(tool simular_pago_credito '{"usuarioId":"usr_ana","creditoId":"cred_ana_personal","mensualidadCentavos":600000}')
+comprobar "Ana pagando \$6,000: pagos que faltan" "11" "$(echo "$PAGO_ANA" | jq -r .simulado.plazoRestanteMeses)"
+
 GASTO=$(tool comparar_periodos '{"usuarioId":"usr_beto","periodo":"2026-08"}')
 comprobar "gasto de agosto" "3334950" "$(echo "$GASTO" | jq -r .gastoCentavos)"
 

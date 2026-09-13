@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores)
+verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores) · 2026-09-13 03:05 (abono a capital)
 estado: construido
 ---
 
@@ -19,7 +19,7 @@ tarjeta ya no aparece al 97 % del límite: aparece en cero, con una mensualidad 
 pantalla que el agente construye después de la acción es otra porque **los datos son
 otros**, no porque se lo hayamos dicho.
 
-Las doce tools cubren el viaje completo de la demo: primero saber con quién hablas,
+Las tools cubren el viaje completo de la demo: primero saber con quién hablas,
 luego salir de la deuda, luego entender el gasto, luego empezar a ahorrar. Tres de ellas
 no miran solo la tarjeta: una le pone una calificación de 0 a 100 a cómo va la persona,
 otra suma **toda** su deuda y no nada más la del plástico, y una tercera junta todo eso en
@@ -39,6 +39,7 @@ nada.
 | Consultas compartidas | `apps/mcp/src/dominio/consultas.ts` |
 | Diagnóstico de hábitos | `apps/mcp/src/dominio/salud.ts` |
 | Deuda a plazo fijo | `apps/mcp/src/dominio/creditos.ts` |
+| Abono a capital (simulación con cuota, pedido, hitos) | `apps/mcp/src/dominio/abonos.ts` |
 | Matemática de crédito | `apps/mcp/src/dominio/finanzas.ts` |
 | El tiempo del dominio | `apps/mcp/src/dominio/tiempo.ts` |
 | Datos | PostgreSQL, esquema `banorte`: 22 tablas + `acciones_aplicadas` (lo mutable) |
@@ -58,7 +59,9 @@ nada.
 | `crear_apartado` | **acción** | la meta creada con su fecha objetivo | solo cuando llega la acción A2UI del mismo nombre |
 | `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
 | `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito, `serie` para graficar y `ahorroLiquidoCentavos` (nómina + ahorro de hoy) | "¿cómo voy?", o antes de proponer un plan |
-| `consultar_creditos` | lectura | toda la deuda (créditos + tarjeta), mensualidad total, ratio, el más caro por CAT | "¿cuánto debo en total?", y antes de comprometer capacidad de pago |
+| `consultar_creditos` | lectura | toda la deuda (créditos + tarjeta), mensualidad total, ratio, el más caro por CAT; con abono programado, la mensualidad, los pagos restantes y la tabla ya son los nuevos | "¿cuánto debo en total?", y antes de comprometer capacidad de pago |
+| `simular_pago_credito` | lectura | un crédito a plazo pagando otra mensualidad o en otro plazo: `actual` vs. `simulado` (con los nombres de `ProyeccionPagoCredito`), ahorro, meses menos, `posible`/`motivo` y `aviso` de capacidad | «¿y si pago $6,000 al mes?», «quiero liquidarlo en 12 meses»: ajusta la tarjeta en su lugar |
+| `programar_abono_capital` | **acción** | el abono guardado, `antes`/`despues`, ahorro y mensaje | solo cuando llega la acción A2UI del mismo nombre (normalmente vía `ejecutar_decision`) |
 | `detectar_fugas` | lectura | suscripciones y cargos recurrentes que se escapan, con lo que costarían al año | "¿en qué se me va el dinero sin darme cuenta?" |
 | `cancelar_suscripcion` | **acción** | la suscripción cancelada y lo que se deja de pagar | solo cuando llega la acción A2UI del mismo nombre |
 | `crear_tope_gasto` | **acción** | el tope creado para una categoría | solo cuando llega la acción A2UI del mismo nombre |
@@ -90,6 +93,15 @@ calculaban dentro de la acción. Por eso:
 Pruebas: `apps/mcp/src/__tests__/inversiones.spec.ts` (`simular_rebalanceo` da las mismas órdenes
 que el cálculo de la acción y no toca el estado) y `salud.spec.ts` (el ahorro líquido de Ana y de
 Beto). Ver `docs/como-funciona/widgets-vivos.md`.
+
+`simular_pago_credito` y `programar_abono_capital` son el primer caso de **tarjetas que se ajustan
+desde el chat**: la persona pregunta «¿y si pago $6,000?» sobre la `ProyeccionPagoCredito` que ya
+ve, el agente simula y parchea la tarjeta, y «Programar este pago» lo guarda como abono a capital
+mensual. Pagar menos que el contrato o tardar más de lo que falta no es posible por esta vía (sería
+reestructurar) y la tool lo dice en `motivo`. Algoritmo y cifras en
+[`docs/algoritmos/abono-a-capital.md`](../algoritmos/abono-a-capital.md). La acción necesita la
+migración `db/migraciones/0005-accion-programar-abono-capital.sql` en la base: sin ella el `CHECK` de
+`acciones_aplicadas` rechaza el insert.
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
@@ -177,6 +189,9 @@ del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `ho
 - Un rango `desde > hasta` en `consultar_movimientos`.
 - Una `cuentaOrigenId` de otra persona en `crear_apartado`.
 - Un segundo plan sobre la misma tarjeta, con cualquier llave.
+- En `simular_pago_credito`: mandar las dos (o ninguna) de `mensualidadCentavos` y `plazoMeses`, un
+  crédito ajeno, o la tarjeta vista como crédito (`cred_beto_tdc`). `programar_abono_capital` además
+  rechaza una mensualidad menor que la del contrato, con el mismo `motivo` de la simulación.
 - `comparar_periodos` sin `periodo` usa el **último mes cerrado** (`ultimoMesCerrado`),
   nunca el mes en curso a medias: contra meses completos, todo parecería bajar.
 
@@ -214,6 +229,8 @@ la pantalla y los datos tienen que decir lo mismo.
 
 - `docs/algoritmos/amortizacion.md` — mensualidad, CAT, escenario de pago mínimo.
 - `docs/algoritmos/oferta-de-reestructura.md` — qué tasa, qué plazo se recomienda.
+- `docs/algoritmos/abono-a-capital.md` — pagar más al mes un crédito a plazo: simulación, plazo
+  objetivo, qué no es posible y el aviso de capacidad.
 - `docs/algoritmos/categoria-atipica.md` — qué cuenta como gasto y cuál se resalta.
 - `docs/algoritmos/proyeccion-de-ahorro.md` — capacidad de ahorro y fecha estimada.
 - `docs/algoritmos/puntaje-de-salud.md` — calificación, tendencia, y cuándo el hábito

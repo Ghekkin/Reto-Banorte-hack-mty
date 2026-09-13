@@ -6,7 +6,7 @@ import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo } from "@/components/maya/lienzo";
 import { ProgresoMaya } from "@/components/maya/progreso-maya";
 import type { AccionEntrante } from "@/lib/agente/tipos";
-import { usarAgente } from "@/lib/agente/usar-agente";
+import { numerarPantallas, usarAgente } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
 import { vozHabilitada } from "@/lib/voz/flag";
 import { usarConversacionVoz, type HerramientasVoz } from "@/lib/voz/usar-conversacion-voz";
@@ -40,6 +40,17 @@ export function ConsolaMaya({
 }) {
   const agente = usarAgente(usuario.id);
   const { enviarTexto, enviarAccion } = agente;
+  const idsDePantalla = useMemo(() => numerarPantallas(agente.hilo), [agente.hilo]);
+
+  // Un ajuste a una pantalla de ARRIBA cambia algo que la persona quiza ya no ve: se trae a la
+  // vista para que el cambio no pase en silencio fuera de la pantalla.
+  const ajustada = agente.pantallaAjustada;
+  useEffect(() => {
+    if (!ajustada) return;
+    document
+      .querySelector(`[data-pantalla="${ajustada.pantalla}"]`)
+      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [ajustada]);
 
   // Una sola vez por intención: evita que cada render vuelva a disparar la pregunta
   const yaEnviada = useRef<string | undefined>(undefined);
@@ -154,12 +165,11 @@ export function ConsolaMaya({
             entrada.tipo === "mensaje" ? (
               <Mensaje key={i} rol={entrada.rol} texto={entrada.texto} />
             ) : (
-              <div key={i} className="flex flex-col gap-2.5 md:gap-3.5">
-                <ProgresoMaya transparencia={entrada.transparencia} ocupado={false} />
+              <div key={i} data-pantalla={idsDePantalla[i]} className="flex flex-col gap-2.5 md:gap-3.5">
                 <Lienzo
                   superficie={entrada.superficie}
                   conversacionId={agente.conversacionId}
-                  alAccionar={agente.enviarAccion}
+                  alAccionar={(accion) => agente.enviarAccion(accion, idsDePantalla[i])}
                   alFallar={agente.reportarFallo}
                 />
               </div>
@@ -167,9 +177,7 @@ export function ConsolaMaya({
           )}
 
           {/* Turno en curso */}
-          {(agente.ocupado || agente.superficieViva) && (
-            <ProgresoMaya transparencia={agente.transparencia} ocupado={agente.ocupado} />
-          )}
+          <ProgresoMaya transparencia={agente.transparencia} ocupado={agente.ocupado} />
 
           {agente.superficieViva && (
             <Lienzo

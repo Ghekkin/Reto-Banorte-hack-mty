@@ -2,7 +2,8 @@ import type { ModelMessage } from "ai";
 import { esAccionDeMutacion, esBinding, propsDe, type Componente } from "@maya/a2ui";
 import { config } from "./config";
 import { systemPrompt } from "./prompt";
-import type { PeticionAgente } from "./tipos";
+import { ACCIONES_EN_SU_LUGAR } from "./cierre";
+import type { PantallaAnterior, PeticionAgente } from "./tipos";
 
 /**
  * De la peticion del cliente a los mensajes del modelo.
@@ -61,7 +62,8 @@ function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string 
   const partes: string[] = ["--- contexto del turno ---", `usuarioId: ${peticion.usuarioId}`];
 
   if (peticion.superficie) {
-    partes.push(`pantalla actual: ${peticion.superficie.componentes.join(", ") || "(vacia)"}`);
+    const id = peticion.superficie.pantalla;
+    partes.push(`pantalla actual${id ? ` (${id})` : ""}: ${peticion.superficie.componentes.join(", ") || "(vacia)"}`);
     // Los ids y los enlaces de cada tarjeta: es lo que hace posible `ajustar_pantalla`.
     // Sin esto el modelo no sabe como se llama nada de lo que esta viendo.
     const arbol = peticion.superficie.arbol;
@@ -69,6 +71,15 @@ function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string 
       partes.push("componentes en pantalla (id · componente · props):", ...arbol.map(resumirComponente));
     }
     partes.push(`data model actual: ${resumirDataModel(peticion.superficie.dataModel ?? {})}`);
+    const anteriores = peticion.superficie.anteriores ?? [];
+    if (anteriores.length) {
+      partes.push(
+        "",
+        "pantallas anteriores (arriba en el hilo, la persona las sigue viendo). Si lo que pide cambia una " +
+          "tarjeta de estas, ajustala AHI con `ajustar_pantalla` y `pantalla: <id>`, no la vuelvas a pintar:",
+        ...anteriores.flatMap(resumirPantallaAnterior),
+      );
+    }
   } else {
     partes.push("pantalla actual: (todavia no hay; es el primer turno)");
   }
@@ -85,15 +96,13 @@ function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string 
       "Vuelve a pintar la misma pantalla sin ese componente o con uno del catalogo que si exista.",
     );  } else if (peticion.accion) {
     const { name, sourceComponentId, context } = peticion.accion;
+    const deArriba = peticion.pantallaDeLaAccion && peticion.pantallaDeLaAccion !== peticion.superficie?.pantalla;
+    const donde = deArriba ? ` en la pantalla anterior ${peticion.pantallaDeLaAccion}` : "";
     partes.push(
       "",
-      `La persona acaba de tocar "${sourceComponentId}" y eso disparo la accion "${name}".`,
+      `La persona acaba de tocar "${sourceComponentId}"${donde} y eso disparo la accion "${name}".`,
       `context de la accion: ${JSON.stringify(context)}`,
-      esAccionDeMutacion(name)
-        ? `"${name}" cambia estado: llama la tool "ejecutar_decision" con accion: "${name}" y los datos de ese context (incluida ` +
-          "`idempotencyKey` tal cual viene), y DESPUES vuelve a pintar la pantalla con el resultado. " +
-          "Cierra con `pintar_pantalla`, no con un ajuste: hay que volver a pintar la tarjeta que cambio."
-        : `"${name}" solo cambia la vista: no llames tools de accion, consulta lo que necesites y vuelve a pintar.`,
+      instruccionDeAccion(name, sourceComponentId, deArriba ? peticion.pantallaDeLaAccion : undefined),
     );
   } else {
     partes.push("", "Contesta el ultimo mensaje de la persona con empatía y enfoque bancario.");
@@ -110,6 +119,42 @@ function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string 
       : "Termina llamando `pintar_pantalla` exactamente una vez.",
   );
   return partes.join("\n");
+}
+
+/**
+ * Que se espera del modelo tras un toque. Tres casos, y el primero es el nuevo: una accion que
+ * cambia estado **y se atiende en su lugar** (`ACCIONES_EN_SU_LUGAR`) cierra con un ajuste sobre
+ * la misma tarjeta; las demas de mutacion repintan; las de vista solo consultan.
+ */
+export function instruccionDeAccion(name: string, sourceComponentId: string, pantallaDeArriba?: string): string {
+  if (ACCIONES_EN_SU_LUGAR.has(name)) {
+    return (
+      `"${name}" cambia estado y se muestra EN SU LUGAR: llama la tool "ejecutar_decision" con accion: "${name}" y ` +
+      "los datos de ese context (incluida `idempotencyKey` tal cual viene). Despues cierra con `ajustar_pantalla` " +
+      `sobre la MISMA tarjeta "${sourceComponentId}"${pantallaDeArriba ? ` con \`pantalla: "${pantallaDeArriba}"\`` : ""}: ` +
+      "sus props con el resultado ya aplicado (lo que pida la descripcion de su componente) y, en esa misma " +
+      "llamada, la `Conclusion` o cualquier otra tarjeta de esa pantalla que siga diciendo el numero de antes. " +
+      "NO pintes otra pantalla ni una `Confirmacion`: la tarjeta que cambia ES la confirmacion. Si la accion " +
+      "fallo, dilo con `responder` y deja la tarjeta como estaba."
+    );
+  }
+  if (esAccionDeMutacion(name)) {
+    return (
+      `"${name}" cambia estado: llama la tool "ejecutar_decision" con accion: "${name}" y los datos de ese context (incluida ` +
+      "`idempotencyKey` tal cual viene), y DESPUES vuelve a pintar la pantalla con el resultado. " +
+      "Cierra con `pintar_pantalla`, no con un ajuste: hay que volver a pintar la tarjeta que cambio."
+    );
+  }
+  return `"${name}" solo cambia la vista: no llames tools de accion, consulta lo que necesites y vuelve a pintar.`;
+}
+
+/** `p1:` y debajo sus componentes y su data model, igual que la pantalla actual. */
+function resumirPantallaAnterior(anterior: PantallaAnterior): string[] {
+  return [
+    `${anterior.pantalla}:`,
+    ...anterior.arbol.map((c) => `  ${resumirComponente(c)}`),
+    `  data model: ${resumirDataModel(anterior.dataModel ?? {})}`,
+  ];
 }
 
 /**

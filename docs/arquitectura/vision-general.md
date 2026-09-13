@@ -97,10 +97,12 @@ cambio real**, no uno.
 
 ### Qué ve el jurado de todo esto
 
-La tira de progreso sobre el lienzo enciende **LLM · MCP · A2UI** conforme llegan las
-líneas del stream, y nombra las herramientas MCP que se llamaron en ese turno. No es una
-animación decorativa: sale del JSONL crudo de la respuesta. Si un badge está encendido,
-esa línea existió.
+En la pantalla, nada técnico: mientras el turno corre, un renglón dice lo que Maya está
+haciendo ("Consultando tus datos", "Armando tu pantalla") según las líneas `estado` del
+stream, y desaparece al terminar. La evidencia de las tres piezas está en el JSONL crudo de
+`/api/agente` (qué tools se llamaron, qué mensajes A2UI salieron, con cuál de las tres
+salidas cerró) y en el log del servidor, una línea por turno. Hasta el 2026-09-13 había una
+tira con los badges LLM · MCP · A2UI en la UI; se quitó porque la pantalla es de la persona.
 
 ### Lo que deliberadamente no hicimos
 

@@ -239,8 +239,8 @@ vuelve a fallar igual no rebota entre la interfaz y el agente.
 Cada componente se pinta dentro de `FronteraDeError` (una clase con
 `getDerivedStateFromError`, porque React solo permite atrapar errores de render así). Si
 uno truena al pintar (una prop con la forma equivocada, un `undefined` donde iba un
-arreglo), en su lugar aparece "Esta tarjeta no se pudo mostrar" con el nombre del
-componente y el mensaje, y **el resto de la superficie sigue en pie**, incluida la barra
+arreglo), en su lugar aparece "Esta tarjeta no se pudo mostrar" (el nombre del componente y el
+mensaje van a la consola, no a la pantalla) y **el resto de la superficie sigue en pie**, incluida la barra
 de conversación. Antes, un componente roto tumbaba la pantalla entera en plena demo.
 
 Este caso **no** se reporta al agente: el JSON era válido, el fallo es del componente.

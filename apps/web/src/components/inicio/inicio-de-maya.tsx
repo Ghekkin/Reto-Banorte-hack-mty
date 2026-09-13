@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { estadoVacio, nombresVisibles, procesarVarios, type Accion, type EstadoSuperficie } from "@maya/a2ui";
 import { Conclusion } from "@maya/catalogo";
-import { Info } from "lucide-react";
 import { Lienzo } from "@/components/maya/lienzo";
 import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +35,11 @@ import { MARCA } from "@/lib/marca";
  * Los botones de las tarjetas funcionan: un toque manda a la persona a Maya con esa
  * accion ya disparada (`/maya?accion=…`). Inicio no ejecuta nada por si mismo; el ciclo
  * de accion vive en un solo lugar.
+ *
+ * **Sin pie tecnico.** Hasta el 2026-09-13 debajo del lienzo iba una linea con el modelo,
+ * cuantas tools del MCP consulto, cuanto tardo y hace cuanto se armo. Era evidencia para el
+ * jurado, pero esta es la pantalla de la persona: se quito. Esos datos siguen en
+ * `banorte.pantallas_inicio` y en `GET /api/inicio`.
  */
 export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio; nombre: string }) {
   const router = useRouter();
@@ -86,7 +90,6 @@ export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio;
         </div>
       )}
       <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={irAMaya} />
-      <EvidenciaDeMaya pantalla={pantalla} className={saliendo ? "animar-salida" : undefined} />
     </div>
   );
 }
@@ -116,7 +119,8 @@ export function partirEnTitular(texto: string): { titular: string; detalle?: str
  * con la conclusion y con los montos, la pantalla vuelve a leerse como un chat.
  *
  * El "¿Por que veo esto?" ya no vive aqui: ahora es el pie de la tarjeta `Conclusion`,
- * como en cualquier otra tarjeta del catalogo.
+ * como en cualquier otra tarjeta del catalogo. Sigue viva aqui porque `inicio-vivo.tsx`
+ * (widgets vivos) la usa como pie de pantalla.
  */
 export function EvidenciaDeMaya({ pantalla, className }: { pantalla: PantallaDeInicio; className?: string }) {
   const tools = pantalla.tools.map((t) => t.replace(/!$/, ""));

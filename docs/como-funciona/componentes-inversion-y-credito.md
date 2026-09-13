@@ -306,12 +306,15 @@ Organiza y clasifica alternativas de inversión en una escala de riesgo del 1 (m
 ## 6. ProyeccionPagoCredito
 
 ### Propósito
-Proyecta la extinción paulatina de un crédito vigente (nómina, personal o automotriz), descomponiendo la deuda entre capital vivo e intereses acumulados futuros, y cuantificando el ahorro financiero alcanzable al realizar abonos directos a capital.
+Proyecta la extinción paulatina de un crédito vigente (nómina, personal o automotriz), descomponiendo la deuda entre capital vivo e intereses acumulados futuros. **Desde el 2026-09-13 se ajusta en su lugar desde el chat**: «¿y si pago $4,500 al mes?» no pinta otra tarjeta, parchea esta con el escenario simulado; «Programar este pago» lo aplica y la misma tarjeta queda en estado programado. Detalle de los tres momentos y sus props en `packages/catalogo/src/proyeccion-pago-credito/README.md`.
 
-- **Herramienta MCP asociada**: `consultar_creditos` / `simular_reestructura`
-- **Acción A2UI emitida**: `simular_abono_capital`
+- **Herramientas MCP asociadas**: `consultar_creditos` (como va), `simular_pago_credito` (simulada), `programar_abono_capital` (programada)
+- **Acción A2UI emitida**: `programar_abono_capital`, con `{ creditoId, mensualidadCentavos }` en el `context`
 
 ### Datos de Ejemplo (Data Model)
+
+> Estos montos (y los de "Elementos visuales") son los del ejemplo del 2026-09-12. Desde el 2026-09-13 `ejemplos/proyeccion-pago-credito.jsonl` usa números salidos de la aritmética real del MCP (mensualidad de contrato $3,533.97, 20 meses, hitos con fecha ISO y `numeroPago` desde la contratación) y ya no trae `ahorroConAbonoCapitalCentavos`. La forma de la tarjeta es la misma.
+
 ```json
 {
   "credito": {
@@ -364,8 +367,10 @@ Proyecta la extinción paulatina de un crédito vigente (nómina, personal o aut
 - **Curva del saldo** (`AreaChart`, rehecha el 2026-09-12 por feedback del usuario): de hoy a la liquidación, **con el saldo de cada hito escrito sobre su punto** (`$53.7k`, `$41.5k`, `$24.8k`, `$0`), eje Y de tres marcas para la escala y el eje X con cada hito en meses desde hoy (`Hoy`, `6 meses`, `1 año`, `20 meses`; las marcas que se pisarían en una tarjeta angosta se esconden, nunca la primera ni la última). La tool real numera los pagos desde la contratación (23, 27, 31, 36 a quien ya lleva 22), así que "hoy" es el pago anterior al primer hito y la curva no se aplasta a la derecha.
 - **Fichas de hitos** (2 columnas en tarjeta angosta, 4 desde 36rem, otra vez 2 cuando comparten tarjeta con la curva): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, y debajo de cada una **de qué se compone ese pago**: una barra capital / interés y `$1,140 de interés · 35 %` … `$70 de interés · 2 %`. Es lo que una amortización enseña y una curva no: el pago es el mismo, el interés baja. Si la tool manda una fecha (`2026-10-20`) en vez de etiqueta, se pinta `20 de octubre`.
 - **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos y el porcentaje (`Intereses $14,217.00 · 20 % de lo que pagarás`): la respuesta a "¿cuánto pagaré de puros intereses?".
-- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color (solo si la tool mandó el dato; hoy ninguna lo hace).
-- **Pie**: la razón. Sin botón: `simular_abono_capital` no lo atiende ninguna tool.
+- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color (solo si la tool mandó el dato y no hay comparación; hoy ninguna lo manda).
+- **Con una simulación (`antes`)**: mensualidad, meses e intereses se resaltan 1.5 s al cambiar (`usarCambio`, `packages/catalogo/src/resaltado.ts`; nunca al montar ni cuando llega el dato), y aparecen «Terminas en 15 meses (antes 20), en diciembre de 2027» y «Pagas $3,856.48 menos de intereses» (en `text-exito` si mejora; «más» y sin verde si empeora, `comparacion.ts`), «$3,533.97 del contrato + $966.03 a capital» si la mensualidad pasa la del contrato, y el `aviso` de la tool en un `Alert` ámbar.
+- **Programada (`programado: true`)**: badge «Abono programado» (`bg-exito/10 text-exito`) arriba a la derecha, sin botón, con los números aplicados y su diferencia.
+- **Pie**: el botón «Programar este pago» solo con una simulación sin programar (`antes` con otra mensualidad), y la razón. Los otros dos estados se ven en `/catalogo` (`ejemplos/variantes/`).
 
 ---
 

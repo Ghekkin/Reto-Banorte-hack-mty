@@ -4,6 +4,8 @@ import { cancelarSuscripcion } from "./cancelar-suscripcion.js";
 import { crearApartado } from "./crear-apartado.js";
 import { crearTopeGasto } from "./crear-tope-gasto.js";
 import { rebalancearPortafolio } from "./rebalancear-portafolio.js";
+import { programarAbonoCapital } from "./programar-abono-capital.js";
+import { consultarCreditos } from "./consultar-creditos.js";
 import { consultarInversiones } from "./consultar-inversiones.js";
 import { consultarPlan } from "./consultar-plan.js";
 import { detectarFugas } from "./detectar-fugas.js";
@@ -29,6 +31,7 @@ const TOOLS_DE_MUTACION: Record<AccionMutacion, DefinicionDeTool> = {
   crear_tope_gasto: crearTopeGasto,
   rebalancear_portafolio: rebalancearPortafolio,
   confirmar_rebalanceo: rebalancearPortafolio,
+  programar_abono_capital: programarAbonoCapital,
 };
 
 export const ejecutarDecision: DefinicionDeTool = {
@@ -36,7 +39,8 @@ export const ejecutarDecision: DefinicionDeTool = {
   titulo: "Ejecutar la decision que vino de la interfaz",
   descripcion:
     "ORQUESTADOR DE ACCION: recibe el nombre de la accion tal como llega del `action` de la interfaz " +
-    "(`aplicar_plan_pago`, `crear_apartado`, `cancelar_suscripcion`, `crear_tope_gasto` o `rebalancear_portafolio`) " +
+    "(`aplicar_plan_pago`, `crear_apartado`, `cancelar_suscripcion`, `crear_tope_gasto`, `rebalancear_portafolio` " +
+    "o `programar_abono_capital`) " +
     "y su `context` (incluida `idempotencyKey`), la ejecuta, y devuelve YA la lectura posterior en la misma respuesta. " +
     "Usala SIEMPRE que la accion que llegue de la interfaz sea una de esas, en vez de llamar la " +
     "tool de mutacion y despues la de lectura por separado: no reimplementa nada, solo despacha y relee.",
@@ -78,5 +82,10 @@ async function leerEstadoPosterior(
     case "rebalancear_portafolio":
     case "confirmar_rebalanceo":
       return consultarInversiones.manejar({ usuarioId });
+    case "programar_abono_capital": {
+      // El credito con su tabla de pagos nueva: 12 filas alcanzan para ver el plazo acortado.
+      const creditoId = (resultadoAccion as { abono?: { creditoId?: string } })?.abono?.creditoId;
+      return consultarCreditos.manejar({ usuarioId, creditoId, incluirAmortizacion: true, proximosPagos: 12 });
+    }
   }
 }

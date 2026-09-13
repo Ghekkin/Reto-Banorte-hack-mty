@@ -616,3 +616,16 @@ Tres cosas que conviene saber:
 - La llave de Gemini **está vacía en producción**: el agente publicado responde con la
   pantalla de ejemplo hasta que alguien la ponga en las variables de `maya-web` en
   Coolify. La demo local no se ve afectada.
+
+## dom 13 · 03:10 — Maya publicada (web y MCP) ya vive en `ghekkinxmaya.tech`
+
+- **web** → https://ghekkinxmaya.tech (el `catalogId` que ve un juez ya es
+  `https://ghekkinxmaya.tech/catalogo/v1.json`; certificado de Let's Encrypt)
+- **MCP** → https://mcp.ghekkinxmaya.tech/mcp (desde 03:20; pide `Authorization: Bearer`
+  con el `MCP_TOKEN` de `/opt/reto/.env`, sin él responde 401)
+- **docs** → `docs.ghekkinxmaya.tech` ya resuelve al VPS, reservado para `apps/docs`;
+  falta crear esa app en Coolify.
+
+Los dominios de `sslip.io` siguen vivos como alias, así que nada de lo anterior se rompe.
+Las variables `URL_WEB_PUBLICA` y `URL_MCP_PUBLICA` del repo ya apuntan al `.tech`. Commit publicado: `1152b8b`. Pasos y verificación en
+`docs/arquitectura/deploy.md` → "El dominio `.tech`". Cuenta para el premio de .Tech.

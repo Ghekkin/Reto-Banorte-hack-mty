@@ -8,7 +8,7 @@ import type { PantallaDeInicio } from "../almacen";
 
 /**
  * Que el Inicio que armo Maya PINTE de verdad, con el mismo `.jsonl` que valida el
- * catalogo: las tarjetas, la `Conclusion` con la lectura, y la evidencia (modelo, tools).
+ * catalogo: las tarjetas y la `Conclusion` con la lectura, sin texto tecnico para la persona.
  * Sin DOM: `renderToStaticMarkup` basta para ver si salio la tarjeta o el cartel de
  * "Componente desconocido".
  *
@@ -21,7 +21,7 @@ vi.mock("next/link", () => ({
     createElement("a", { href, ...resto }, children),
 }));
 
-const { InicioDeMaya, haceCuanto, partirEnTitular } = await import("@/components/inicio/inicio-de-maya");
+const { InicioDeMaya, partirEnTitular } = await import("@/components/inicio/inicio-de-maya");
 
 const EJEMPLO = fileURLToPath(new URL("../../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url));
 const EJEMPLO_CON_CONCLUSION = fileURLToPath(
@@ -81,14 +81,15 @@ describe("el Inicio que armo Maya", () => {
     expect(html).toContain("bajas la mensualidad a $3,193");
   });
 
-  it("la evidencia va debajo y con el tiempo, no arriba con un avatar", () => {
-    expect(html).toContain("hace 4 min");
-  });
-
-  it("ensena la evidencia: modelo, tools y el porque plegado", () => {
-    expect(html).toContain("gemini-3.5-flash-lite");
-    expect(html).toContain("3 tools del MCP");
-    expect(html).toContain("5.2 s");
+  /**
+   * Es la pantalla de la persona, no del jurado: hasta el 2026-09-13 el pie decia el
+   * modelo, cuantas tools del MCP consulto, cuanto tardo y hace cuanto se armo.
+   */
+  it("no ensena texto tecnico: ni modelo, ni tools, ni tiempos", () => {
+    expect(html).not.toContain("gemini");
+    expect(html).not.toContain("MCP");
+    expect(html).not.toContain("5.2 s");
+    expect(html).not.toContain("hace 4 min");
     expect(html).toContain("¿Por qué veo esto?");
   });
 
@@ -151,15 +152,5 @@ describe("partirEnTitular", () => {
 
   it("una sola frase con punto final no deja un detalle vacio", () => {
     expect(partirEnTitular("Tu plan ya esta activo.")).toEqual({ titular: "Tu plan ya esta activo." });
-  });
-});
-
-describe("haceCuanto", () => {
-  const ahora = Date.parse("2026-09-12T20:00:00.000Z");
-  it("habla en minutos, horas o dias segun toque", () => {
-    expect(haceCuanto("2026-09-12T19:59:40.000Z", ahora)).toBe("hace un momento");
-    expect(haceCuanto("2026-09-12T19:48:00.000Z", ahora)).toBe("hace 12 min");
-    expect(haceCuanto("2026-09-12T17:00:00.000Z", ahora)).toBe("hace 3 h");
-    expect(haceCuanto("2026-09-10T20:00:00.000Z", ahora)).toBe("hace 2 d");
   });
 });
