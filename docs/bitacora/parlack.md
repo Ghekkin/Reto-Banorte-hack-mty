@@ -1933,3 +1933,9 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   Agente trabajándolo.
 - **Fuera de mi control**: el `pnpm dev` externo con código viejo (comentado en #38) y `974a8d0`, que no es de esta
   ronda (otra sesión seguía empujando).
+
+### 07:53 (dom 13) — #46 resuelto y `estable` en `95c6f8b`
+
+- #46 `95c6f8b` (el agente corrigió el diagnóstico: `salud` era un typo de texto de `saludo`; ahora se adopta).
+- Ensayo real contra producción con `95c6f8b`: guion **17 de 17** y extra **3 de 3**; «simulador de ahorro» baja de 5
+  a 4 pasos. **`estable` → `95c6f8b`**. Issues abiertos en GitHub: 0.
