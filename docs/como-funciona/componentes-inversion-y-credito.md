@@ -1,4 +1,4 @@
----
+﻿---
 verificado: 2026-09-12 14:40
 estado: construido
 ---
@@ -82,7 +82,7 @@ Permite al usuario consultar el comportamiento y plusvalía acumulada de un inst
 ### Propósito
 Muestra cómo crece el patrimonio al sumar aportaciones periódicas más el rendimiento generado por el interés compuesto a lo largo de un horizonte de meses o años, incluyendo un slider interactivo para simular aportaciones en el cliente.
 
-- **Herramienta MCP asociada**: `proyectar_ahorro` / `consultar_catalogo_inversiones`
+- **Herramienta MCP asociada**: `proyectar_inversion` (obligatoria: de ahi salen las siete cifras) / `consultar_catalogo_inversiones`
 - **Acción A2UI emitida**: `simular_inversion`
 
 ### Datos de Ejemplo (Data Model)
@@ -121,7 +121,7 @@ Muestra cómo crece el patrimonio al sumar aportaciones periódicas más el rend
 ### Propósito
 Presenta simultáneamente tres escenarios de retorno de inversión (pesimista, esperado y optimista) calculados a partir de volatilidades y trayectorias de tasas de mercado, permitiendo al cliente elegir la postura de riesgo que mejor le acomode.
 
-- **Herramienta MCP asociada**: `consultar_inversiones` / `simular_reestructura`
+- **Herramienta MCP asociada**: `proyectar_inversion` (obligatoria: devuelve los tres escenarios ya calculados)
 - **Acción A2UI emitida**: `elegir_escenario`
 
 ### Datos de Ejemplo (Data Model)
@@ -308,7 +308,7 @@ Organiza y clasifica alternativas de inversión en una escala de riesgo del 1 (m
 ### Propósito
 Proyecta la extinción paulatina de un crédito vigente (nómina, personal o automotriz), descomponiendo la deuda entre capital vivo e intereses acumulados futuros, y cuantificando el ahorro financiero alcanzable al realizar abonos directos a capital.
 
-- **Herramienta MCP asociada**: `consultar_creditos` / `simular_reestructura`
+- **Herramienta MCP asociada**: `consultar_creditos` (lo pactado) / `simular_credito` (otro plazo, un abono extra o una mensualidad objetivo)
 - **Acción A2UI emitida**: `simular_abono_capital`
 
 ### Datos de Ejemplo (Data Model)
@@ -364,8 +364,8 @@ Proyecta la extinción paulatina de un crédito vigente (nómina, personal o aut
 - **Curva del saldo** (`AreaChart`, rehecha el 2026-09-12 por feedback del usuario): de hoy a la liquidación, **con el saldo de cada hito escrito sobre su punto** (`$53.7k`, `$41.5k`, `$24.8k`, `$0`), eje Y de tres marcas para la escala y el eje X con cada hito en meses desde hoy (`Hoy`, `6 meses`, `1 año`, `20 meses`; las marcas que se pisarían en una tarjeta angosta se esconden, nunca la primera ni la última). La tool real numera los pagos desde la contratación (23, 27, 31, 36 a quien ya lleva 22), así que "hoy" es el pago anterior al primer hito y la curva no se aplasta a la derecha.
 - **Fichas de hitos** (2 columnas en tarjeta angosta, 4 desde 36rem, otra vez 2 cuando comparten tarjeta con la curva): `Próximo pago $53,673.00`, … `Liquidación final $0.00`, y debajo de cada una **de qué se compone ese pago**: una barra capital / interés y `$1,140 de interés · 35 %` … `$70 de interés · 2 %`. Es lo que una amortización enseña y una curva no: el pago es el mismo, el interés baja. Si la tool manda una fecha (`2026-10-20`) en vez de etiqueta, se pinta `20 de octubre`.
 - **Barra de dos segmentos** (capital en oscuro, intereses en rojo) con su leyenda con montos y el porcentaje (`Intereses $14,217.00 · 20 % de lo que pagarás`): la respuesta a "¿cuánto pagaré de puros intereses?".
-- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color (solo si la tool mandó el dato; hoy ninguna lo hace).
-- **Pie**: la razón. Sin botón: `simular_abono_capital` no lo atiende ninguna tool.
+- **Oportunidad de ahorro** como una frase con el monto en `text-exito`, sin caja de color. **Desde el 2026-09-12 sí hay tool que lo calcule**: `simular_credito` con `abonoExtraMensualCentavos` devuelve el ahorro de intereses y cuántos meses se adelanta. Antes ninguna lo hacía y el schema pedía dejar el dato fuera "en vez de estimarlo".
+- **Pie**: la razón. El botón de `simular_abono_capital` se había quitado porque no lo atendía ninguna tool; ahora `simular_credito` lo cubre y se puede reactivar.
 
 ---
 

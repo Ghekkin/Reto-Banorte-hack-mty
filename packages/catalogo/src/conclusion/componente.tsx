@@ -4,7 +4,7 @@ import { CardContent, CardHeader } from "@/components/ui/card";
 import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_FILA_TOCABLE } from "../comunes";
+import { CLASES_FILA_TOCABLE, formatearMonto } from "../comunes";
 import { useConfiguracionCatalogo } from "../contexto";
 import type { PropsConclusion } from "./schema";
 
@@ -91,8 +91,14 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
               <li key={d.etiqueta} className="flex flex-col">
                 <span className="text-xs text-muted-foreground">{d.etiqueta}</span>
                 {/* `?? TONO.neutro` porque `tono` es texto libre: un valor que no esta en el
-                    mapa se pinta neutro en vez de dejar `undefined` en el className. */}
-                <span className={`monto text-lg font-semibold ${TONO[d.tono ?? "neutro"] ?? TONO.neutro}`}>{d.valor}</span>
+                    mapa se pinta neutro en vez de dejar `undefined` en el className.
+
+                    El dinero lo formatea ESTA linea, no el modelo. Cuando `valor` era la
+                    unica opcion, el modelo convertia centavos a pesos a mano y escribia
+                    `$457,09.50` en vez de $4,570.95 (2026-09-12). */}
+                <span className={`monto text-lg font-semibold ${TONO[d.tono ?? "neutro"] ?? TONO.neutro}`}>
+                  {typeof d.montoCentavos === "number" ? formatearMonto(d.montoCentavos) : d.valor}
+                </span>
               </li>
             ))}
           </ul>

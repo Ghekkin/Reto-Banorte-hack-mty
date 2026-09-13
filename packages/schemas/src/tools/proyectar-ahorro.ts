@@ -29,6 +29,16 @@ export const EntradaProyectarAhorro = z.object({
         "tu una aportacion; `panorama_inicial` te dice la capacidad antes de preguntar.",
     ),
   frecuencia: Frecuencia.optional().describe("Default: mensual"),
+  horizonteMeses: z
+    .number()
+    .int()
+    .min(1)
+    .max(480)
+    .optional()
+    .describe(
+      "La pregunta INVERSA: '¿cuanto junto en 18 meses?'. Devuelve `montoAlcanzableCentavos`. Si no " +
+        "mandas objetivo, el objetivo pasa a SER lo alcanzable. Sin rendimiento, igual que el resto",
+    ),
 });
 export type EntradaProyectarAhorro = z.infer<typeof EntradaProyectarAhorro>;
 
@@ -56,5 +66,13 @@ export const SalidaProyectarAhorro = z.object({
   mesesEstimados: z.number().int(),
   fechaEstimada: FechaISO,
   escenarios: z.array(Escenario).describe("Tres puntos para el slider: conservador, sugerido y agresivo"),
+  horizonteMeses: z.number().int().nullable().describe("El horizonte que se pidio, o null si no se pidio"),
+  montoAlcanzableCentavos: Centavos.nullable().describe(
+    "Lo que junta en `horizonteMeses` con esta aportacion. null si no se pidio horizonte",
+  ),
+  alcanzaEnElHorizonte: z
+    .boolean()
+    .nullable()
+    .describe("Si el objetivo se cumple dentro del horizonte pedido. null si no se pidio horizonte"),
 });
 export type SalidaProyectarAhorro = z.infer<typeof SalidaProyectarAhorro>;

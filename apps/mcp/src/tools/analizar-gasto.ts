@@ -28,17 +28,27 @@ export const analizarGasto: DefinicionDeTool = {
     "atipica) y `detectar_fugas` (suscripciones y recurrentes sin registrar) en una sola llamada, mas el " +
     "estatus en vivo de los topes de gasto que la persona ya tenga fijados. Trae `patronGasto`, la " +
     "clasificacion de en que consiste el problema. Llamala en vez de las dos por separado cuando " +
-    "pregunten en que se les va el dinero. Baja a `comparar_periodos` o `detectar_fugas` solo si " +
-    "necesitas mas detalle del que trae esta (mas meses, el listado completo).",
+    "pregunten en que se les va el dinero. Acepta `periodoAnterior` para comparar contra un mes " +
+    "cualquiera y `mesesSinUso` para el criterio de suscripcion olvidada. Baja a `comparar_periodos` o " +
+    "`detectar_fugas` solo si necesitas mas detalle del que trae esta (el listado completo).",
   clase: "lectura",
   entrada: EntradaAnalizarGasto.shape,
   manejar: async (argumentos) => {
     const entrada = EntradaAnalizarGasto.parse(argumentos);
 
+    // Los dos parametros se PASAN a las atomicas. Antes se recibia `periodo` y se llamaba
+    // `detectar_fugas` sin argumentos, asi que "comparalo con julio" o "que no he usado en
+    // seis meses" no tenian efecto por esta fachada y el modelo no tenia como enterarse.
     const gasto = SalidaCompararPeriodos.parse(
-      await compararPeriodos.manejar({ usuarioId: entrada.usuarioId, periodo: entrada.periodo }),
+      await compararPeriodos.manejar({
+        usuarioId: entrada.usuarioId,
+        periodo: entrada.periodo,
+        periodoAnterior: entrada.periodoAnterior,
+      }),
     );
-    const fugas = SalidaDetectarFugas.parse(await detectarFugas.manejar({ usuarioId: entrada.usuarioId }));
+    const fugas = SalidaDetectarFugas.parse(
+      await detectarFugas.manejar({ usuarioId: entrada.usuarioId, mesesSinUso: entrada.mesesSinUso }),
+    );
     const topesExcedidos = todosLosTopesEvaluados(entrada.usuarioId).filter((t) => t.estatus === "excedido");
 
     const { patronGasto, porQue } = patronDe(gasto, fugas, topesExcedidos);

@@ -38,11 +38,9 @@ export const proyectarAhorro: DefinicionDeTool = {
     const esSimulacionNueva = entrada.montoObjetivoCentavos !== undefined && entrada.metaId === undefined;
     const meta = esSimulacionNueva ? undefined : elegirMeta(entrada.usuarioId, entrada.metaId);
     const saldoInicial = meta ? aEntero(meta.monto_actual_centavos) : 0;
-    const objetivo = entrada.montoObjetivoCentavos ?? (meta ? aEntero(meta.monto_objetivo_centavos) : 0);
-    if (objetivo <= 0) {
-      throw new Error("no se contra que proyectar: pasa montoObjetivoCentavos o un metaId con objetivo");
-    }
 
+    // La aportacion se resuelve ANTES del objetivo porque con `horizonteMeses` el objetivo
+    // se deriva de ella: la pregunta es la inversa ("con esto, cuanto junto en N meses").
     const capacidad = capacidadDeAhorro(entrada.usuarioId);
     const sugerida = meta ? aEntero(meta.aportacion_sugerida_centavos) || capacidad : capacidad;
     // El cero llega de verdad, por dos caminos: el slider del simulador en su minimo y
@@ -57,14 +55,28 @@ export const proyectarAhorro: DefinicionDeTool = {
       );
     }
 
-    const faltante = Math.max(0, objetivo - saldoInicial);
+    // Lo que junta en el horizonte pedido. Lineal y sin rendimiento, igual que el resto de
+    // la tool: un apartado no invierte (ver la nota de `proyectar()`).
+    const porMes = frecuencia === "quincenal" ? aportacion * 2 : aportacion;
+    const alcanzable =
+      entrada.horizonteMeses !== undefined ? saldoInicial + porMes * entrada.horizonteMeses : null;
+
+    // Sin objetivo pero con horizonte, el objetivo ES lo alcanzable: asi el resto de la
+    // respuesta (faltante, meses, fecha) sigue siendo coherente en vez de quedar a cero.
+    const objetivo = entrada.montoObjetivoCentavos ?? (meta ? aEntero(meta.monto_objetivo_centavos) : 0) ?? 0;
+    const objetivoFinal = objetivo > 0 ? objetivo : (alcanzable ?? 0);
+    if (objetivoFinal <= 0) {
+      throw new Error("no se contra que proyectar: pasa montoObjetivoCentavos, un metaId con objetivo, o horizonteMeses");
+    }
+
+    const faltante = Math.max(0, objetivoFinal - saldoInicial);
     const proyeccion = proyectar(faltante, aportacion, frecuencia);
 
     return SalidaProyectarAhorro.parse({
       meta: meta ? { id: meta.id, nombre: meta.nombre, estatus: meta.estatus } : null,
       cuentaOrigenId: meta?.cuenta_origen_id ?? cuentaDe(entrada.usuarioId, "ahorro")?.id ?? null,
       saldoInicialCentavos: saldoInicial,
-      montoObjetivoCentavos: objetivo,
+      montoObjetivoCentavos: objetivoFinal,
       faltanteCentavos: faltante,
       capacidadMensualCentavos: capacidad,
       aportacionCentavos: aportacion,
@@ -72,6 +84,9 @@ export const proyectarAhorro: DefinicionDeTool = {
       mesesEstimados: proyeccion.meses,
       fechaEstimada: proyeccion.fecha,
       escenarios: escenarios(faltante, aportacion, frecuencia, capacidad),
+      horizonteMeses: entrada.horizonteMeses ?? null,
+      montoAlcanzableCentavos: alcanzable,
+      alcanzaEnElHorizonte: alcanzable === null ? null : alcanzable >= objetivoFinal,
     });
   },
 };

@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje, recortar, sumaDeMontos } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsOrdenRebalanceo } from "./schema";
@@ -19,7 +19,7 @@ import type { PropsOrdenRebalanceo } from "./schema";
  * la pregunta que sigue a "¿y esto cuánto me cuesta?".
  */
 export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<PropsComponente, "alAccionar">) {
-  const { portafolioId, nombrePortafolio, valorTotalCentavos, comisionTotalCentavos = 0, movimientos, heroe = false, razon, alAccionar } = props;
+  const { portafolioId, nombrePortafolio, valorTotalCentavos, comisionTotalCentavos = 0, movimientos, orden = "monto", limite, heroe = false, razon, alAccionar } = props;
 
   if (!nombrePortafolio || typeof valorTotalCentavos !== "number" || !movimientos || movimientos.length === 0) {
     return (
@@ -34,6 +34,8 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
   }
 
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const { visibles, fuera } = recortar(ordenar(movimientos, orden), limite);
+  const montoFuera = sumaDeMontos(fuera);
 
   return (
     <Tarjeta heroe={heroe}>
@@ -59,7 +61,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
 
       <CardContent>
         <ul className="flex flex-col">
-          {movimientos.map((m, i) => {
+          {visibles.map((m, i) => {
             const compra = m.tipo === "compra";
             return (
               <li key={`${m.instrumentoClave}-${i}`} className={`flex items-center gap-3 border-b py-2 last:border-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
@@ -84,6 +86,16 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
               </li>
             );
           })}
+          {fuera.length > 0 ? (
+            // El boton confirma TODAS las operaciones, tambien las que el limite no lista:
+            // recortar la vista no recorta la orden, y eso hay que decirlo aqui.
+            <li className={`flex items-center justify-between py-2 text-sm ${suave}`}>
+              <span>
+                y {fuera.length} {fuera.length === 1 ? "operacion mas" : "operaciones mas"} en la orden
+              </span>
+              <span className="monto">{formatearMonto(montoFuera)}</span>
+            </li>
+          ) : null}
         </ul>
       </CardContent>
 
@@ -100,4 +112,25 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
       </PieTarjeta>
     </Tarjeta>
   );
+}
+
+/**
+ * El orden de las operaciones. `tipo` pone primero las ventas porque es el orden en que se
+ * ejecutan de verdad: hay que liberar efectivo antes de comprar. Dentro de cada grupo manda
+ * el monto.
+ */
+function ordenar(
+  movimientos: NonNullable<PropsOrdenRebalanceo["movimientos"]>,
+  orden: NonNullable<PropsOrdenRebalanceo["orden"]>,
+): NonNullable<PropsOrdenRebalanceo["movimientos"]> {
+  const copia = [...movimientos];
+  if (orden === "instrumento") {
+    return copia.sort((a, b) => a.instrumentoClave.localeCompare(b.instrumentoClave, "es"));
+  }
+  if (orden === "tipo") {
+    return copia.sort(
+      (a, b) => Number(a.tipo === "compra") - Number(b.tipo === "compra") || b.montoCentavos - a.montoCentavos,
+    );
+  }
+  return copia.sort((a, b) => b.montoCentavos - a.montoCentavos);
 }
