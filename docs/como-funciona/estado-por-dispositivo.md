@@ -62,8 +62,10 @@ demás, así que cien visitantes nuevos no cuestan cien portadas del modelo.
    `regenerarSiCambio(persona, "accion", { dispositivoId })`: se rearma la portada de ese
    dispositivo, con sus acciones.
 6. **Al abrir Inicio**, `page.tsx` pide `estadoDelInicio(persona, { dispositivoId })`, que
-   devuelve la portada propia si está al día, la común si el dispositivo no ha aplicado nada, o
-   la mejor disponible marcada como vencida (y la manda rearmar con `after()`).
+   devuelve la portada propia si está al día; la común si ni el dispositivo ni la común han
+   aplicado nada; la **sin acciones** (`DISPOSITIVO_SIN_ACCIONES`, una por persona) si el
+   dispositivo no ha aplicado nada pero la común sí; o la mejor disponible marcada como vencida.
+   La página pinta la que haya y, si está vencida, la manda rearmar con `after()`.
 7. **Preguntar en Inicio** (`preguntarEnInicio`) y **ajustar una tarjeta**
    (`POST /api/inicio/widget`) escriben siempre en la portada del dispositivo, nunca en la común.
 
@@ -93,9 +95,11 @@ demás, así que cien visitantes nuevos no cuestan cien portadas del modelo.
   mandan cookie: trabajan sobre `comun`, como siempre. Lo que un script aplique ahí **no lo ve
   ningún navegador**.
 - **Estado común con acciones.** Si `comun` tiene acciones (un ensayo por script, o lo que había
-  antes de esta migración), la huella de un dispositivo nuevo no coincide con la común y cada
-  uno arma su propia portada (un modelo "lite" por visitante). Correr `pnpm reiniciar-estado`
-  antes de abrir la liga deja la común limpia y compartida.
+  antes de esta migración), la común no le sirve a un visitante nuevo: le mostraría lo que
+  aplicó el script. Todos los visitantes sin acciones comparten la portada **sin acciones** de
+  la persona (ámbito reservado `dis_sinacciones00`), que se arma una sola vez (issues #33 y #37).
+  Correr `pnpm reiniciar-estado` antes de abrir la liga sigue siendo lo más limpio: la común
+  vuelve a servirle a todos y el reloj la mantiene al día.
 - **`pnpm reiniciar-estado` es de todos**: trunca `acciones_aplicadas` (todos los dispositivos)
   y borra `pantallas_por_dispositivo`. Para empezar de cero **solo tú**, abre una ventana de
   incógnito o borra la cookie `maya_dispositivo`.
@@ -112,7 +116,7 @@ demás, así que cien visitantes nuevos no cuestan cien portadas del modelo.
 
 ```bash
 pnpm --filter @maya/mcp exec vitest run dispositivos           # aislamiento de acciones e idempotencia (5 pruebas)
-pnpm --filter @maya/web exec vitest run servicio dispositivo   # qué portada ve cada quien, y el proxy (25 pruebas)
+pnpm --filter @maya/web exec vitest run servicio dispositivo   # qué portada ve cada quien, y el proxy (32 pruebas)
 ```
 
 A mano, con `pnpm dev`: abre Beto en una ventana normal y en una de incógnito. En la normal,

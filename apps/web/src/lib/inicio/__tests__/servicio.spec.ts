@@ -2,7 +2,8 @@ import { describe, expect, it, vi } from "vitest";
 import { VERSION_A2UI, type MensajeA2UI } from "@maya/a2ui";
 import type { Almacen, PantallaDeInicio, PantallaNueva } from "../almacen";
 import type { PortadaGenerada } from "../generar";
-import { componentesDe, estadoDelInicio, regenerarSiCambio, regenerarTodos, type Dependencias } from "../servicio";
+import { DISPOSITIVO_SIN_ACCIONES } from "@/lib/dispositivo";
+import { componentesDe, ESPERA_ENTRE_INTENTOS_MS, estadoDelInicio, regenerarSiCambio, regenerarTodos, type Dependencias } from "../servicio";
 
 /**
  * La regla del servicio, sin base, sin MCP y sin modelo: **el modelo corre solo cuando
@@ -358,6 +359,118 @@ describe("por dispositivo", () => {
     expect(estado.desactualizada).toBe(false);
     expect(resultado.hecho).toBe("sin-cambios");
     expect(d.generar).not.toHaveBeenCalled();
+  });
+});
+
+/**
+ * Issue #37: con acciones en el comun (un script sin cookie aplico algo), un visitante nuevo no
+ * puede ver la comun —le mostraria lo que hizo otro— ni costar una portada propia (issue #33).
+ */
+describe("visitantes sin acciones cuando el comun tiene acciones (#37)", () => {
+  const SIN_ACCIONES = "v1|c21|a:0:0|m:812:2026-09-10";
+  const COMUN_CON_ACCION = "v1|c21|a:1:7|m:812:2026-09-10";
+  const CON_PLAN = "v1|c21|a:1:9|m:812:2026-09-10";
+  const JUEZ = "dis_juez000000001";
+  const visitante = (i: number) => `dis_${String(i).padStart(24, "0")}`;
+  /** El comun tiene una accion; el juez aplico un plan; nadie mas hizo nada. */
+  const huella = async (_u: string, dispositivoId: string) =>
+    dispositivoId === "comun" ? COMUN_CON_ACCION : dispositivoId === JUEZ ? CON_PLAN : SIN_ACCIONES;
+
+  /** Lo que hace la pagina de Inicio en cada visita. */
+  async function visitar(usuarioId: string, dispositivoId: string, d: Dependencias) {
+    const estado = await estadoDelInicio(usuarioId, { dispositivoId, deps: d });
+    if (estado.desactualizada) await regenerarSiCambio(usuarioId, "visita", { dispositivoId, deps: d });
+    return estado;
+  }
+
+  it("cien visitantes nuevos, uno tras otro: UNA portada, sin acciones, y ninguno ve la comun", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_ana", COMUN_CON_ACCION));
+    const d = deps({ almacen, huella });
+
+    const vistas = [];
+    for (let i = 0; i < 100; i++) vistas.push(await visitar("usr_ana", visitante(i), d));
+    const despues = await Promise.all(Array.from({ length: 100 }, (_, i) => estadoDelInicio("usr_ana", { dispositivoId: visitante(i), deps: d })));
+
+    expect(d.generar).toHaveBeenCalledTimes(1);
+    expect(d.generar).toHaveBeenCalledWith("usr_ana", expect.objectContaining({ dispositivoId: DISPOSITIVO_SIN_ACCIONES }));
+    expect(vistas.some((v) => v.pantalla?.dispositivoId === "comun")).toBe(false);
+    for (const estado of despues) {
+      expect(estado.pantalla?.huella).toBe(SIN_ACCIONES);
+      expect(estado.pantalla?.dispositivoId).toBe(DISPOSITIVO_SIN_ACCIONES);
+      expect(estado.desactualizada).toBe(false);
+    }
+    expect(almacen.filas.get("usr_ana")?.huella).toBe(COMUN_CON_ACCION);
+    expect([...almacen.filas.keys()].filter((k) => k.startsWith("dis_0"))).toEqual([]);
+  });
+
+  it("cien visitantes nuevos A LA VEZ: tambien una sola generacion", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_ana", COMUN_CON_ACCION));
+    const d = deps({ almacen, huella });
+
+    await Promise.all(Array.from({ length: 100 }, (_, i) => regenerarSiCambio("usr_ana", "visita", { dispositivoId: visitante(i), deps: d })));
+
+    expect(d.generar).toHaveBeenCalledTimes(1);
+  });
+
+  it("con el comun SIN acciones, cien visitantes ven la comun y no gastan modelo", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_ana", SIN_ACCIONES));
+    const d = deps({ almacen, huella: async () => SIN_ACCIONES });
+
+    for (let i = 0; i < 100; i++) {
+      const estado = await visitar("usr_ana", visitante(i), d);
+      expect(estado.pantalla?.dispositivoId).toBe("comun");
+    }
+
+    expect(d.generar).not.toHaveBeenCalled();
+  });
+
+  it("un dispositivo con acciones propias ve SU portada, no la compartida ni la comun", async () => {
+    const almacen = almacenEnMemoria(
+      guardada("usr_ana", COMUN_CON_ACCION),
+      guardada("usr_ana", SIN_ACCIONES, DISPOSITIVO_SIN_ACCIONES),
+      { ...guardada("usr_ana", CON_PLAN, JUEZ), texto: "la del juez" },
+    );
+    const d = deps({ almacen, huella });
+
+    const estado = await visitar("usr_ana", JUEZ, d);
+
+    expect(estado.pantalla?.texto).toBe("la del juez");
+    expect(estado.desactualizada).toBe(false);
+    expect(d.generar).not.toHaveBeenCalled();
+  });
+
+  it("una portada propia vencida se pinta mientras tanto y se rearma al visitar, en su ambito", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_ana", COMUN_CON_ACCION), guardada("usr_ana", "v1|c21|a:1:5|m:812:2026-09-10", JUEZ));
+    const d = deps({ almacen, huella });
+
+    const estado = await visitar("usr_ana", JUEZ, d);
+
+    expect(estado.desactualizada).toBe(true);
+    expect(estado.pantalla?.texto).toBe("vieja");
+    expect(d.generar).toHaveBeenCalledTimes(1);
+    expect(d.generar).toHaveBeenCalledWith("usr_ana", expect.objectContaining({ dispositivoId: JUEZ }));
+    expect(almacen.filas.get(clave("usr_ana", JUEZ))?.huella).toBe(CON_PLAN);
+  });
+
+  it("si la generacion falla, las visitas no pagan un intento cada una: esperan; una accion no", async () => {
+    let reloj = 1_000_000;
+    const almacen = almacenEnMemoria(guardada("usr_ana", "v0|vieja"));
+    const d = deps({
+      almacen,
+      huella: async () => SIN_ACCIONES,
+      ahora: () => reloj,
+      generar: vi.fn(async () => ({ ok: false as const, motivo: "el modelo no respondio", tools: [], pasos: 0, ms: 10, modelo: "m" })),
+    });
+
+    for (let i = 0; i < 20; i++) await visitar("usr_ana", visitante(i), d);
+    expect(d.generar).toHaveBeenCalledTimes(1);
+
+    reloj += ESPERA_ENTRE_INTENTOS_MS;
+    await visitar("usr_ana", visitante(99), d);
+    expect(d.generar).toHaveBeenCalledTimes(2);
+
+    await regenerarSiCambio("usr_ana", "accion", { dispositivoId: visitante(99), deps: d });
+    expect(d.generar).toHaveBeenCalledTimes(3);
   });
 });
 

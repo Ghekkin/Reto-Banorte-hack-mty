@@ -25,11 +25,11 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  *
  *  - **La que armo Maya** (`docs/como-funciona/inicio-personalizado.md`): 3 o 4 tarjetas
  *    del catalogo elegidas por un modelo chico para ESTA persona con sus datos de hoy.
- *    Se pinta cuando existe y esta al dia.
+ *    Se pinta cuando existe, aunque este vencida: mientras se rearma, la que hay.
  *  - **La programada**: saldo, cuentas, tarjetas y movimientos, leidos de la base directo.
- *    Es lo que se ve con el flag apagado, sin llave, y mientras Maya rearma la otra (los
- *    datos cambiaron: una accion, un reinicio). En ese ultimo caso, `RefrescoDelInicio`
- *    pregunta si ya esta y la trae sola.
+ *    Es lo que se ve con el flag apagado, sin llave, y mientras Maya arma la primera (no hay
+ *    ninguna para este visitante: un reinicio, la primera vez). En ese ultimo caso,
+ *    `RefrescoDelInicio` pregunta si ya esta y la trae sola.
  *
  * `after()`: si la portada esta desactualizada, se manda rearmar DESPUES de responder,
  * para que la visita no espere al modelo. El servicio no la rearma dos veces.
@@ -48,8 +48,10 @@ export default async function PaginaInicio() {
   const [usuario, dispositivoId] = await Promise.all([usuarioActivo(), dispositivoActivo()]);
   const inicio = await estadoDelInicio(usuario.id, { dispositivoId });
 
-  // Si no hay ninguna portada generada aun, armar la inicial en segundo plano.
-  if (inicio.activo && !inicio.pantalla) {
+  // Sin portada, o con una vencida: se rearma en segundo plano, en su destino (la comun, la
+  // compartida sin acciones o la propia; `servicio.ts`), y mientras se pinta la que hay. El
+  // servicio no la paga dos veces ni por visitante, y espera entre reintentos de la misma.
+  if (inicio.activo && inicio.desactualizada) {
     after(() => regenerarSiCambio(usuario.id, "visita", { dispositivoId }));
   }
 

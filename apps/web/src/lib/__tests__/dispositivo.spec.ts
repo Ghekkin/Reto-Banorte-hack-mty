@@ -4,6 +4,7 @@ import { proxy } from "@/proxy";
 import {
   COOKIE_DISPOSITIVO,
   DISPOSITIVO_COMUN,
+  DISPOSITIVO_SIN_ACCIONES,
   dispositivoDeCookie,
   dispositivoParaRegistro,
   esIdDeDispositivo,
@@ -20,6 +21,13 @@ describe("el id del dispositivo", () => {
     const b = nuevoIdDeDispositivo();
     expect(esIdDeDispositivo(a)).toBe(true);
     expect(a).not.toBe(b);
+  });
+
+  it("el ambito compartido sin acciones no lo puede adoptar ningun navegador", () => {
+    expect(esIdDeDispositivo(DISPOSITIVO_SIN_ACCIONES)).toBe(false);
+    expect(dispositivoDeCookie(DISPOSITIVO_SIN_ACCIONES)).toBe(DISPOSITIVO_COMUN);
+    // Pero cumple el patron del MCP, para que la portada se arme con un estado sin acciones.
+    expect(/^dis_[a-z0-9]{12,40}$/.test(DISPOSITIVO_SIN_ACCIONES)).toBe(true);
   });
 
   it("lo que no es un id nuestro es el estado comun", () => {

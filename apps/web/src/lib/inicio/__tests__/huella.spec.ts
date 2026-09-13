@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { armarHuella, VERSION_DEL_GENERADOR } from "../huella";
+import { armarHuella, huellaSinAcciones, VERSION_DEL_GENERADOR } from "../huella";
 
 /**
  * La huella decide si el modelo corre. Lo que tiene que ser cierto: misma cuenta, misma
@@ -31,5 +31,11 @@ describe("la huella del Inicio", () => {
     expect(huella.startsWith(`v${VERSION_DEL_GENERADOR}|`)).toBe(true);
     expect(huella).toContain("a:1:7");
     expect(huella).toContain("m:812:2026-09-10");
+  });
+
+  it("dice si el ambito no ha aplicado ninguna accion", () => {
+    expect(huellaSinAcciones(armarHuella(base))).toBe(true);
+    expect(huellaSinAcciones(armarHuella({ ...base, acciones: "1:7" }))).toBe(false);
+    expect(huellaSinAcciones(armarHuella({ ...base, acciones: "10:0" }))).toBe(false);
   });
 });

@@ -1,11 +1,11 @@
 import { registrar as registrarEnLaBase } from "@/lib/corridas/escritor";
-import { DISPOSITIVO_COMUN, dispositivoParaRegistro } from "@/lib/dispositivo";
+import { DISPOSITIVO_COMUN, DISPOSITIVO_SIN_ACCIONES, dispositivoParaRegistro } from "@/lib/dispositivo";
 import { USUARIOS } from "@/lib/usuarios";
 import { componentesDe as tarjetasDe } from "@/lib/widgets/pantalla-viva";
 import { almacenEnPostgres, type Almacen, type PantallaDeInicio } from "./almacen";
 import { configInicio } from "./config";
 import { generarPortada, type OpcionesDeGeneracion, type PortadaGenerada } from "./generar";
-import { huellaDe } from "./huella";
+import { huellaDe, huellaSinAcciones } from "./huella";
 import { hayLlaveDelInicio } from "./modelo";
 
 /**
@@ -46,6 +46,8 @@ export type Dependencias = {
   activo: () => boolean;
   /** Si Inicio se arma con widgets vivos. Inyectable para las pruebas. */
   widgets?: () => boolean;
+  /** El reloj, en milisegundos. Inyectable para probar la espera entre intentos. */
+  ahora?: () => number;
 };
 
 const porDefecto: Dependencias = {
@@ -82,13 +84,19 @@ export async function estadoDelInicio(usuarioId: string, ambito: Ambito = {}): P
  *
  *  1. Su portada propia, si la tiene y esta al dia: ya se aparto de la comun (aplico una
  *     accion, pregunto algo en Inicio, ajusto una tarjeta) y eso es suyo.
- *  2. Si sus datos son los comunes —misma huella: no ha aplicado nada—, la comun. Si esta
- *     vencida, se rearma LA COMUN: le sirve a el y a todos los que tampoco han hecho nada,
- *     y cien visitantes nuevos no son cien portadas pagadas. Una propia vieja queda tapada.
- *  3. Si sus datos ya no son los comunes, su portada es suya y se rearma en su ambito.
+ *  2. Si sus datos son los comunes —misma huella: ni el ni el comun han aplicado nada—, la
+ *     comun. Si esta vencida, se rearma LA COMUN: le sirve a el y a todos los que tampoco han
+ *     hecho nada, y cien visitantes nuevos no son cien portadas pagadas. Una propia vieja
+ *     queda tapada.
+ *  3. Si no ha aplicado nada pero el comun SI (un script sin cookie aplico algo), la portada
+ *     COMPARTIDA sin acciones (`DISPOSITIVO_SIN_ACCIONES`): la comun le mostraria lo que hizo
+ *     otro (issue #37), y armarle una propia costaria una portada por visitante (issue #33).
+ *     Se rearma ahi, una vez para todos ellos.
+ *  4. Si ya aplico algo, su portada es suya y se rearma en su ambito.
  *
- * Mientras se rearma, `pantalla` es la mejor que hay (la propia vieja o la comun) para que
- * el aviso de "Maya esta armando tu inicio" sepa cual esperar que cambie.
+ * Mientras se rearma, `pantalla` es la mejor que hay para que el aviso de "Maya esta armando
+ * tu inicio" sepa cual esperar que cambie: la propia vieja o la que le toca (la comun en 2, la
+ * compartida en 3). Un visitante sin acciones nunca recibe la comun armada con acciones de otro.
  */
 type Vista = { huella: string; pantalla?: PantallaDeInicio; vencida: boolean; destino: string };
 
@@ -105,11 +113,14 @@ async function vistaDe(usuarioId: string, dispositivoId: string, deps: Dependenc
     deps.almacen.leer(usuarioId, DISPOSITIVO_COMUN),
   ]);
   if (propia && !vencida(propia, huella, deps)) return { huella, pantalla: propia, vencida: false, destino: dispositivoId };
-
-  const sinAccionesPropias = huella.includes("|a:0:0|");
-  if (huella === huellaComun || sinAccionesPropias) {
+  if (huella === huellaComun) {
     const alDia = Boolean(comun) && !vencida(comun, huella, deps);
     return { huella, pantalla: comun ?? propia, vencida: !alDia, destino: DISPOSITIVO_COMUN };
+  }
+  if (huellaSinAcciones(huella)) {
+    const compartida = await deps.almacen.leer(usuarioId, DISPOSITIVO_SIN_ACCIONES);
+    const alDia = Boolean(compartida) && !vencida(compartida, huella, deps);
+    return { huella, pantalla: compartida ?? propia, vencida: !alDia, destino: DISPOSITIVO_SIN_ACCIONES };
   }
   return { huella, pantalla: propia ?? comun, vencida: true, destino: dispositivoId };
 }
@@ -121,6 +132,27 @@ async function vistaDe(usuarioId: string, dispositivoId: string, deps: Dependenc
  * la MISMA portada comun.
  */
 const enVuelo = new Map<string, Promise<ResultadoDeRegeneracion>>();
+
+/**
+ * Los motivos que no traen un cambio de datos: alguien abrio Inicio, o el aviso de "Maya esta
+ * armando tu inicio" pregunto si ya estaba. Si la generacion de una portada fallo (el modelo, la
+ * red) o salio sin procedencias, sus datos siguen iguales y la portada sigue vencida: sin freno,
+ * CADA visita pagaria otro intento. Con el, la misma portada (ambito, persona, huella) se
+ * reintenta por visita como mucho una vez cada `ESPERA_ENTRE_INTENTOS_MS`. Una accion, el reloj
+ * o `forzar` no esperan; y datos nuevos son otra huella, asi que tampoco.
+ */
+const MOTIVOS_PASIVOS = new Set(["visita", "consulta"]);
+export const ESPERA_ENTRE_INTENTOS_MS = 5 * 60_000;
+const intentosPorDependencias = new WeakMap<Dependencias, Map<string, number>>();
+
+function intentosDe(deps: Dependencias): Map<string, number> {
+  let intentos = intentosPorDependencias.get(deps);
+  if (!intentos) {
+    intentos = new Map();
+    intentosPorDependencias.set(deps, intentos);
+  }
+  return intentos;
+}
 
 export function regenerarSiCambio(
   usuarioId: string,
@@ -189,6 +221,17 @@ async function regenerar(usuarioId: string, ambito: string, motivo: string, forz
     registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "sin-cambios", huella, ms: Date.now() - inicio });
     return { hecho: "sin-cambios", pantalla: anterior, ms: Date.now() - inicio };
   }
+
+  const ahora = deps.ahora?.() ?? Date.now();
+  const intentos = intentosDe(deps);
+  const claveDeIntento = `${ambito}|${usuarioId}|${huella}`;
+  const ultimo = intentos.get(claveDeIntento);
+  if (!forzar && MOTIVOS_PASIVOS.has(motivo) && ultimo !== undefined && ahora - ultimo < ESPERA_ENTRE_INTENTOS_MS) {
+    const detalle = `en espera: esta portada se intento hace ${Math.round((ahora - ultimo) / 1000)} s`;
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "sin-cambios", huella, detalle, ms: Date.now() - inicio });
+    return { hecho: "sin-cambios", motivo: detalle, pantalla: anterior, ms: Date.now() - inicio };
+  }
+  intentos.set(claveDeIntento, ahora);
 
   // El MCP de esta generacion lee el estado de ESE ambito: una portada de dispositivo se
   // arma con sus acciones, no con las del comun.

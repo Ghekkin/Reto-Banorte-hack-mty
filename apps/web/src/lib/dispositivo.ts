@@ -30,11 +30,23 @@ export const CABECERA_DISPOSITIVO = "x-maya-dispositivo";
 /** Un ano: lo que dura el hackathon y lo que un juez tarde en volver a abrir la liga. */
 export const DURACION_COOKIE_S = 60 * 60 * 24 * 365;
 
+/**
+ * El ambito compartido de los visitantes que no han aplicado nada, para cuando el `comun` SI
+ * tiene acciones (un script sin cookie aplico algo). Ahi vive la portada armada con cero
+ * acciones que todos ellos comparten: una generacion por persona, no una por visitante, y
+ * nadie ve lo que hizo otro (issue #37, `docs/algoritmos/portada-por-dispositivo.md`).
+ *
+ * Cumple el patron para que el MCP lo acepte como dispositivo y lea un estado sin acciones.
+ * No es hexadecimal, asi que `nuevoIdDeDispositivo` nunca lo produce, y `esIdDeDispositivo`
+ * lo rechaza: ningun navegador puede adoptarlo como cookie ni aplicar acciones en el.
+ */
+export const DISPOSITIVO_SIN_ACCIONES = "dis_sinacciones00";
+
 /** El mismo patron que valida el MCP. Todo lo que no lo cumpla es `comun`. */
 const PATRON = /^dis_[a-z0-9]{12,40}$/;
 
 export function esIdDeDispositivo(valor: unknown): valor is string {
-  return typeof valor === "string" && PATRON.test(valor);
+  return typeof valor === "string" && PATRON.test(valor) && valor !== DISPOSITIVO_SIN_ACCIONES;
 }
 
 /** `dis_` y 24 caracteres hexadecimales al azar. */

@@ -76,7 +76,10 @@ no se mueve cuesta dos subconsultas con índice, cero tokens. Detalle en
 [`docs/algoritmos/portada-de-maya.md`](../algoritmos/portada-de-maya.md).
 
 Además, **una generación en vuelo por persona**: si el reloj y una visita piden la misma
-portada a la vez, el modelo se llama una sola vez y las dos esperan ese resultado.
+portada a la vez, el modelo se llama una sola vez y las dos esperan ese resultado. Y las dos
+puertas pasivas (`visita`, `consulta`) no reintentan la misma portada más de una vez cada 5
+minutos (`ESPERA_ENTRE_INTENTOS_MS`): si el modelo falla, cien visitas no son cien intentos
+pagados.
 
 ### Cómo se arma una portada (`generar.ts`)
 
@@ -143,8 +146,8 @@ La página (`page.tsx`) decide con `estadoDelInicio`:
 | Estado | Qué se pinta |
 |---|---|
 | Inactivo (flag en 0, sin llave o sin `DATABASE_URL`) | La pantalla programada de siempre, sin aviso |
-| Portada al día | `InicioDeMaya`: encabezado (saludo, `texto`, modelo, tools, tiempo, "¿Por qué veo esto?", sugerencias) y el `Lienzo` con la superficie |
-| Sin portada o desactualizada | La programada + `RefrescoDelInicio` ("Maya está armando tu inicio…"), que pregunta a `/api/inicio` cada 3 s y hace `router.refresh()` cuando llega la nueva; se rinde a los 90 s |
+| Hay portada (al día, o vencida mientras se rearma) | `InicioDeMaya`: encabezado (saludo, `texto`, modelo, tools, tiempo, "¿Por qué veo esto?", sugerencias) y el `Lienzo` con la superficie |
+| Sin portada | La programada + `RefrescoDelInicio` ("Maya está armando tu inicio…"), que pregunta a `/api/inicio` cada 3 s y hace `router.refresh()` cuando llega la nueva; se rinde a los 90 s |
 
 `InicioDeMaya` reconstruye la superficie con `procesarVarios` y la pinta con el **mismo**
 `Lienzo` de la conversación: mismo motor, mismas tarjetas, mismo acomodo. `data-pieza` y
@@ -264,7 +267,9 @@ Sin la primera regla cae en prosa; sin la segunda, la respuesta queda sin veredi
 
 Desde la migración 0007 la portada no es una por persona para todos: **cada visitante tiene la
 suya en cuanto hace algo**. Mientras un dispositivo no ha aplicado nada, ve la portada común de
-`pantallas_inicio` (la del reloj) y no cuesta modelo. Cuando aplica una acción, pregunta en la
+`pantallas_inicio` (la del reloj) y no cuesta modelo; si la común tiene acciones de un script,
+ve la portada **sin acciones** que comparten todos los visitantes nuevos (el ámbito reservado
+`dis_sinacciones00`, armada una vez por persona). Cuando aplica una acción, pregunta en la
 barra o ajusta una tarjeta, su portada vive en `pantallas_por_dispositivo` y la común queda
 intacta para los demás. Las cuatro puertas reciben `{ dispositivoId }` (la página, `/api/inicio`
 y la acción lo leen de la cookie `maya_dispositivo`); el reloj solo rearma las tres comunes. La

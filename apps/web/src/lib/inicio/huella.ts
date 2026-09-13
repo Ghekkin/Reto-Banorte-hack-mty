@@ -33,6 +33,14 @@ export function armarHuella(partes: PartesDeHuella): string {
 }
 
 /**
+ * Si la huella es de un ambito que no ha aplicado ninguna accion (`a:0:0`). Es lo que decide si
+ * un visitante puede compartir la portada sin acciones de su persona (`servicio.ts`).
+ */
+export function huellaSinAcciones(huella: string): boolean {
+  return huella.split("|").includes("a:0:0");
+}
+
+/**
  * Dos subconsultas con indice, no dos tablas enteras: corre en cada visita a Inicio.
  *
  * Las acciones que cuentan son las del dispositivo (ADR 0012): cada visitante tiene su propio
