@@ -62,11 +62,18 @@ const CASOS = [
     dataModelContiene: "planActivo",
   },
   {
+    // En una conversacion NUEVA: en la misma, el plan recien aplicado ya esta en pantalla
+    // (ResumenTarjeta + Calendario) y `responder` es la salida correcta (issue #44). Lo que
+    // este caso prueba es que el plan quedo guardado y se puede volver a leer del MCP.
     nombre: "Beto · el plan ya aplicado se puede consultar",
     usuario: "usr_beto",
     texto: "¿Como va mi plan de pago?",
     componentes: [],
     prohibidos: [],
+    nuevaConversacion: true,
+    toolsAlternativas: ["consultar_plan", "consultar_tarjeta"],
+    // La mensualidad del plan a 18 meses: sale en cualquier pantalla del plan.
+    pantallaContiene: "319335",
   },
   {
     nombre: "Beto · gasto por categoria",

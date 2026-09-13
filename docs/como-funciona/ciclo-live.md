@@ -13,6 +13,12 @@ cosas muy distintas:
    *misma* tarjeta, con otro parámetro.
 3. **«¿cómo voy con mi ahorro?»** — eso ya es otro tema, y toca otra pantalla.
 
+Una pregunta por el **estado** de algo tuyo («¿cómo va mi plan?», «¿cuánto debo?») es del tercer
+tipo: Maya consulta al banco y te pinta la pantalla de ese estado. La única excepción es que ese
+estado ya lo estés viendo, como el plan que acabas de aplicar con su calendario: entonces te lo
+explica sobre esa misma pantalla, sin consultar ni repintar, y nunca dice que la pantalla muestra
+algo que no está.
+
 Antes las tres costaban lo mismo: la pantalla se tiraba y se volvía a construir de cero, con sus
 esqueletos de carga, sus consultas al banco y unos seis segundos de espera. Preguntar «¿por qué?»
 te borraba la tarjeta por la que preguntabas.
@@ -54,6 +60,29 @@ excepción son las de `ACCIONES_EN_SU_LUGAR` (`cierre.ts`, hoy `programar_abono_
 sabe pintar el estado «ya aplicado», así que cierran con `ajustar_pantalla` sobre esa misma tarjeta.
 Y un ajuste ya no se limita a la última pantalla: con `pantalla: "p1"` cambia una de arriba del hilo.
 Las dos cosas están en `docs/como-funciona/ajustes-en-vivo.md`.
+
+### Preguntas por el estado de un producto (issue #44)
+
+«¿Cómo va mi plan de pago?» justo después de aplicar el plan cerró con `responder` (`cor_444a57a6…`,
+2026-09-13 06:54). No fue un error: la pantalla que mandó el cliente ya tenía `ResumenTarjeta` con
+`planActivo`, saldo en cero y el `Calendario` de los próximos pagos, y el texto no dijo nada que no
+estuviera ahí. Lo que faltaba era la regla escrita en los dos sentidos:
+
+- `prompt.ts`, bajo «Las tres salidas del turno»: una pregunta por el ESTADO de un producto consulta
+  (`consultar_plan`, `consultar_creditos`…) y pinta; solo es `responder` si ese mismo estado ya está en
+  `componentes en pantalla`. Y `responder` nunca dice que algo se ve en pantalla si no está en ese bloque.
+- La descripción de la tool `responder` (`cierre.ts`) repite ese freno.
+- `scripts/probar-guion.mjs`, caso «el plan ya aplicado se puede consultar»: corre en una
+  **conversación nueva** (sin el plan en pantalla) y exige `consultar_plan` o `consultar_tarjeta` y la
+  mensualidad del plan (`319335`) en la pantalla. Es lo que ese caso quería probar: que el plan quedó
+  guardado y se vuelve a leer del MCP.
+- Pruebas: `__tests__/estado-de-producto.spec.ts`.
+
+**Descartado, medido:** un freno de código que rechace un `responder` cuyas cifras no estén en el árbol
+o en los datos del turno (`verificarCifras` de `lib/widgets/cifras.ts`). Aplicado a los 4 `responder`
+del 13, rechazaba 2 respuestas correctas: una de un cliente que aún no mandaba el data model, y
+«$100,000» que la persona había escrito como «100 000». Un reintento en la salida más barata cuesta
+más de lo que protege.
 
 ### Por qué el motor ya lo soportaba
 

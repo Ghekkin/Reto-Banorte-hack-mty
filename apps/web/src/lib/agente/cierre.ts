@@ -187,7 +187,7 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
         "Contesta con palabras y DEJA la pantalla como esta. Solo para aclarar algo que ya se ve: que " +
         "significa una cifra, de donde sale, por que se lo recomiendas. Si la respuesta necesita un dato " +
         "que no esta en pantalla, no es una aclaracion: consulta y usa `ajustar_pantalla` o " +
-        "`pintar_pantalla`.",
+        "`pintar_pantalla`. No afirmes que la pantalla muestra algo que no esta en ella.",
       inputSchema: entradaResponder,
       execute: (entrada: EntradaResponder): ResultadoResponder => {
         ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: entrada.sugerencias ?? [] };
