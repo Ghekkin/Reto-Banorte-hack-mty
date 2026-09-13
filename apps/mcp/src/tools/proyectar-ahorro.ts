@@ -1,6 +1,7 @@
 import { EntradaProyectarAhorro, SalidaProyectarAhorro } from "@maya/schemas";
 import { aEntero, filtrar } from "../datos/index.js";
 import { apartadosCreados, capacidadPagoMensual, cuentaDe, planAplicado } from "../dominio/consultas.js";
+import { creditosAPlazo } from "../dominio/creditos.js";
 import { hoy, periodoAnterior, periodoDe, sumarMeses } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -118,9 +119,12 @@ function elegirMeta(usuarioId: string, metaId?: string) {
  * Lo que la persona puede apartar al mes. Se toma lo MENOR entre lo que su flujo
  * historico dejo libre (ingresos menos gastos, promedio de 3 meses) y la capacidad de
  * pago de buro: prometerle ahorrar mas de lo que le sobra es prometerle que fallara.
- * Si ya tiene un plan de pago activo, su mensualidad se descuenta.
+ * Si ya tiene un plan de pago activo, su mensualidad se descuenta; y tambien los abonos a
+ * capital que haya programado (`programar_abono_capital`): son dinero que ya sale cada mes, y
+ * sin descontarlos el simulador de Ana le ofreceria ahorrar lo mismo que acaba de mandar al
+ * credito (`docs/como-funciona/ajustes-en-vivo.md`).
  */
-function capacidadDeAhorro(usuarioId: string): number {
+export function capacidadDeAhorro(usuarioId: string): number {
   const movimientos = filtrar("movimientos", "usuario_id", usuarioId);
   let periodo = periodoDe(hoy());
   let libre = 0;
@@ -138,7 +142,8 @@ function capacidadDeAhorro(usuarioId: string): number {
   }
   const delFlujo = Math.round(libre / MESES_DE_FLUJO);
   const plan = planAplicado(usuarioId);
-  const comprometido = plan?.mensualidadCentavos ?? 0;
+  const abonos = creditosAPlazo(usuarioId).reduce((suma, c) => suma + (c.abonoMensualCentavos ?? 0), 0);
+  const comprometido = (plan?.mensualidadCentavos ?? 0) + abonos;
   return Math.max(0, Math.min(delFlujo, capacidadPagoMensual(usuarioId)) - comprometido);
 }
 

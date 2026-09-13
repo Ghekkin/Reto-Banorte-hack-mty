@@ -40,8 +40,8 @@ sobre los verbos del texto.
 | `pintar_pantalla` | `createSurface` + `updateComponents` + `updateDataModel` en `/` | **apila** una pantalla nueva |
 
 Por qué tools y no un clasificador aparte: cero latencia extra, un solo punto de falla en vez de
-dos, y la decisión queda visible en la tira de transparencia, que es lo que el jurado tiene que
-poder ver. El modelo ya está leyendo la pregunta; no hace falta que otro se la lea.
+dos, y la decisión queda registrada en la línea `fin` del stream (`cierre`), que se puede
+revisar desde las herramientas de red del navegador. El modelo ya está leyendo la pregunta; no hace falta que otro se la lea.
 
 **En el primer turno solo existe `pintar_pantalla`.** Lo decide `crearCierre(pantallaActual?)`: sin
 pantalla previa no hay nada que ajustar ni que aclarar, y ofrecer las tres invitaría al modelo a
@@ -49,7 +49,11 @@ contestar con texto — exactamente lo que este producto existe para no hacer. L
 cliente que no mande el árbol de la pantalla.
 
 Una **acción que muta estado** sigue obligada a `pintar_pantalla`: hay que volver a pintar la
-tarjeta que cambió, y eso es la prueba del ciclo (`historial.ts`, rama de `peticion.accion`).
+tarjeta que cambió, y eso es la prueba del ciclo (`historial.ts`, rama de `peticion.accion`). La
+excepción son las de `ACCIONES_EN_SU_LUGAR` (`cierre.ts`, hoy `programar_abono_capital`): su tarjeta
+sabe pintar el estado «ya aplicado», así que cierran con `ajustar_pantalla` sobre esa misma tarjeta.
+Y un ajuste ya no se limita a la última pantalla: con `pantalla: "p1"` cambia una de arriba del hilo.
+Las dos cosas están en `docs/como-funciona/ajustes-en-vivo.md`.
 
 ### Por qué el motor ya lo soportaba
 
@@ -151,7 +155,7 @@ pnpm probar-inicio        # 3 portadas con el modelo real: exactamente 3 tarjeta
 Y a mano, sobre una pantalla ya pintada, los tres tipos de turno: «¿por qué me sale tan alto?»
 (cero `a2ui`), «ordénalo por variación» (solo `updateDataModel`/`updateComponents`, sin parpadeo),
 «¿cómo voy con mi ahorro?» (repintado con 3 tarjetas). El `fin` del stream lleva `cierre` con cuál
-de las tres fue, así que es comprobable desde la tira de transparencia.
+de las tres fue, así que es comprobable en la respuesta de `/api/agente` (pestaña de red).
 
 ## Lo que no está verificado
 

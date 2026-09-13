@@ -16,17 +16,24 @@ export function emitirAccion(opciones: {
   conversacionId: string;
   /** Lo que el componente sabe y el data model no (el plazo que el usuario acaba de elegir). */
   contextoExtra?: Record<string, unknown>;
+  /**
+   * Otra de las acciones que el catalogo declara para este componente (`accionesDe`), en vez de
+   * la de su `action`. Ya viene validada por quien llama. Su context es SOLO `contextoExtra`: los
+   * enlaces del `action` declarado son de la otra accion y no le corresponden.
+   */
+  nombre?: string;
   ahora?: () => string;
 }): Accion | undefined {
-  const { componente, surfaceId, dataModel, item, conversacionId, contextoExtra, ahora } = opciones;
+  const { componente, surfaceId, dataModel, item, conversacionId, contextoExtra, nombre, ahora } = opciones;
   const evento = componente.action?.event;
   if (!evento) return undefined;
 
   const timestamp = (ahora ?? (() => new Date().toISOString()))();
-  const resuelto = (resolverValor(evento.context ?? {}, dataModel, item) ?? {}) as Record<string, unknown>;
+  const otra = nombre !== undefined && nombre !== evento.name;
+  const resuelto = otra ? {} : ((resolverValor(evento.context ?? {}, dataModel, item) ?? {}) as Record<string, unknown>);
 
   return {
-    name: evento.name,
+    name: otra ? nombre : evento.name,
     surfaceId,
     sourceComponentId: componente.id,
     timestamp,

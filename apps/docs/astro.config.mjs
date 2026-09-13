@@ -4,7 +4,7 @@ import react from '@astrojs/react';
 
 // https://astro.build/config
 export default defineConfig({
-  site: 'https://maya-docs.local',
+  site: 'https://docs.ghekkinxmaya.tech',
   integrations: [
     starlight({
       title: 'Maya · Reto Banorte',

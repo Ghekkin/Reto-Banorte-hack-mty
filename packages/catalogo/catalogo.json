@@ -3387,7 +3387,7 @@
     },
     "ProyeccionPagoCredito": {
       "type": "object",
-      "description": "La persona pregunta '¿Cuánto me falta para terminar de pagar mi crédito?' o '¿Cuánto pagaré de puros intereses?', o pregunta por intereses y su deuda es un crédito a plazo (no una tarjeta). Los datos salen de `consultar_creditos` con `incluirAmortizacion: true` y `proximosPagos: 12`: la tabla da los hitos. `totalInteresesEstimadosCentavos` = `mensualidadCentavos` × `pagosRestantes` − `saldoInsolutoCentavos` (lo que falta pagar de puros intereses). No lleva boton: todavia no hay tool que simule un abono a capital.",
+      "description": "La persona pregunta '¿Cuánto me falta para terminar de pagar mi crédito?' o '¿Cuánto pagaré de puros intereses?', o pregunta por intereses y su deuda es un crédito a plazo (no una tarjeta). Los datos salen de `consultar_creditos` con `incluirAmortizacion: true` y `proximosPagos: 12`: la tabla da los hitos. `totalInteresesEstimadosCentavos` = `mensualidadCentavos` × `pagosRestantes` − `saldoInsolutoCentavos`. Si con la tarjeta YA en pantalla pregunta '¿y si pago $6,000 al mes?' o 'quiero liquidarlo en 12 meses': llama `simular_pago_credito` y, si `posible`, usa `ajustar_pantalla` sobre ESTA tarjeta (no pintes otra): `mensualidadCentavos`, `plazoRestanteMeses`, `totalInteresesEstimadosCentavos`, `fechaLiquidacion` y `amortizacionResumen` con los de `simulado`; `antes` con `actual`; `mensualidadContratoCentavos`; `aviso` si no es null; `programado: false`. Si no es posible, no parchees: di el `motivo`. El botón «Programar este pago» dispara `programar_abono_capital` con { creditoId, mensualidadCentavos } en el context; cuando la tool responda `aplicado`, vuelve a ajustar la misma tarjeta con `despues`, `antes` y `programado: true`.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -3442,7 +3442,7 @@
               ]
             },
             "creditoId": {
-              "description": "ID del crédito consultado",
+              "description": "ID del crédito (cred_…): `creditos[].id` de `consultar_creditos`. Viaja en la acción",
               "anyOf": [
                 {
                   "type": "string"
@@ -3453,7 +3453,7 @@
               ]
             },
             "alias": {
-              "description": "Nombre comercial o alias de la persona (ej. 'Crédito de Nómina')",
+              "description": "Nombre del crédito (ej. 'Crédito de Nómina')",
               "anyOf": [
                 {
                   "type": "string"
@@ -3464,7 +3464,7 @@
               ]
             },
             "saldoInsolutoCentavos": {
-              "description": "Saldo insoluto pendiente de pago",
+              "description": "Saldo insoluto pendiente de pago. No cambia al simular",
               "anyOf": [
                 {
                   "type": "integer",
@@ -3477,7 +3477,7 @@
               ]
             },
             "mensualidadCentavos": {
-              "description": "Monto del pago mensual regular",
+              "description": "Lo que se paga al mes EN TOTAL. Al simular o programar: `simulado.mensualidadCentavos` / `despues.mensualidadCentavos`",
               "anyOf": [
                 {
                   "type": "integer",
@@ -3501,7 +3501,7 @@
               ]
             },
             "plazoRestanteMeses": {
-              "description": "Meses faltantes para liquidar el crédito",
+              "description": "Meses que faltan para liquidar. Al simular o programar: el del escenario",
               "anyOf": [
                 {
                   "type": "integer",
@@ -3514,7 +3514,7 @@
               ]
             },
             "totalInteresesEstimadosCentavos": {
-              "description": "Suma total de intereses a pagar si se mantiene el calendario",
+              "description": "Intereses con IVA de hoy a liquidar. Al simular o programar: el del escenario",
               "anyOf": [
                 {
                   "type": "integer",
@@ -3526,13 +3526,11 @@
                 }
               ]
             },
-            "ahorroConAbonoCapitalCentavos": {
-              "description": "Ahorro en intereses con un abono extraordinario a capital. SOLO si una tool lo calculo; hoy ninguna lo hace, asi que dejalo fuera en vez de estimarlo",
+            "fechaLiquidacion": {
+              "description": "Fecha ISO del último pago (AAAA-MM-DD): `fechaLiquidacion` del escenario, si lo parcheas entero",
               "anyOf": [
                 {
-                  "type": "integer",
-                  "minimum": -9007199254740991,
-                  "maximum": 9007199254740991
+                  "type": "string"
                 },
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
@@ -3540,10 +3538,10 @@
               ]
             },
             "amortizacionResumen": {
-              "description": "Hitos clave de la tabla de amortización",
+              "description": "De 1 a 4 hitos: el próximo pago, intermedios y la liquidación. Al simular o programar: los del escenario",
               "anyOf": [
                 {
-                  "minItems": 2,
+                  "minItems": 1,
                   "type": "array",
                   "items": {
                     "type": "object",
@@ -3552,23 +3550,23 @@
                         "type": "integer",
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991,
-                        "description": "Número de mensualidad"
+                        "description": "Número de mensualidad; puede venir contado desde la contratación (así lo manda la tool)"
                       },
                       "periodo": {
                         "type": "string",
-                        "description": "Etiqueta temporal (ej. 'Mes 1', 'Mes 6', 'Mes 12', 'Liquidación')"
+                        "description": "Fecha ISO del pago (AAAA-MM-DD, como la manda la tool) o una etiqueta corta ('Próximo pago', 'Liquidación')"
                       },
                       "capitalCentavos": {
                         "type": "integer",
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991,
-                        "description": "Amortización directa a capital acumulada o del periodo"
+                        "description": "Lo que ese pago abona a capital"
                       },
                       "interesCentavos": {
                         "type": "integer",
                         "minimum": -9007199254740991,
                         "maximum": 9007199254740991,
-                        "description": "Intereses devengados"
+                        "description": "El interés de ese pago, con su IVA: capital + interés = lo que se paga ese mes"
                       },
                       "saldoFinalCentavos": {
                         "type": "integer",
@@ -3588,6 +3586,125 @@
                 },
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "antes": {
+              "description": "Cómo iba ANTES del cambio: el `actual` de `simular_pago_credito` o el `antes` de `programar_abono_capital`. Presente = hay una comparación que mostrar («Terminas en 11 meses (antes 15)»). Déjalo fuera al pintar la tarjeta por primera vez",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "mensualidadCentavos": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Lo que se pagaba al mes EN TOTAL antes del cambio"
+                    },
+                    "plazoRestanteMeses": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Meses que faltaban antes del cambio"
+                    },
+                    "totalInteresesEstimadosCentavos": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "Intereses con IVA que faltaban antes del cambio"
+                    }
+                  },
+                  "required": [
+                    "mensualidadCentavos",
+                    "plazoRestanteMeses",
+                    "totalInteresesEstimadosCentavos"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "mensualidadContratoCentavos": {
+              "description": "La mensualidad del contrato (`mensualidadContratoCentavos` de la tool). Si `mensualidadCentavos` es mayor, la tarjeta dice cuánto va a capital",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "programado": {
+              "description": "true SOLO después de que `programar_abono_capital` respondió `aplicado`: badge «Abono programado» y sin botón. Al simular, false",
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aviso": {
+              "description": "El `aviso` de `simular_pago_credito` tal cual, si no es null (posible pero rebasa su capacidad de pago). Si es null, déjalo fuera",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaBoton": {
+              "description": "Texto del botón que programa el abono",
+              "default": "Programar este pago",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "ahorroConAbonoCapitalCentavos": {
+              "description": "Obsoleto: no lo pongas. El ahorro de pagar más al mes lo dice la comparación con `antes`",
+              "anyOf": [
+                {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "action": {
+              "description": "La accion que este componente devuelve al agente. Nombres validos: programar_abono_capital.",
+              "allOf": [
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "enum": [
+                            "programar_abono_capital"
+                          ]
+                        }
+                      }
+                    }
+                  }
                 }
               ]
             }

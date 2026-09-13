@@ -5,12 +5,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
 import { estadoVacio, nombresVisibles, procesarVarios, type Accion, type EstadoSuperficie } from "@maya/a2ui";
 import { Conclusion } from "@maya/catalogo";
-import { Info } from "lucide-react";
 import { Lienzo } from "@/components/maya/lienzo";
 import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
-import { Badge } from "@/components/ui/badge";
 import type { PantallaDeInicio } from "@/lib/inicio/almacen";
-import { MARCA } from "@/lib/marca";
 
 /**
  * El Inicio que armo Maya: la portada personalizada de esta persona, pintada con el
@@ -36,6 +33,11 @@ import { MARCA } from "@/lib/marca";
  * Los botones de las tarjetas funcionan: un toque manda a la persona a Maya con esa
  * accion ya disparada (`/maya?accion=…`). Inicio no ejecuta nada por si mismo; el ciclo
  * de accion vive en un solo lugar.
+ *
+ * **Sin pie tecnico.** Hasta el 2026-09-13 debajo del lienzo iba una linea con el modelo,
+ * cuantas tools del MCP consulto, cuanto tardo y hace cuanto se armo. Era evidencia para el
+ * jurado, pero esta es la pantalla de la persona: se quito. Esos datos siguen en
+ * `banorte.pantallas_inicio` y en `GET /api/inicio`.
  */
 export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio; nombre: string }) {
   const router = useRouter();
@@ -86,7 +88,6 @@ export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio;
         </div>
       )}
       <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={irAMaya} />
-      <EvidenciaDeMaya pantalla={pantalla} className={saliendo ? "animar-salida" : undefined} />
     </div>
   );
 }
@@ -105,49 +106,4 @@ export function partirEnTitular(texto: string): { titular: string; detalle?: str
   const corte = limpio.search(/\.\s+/);
   if (corte === -1) return { titular: limpio };
   return { titular: limpio.slice(0, corte + 1), detalle: limpio.slice(corte + 1).trim() || undefined };
-}
-
-/**
- * La evidencia de que esto lo decidio un modelo con datos reales: que modelo, cuantas
- * tools del MCP consulto, cuanto tardo y hace cuanto se armo.
- *
- * Va **debajo** del dashboard y en letra chica, no arriba con un avatar. Es informacion
- * para el jurado ("esto no esta cableado"), no para la persona: si compite por atencion
- * con la conclusion y con los montos, la pantalla vuelve a leerse como un chat.
- *
- * El "¿Por que veo esto?" ya no vive aqui: ahora es el pie de la tarjeta `Conclusion`,
- * como en cualquier otra tarjeta del catalogo.
- */
-function EvidenciaDeMaya({ pantalla, className }: { pantalla: PantallaDeInicio; className?: string }) {
-  const tools = pantalla.tools.map((t) => t.replace(/!$/, ""));
-
-  return (
-    <p
-      aria-label={`Como armo ${MARCA.nombre} esta pantalla`}
-      className={`flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-muted-foreground ${className ?? ""}`}
-    >
-      <Badge variant="outline" className="rounded-full border-borde-sutil font-normal">
-        {pantalla.modelo}
-      </Badge>
-      {tools.length > 0 && (
-        <span title={tools.join(" · ")}>
-          {tools.length} {tools.length === 1 ? "tool del MCP" : "tools del MCP"} · {(pantalla.ms / 1000).toFixed(1)} s
-        </span>
-      )}
-      <span aria-hidden>·</span>
-      <time dateTime={pantalla.generadaEn} suppressHydrationWarning>
-        {haceCuanto(pantalla.generadaEn)}
-      </time>
-    </p>
-  );
-}
-/** "hace un momento", "hace 4 min", "hace 2 h": lo que se necesita para saber si es fresca. */
-export function haceCuanto(iso: string, ahora = Date.now()): string {
-  const segundos = Math.max(0, Math.round((ahora - new Date(iso).getTime()) / 1000));
-  if (segundos < 60) return "hace un momento";
-  const minutos = Math.round(segundos / 60);
-  if (minutos < 60) return `hace ${minutos} min`;
-  const horas = Math.round(minutos / 60);
-  if (horas < 24) return `hace ${horas} h`;
-  return `hace ${Math.round(horas / 24)} d`;
 }

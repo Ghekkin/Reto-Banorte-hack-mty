@@ -42,4 +42,5 @@ export const MUTACIONES_DIRECTAS = [
   "cancelar_suscripcion",
   "crear_tope_gasto",
   "rebalancear_portafolio",
+  "programar_abono_capital",
 ] as const;

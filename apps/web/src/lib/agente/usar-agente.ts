@@ -12,7 +12,14 @@ import {
   type FalloDeRender,
   type MensajeA2UI,
 } from "@maya/a2ui";
-import type { LineaStream, MensajeHistorial, PeticionAgente } from "@/lib/agente/tipos";
+import {
+  MAX_PANTALLAS_ANTERIORES,
+  type LineaStream,
+  type MensajeHistorial,
+  type PantallaAnterior,
+  type PeticionAgente,
+} from "@/lib/agente/tipos";
+import { accionLegible, AVISO_DE_FALLO } from "@/lib/para-la-persona";
 
 /**
  * El lado del cliente del contrato agente <-> cliente: manda el turno, lee el
@@ -93,6 +100,57 @@ export function colocarPantalla(
   return [...hilo, entrada];
 }
 
+/**
+ * El id de cada pantalla del hilo (`p1`, `p2`…, contadas desde la primera), alineado con los
+ * indices del hilo; `undefined` en los mensajes.
+ *
+ * Es posicional a proposito: el hilo solo crece por el final y un ajuste reemplaza en su lugar,
+ * asi que el numero de una pantalla no cambia en toda la conversacion. Es lo que el agente usa
+ * para decir "la tarjeta del credito de la p1" (`ajustar_pantalla` con `pantalla`).
+ */
+export function numerarPantallas(hilo: EntradaDelHilo[]): Array<string | undefined> {
+  let n = 0;
+  return hilo.map((e) => (e.tipo === "pantalla" ? `p${++n}` : undefined));
+}
+
+/**
+ * Las pantallas de arriba que viajan al agente: todas menos la actual, **las mas recientes
+ * primero** y como mucho `MAX_PANTALLAS_ANTERIORES`. Con el arbol alcanzable desde la raiz,
+ * igual que la actual (issue #3).
+ *
+ * `actual` es el id de la pantalla que ya va en `superficie`; si no hay (la superficie viva
+ * todavia no se congelo), todas las del hilo cuentan como anteriores.
+ */
+export function pantallasAnteriores(hilo: EntradaDelHilo[], actual: string | undefined): PantallaAnterior[] {
+  const ids = numerarPantallas(hilo);
+  const salida: PantallaAnterior[] = [];
+  for (let i = hilo.length - 1; i >= 0 && salida.length < MAX_PANTALLAS_ANTERIORES; i--) {
+    const entrada = hilo[i]!;
+    const id = ids[i];
+    if (entrada.tipo !== "pantalla" || !id || id === actual) continue;
+    salida.push({ pantalla: id, arbol: componentesVisibles(entrada.superficie), dataModel: entrada.superficie.dataModel });
+  }
+  return salida;
+}
+
+/**
+ * Aplica un mensaje A2UI a una pantalla que YA quedo congelada arriba en el hilo, sin tocar la
+ * actual. Es el lado cliente de "la actualiza donde esta": el ajuste llega con `pantalla` y se
+ * procesa sobre esa superficie, con el mismo `procesar` que la viva (referencia nueva, asi que
+ * React la vuelve a pintar). Si el id no existe, el hilo se devuelve igual: mejor no mostrar el
+ * cambio que pintarlo en la pantalla equivocada.
+ */
+export function aplicarAPantallaAnterior(hilo: EntradaDelHilo[], pantalla: string, mensaje: MensajeA2UI): EntradaDelHilo[] {
+  const i = numerarPantallas(hilo).indexOf(pantalla);
+  const entrada = hilo[i];
+  if (i < 0 || entrada?.tipo !== "pantalla") return hilo;
+  const superficie = procesar(new Map([[entrada.superficie.id, entrada.superficie]]), mensaje).estado.get(entrada.superficie.id);
+  if (!superficie || superficie === entrada.superficie) return hilo;
+  const copia = [...hilo];
+  copia[i] = { ...entrada, superficie };
+  return copia;
+}
+
 /** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
 const TOPE_DE_FALLOS = 2;
 
@@ -103,6 +161,8 @@ export function usarAgente(usuarioId: string) {
   const [sugerencias, setSugerencias] = useState<string[]>([]);
   const [razon, setRazon] = useState<string>();
   const [transparencia, setTransparencia] = useState<LineaStream[]>([]);
+  /** La ultima pantalla de ARRIBA que un ajuste cambio, para traerla a la vista. */
+  const [pantallaAjustada, setPantallaAjustada] = useState<{ pantalla: string; vez: number }>();
   const conversacionId = useRef(crearId());
   /**
    * El historial que viaja al agente sale del hilo, no de un estado paralelo: una sola
@@ -129,6 +189,7 @@ export function usarAgente(usuarioId: string) {
     setSugerencias([]);
     setRazon(undefined);
     setTransparencia([]);
+    setPantallaAjustada(undefined);
   }, []);
 
   /**
@@ -138,12 +199,17 @@ export function usarAgente(usuarioId: string) {
    * quede en silencio esperando una frase que no existe.
    */
   const enviar = useCallback(
-    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error">): Promise<string> => {
+    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error" | "pantallaDeLaAccion">): Promise<string> => {
       setOcupado(true);
       setTransparencia([]);
       let respuestaHablada = "";
+      let huboError = false;
       try {
         const superficie = estado.get(SUPERFICIE);
+        // La viva ya esta congelada al final del hilo (no hay turno en vuelo): es la ultima.
+        const pantallas = numerarPantallas(hilo).filter((id): id is string => Boolean(id));
+        const idActual = superficie && calcularSuperficieViva(hilo, superficie) === undefined ? pantallas.at(-1) : undefined;
+        const anteriores = pantallasAnteriores(hilo, idActual);
         const respuesta = await fetch("/api/agente", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -153,6 +219,7 @@ export function usarAgente(usuarioId: string) {
             mensajes: parcial.mensajes,
             accion: parcial.accion,
             error: parcial.error,
+            ...(parcial.pantallaDeLaAccion ? { pantallaDeLaAccion: parcial.pantallaDeLaAccion } : {}),
             superficie: superficie
               ? {
                   surfaceId: superficie.id,
@@ -163,6 +230,8 @@ export function usarAgente(usuarioId: string) {
                   componentes: nombresVisibles(superficie),
                   arbol: componentesVisibles(superficie),
                   dataModel: superficie.dataModel,
+                  ...(idActual ? { pantalla: idActual } : {}),
+                  ...(anteriores.length ? { anteriores } : {}),
                 }
               : undefined,
           } satisfies PeticionAgente),
@@ -179,6 +248,12 @@ export function usarAgente(usuarioId: string) {
           setTransparencia([...lineas]);
           switch (linea.tipo) {
             case "a2ui":
+              // Un ajuste a una pantalla de arriba se aplica a ESA, congelada; la actual no se toca.
+              if (linea.pantalla && linea.pantalla !== idActual) {
+                const { pantalla, mensaje } = linea;
+                setHilo((h) => aplicarAPantallaAnterior(h, pantalla, mensaje as MensajeA2UI));
+                break;
+              }
               actual = procesar(actual, linea.mensaje as MensajeA2UI).estado;
               setEstado(actual);
               break;
@@ -193,14 +268,22 @@ export function usarAgente(usuarioId: string) {
               setSugerencias(linea.valores);
               break;
             case "error":
-              respuestaHablada = respuestaHablada || `Tuve un problema: ${linea.mensaje}`;
-              setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: `⚠ ${linea.mensaje}` }]);
+              // El detalle es para el equipo (queda en `transparencia` y en la consola); la
+              // persona lee la frase que el servidor manda despues en `texto`, o el aviso de abajo.
+              huboError = true;
+              console.warn(`[agente] ${linea.codigo}: ${linea.mensaje}`);
               break;
             case "fin": {
               // La pantalla del turno se queda en el hilo, con su tira de transparencia.
               // Un turno que no pinto nada (prosa, error, `responder`) no congela nada: no
               // hay que dejar un hueco vacio en la conversacion.
-              const emitioA2ui = lineas.some((l) => l.tipo === "a2ui");
+              if (linea.cierre === "ajustar" && linea.pantalla && linea.pantalla !== idActual) {
+                // Ya quedo aplicado arriba, linea por linea. Solo falta llevar la vista hasta alla.
+                const pantalla = linea.pantalla;
+                setPantallaAjustada((p) => ({ pantalla, vez: (p?.vez ?? 0) + 1 }));
+                break;
+              }
+              const emitioA2ui = lineas.some((l) => l.tipo === "a2ui" && !l.pantalla);
               const pantalla = actual.get(SUPERFICIE);
               if (emitioA2ui && pantalla && pantalla.componentes.size > 0 && linea.cierre !== "responder") {
                 const congelada = [...lineas];
@@ -213,12 +296,16 @@ export function usarAgente(usuarioId: string) {
               break;
           }
         }
+        if (huboError && !respuestaHablada) {
+          respuestaHablada = AVISO_DE_FALLO;
+          setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: AVISO_DE_FALLO }]);
+        }
         return respuestaHablada || "Ya te deje la pantalla en tu conversacion con Maya.";
       } finally {
         setOcupado(false);
       }
     },
-    [estado, usuarioId],
+    [estado, hilo, usuarioId],
   );
 
   const enviarTexto = useCallback(
@@ -230,13 +317,18 @@ export function usarAgente(usuarioId: string) {
     [enviar, historial],
   );
 
-  /** Un toque en la UI es un turno mas: misma puerta, mismo contrato. */
+  /**
+   * Un toque en la UI es un turno mas: misma puerta, mismo contrato. `pantalla` es de cual
+   * pantalla del hilo salio (`p1`…): los botones de las de arriba siguen vivos, y el agente
+   * tiene que saber en cual buscar la tarjeta para cambiarla en su lugar.
+   */
   const enviarAccion = useCallback(
-    async (accion: Accion): Promise<string> => {
+    async (accion: Accion, pantalla?: string): Promise<string> => {
       const resumen = `${accion.name} ${JSON.stringify(accion.context)}`;
       const mensajes: MensajeHistorial[] = [...historial, { rol: "accion", texto: resumen }];
-      setHilo((h) => [...h, { tipo: "mensaje", rol: "accion", texto: resumen }]);
-      return enviar({ mensajes, accion });
+      // Al modelo le va el nombre y el context; a la persona, la accion en palabras.
+      setHilo((h) => [...h, { tipo: "mensaje", rol: "accion", texto: accionLegible(accion) }]);
+      return enviar({ mensajes, accion, ...(pantalla ? { pantallaDeLaAccion: pantalla } : {}) });
     },
     [enviar, historial],
   );
@@ -280,6 +372,7 @@ export function usarAgente(usuarioId: string) {
     hilo,
     superficie,
     superficieViva,
+    pantallaAjustada,
     conversacionId: conversacionId.current,
     historial,
     ocupado,
@@ -314,6 +407,11 @@ export function usarAgente(usuarioId: string) {
   }
 }
 
+/**
+ * `getRandomValues` y no `randomUUID`: el segundo solo existe en contexto seguro (HTTPS o
+ * localhost), y abriendo la web por `http://<ip>:3000` revienta el render de Maya.
+ */
 function crearId(): string {
-  return `c_${crypto.randomUUID().replaceAll("-", "").slice(0, 20)}`;
+  const bytes = crypto.getRandomValues(new Uint8Array(10));
+  return `c_${Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("")}`;
 }

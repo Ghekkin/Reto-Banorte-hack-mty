@@ -1604,6 +1604,25 @@ ese prefijo; A/B y razones en `docs/como-funciona/agente.md`. Typecheck en verde
 de web, guion 10/10 con el modelo real; `reiniciar-estado` antes y después del guion.
 Toque ajeno (contrato): `prompt.ts`, `agente.ts`, `cierre.ts`, `historial.ts`, `pantalla.ts`.
 
+### 01:48 (dom 13) — Fuera el texto técnico de la UI
+
+Pedido: quitar de la pantalla cosas como `gemini-3.1-flash-lite · 6 tools del MCP · 36.7 s ·
+hace 21 min`; todo tiene que ser para la persona. Se quitó:
+
+- El pie de evidencia de Inicio (`inicio-de-maya.tsx`; `haceCuanto` ya no tenía uso).
+- La tira LLM · MCP · A2UI con tools y "N pasos · X s" (`progreso-maya.tsx`): ahora es un
+  renglón con spinner ("Consultando tus datos…") que solo existe mientras corre el turno.
+- `Tocaste: aplicar_plan_pago {…json…}` → `Tocaste: Aplicar el plan de pago`
+  (`lib/para-la-persona.ts`, con prueba). Al modelo le llega lo mismo que antes.
+- Los `⚠ <error del servidor>` en el hilo: van a consola; la persona lee el `texto` del agente
+  o "Algo falló de mi lado. Intenta de nuevo.".
+- `error.tsx` sin `DATABASE_URL`/`message`/`digest`; `FronteraDeError` sin nombre de componente
+  ni mensaje; en Más, sin badges LLM · MCP · A2UI (se borró `MARCA.piezas`).
+
+La evidencia para el jurado queda en la respuesta de `/api/agente` (pestaña de red) y en el
+log. Guion y docs de arquitectura actualizados. Typecheck en verde; 169 pruebas de web y 117
+del motor A2UI. Toque ajeno (contrato): `usar-agente.ts`, `packages/a2ui/src/Superficie.tsx`.
+
 ### 02:20 (dom 13) — Corridas, chat y registros en la base
 
 Pedido: que la base guarde todo para poder depurar cualquier corrida. Migración
@@ -1634,3 +1653,32 @@ sheet. `SelectTrigger` ganó `icono={false}`. Verificado con Playwright a 1440 y
 (sidebar, sheet, barra y Más; teclado; acción retrasada 2 s; "Ana Sofía Treviño" ya no se
 corta). Typecheck y lint en verde, 178 pruebas de web. Doc: `shell-web.md`, sección "El
 selector de persona"; línea del sidebar en la skill `diseno-banorte`.
+
+### 03:05 (dom 13) — Ajustes en vivo: la tarjeta cambia donde está (fase 1, en curso)
+
+Pedido: que el contenido de las tarjetas cambie en tiempo real con lo que pide la persona, en
+vez de pintar otra. Antes de construir, cuatro rondas de preguntas; lo decidido (y que ya no se
+discute) quedó en `docs/como-funciona/ajustes-en-vivo.md`: entra **directo a la demo** aunque
+pasó la congelación de H30; los números los calcula una **tool MCP**; **simular y aplicar con
+botón**; los gastos fuera del banco **se guardan en la base**; señal **antes → después**; se
+ajusta y avisa si es riesgoso, no se toca si es imposible; se corrigen también las tarjetas
+dependientes; tras aplicar, **la misma tarjeta cambia** (sin `Confirmacion`); solo por chat; la
+tarjeta de una pantalla anterior se ajusta **donde está**; en el guion, Ana después del paso 3;
+orden: crédito → gasto externo → meta → plan de tarjeta.
+
+Verificado antes de diseñar: simular mes a mes con cuota fija reproduce **exacto** (0
+diferencias) las filas pendientes de `amortizaciones` de los 4 créditos. Ana con $6,000: 11
+pagos, $9,310.94 de intereses contra $12,781.15.
+
+Hecho por mí (contrato): schemas `simular-pago-credito.ts` y `programar-abono-capital.ts`;
+`ajustar_pantalla` con `pantalla` para pantallas anteriores (`ajustar.ts`, `cierre.ts`,
+`agente.ts`); `ACCIONES_EN_SU_LUGAR` + `instruccionDeAccion` (`historial.ts`); petición con
+`superficie.pantalla`/`anteriores` y `pantallaDeLaAccion` (`tipos.ts`); cliente
+(`usar-agente.ts`: `numerarPantallas`, `pantallasAnteriores`, `aplicarAPantallaAnterior`;
+`consola-maya.tsx` pasa la pantalla de cada acción y hace scroll a la ajustada); prompt;
+`probar-guion.mjs` ahora lleva el árbol vivo y ensaya los dos pasos nuevos de Ana. 30 pruebas
+nuevas en verde (`ajustes-en-vivo.spec.ts`, `hilo.spec.ts`). Docs: `ajustes-en-vivo.md`,
+contrato, `ciclo-live.md`, `intencion-y-parcheo.md`, guion. En paralelo, dos subagentes: MCP
+(dominio del abono, dos tools, migración 0005, pruebas) y catálogo (`ProyeccionPagoCredito` con
+antes/después, botón, programado y resaltado). Toque ajeno: `apps/web/src/components/maya/`
+(web), `apps/mcp` y `packages/catalogo` vía subagentes.

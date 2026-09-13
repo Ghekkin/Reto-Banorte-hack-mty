@@ -220,7 +220,23 @@ horizontal (1077 = 1077) y sin errores de consola.
 La conversación de Maya es **una sola lista en orden** (`hilo`, en
 `lib/agente/usar-agente.ts`) con las dos cosas que pasaron: lo que se dijo y lo que Maya
 construyó. Al cerrar un turno (la línea `fin` del stream) la superficie se **congela** en
-esa lista junto con la tira de transparencia de ese turno, y ahí se queda.
+esa lista (con las líneas del stream de ese turno, que no se pintan) y ahí se queda.
+
+**Lo que ve la persona mientras Maya trabaja** (`components/maya/progreso-maya.tsx`): un
+renglón con spinner que sigue la última línea `estado` del stream —"Entendiendo lo que
+necesitas", "Consultando tus datos", "Armando tu pantalla"— y **desaparece al terminar**.
+Hasta el 2026-09-13 era una tira con los badges LLM · MCP · A2UI, los nombres de las tools y
+"3 pasos · 5.2 s", y se quedaba pegada a cada pantalla del hilo; se quitó porque era texto
+técnico en la pantalla de la persona. Por lo mismo:
+
+- Un toque se lee en palabras (`Tocaste: Aplicar el plan de pago`), no como
+  `aplicar_plan_pago {"plazoMeses":12,…}`. La traducción es `accionLegible` en
+  `lib/para-la-persona.ts`; al modelo le sigue llegando el nombre y el `context`.
+- Una línea `error` del stream ya no entra al hilo como `⚠ <mensaje del servidor>`: va a la
+  consola del navegador. La persona lee la frase que el agente manda después en `texto`, y
+  si no llegó ninguna, `AVISO_DE_FALLO` ("Algo falló de mi lado. Intenta de nuevo.").
+- `app/(app)/error.tsx` ya no pinta el `message`, el `digest` ni "revisa `DATABASE_URL`": dice
+  que no se pudo traer la información y los manda a la consola.
 
 Antes el hilo guardaba solo texto y la pantalla vivía aparte, así que **cada pregunta
 nueva borraba la tarjeta anterior**: al desplazarse hacia arriba quedaban frases sueltas

@@ -10,8 +10,6 @@ export const MARCA = {
   /** Una linea, la que iria bajo el logo. */
   tagline: "Tu banco, en una conversación",
   contexto: "Reto Banorte · Hack Monterrey 2026",
-  /** Las tres piezas no negociables del reto, para el pie del sidebar. */
-  piezas: "LLM · MCP · A2UI",
   /**
    * Obligatorio en el pie de la app y en el README (skill `diseno-banorte`, seccion
    * Marca). No es opcional ni se acorta: es lo que separa un homenaje de una

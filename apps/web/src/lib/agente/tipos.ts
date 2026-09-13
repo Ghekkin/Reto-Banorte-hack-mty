@@ -34,6 +34,16 @@ export type FalloDeInterfaz = {
   message: string;
 };
 
+/** Una pantalla que ya quedo arriba en el hilo, con lo necesario para parchearla. */
+export type PantallaAnterior = {
+  pantalla: string;
+  arbol: Componente[];
+  dataModel: Record<string, unknown>;
+};
+
+/** Cuantas pantallas de arriba viajan: las que se pueden ajustar sin repintar. */
+export const MAX_PANTALLAS_ANTERIORES = 3;
+
 export type PeticionAgente = {
   usuarioId: string;
   conversacionId: string;
@@ -59,7 +69,27 @@ export type PeticionAgente = {
      */
     arbol?: Componente[];
     dataModel: Record<string, unknown>;
+    /**
+     * Como se llama ESTA pantalla en el hilo (`p1`, `p2`…, contadas desde la primera). Solo
+     * hace falta cuando hay `anteriores`: es lo que distingue "la de ahora" de las de arriba.
+     */
+    pantalla?: string;
+    /**
+     * Las pantallas que quedaron ARRIBA en el hilo, las mas recientes primero y como mucho
+     * `MAX_PANTALLAS_ANTERIORES`. Existen para que «¿y si pago $6,000?» actualice la tarjeta
+     * del credito **donde esta**, aunque despues se haya pintado otra pantalla debajo: sin
+     * esto, la unica salida del agente era pintarla de nuevo y dejar la vieja congelada
+     * arriba con el numero anterior (`docs/como-funciona/ajustes-en-vivo.md`).
+     */
+    anteriores?: PantallaAnterior[];
   };
+  /**
+   * De que pantalla del hilo salio `accion`, si no fue de la actual. El `action` de la spec
+   * no tiene donde decirlo (todas viven en la superficie `principal`), y un boton de una
+   * pantalla anterior sigue vivo: sin esto, el agente buscaria el componente en la pantalla
+   * equivocada.
+   */
+  pantallaDeLaAccion?: string;
   /** `client_capabilities.json`: que catalogos soporta el cliente. Opcional. */
   clientCapabilities?: { "v0.9": { supportedCatalogIds: string[] } };
 };
@@ -85,6 +115,9 @@ export const esquemaAccionEntrante = z.object({
   timestamp: z.string().max(64),
   context: z.record(z.string(), z.unknown()).default({}),
 });
+
+/** `p1`, `p2`…: la posicion de la pantalla en el hilo, contada desde la primera. */
+const idDePantalla = z.string().regex(/^p[0-9]{1,3}$/, "pantalla invalida: p1, p2…");
 
 export const esquemaPeticion = z
   .object({
@@ -121,8 +154,22 @@ export const esquemaPeticion = z
           .max(60)
           .optional(),
         dataModel: z.record(z.string(), z.unknown()).default({}),
+        pantalla: idDePantalla.optional(),
+        anteriores: z
+          .array(
+            z.object({
+              pantalla: idDePantalla,
+              arbol: z
+                .array(z.object({ id: z.string().min(1).max(128), component: z.string().min(1).max(64) }).catchall(z.unknown()))
+                .max(60),
+              dataModel: z.record(z.string(), z.unknown()).default({}),
+            }),
+          )
+          .max(MAX_PANTALLAS_ANTERIORES)
+          .optional(),
       })
       .optional(),
+    pantallaDeLaAccion: idDePantalla.optional(),
     clientCapabilities: z
       .object({ "v0.9": z.object({ supportedCatalogIds: z.array(z.string().max(512)).max(20) }) })
       .optional(),
@@ -144,7 +191,15 @@ export function capacidadesDelServidor(urlCatalogo: string): { "v0.9": { support
 export type LineaStream =
   | { tipo: "estado"; valor: "pensando" | "consultando" | "pintando" }
   | { tipo: "tool"; nombre: string; ms: number; ok: boolean }
-  | { tipo: "a2ui"; mensaje: MensajeA2UI }
+  | {
+      tipo: "a2ui";
+      mensaje: MensajeA2UI;
+      /**
+       * Solo cuando el mensaje es para una pantalla ANTERIOR del hilo (un `ajustar_pantalla`
+       * con `pantalla`): el cliente lo aplica a esa pantalla congelada y no a la actual.
+       */
+      pantalla?: string;
+    }
   | { tipo: "texto"; valor: string }
   | { tipo: "razon"; valor: string }
   | { tipo: "sugerencias"; valores: string[] }
@@ -157,6 +212,8 @@ export type LineaStream =
        * con tarjetas pegadas.
        */
       cierre?: "pintar" | "ajustar" | "responder";
+      /** Si el ajuste fue sobre una pantalla anterior, cual: el cliente la trae a la vista. */
+      pantalla?: string;
       /** La fila de `banorte.corridas` con todo lo que paso en este turno. Solo si se grabo. */
       corridaId?: string };
 

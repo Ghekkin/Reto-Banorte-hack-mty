@@ -58,6 +58,31 @@ function leerEjemplo(nombre: string): { mensajes: MensajeA2UI[]; fuente: string 
   }
 }
 
+/**
+ * Los estados de un mismo componente que un solo ejemplo no enseña: `ejemplos/variantes/
+ * <componente>-<estado>.jsonl` (p. ej. `proyeccion-pago-credito-simulado.jsonl`). Viven en una
+ * subcarpeta a proposito: el prompt del agente lee solo los `.jsonl` de primer nivel como
+ * few-shot, y un estado "ya simulado" le ensenaria a pintar la tarjeta simulada de entrada.
+ */
+function leerVariantes(nombre: string): Array<{ estado: string; mensajes: MensajeA2UI[] }> {
+  const carpeta = join(carpetaDeEjemplos(), "variantes");
+  const prefijo = `${kebab(nombre)}-`;
+  try {
+    return readdirSync(carpeta)
+      .filter((a) => a.startsWith(prefijo) && a.endsWith(".jsonl"))
+      .sort()
+      .map((archivo) => ({
+        estado: archivo.slice(prefijo.length, -".jsonl".length),
+        mensajes: readFileSync(join(carpeta, archivo), "utf8")
+          .split("\n")
+          .filter((l) => l.trim() !== "")
+          .map((l) => JSON.parse(l) as MensajeA2UI),
+      }));
+  } catch {
+    return [];
+  }
+}
+
 /** Las props del schema, en la forma que el modelo las lee (y que un juez puede revisar). */
 function propsDelSchema(schema: z.ZodTypeAny): Array<{ nombre: string; tipo: string; requerida: boolean; descripcion?: string }> {
   const json = z.toJSONSchema(schema, { io: "input" }) as {
@@ -83,6 +108,7 @@ export default function PaginaCatalogo() {
       props: propsDelSchema(entrada.schema),
       mensajes: ejemplo?.mensajes ?? [],
       fuente: ejemplo?.fuente ?? "",
+      variantes: leerVariantes(entrada.nombre),
     };
   });
 

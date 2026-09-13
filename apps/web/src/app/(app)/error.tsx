@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -16,6 +17,10 @@ import { Card, CardContent } from "@/components/ui/card";
  * tarde o rechace una conexion, y en ese caso reintentar suele bastar
  * (`docs/issues/2026-09-12-postgres-remoto-inalcanzable.md`).
  *
+ * El motivo real (`message` y `digest`) va a la consola del navegador, no a la pantalla:
+ * hasta el 2026-09-13 se pintaba en monoespaciado junto con "revisa `DATABASE_URL`", y eso
+ * es texto para el equipo, no para quien usa la app.
+ *
  * El borde va en `border-oscuro` y NO en rojo: el rojo es el color de la marca, no el de
  * error (skill `diseno-banorte`).
  */
@@ -26,24 +31,19 @@ export default function ErrorApp({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  useEffect(() => {
+    console.error("[app] la seccion no cargo:", error.message, error.digest ? `digest: ${error.digest}` : "");
+  }, [error]);
+
   return (
     <Card className="animar-entrada border-oscuro">
       <CardContent className="flex flex-col items-start gap-4 p-5">
         <div className="flex flex-col gap-1">
           <h2 className="text-base font-semibold">Esta sección no cargó</h2>
           <p className="text-sm text-muted-foreground">
-            Casi siempre es la conexión a la base de datos. Reintentar suele bastar; si no,
-            revisa <code className="font-mono text-xs">DATABASE_URL</code>.
+            No pudimos traer tu información en este momento. Intenta de nuevo en unos segundos.
           </p>
         </div>
-
-        {/* El mensaje real, no un "algo salió mal". Quien ve esto en la demo es del equipo
-            y necesita el motivo; el `digest` es lo unico que hay para cruzarlo con el log
-            del servidor cuando el mensaje viene ofuscado en produccion. */}
-        <p className="w-full break-words rounded-xl bg-muted p-3 font-mono text-xs text-muted-foreground">
-          {error.message || "sin mensaje"}
-          {error.digest && <span className="block pt-1 opacity-70">digest: {error.digest}</span>}
-        </p>
 
         <Button onClick={reset} className="min-h-11 rounded-full sm:min-h-9">
           Reintentar

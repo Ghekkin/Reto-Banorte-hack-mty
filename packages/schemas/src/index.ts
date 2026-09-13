@@ -37,3 +37,5 @@ export * from "./tools/ejecutar-decision.js";
 export * from "./tools/orientar-consulta-no-valida.js";
 export * from "./tools/consultar-sugerencias-inversion.js";
 export * from "./tools/rebalancear-portafolio.js";
+export * from "./tools/simular-pago-credito.js";
+export * from "./tools/programar-abono-capital.js";

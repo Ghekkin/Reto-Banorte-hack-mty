@@ -65,6 +65,18 @@ export type EntradaResponder = z.infer<typeof entradaResponder>;
 export type ResultadoAjustar = { ok: true; parches: number } | { ok: false; errores: string[] };
 export type ResultadoResponder = { ok: true };
 
+/**
+ * Las acciones que cambian estado y se muestran **en la misma tarjeta** que las disparo, con
+ * `ajustar_pantalla`, en vez de apilar otra pantalla con una `Confirmacion`.
+ *
+ * Decision del 2026-09-13 (`docs/como-funciona/ajustes-en-vivo.md`): la persona toco un boton
+ * en una tarjeta; lo que cambio tiene que verse AHI, no en una pantalla nueva debajo que la deja
+ * a ella congelada con el numero de antes. Cada accion entra a esta lista solo cuando su
+ * componente sabe pintar el estado "ya aplicado" (una prop como `programado`); las demas siguen
+ * repintando como siempre.
+ */
+export const ACCIONES_EN_SU_LUGAR: ReadonlySet<string> = new Set(["programar_abono_capital"]);
+
 /** Con que cerro el modelo el turno. */
 export type CierreDelTurno = "pintar" | "ajustar" | "responder";
 
@@ -89,6 +101,8 @@ export type Cierre = {
   con: () => CierreDelTurno | undefined;
   /** Cuantas veces el modelo entrego una pantalla o un parche invalido. */
   intentosFallidos: () => number;
+  /** Si el ajuste fue sobre una pantalla ANTERIOR, su id; `undefined` si fue la actual. */
+  destino: () => string | undefined;
 };
 
 /**
@@ -104,6 +118,8 @@ export type OpcionesDeCierre = {
   ayudaParaErrores?: (errores: string[]) => string | undefined;
   /** Datos precalculados o de tools MCP por si el modelo omitió datosJson */
   datosBase?: Record<string, unknown>;
+  /** Las pantallas de arriba en el hilo: `ajustar_pantalla` tambien las puede parchear. */
+  anteriores?: PantallaActual[];
 };
 
 export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesDeCierre = {}): Cierre {
@@ -111,6 +127,7 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
   let ultima: { razon: string; texto: string; sugerencias: string[] } | undefined;
   let con: CierreDelTurno | undefined;
   let fallidos = 0;
+  let destino: string | undefined;
 
   const herramientas: Record<string, Tool> = {
     pintar_pantalla: tool({
@@ -144,16 +161,19 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
       description:
         "Cambia lo que YA esta en pantalla sin recrearla: la tarjeta se actualiza en su lugar, sin " +
         "parpadeo y sin perder lo que la persona llevaba elegido. Usala cuando pida otro periodo, otro " +
-        "plazo, otro orden, otro escenario, o resaltar algo de lo que ya se ve. NO sirve para agregar, " +
-        "quitar ni cambiar tarjetas: para eso es `pintar_pantalla`.",
+        "plazo, otra mensualidad, otro monto, otro orden, otro escenario, o resaltar algo de lo que ya se " +
+        "ve; y para mostrar en la MISMA tarjeta el resultado de una accion que se atiende en su lugar. " +
+        "Tambien sirve para una tarjeta de una pantalla anterior (pasa `pantalla`). NO sirve para " +
+        "agregar, quitar ni cambiar tarjetas: para eso es `pintar_pantalla`.",
       inputSchema: entradaAjustarPantalla,
       execute: (entrada: EntradaAjustarPantalla): ResultadoAjustar => {
-        const armado = armarParches(entrada, pantallaActual);
+        const armado = armarParches(entrada, pantallaActual, opciones.anteriores, opciones.datosBase);
         if (!armado.ok) {
           fallidos++;
           return { ok: false, errores: armado.errores };
         }
         mensajes = armado.mensajes;
+        destino = armado.pantalla;
         ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: entrada.sugerencias ?? [] };
         con = "ajustar";
         return { ok: true, parches: armado.parches };
@@ -186,5 +206,6 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
     cerrado: () => con !== undefined,
     con: () => con,
     intentosFallidos: () => fallidos,
+    destino: () => destino,
   };
 }

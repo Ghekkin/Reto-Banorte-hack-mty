@@ -1,15 +1,19 @@
 "use client";
 
-import { PiggyBank } from "lucide-react";
+import { ArrowRight, CalendarCheck, PiggyBank, TriangleAlert } from "lucide-react";
 import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { formatearFecha, formatearMonto, formatearPorcentaje } from "../comunes";
+import { CLASES_BOTON_PIE, formatearFecha, formatearMonto, formatearPeriodo, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { CLASES_GRAFICA, EJE, ETIQUETA, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto, formatearMontoEntero } from "../graficas";
+import { clasesResaltado, usarCambio } from "../resaltado";
+import { compararEscenarios, meses, type Comparacion } from "./comparacion";
 import type { PropsProyeccionPagoCredito } from "./schema";
 
 /**
@@ -29,6 +33,25 @@ import type { PropsProyeccionPagoCredito } from "./schema";
  * El desglose total capital / intereses sigue abajo como una barra de dos segmentos con el
  * porcentaje, porque es la respuesta a "¿cuánto pagaré de puros intereses?". La oportunidad
  * de ahorro es una frase, no una caja de color: el rojo es de la marca.
+ *
+ * **Se ajusta en su lugar desde el chat** (2026-09-13). «¿Y si pago $6,000 al mes?» no pinta
+ * otra tarjeta: el agente parchea ESTA con el escenario de `simular_pago_credito` y la
+ * tarjeta no se remonta, solo cambian sus props. Para que el cambio se vea:
+ *
+ *  - mensualidad, meses e intereses se **resaltan un momento** al cambiar (`usarCambio`,
+ *    `resaltado.ts`); nunca al montar ni cuando llega el dato;
+ *  - con `antes`, una **línea de diferencia** en palabras: «Terminas en 11 meses (antes 15)»,
+ *    «Pagas $3,470.21 menos de intereses». Si empeora (pagar menos que un abono ya
+ *    programado) dice «más» y no va en verde (`comparacion.ts`). Nada de curva fantasma:
+ *    dos curvas en 160 px no se leen, dos frases sí;
+ *  - si la mensualidad pasa la del contrato, cuánto de ella va a capital;
+ *  - el `aviso` de la tool (posible pero rebasa su capacidad de pago), en ámbar.
+ *
+ * **El botón «Programar este pago» solo existe mientras hay algo que programar**: una
+ * simulación en pantalla (`antes` con otra mensualidad) y todavía sin programar. Dispara
+ * `programar_abono_capital` con `{ creditoId, mensualidadCentavos }`; al volver, el agente
+ * parchea `programado: true` y la tarjeta muestra el badge «Abono programado» con los
+ * números ya aplicados. Sin slider ni campo: el monto se pide por chat.
  */
 export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -41,10 +64,21 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
     totalInteresesEstimadosCentavos,
     ahorroConAbonoCapitalCentavos,
     amortizacionResumen,
+    fechaLiquidacion,
+    antes,
+    mensualidadContratoCentavos,
+    programado = false,
+    aviso,
+    etiquetaBoton = "Programar este pago",
     heroe = false,
     razon,
     alAccionar,
   } = props;
+
+  // Antes del esqueleto: los hooks no pueden depender de que ya lleguen los datos.
+  const cambioMensualidad = usarCambio(mensualidadCentavos);
+  const cambioPlazo = usarCambio(plazoRestanteMeses);
+  const cambioIntereses = usarCambio(totalInteresesEstimadosCentavos);
 
   if (
     typeof saldoInsolutoCentavos !== "number" ||
@@ -62,7 +96,8 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
           <Skeleton className={CLASES_GRAFICA} />
           <Skeleton className="h-2 w-full rounded-full" />
         </EsqueletoCuerpo>
-        <EsqueletoPie heroe={heroe} boton />
+        {/* Sin botón: la primera vez que se pinta nunca hay simulación que programar. */}
+        <EsqueletoPie heroe={heroe} />
       </EsqueletoTarjeta>
     );
   }
@@ -86,22 +121,65 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
   const colorEtiqueta = heroe ? "var(--primary-foreground)" : ETIQUETA.fill;
   const marcasY = [0, Math.round(saldoInsolutoCentavos / 2), saldoInsolutoCentavos];
 
+  const ahora = { mensualidadCentavos, plazoRestanteMeses, totalInteresesEstimadosCentavos };
+  const comparacion = antes ? compararEscenarios(antes, ahora) : undefined;
+  const aCapitalCentavos =
+    typeof mensualidadContratoCentavos === "number" && mensualidadCentavos > mensualidadContratoCentavos
+      ? mensualidadCentavos - mensualidadContratoCentavos
+      : 0;
+  const puedeProgramar = Boolean(antes) && antes!.mensualidadCentavos !== mensualidadCentavos && !programado;
+
   return (
     <Tarjeta heroe={heroe}>
       <CardHeader>
         <div className="flex items-start justify-between gap-2">
           <span className={`text-xs ${suave}`}>
-            {alias} · {plazoRestanteMeses} {plazoRestanteMeses === 1 ? "mes restante" : "meses restantes"}
+            {alias} ·{" "}
+            <span className={`monto ${clasesResaltado(cambioPlazo, heroe)}`}>
+              {plazoRestanteMeses} {plazoRestanteMeses === 1 ? "mes restante" : "meses restantes"}
+            </span>
           </span>
-          <Badge variant="secondary" className={`monto shrink-0 ${heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}`}>
-            {formatearPorcentaje(tasaAnualPct)} anual
-          </Badge>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            {programado ? (
+              <Badge variant="secondary" className={heroe ? "bg-white/20 text-primary-foreground" : "bg-exito/10 text-exito"}>
+                <CalendarCheck aria-hidden /> Abono programado
+              </Badge>
+            ) : null}
+            <Badge variant="secondary" className={`monto ${heroe ? "bg-white/20 text-primary-foreground" : "bg-tinte text-primary"}`}>
+              {formatearPorcentaje(tasaAnualPct)} anual
+            </Badge>
+          </div>
         </div>
         <span className="monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
         <span className={`text-sm ${suave}`}>
-          de saldo · pagas <span className="monto font-medium">{formatearMonto(mensualidadCentavos)}</span> al mes
+          de saldo · pagas{" "}
+          <span className={`monto font-medium ${clasesResaltado(cambioMensualidad, heroe)}`}>{formatearMonto(mensualidadCentavos)}</span> al
+          mes
         </span>
+        {aCapitalCentavos > 0 ? (
+          <span className={`monto text-xs ${suave}`}>
+            {formatearMonto(mensualidadContratoCentavos!)} del contrato + {formatearMonto(aCapitalCentavos)} a capital
+          </span>
+        ) : null}
       </CardHeader>
+
+      {comparacion || aviso ? (
+        <CardContent className="flex flex-col gap-3">
+          {comparacion ? (
+            <LineasDeCambio comparacion={comparacion} fechaLiquidacion={fechaLiquidacion} heroe={heroe} />
+          ) : null}
+          {aviso ? (
+            <Alert
+              className={`rounded-xl px-3 py-2 ${
+                heroe ? "border-white/30 bg-white/10 text-primary-foreground" : "border-advertencia/30 bg-advertencia/5 text-advertencia"
+              }`}
+            >
+              <TriangleAlert aria-hidden />
+              <AlertDescription className={heroe ? "text-primary-foreground" : "text-advertencia"}>{aviso}</AlertDescription>
+            </Alert>
+          ) : null}
+        </CardContent>
+      ) : null}
 
       {/* Una columna mientras la tarjeta es angosta; desde 48rem de TARJETA, la curva a la
           izquierda y los hitos con el desglose a la derecha, para no dejar media tarjeta vacía. */}
@@ -187,12 +265,25 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
               heroe={heroe}
               series={[
                 { nombre: `Capital ${formatearMonto(saldoInsolutoCentavos)}`, color: colores.capital },
-                { nombre: `Intereses ${formatearMonto(totalInteresesEstimadosCentavos)} · ${pctIntereses} % de lo que pagarás`, color: colores.intereses },
+                {
+                  nombre: (
+                    <span>
+                      Intereses{" "}
+                      <span className={`monto ${clasesResaltado(cambioIntereses, heroe)}`}>
+                        {formatearMonto(totalInteresesEstimadosCentavos)}
+                      </span>{" "}
+                      · {pctIntereses} % de lo que pagarás
+                    </span>
+                  ),
+                  color: colores.intereses,
+                },
               ]}
             />
           </div>
 
-          {typeof ahorroConAbonoCapitalCentavos === "number" && ahorroConAbonoCapitalCentavos > 0 ? (
+          {/* Lo viejo: una frase de ahorro si la tool la mandaba. Con una comparación en pantalla
+              sobra (y podría contradecirla), así que solo sale sin `antes`. */}
+          {!antes && typeof ahorroConAbonoCapitalCentavos === "number" && ahorroConAbonoCapitalCentavos > 0 ? (
             <p className="flex items-start gap-2 text-sm">
               <PiggyBank className={`mt-0.5 size-4 shrink-0 ${heroe ? "" : "text-exito"}`} aria-hidden />
               <span>
@@ -204,9 +295,60 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
         </div>
       </CardContent>
 
-      {/* Sin boton: `simular_abono_capital` no lo atiende ninguna tool del MCP (ver schema.ts). */}
-      <PieTarjeta razon={razon} heroe={heroe} />
+      <PieTarjeta razon={razon} heroe={heroe}>
+        {puedeProgramar ? (
+          <Button
+            // En la heroe, el botón claro del sistema: sigue siendo LA acción sin perderse en el degradado.
+            className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
+            size="lg"
+            disabled={!alAccionar}
+            onClick={() => alAccionar?.({ ...(creditoId ? { creditoId } : {}), mensualidadCentavos })}
+          >
+            {etiquetaBoton} <ArrowRight />
+          </Button>
+        ) : null}
+      </PieTarjeta>
     </Tarjeta>
+  );
+}
+
+/**
+ * La diferencia contra `antes`, en frases. El número que cambió va en negritas; en verde
+ * solo si mejora. Una línea por dato: a 390 px caben sin partirse.
+ */
+function LineasDeCambio({
+  comparacion,
+  fechaLiquidacion,
+  heroe,
+}: {
+  comparacion: Comparacion;
+  fechaLiquidacion?: string;
+  heroe: boolean;
+}) {
+  const { plazo, intereses } = comparacion;
+  const tono = (mejor: boolean) => (heroe ? "" : mejor ? "text-exito" : "text-foreground");
+  const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
+  const mes = fechaLiquidacion && /^\d{4}-\d{2}/.test(fechaLiquidacion) ? formatearPeriodo(fechaLiquidacion.slice(0, 7)) : undefined;
+  return (
+    <ul className="flex flex-col gap-1 text-sm" aria-label="Qué cambia">
+      {plazo ? (
+        <li>
+          {/* «(antes 20)» pegado al número que compara; la fecha al final, que es la que se puede partir. */}
+          Terminas en <span className={`monto font-semibold ${tono(plazo.direccion === "mejor")}`}>{meses(plazo.ahora)}</span>{" "}
+          <span className={`monto ${suave}`}>(antes {plazo.antes})</span>
+          {mes ? `, en ${mes}` : ""}
+        </li>
+      ) : null}
+      {intereses ? (
+        <li>
+          Pagas{" "}
+          <span className={`monto font-semibold ${tono(intereses.direccion === "mejor")}`}>
+            {formatearMonto(intereses.diferenciaCentavos)} {intereses.direccion === "mejor" ? "menos" : "más"}
+          </span>{" "}
+          de intereses
+        </li>
+      ) : null}
+    </ul>
   );
 }
 

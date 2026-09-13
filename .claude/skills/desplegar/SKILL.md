@@ -20,8 +20,9 @@ dominios, deploy key, cómo entrar) está en `docs/arquitectura/deploy.md`. Vult
 solo como premio lateral.
 
 ```
-https://maya.157.173.204.174.sslip.io       → apps/web  :3000  health /api/health
-https://maya-mcp.157.173.204.174.sslip.io   → apps/mcp  :3100  health /health, MCP en /mcp
+https://ghekkinxmaya.tech                   → apps/web  :3000  health /api/health
+https://mcp.ghekkinxmaya.tech               → apps/mcp  :3100  health /health, MCP en /mcp
+https://docs.ghekkinxmaya.tech              → apps/docs :80    nginx estatico, health /salud
 postgres-reto-banorte                        → Postgres :5432 interno, :5437 público
 ```
 
