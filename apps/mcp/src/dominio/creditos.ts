@@ -281,6 +281,23 @@ export function techoDeDeudaMensual(usuarioId: string): number {
   return Math.round(aEntero(usuario(usuarioId).ingreso_mensual_centavos) * 0.35) - mensualExternoDe(usuarioId);
 }
 
+/**
+ * Lo que la persona puede pagar al mes POR LA TARJETA: el techo de deuda menos lo que ya paga
+ * de sus creditos a plazo (contrato mas abono programado). Contra esto se compara la
+ * mensualidad de un plan de reestructura (`simular_reestructura`, `aplicar_plan_pago`).
+ *
+ * No es `capacidadPagoMensual`: esa es lo LIBRE de buro, y a Beto ya le descuenta el minimo de
+ * la tarjeta ($2,950.73 de sus $5,461.29 comprometidos), que es justo el pago que el plan
+ * reemplaza. Tampoco es "libre + minimo": a Carmen buro no le cuenta la tarjeta como deuda, y
+ * sumarle su minimo le inventaria $1,329.92 de holgura. Restar los creditos a plazo del techo
+ * da lo mismo en los dos casos sin adivinar que conto buro, y sin buro usa el mismo 35 % del
+ * techo. Issue #25, `docs/algoritmos/oferta-de-reestructura.md`.
+ */
+export function capacidadParaLaTarjeta(usuarioId: string): number {
+  const aPlazo = creditosAPlazo(usuarioId).reduce((suma, c) => suma + c.mensualidadCentavos, 0);
+  return techoDeDeudaMensual(usuarioId) - aPlazo;
+}
+
 export type CargaDeDeuda = {
   capacidadPagoMensualCentavos: number;
   mensualidadDeudaTotalCentavos: number;

@@ -1,12 +1,12 @@
 import { EntradaAplicarPlanPago, SalidaAplicarPlanPago } from "@maya/schemas";
 import { aplicarAccion } from "../datos/index.js";
 import {
-  capacidadPagoMensual,
   primerPagoDesde,
   tarjetaConEstado,
   tasaParaPlazo,
   type PlanAplicado,
 } from "../dominio/consultas.js";
+import { capacidadParaLaTarjeta } from "../dominio/creditos.js";
 import { escenarioPagoMinimo, interesesMensualesRevolventes, ofertaReestructura } from "../dominio/finanzas.js";
 import { hoy, sumarMeses } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
@@ -50,8 +50,9 @@ export const aplicarPlanPago: DefinicionDeTool = {
     });
 
     // Se avisa pero no se bloquea: quien decide es la persona, no la tool. El agente
-    // tiene el dato para decirselo en pantalla.
-    const capacidad = capacidadPagoMensual(entrada.usuarioId);
+    // tiene el dato para decirselo en pantalla. La misma capacidad que `simular_reestructura`:
+    // lo que puede pagar por la tarjeta, con el minimo que el plan reemplaza (issue #25).
+    const capacidad = capacidadParaLaTarjeta(entrada.usuarioId);
     const aprieta = oferta.mensualidadCentavos > capacidad;
 
     const aplicadaEn = new Date().toISOString();

@@ -225,7 +225,10 @@ del pitch "los últimos 30 días" saldrían vacíos. `dominio/tiempo.ts` → `ho
 - **Pagando el mínimo, la deuda podría no amortizar nunca.** Se reporta
   `nuncaLiquida: true` en vez de colgarse.
 - **Un plazo cuya mensualidad no cabe en la capacidad de pago** no se bloquea: se marca
-  `cabeEnCapacidad: false` y se avisa en el mensaje. Quien decide es la persona.
+  `cabeEnCapacidad: false` y se avisa en el mensaje. Quien decide es la persona. La capacidad
+  de las dos tools de la tarjeta es **la que queda para la tarjeta** (`capacidadParaLaTarjeta`:
+  techo de deuda menos los créditos a plazo), no lo libre de buró, porque el plan reemplaza el
+  mínimo (`docs/algoritmos/oferta-de-reestructura.md`, issue #25).
 
 ### Cómo probarlo
 

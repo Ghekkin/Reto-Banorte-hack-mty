@@ -29,7 +29,7 @@ export const OpcionReestructura = z.object({
   interesesTotalesCentavos: Centavos,
   ahorroVsMinimoCentavos: Centavos.describe("Cuanto se ahorra contra seguir pagando el minimo"),
   mesesVsMinimo: z.number().int().describe("Cuantos meses antes termina de pagar"),
-  cabeEnCapacidad: z.boolean().describe("La mensualidad cabe en la capacidad de pago de buro"),
+  cabeEnCapacidad: z.boolean().describe("La mensualidad cabe en lo que puede pagar al mes por la tarjeta (`capacidadPagoMensualCentavos`)"),
   esRecomendado: z.boolean(),
 });
 export type OpcionReestructura = z.infer<typeof OpcionReestructura>;
@@ -38,7 +38,9 @@ export const SalidaSimularReestructura = z.object({
   tarjetaId: IdTarjeta,
   saldoADiferirCentavos: Centavos,
   tasaTarjetaAnual: z.number(),
-  capacidadPagoMensualCentavos: Centavos.describe("Lo que buro dice que puede pagar al mes"),
+  capacidadPagoMensualCentavos: Centavos.describe(
+    "Lo que puede pagar al mes por la tarjeta: su techo de deuda menos lo que ya paga de creditos a plazo. Incluye el minimo que el plan reemplaza",
+  ),
   escenarioMinimo: z.object({
     meses: z.number().int().nullable().describe("null si pagando el minimo nunca liquida"),
     totalPagadoCentavos: Centavos.nullable(),

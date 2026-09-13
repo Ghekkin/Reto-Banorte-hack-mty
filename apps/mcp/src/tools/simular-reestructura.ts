@@ -1,5 +1,6 @@
 import { EntradaSimularReestructura, SalidaSimularReestructura } from "@maya/schemas";
-import { capacidadPagoMensual, ofertasDelBanco, tarjetaConEstado, tasaParaPlazo } from "../dominio/consultas.js";
+import { ofertasDelBanco, tarjetaConEstado, tasaParaPlazo } from "../dominio/consultas.js";
+import { capacidadParaLaTarjeta } from "../dominio/creditos.js";
 import { PLAZOS_POR_DEFECTO, escenarioPagoMinimo, ofertaReestructura } from "../dominio/finanzas.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -9,8 +10,9 @@ import type { DefinicionDeTool } from "./registro.js";
  * Cotiza cada plazo y lo compara contra seguir pagando el minimo. El escenario del
  * minimo se calcula UNA vez y se comparte entre las opciones: es la misma deuda.
  *
- * El plazo recomendado es el mas corto cuya mensualidad cabe en la capacidad de pago
- * de buro; si el banco ya marco uno en sus ofertas, gana ese. Detalle en
+ * El plazo recomendado es el mas corto cuya mensualidad cabe en lo que la persona puede
+ * pagar por la tarjeta (`capacidadParaLaTarjeta`: el plan reemplaza el minimo, asi que no
+ * se compara contra lo libre de buro); si el banco ya marco uno en sus ofertas, gana ese. Detalle en
  * `docs/algoritmos/oferta-de-reestructura.md`.
  */
 export const simularReestructura: DefinicionDeTool = {
@@ -38,7 +40,7 @@ export const simularReestructura: DefinicionDeTool = {
     if (vista.saldoOriginalCentavos <= 0) throw new Error(`la tarjeta ${vista.id} no tiene saldo que diferir`);
 
     const saldo = vista.saldoOriginalCentavos;
-    const capacidad = capacidadPagoMensual(entrada.usuarioId);
+    const capacidad = capacidadParaLaTarjeta(entrada.usuarioId);
     const minimo = escenarioPagoMinimo(saldo, vista.tasaAnual);
 
     const delBanco = ofertasDelBanco(vista.id);
