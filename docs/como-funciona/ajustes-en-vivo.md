@@ -11,8 +11,9 @@ Cuando Maya ya te mostró una tarjeta, casi todo lo que preguntas después es la
 otro número: «¿y si pago $6,000 al mes?», «quiero liquidarlo en 12 meses», «también pago $3,500 de
 renta en efectivo». Antes, cada pregunta así construía otra pantalla debajo y la de arriba se
 quedaba congelada con el número viejo. Ahora **la tarjeta que ya estás viendo cambia en su lugar**:
-los números que se movieron se iluminan un momento y aparece qué cambió («Terminas en 11 meses,
-antes 15»; «Pagas $3,470.21 menos de intereses»). Si la tarjeta quedó más arriba en la
+los números que se movieron **cuentan del valor viejo al nuevo** y se iluminan un momento, la curva
+y las barras se deslizan a su forma nueva, y aparece qué cambió («Terminas en 11 meses, antes 15»;
+«Pagas $3,470.21 menos de intereses»). Si la tarjeta quedó más arriba en la
 conversación, Maya la cambia ahí y te lleva hasta ella.
 
 Los números no los inventa el modelo: los calcula el banco (el servidor MCP) con la misma fórmula
@@ -36,7 +37,7 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Ajustar una tarjeta de una pantalla **anterior** del hilo | construido |
 | Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | construido |
 | Inicio: una pregunta cambia una tarjeta en su lugar | construido por aldair (widgets vivos, ADR 0011); `FEATURE_WIDGETS_VIVOS=1` en local y producción desde 2026-09-13 04:10 |
-| Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | en progreso |
+| Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | construido en el catálogo: `ProyeccionPagoCredito`, `GastoPorCategoria`, `SimuladorMeta`, `PlanDePago` (ver «La transición de valores»); verificado en `/catalogo`, en Inicio falta ensayar un ajuste de la misma tarjeta |
 | Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | construido: `proyectar_ahorro` con `fechaObjetivo`/`montoObjetivoCentavos`; el host pone meta, aportación y tope. Ensayado: Ana «para diciembre» → $15,950.00 al mes con aviso (7.3 s) |
 | Plan de la tarjeta con cualquier plazo («¿y si fueran 30 meses?») | construido: el host funde las opciones de `simular_reestructura` con las que se veían y deja elegido el plazo nuevo. Ensayado con Beto: 2.9 s |
 | «Aplicar plan» en su lugar y mensualidad objetivo del plan | **no se hace** (decisión 2026-09-13 04:35): cambiaría el paso ya ensayado del guion antes del último ensayo; «Aplicar plan» sigue con `Confirmacion` |
@@ -132,6 +133,46 @@ intereses con IVA contra $12,781.15 → ahorra **$3,470.21** y 4 meses.
 
 La matemática, sus límites y por qué es abono a capital: `docs/algoritmos/abono-a-capital.md`.
 
+### La transición de valores
+
+**Qué anima.** Solo lo que un ajuste cambia, en la tarjeta que ya estaba:
+
+| Qué | Cómo | Dónde |
+|---|---|---|
+| Montos, meses, porcentajes | Cuentan del valor que se ve al nuevo en 600 ms, ease-out, en enteros (centavos) | `<NumeroAnimado>` de `packages/catalogo/src/transicion.ts` |
+| Curva de `ProyeccionPagoCredito` | La animación de Recharts, prendida desde el primer ajuste (`usarYaCambio`); los puntos con su saldo se ocultan mientras viaja y reaparecen en su lugar | `proyeccion-pago-credito/componente.tsx` |
+| Barras (`Progress` y las de divs capital / interés) | `transition` de CSS sobre el ancho, 600 ms, en el elemento que tiene el ancho | `CLASES_DESLIZAR_BARRA`, `CLASES_DESLIZAR_ANCHO` |
+| Qué cambió | Tinte de 1.5 s | `usarCambio`, `resaltado.ts` |
+
+En `ProyeccionPagoCredito` cuentan la mensualidad, los meses restantes, los intereses, los montos de
+«antes → después», el contrato / a capital y las fichas de cada hito; en `GastoPorCategoria`, el total,
+la diferencia y cada fila (por su id, no por su posición); en `SimuladorMeta`, la meta, lo ahorrado, la
+aportación y el tope; en `PlanDePago`, el ahorro grande (también al tocar otro plazo: es un cambio
+discreto).
+
+**Por qué no anima al montar.** Al montar, la tarjeta ya tiene su entrada (`animar-tarjeta`, la
+`cifra`, la ventana de la gráfica: `docs/como-funciona/animacion-de-widgets.md`). Contar desde cero
+encima sería doble movimiento y diría algo falso: «$0 → $35,349.50» no es un cambio, es el dato
+llegando. Por lo mismo tampoco cuenta cuando el dato llega tarde (esqueleto → valor) ni tras un
+repintado completo. Recharts no se prende con "ya montado": pasar `isAnimationActive` de `false` a
+`true` arranca una animación en ese instante; `usarYaCambio` lo prende en el mismo render en que
+llegan los datos nuevos.
+
+**Lo que mueve la persona no cuenta.** En `SimuladorMeta` la aportación va con `activo: false`
+mientras es la de la persona (el número sigue al dedo); si después el agente la cambia, cuenta desde
+donde la dejó.
+
+**Rendimiento.** El conteo vive en `<NumeroAnimado>`, así que cada cuadro repinta un texto y no la
+tarjeta. La primera versión animaba en la tarjeta e interpolaba los datos de la gráfica: medido en
+`/catalogo` (modo dev, servidor cargado), 60-480 ms por cuadro y el conteo se veía en dos saltos. Con
+`NumeroAnimado` y la animación propia de Recharts, cuadros de 20-40 ms. Además el reloj avanza a lo
+más 50 ms por cuadro: si el ajuste llega con un render pesado, la cuenta se frena en vez de brincar
+al final. Con «reducir movimiento», todo salta directo.
+
+**Para verlo sin gastar un turno**: en `/catalogo`, `ProyeccionPagoCredito` y `GastoPorCategoria`
+traen «Ajustar a: ejemplo · simulado · …», que aplica la variante sobre la misma superficie sin
+`createSurface`, igual que un ajuste real.
+
 ### Casos límite conocidos
 
 - **Menos que el contrato o más meses de los que faltan**: `posible: false`. Con abonos no se puede
@@ -149,7 +190,7 @@ La matemática, sus límites y por qué es abono a capital: `docs/algoritmos/abo
 
 ```bash
 pnpm --filter @maya/mcp test        # simular-pago-credito, programar-abono-capital, ejecutar_decision
-pnpm --filter @maya/catalogo test   # la tarjeta: antes/después, botón, programado, resaltado
+pnpm --filter @maya/catalogo test   # la tarjeta: antes/después, botón, programado, resaltado, transicion.spec.tsx
 pnpm --filter @maya/web test        # ajustes-en-vivo.spec.ts, hilo.spec.ts
 pnpm reiniciar-estado               # antes de ensayar en el estado comun: un abono viejo falsea todo
 node scripts/probar-guion.mjs --aislado --solo "Ana ·"   # o con un dispositivo nuevo (ADR 0012), sin limpiar nada

@@ -18,6 +18,7 @@ import {
 import { registrarLayout } from "@maya/a2ui/layout";
 import { registrarCatalogo } from "../index";
 import { DURACION_RESALTADO_MS } from "../resaltado";
+import { DURACION_TRANSICION_MS } from "../transicion";
 
 /**
  * «Guardar gasto» con el motor A2UI de verdad: la tarjeta tiene UNA `action` (`ver_categoria`,
@@ -119,7 +120,8 @@ describe("GastoPorCategoria en la superficie: dos acciones", () => {
 
 describe("GastoPorCategoria en la superficie: el parche se ve", () => {
   it("sumar un gasto de fuera resalta el total y la fila nueva, sin remontar la tarjeta", async () => {
-    vi.useFakeTimers();
+    // Con rAF falso: el total cuenta (`transicion.ts`) y se lee ya llegado.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance", "Date"] });
     vi.spyOn(console, "warn").mockImplementation(() => {});
     const base = procesarVarios(estadoVacio(), leerJsonl(join(EJEMPLOS, "gasto-por-categoria.jsonl"))).estado;
     await pintar(base);
@@ -141,6 +143,7 @@ describe("GastoPorCategoria en la superficie: el parche se ve", () => {
     await pintar(procesarVarios(base, parches).estado);
 
     expect(contenedor.querySelector("[data-tarjeta]")).toBe(tarjeta);
+    for (let t = 0; t < DURACION_TRANSICION_MS + 32; t += 16) await act(async () => vi.advanceTimersByTime(16));
     const resaltados = Array.from(contenedor.querySelectorAll(".bg-tinte"), (e) => e.textContent ?? "");
     expect(resaltados).toHaveLength(2);
     expect(resaltados[0]).toBe("$35,349.50");

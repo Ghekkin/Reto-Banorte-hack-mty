@@ -10,6 +10,8 @@ import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { usarEstadoSeguido } from "../estado";
+import { clasesResaltado, usarCambio } from "../resaltado";
+import { NumeroAnimado } from "../transicion";
 import type { PropsPlanDePago } from "./schema";
 
 /**
@@ -27,6 +29,11 @@ import type { PropsPlanDePago } from "./schema";
  *
  * Cada opcion es un `<label>` de 48 px con su radio: a 360 px el nombre se recorta y el
  * monto nunca se sale, porque va en su propia columna con `shrink-0`.
+ *
+ * **El ahorro cuenta** al cambiar (`transicion.ts`): cuando el agente ajusta el plazo o las
+ * opciones, y también al tocar otra opción, porque un radio es un cambio discreto y ver contar
+ * "$136,345 → $132,065" dice cuánto cuesta cada plazo mejor que el salto. Solo lo que el agente
+ * cambió se ilumina.
  */
 export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponente, "alAccionar">) {
   const { opciones, plazoElegido, tarjetaId, etiquetaBoton = "Aplicar plan", razon, alAccionar } = props;
@@ -34,6 +41,8 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
   const [seleccion, setSeleccion] = usarEstadoSeguido<number | undefined>(
     plazoElegido ?? recomendado ?? opciones?.[0]?.plazoMeses,
   );
+  // Antes del esqueleto: los hooks no pueden depender de que ya lleguen los datos.
+  const cambioDelAgente = usarCambio(opciones ? `${plazoElegido ?? ""}|${opciones.map((o) => `${o.plazoMeses}:${o.ahorroCentavos}`).join(",")}` : undefined);
 
   if (!opciones) {
     return (
@@ -65,7 +74,9 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
     <Tarjeta>
       <CardHeader>
         <span className="text-xs text-muted-foreground">Te ahorras con este plan</span>
-        <span className="cifra monto text-3xl font-semibold">{formatearMonto(elegida.ahorroCentavos)}</span>
+        <span className={`cifra monto text-3xl font-semibold ${clasesResaltado(cambioDelAgente)}`}>
+          <NumeroAnimado valor={elegida.ahorroCentavos} />
+        </span>
         <span className="text-sm text-muted-foreground">
           frente a seguir pagando el mínimo, en {elegida.plazoMeses} meses
         </span>

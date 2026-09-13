@@ -11,6 +11,7 @@ import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPeriodo, formatearPorcentaje } from "../comunes";
 import { clasesResaltado, clasesResaltadoBloque, usarCambio } from "../resaltado";
+import { NumeroAnimado } from "../transicion";
 import type { PropsGastoPorCategoria } from "./schema";
 
 /**
@@ -45,7 +46,21 @@ import type { PropsGastoPorCategoria } from "./schema";
  *
  * Una fila sin guardar va **arriba de la lista** y **nunca se agrupa** en «otras N» por
  * `limite`: es justo lo que la persona acaba de decir y lo que el boton va a guardar.
+ *
+ * **Al ajustarse, los numeros cuentan y las barras se deslizan** (`transicion.ts`): el total, la
+ * diferencia y el monto de cada fila van del valor viejo al nuevo (`NumeroAnimado`, cada uno en su
+ * texto: la tarjeta no se repinta por cuadro), y cada barra de `Progress` pasa a su nuevo ancho
+ * con la `transition` que ya trae shadcn, alargada a 600 ms. Al montar no se mueve nada de eso:
+ * la entrada es de `animar-filas` y `animar-tarjeta`.
  */
+
+/**
+ * La barra de `Progress` ya trae `transition-all` (150 ms): al ajustarse se alarga a la duracion
+ * de la transicion de valores para que llegue junto con el numero. Sobre el indicador mismo, sin
+ * tocar su `transform-origin` ni su `animation` de entrada. Con "reducir movimiento", salta.
+ */
+const CLASES_DESLIZAR_BARRA =
+  "[&_[data-slot=progress-indicator]]:duration-600 [&_[data-slot=progress-indicator]]:ease-out motion-reduce:[&_[data-slot=progress-indicator]]:transition-none";
 
 /** Debajo de esto, la variacion es ruido y no se pinta. */
 const VARIACION_MINIMA = 0.05;
@@ -134,7 +149,9 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
       <CardHeader>
         <span className="text-xs text-muted-foreground">Gasto de {titulo}</span>
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-          <span className={`cifra monto text-3xl font-semibold ${clasesResaltado(cambioTotal)}`}>{formatearMonto(totalCentavos)}</span>
+          <span className={`cifra monto text-3xl font-semibold ${clasesResaltado(cambioTotal)}`}>
+            <NumeroAnimado valor={totalCentavos} />
+          </span>
           {diferencia === 0 && typeof variacionPct === "number" && Math.abs(variacionPct) >= VARIACION_MINIMA ? (
             <span className={`monto flex items-center gap-1 text-sm ${variacionPct > 0 ? "text-muted-foreground" : "text-exito"}`}>
               {variacionPct > 0 ? <TrendingUp className="size-4" /> : <TrendingDown className="size-4" />}
@@ -149,7 +166,7 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
             {formatearMonto(antes.totalCentavos)} → {formatearMonto(totalCentavos)} ·{" "}
             <span className="font-semibold text-foreground">
               {diferencia > 0 ? "+" : "−"}
-              {formatearMonto(Math.abs(diferencia))}
+              <NumeroAnimado valor={Math.abs(diferencia)} />
             </span>{" "}
             fuera del banco
           </span>
@@ -223,7 +240,10 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
                       </span>
                     ) : null}
                   </span>
-                  <span className="monto shrink-0 text-sm font-semibold">{formatearMonto(c.montoCentavos)}</span>
+                  <span className="monto shrink-0 text-sm font-semibold">
+                    {/* Cada fila conserva su `key` (id de categoria), asi que su monto cuenta en su lugar. */}
+                    <NumeroAnimado valor={c.montoCentavos} />
+                  </span>
                 </span>
                 {externa ? (
                   <span className="flex flex-wrap items-center gap-1">
@@ -243,11 +263,11 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
                 <Progress
                   value={proporcion}
                   aria-label={`${c.nombre}: ${formatearMonto(c.montoCentavos)}`}
-                  className={
+                  className={`${CLASES_DESLIZAR_BARRA} ${
                     atipica
                       ? "[&_[data-slot=progress-indicator]]:bg-primary"
                       : "[&_[data-slot=progress-indicator]]:bg-chart-4"
-                  }
+                  }`}
                 />
               </Fila>
             );

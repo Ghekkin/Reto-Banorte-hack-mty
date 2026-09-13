@@ -8,6 +8,7 @@ import { estadoVacio, procesarVarios, Superficie, type Accion, type MensajeA2UI 
 import { registrarLayout } from "@maya/a2ui/layout";
 import { registrarCatalogo } from "../index";
 import { DURACION_RESALTADO_MS, cuentaComoCambio, usarCambio } from "../resaltado";
+import { DURACION_TRANSICION_MS } from "../transicion";
 
 /**
  * Con DOM de verdad (happy-dom) porque lo que se prueba pasa DESPUES del primer render: el
@@ -116,7 +117,8 @@ describe("ProyeccionPagoCredito en la superficie", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("el parche de ajustar_pantalla resalta mensualidad, meses e intereses sin remontar la tarjeta", async () => {
-    vi.useFakeTimers();
+    // Con rAF falso: los números cuentan (`transicion.ts`) y se leen ya llegados.
+    vi.useFakeTimers({ toFake: ["setTimeout", "clearTimeout", "requestAnimationFrame", "cancelAnimationFrame", "performance", "Date"] });
     const base = procesarVarios(estadoVacio(), leerJsonl(join(EJEMPLOS, "proyeccion-pago-credito.jsonl"))).estado;
     const pintarSuperficie = (estado: typeof base) =>
       raiz.render(createElement(Superficie, { superficie: estado.get("principal"), conversacionId: "c", alAccionar: () => {} }));
@@ -134,6 +136,7 @@ describe("ProyeccionPagoCredito en la superficie", () => {
     await act(async () => pintarSuperficie(procesarVarios(base, parches).estado));
 
     expect(contenedor.querySelector("[data-tarjeta]")).toBe(tarjeta); // la misma, no otra
+    for (let t = 0; t < DURACION_TRANSICION_MS + 32; t += 16) await act(async () => vi.advanceTimersByTime(16));
     const resaltados = Array.from(contenedor.querySelectorAll(".bg-tinte.rounded-md"), (e) => e.textContent);
     expect(resaltados).toEqual(["15 meses restantes", "$4,500.00", "$11,039.80"]);
 

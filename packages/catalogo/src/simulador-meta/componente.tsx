@@ -11,6 +11,8 @@ import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, formatearFecha, formatearMonto, formatearPorcentaje, hoyISO, sumarMeses } from "../comunes";
 import { usarEstadoSeguido } from "../estado";
+import { clasesResaltado, usarCambio } from "../resaltado";
+import { NumeroAnimado } from "../transicion";
 import type { PropsSimuladorMeta } from "./schema";
 
 /** El slider trabaja en pesos: el paso de un centavo no significa nada para nadie. */
@@ -29,6 +31,13 @@ const PASO_CENTAVOS = 10000;
  * La aportacion la sigue `usarEstadoSeguido`: si el agente la parchea con
  * `ajustar_pantalla`, el slider se mueve; sin eso se quedaria en el valor con el que monto
  * (ver `estado.ts`). El objetivo queda como contexto arriba.
+ *
+ * **Cuando el agente la ajusta, los montos cuentan** (`transicion.ts`) y se iluminan un momento
+ * (`usarCambio`): la meta, lo que llevas, la aportación y el tope. **Lo que mueve la persona no
+ * cuenta**: mientras la aportación es la suya y no la del agente, la transición va apagada
+ * (`activo: false`) y el número sigue al dedo; interpolar ahí lo haría ir detrás del slider.
+ * Si el agente cambia la aportación después de que la persona la movió, cuenta desde donde la
+ * dejó la persona.
  */
 export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -46,6 +55,10 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
     alAccionar,
   } = props;
   const [aportacion, setAportacion] = usarEstadoSeguido(aportacionCentavos ?? 0);
+  // Antes del esqueleto: los hooks no pueden depender de que ya lleguen los datos.
+  const cambioMeta = usarCambio(metaCentavos);
+  const cambioAportacion = usarCambio(aportacionCentavos);
+  const cambioTope = usarCambio(aportacionMaximaCentavos);
 
   if (
     typeof metaCentavos !== "number" ||
@@ -87,11 +100,11 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
     <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>
-          {nombre} · <span className="monto">{formatearMonto(metaCentavos)}</span>
+          {nombre} · <span className={`monto ${clasesResaltado(cambioMeta, heroe)}`}><NumeroAnimado valor={metaCentavos} /></span>
           {saldoInicialCentavos > 0 ? (
             <>
               {" "}
-              · llevas <span className="monto">{formatearMonto(saldoInicialCentavos)}</span>
+              · llevas <span className="monto"><NumeroAnimado valor={saldoInicialCentavos} /></span>
             </>
           ) : null}
         </span>
@@ -122,9 +135,10 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
             <Progress
               value={Math.round(avance * 100)}
               aria-label={`Avance: ${formatearPorcentaje(avance)}`}
-              className={
+              // Al ajustarse, la barra llega junto con los números: la `transition` de shadcn, a 600 ms.
+              className={`[&_[data-slot=progress-indicator]]:duration-600 [&_[data-slot=progress-indicator]]:ease-out motion-reduce:[&_[data-slot=progress-indicator]]:transition-none ${
                 heroe ? "[&_[data-slot=progress-track]]:bg-white/30 [&_[data-slot=progress-indicator]]:bg-white" : ""
-              }
+              }`}
             />
           </div>
         ) : null}
@@ -132,7 +146,10 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="text-sm">Aportación {frecuencia === "quincenal" ? "quincenal" : "mensual"}</span>
-            <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
+            <span className={`monto text-xl font-semibold ${clasesResaltado(cambioAportacion, heroe)}`}>
+              {/* Solo cuenta cuando la que se ve es la del agente (ver la cabecera). */}
+              <NumeroAnimado valor={aportacion} activo={aportacion === aportacionCentavos} />
+            </span>
           </div>
           {/* `py-3` le da al slider los 48 px de alto tocable sin engordar la barra. */}
           <Slider
@@ -152,7 +169,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
           />
           <div className={`flex justify-between text-xs ${suave}`}>
             <span className="monto">{formatearMonto(minimo)}</span>
-            <span className="monto">{formatearMonto(aportacionMaximaCentavos)}</span>
+            <span className={`monto ${clasesResaltado(cambioTope, heroe)}`}><NumeroAnimado valor={aportacionMaximaCentavos} /></span>
           </div>
         </div>
       </CardContent>

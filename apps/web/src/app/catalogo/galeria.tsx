@@ -151,8 +151,10 @@ function Ficha({
   const [verFuente, setVerFuente] = useState(false);
   const [verProps, setVerProps] = useState(false);
 
-  // El estado del renderer, uno por componente: cada ejemplo crea su propia superficie.
-  const conDatos = useMemo(() => superficieDe(componente.mensajes), [componente.mensajes]);
+  // El estado del renderer, uno por componente: cada ejemplo crea su propia superficie. Es
+  // estado (y no un memo) para poder AJUSTARLO en su lugar con una variante: ver `ajustarCon`.
+  const [conDatos, setConDatos] = useState(() => superficieDe(componente.mensajes));
+  const [ajusteVisto, setAjusteVisto] = useState("ejemplo");
   const cargando = useMemo(
     () => superficieDeCarga(componente.nombre, componente.mensajes),
     [componente.nombre, componente.mensajes],
@@ -216,7 +218,33 @@ function Ficha({
 
       <div className="grid gap-4 lg:grid-cols-[2fr_1fr]">
         <div className="flex flex-col gap-2">
-          <span className="text-xs font-medium text-muted-foreground">Con datos del ejemplo</span>
+          <div className="flex min-w-0 flex-wrap items-center gap-2">
+            <span className="text-xs font-medium text-muted-foreground">Con datos del ejemplo</span>
+            {/* Aplica una variante SOBRE la misma superficie, sin `createSurface`: es lo que hace un
+                ajuste en vivo, así que aquí se ve la transición de valores sin gastar un turno. */}
+            {conDatos && componente.variantes.length > 0 ? (
+              <ToggleGroup
+                value={[ajusteVisto]}
+                onValueChange={(valor) => {
+                  const elegido = (valor as string[])[0];
+                  if (!elegido) return;
+                  const mensajes = elegido === "ejemplo" ? componente.mensajes : componente.variantes.find((v) => v.estado === elegido)?.mensajes;
+                  if (!mensajes) return;
+                  setAjusteVisto(elegido);
+                  setConDatos((actual) => ajustarCon(actual, mensajes));
+                }}
+                spacing={2}
+                aria-label="Ajustar el ejemplo en su lugar"
+                className="w-max"
+              >
+                {["ejemplo", ...componente.variantes.map((v) => v.estado)].map((estado) => (
+                  <ToggleGroupItem key={estado} value={estado} className="min-h-11 whitespace-nowrap rounded-full px-3 text-xs sm:min-h-8">
+                    {estado === "ejemplo" ? "Ajustar a: ejemplo" : estado}
+                  </ToggleGroupItem>
+                ))}
+              </ToggleGroup>
+            ) : null}
+          </div>
           {/* El mismo `Lienzo` de /maya: si aqui se acomoda bien, alla tambien. */}
           <div className={`w-full ${claseAncho}`}>
             {conDatos ? (
@@ -272,6 +300,23 @@ function Variante({
       </div>
     </>
   );
+}
+
+/**
+ * Aplica los mensajes de otro ejemplo SOBRE una superficie que ya existe, sin su `createSurface`
+ * (que borraría el data model y volvería a montar todo). Es exactamente la forma de un ajuste en
+ * vivo: los componentes con el mismo id se quedan y solo cambian sus props.
+ */
+function ajustarCon(actual: EstadoSuperficie | undefined, mensajes: MensajeA2UI[]): EstadoSuperficie | undefined {
+  if (!actual) return superficieDe(mensajes);
+  const sinCrear = mensajes.filter((m) => !("createSurface" in m));
+  const ajustados = sinCrear.map((m) => {
+    if ("updateDataModel" in m) return { ...m, updateDataModel: { ...m.updateDataModel, surfaceId: actual.id } };
+    if ("updateComponents" in m) return { ...m, updateComponents: { ...m.updateComponents, surfaceId: actual.id } };
+    return m;
+  });
+  const { estado } = procesarVarios(new Map([[actual.id, actual]]), ajustados);
+  return estado.get(actual.id) ?? actual;
 }
 
 /** Procesa los mensajes del ejemplo igual que el cliente del producto. */
