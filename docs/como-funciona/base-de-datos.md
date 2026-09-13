@@ -610,6 +610,21 @@ reiniciar cambia la `huella` y la portada queda desactualizada sola.
 | `modelo`, `entrada_tokens`, `salida_tokens`, `cache_tokens`, `ms` | | Trazabilidad de la generación |
 | `generada_en` | `TIMESTAMPTZ` | `DEFAULT now()` |
 
+## Historia (migración 0004)
+
+Siete tablas que no son datos del negocio sino **lo que pasó**: `corridas`,
+`corrida_pasos`, `corrida_tools` y `prompts` (cada turno y cada portada del modelo, con todo
+su detalle), `conversaciones` y `mensajes_chat` (el chat), y `registros` (los logs de web,
+agente, Inicio y MCP). Las columnas y cómo se escriben están en
+`docs/como-funciona/corridas-en-db.md`; se leen con `pnpm corridas`.
+
+Tres reglas que las distinguen del resto del esquema:
+
+- **El MCP no las carga a memoria** (`TABLAS_DE_HISTORIA` en `apps/mcp/src/datos/postgres.ts`):
+  crecen con cada turno y ninguna tool las lee.
+- **No entran al volcado de pruebas** (`scripts/volcar-fixture.mjs`).
+- **`reiniciar.sql` no las toca**: reiniciar la demo no borra la historia de los ensayos.
+
 ### El contrato del prefijo `_base_`
 
 `db/reiniciar.sql` borra de `metas` y `topes_gasto` **todo lo que no lleve el prefijo
@@ -638,6 +653,7 @@ queda es cómo cambiarla y cómo recuperarla si alguien la vacía.
 | Ver qué hay en la base | `psql "$DATABASE_URL" -c '\dt banorte.*'` |
 | La base quedó vacía o a medias | `pnpm datos:restaurar` (o `--recrear` para vaciar y rellenar) |
 | Cambié los datos y quiero que las pruebas lo vean | `pnpm datos:fixture` |
+| Qué hizo el modelo en un turno, qué dijo el chat, qué falló | `pnpm corridas` (ver `corridas-en-db.md`) |
 | **Antes de cada ensayo de demo** | `pnpm reiniciar-estado` |
 
 Las migraciones son **idempotentes** (`IF NOT EXISTS`, `DROP CONSTRAINT IF EXISTS`):

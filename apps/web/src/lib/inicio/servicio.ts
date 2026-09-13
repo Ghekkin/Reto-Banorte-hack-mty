@@ -1,3 +1,4 @@
+import { registrar as registrarEnLaBase } from "@/lib/corridas/escritor";
 import { USUARIOS } from "@/lib/usuarios";
 import { almacenEnPostgres, type Almacen, type PantallaDeInicio } from "./almacen";
 import { configInicio } from "./config";
@@ -104,9 +105,9 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     return { hecho: "sin-cambios", pantalla: anterior, ms: Date.now() - inicio };
   }
 
-  const portada = await deps.generar(usuarioId);
+  const portada = await deps.generar(usuarioId, { motivo });
   if (!portada.ok) {
-    registrar({ inicio: usuarioId, motivo, hecho: "fallo", modelo: portada.modelo, pasos: portada.pasos, tools: portada.tools, detalle: portada.motivo, ms: portada.ms });
+    registrar({ inicio: usuarioId, motivo, hecho: "fallo", corridaId: portada.corridaId, modelo: portada.modelo, pasos: portada.pasos, tools: portada.tools, detalle: portada.motivo, ms: portada.ms });
     return { hecho: "fallo", motivo: portada.motivo, pantalla: anterior, ms: portada.ms };
   }
 
@@ -131,6 +132,7 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
       inicio: usuarioId,
       motivo,
       hecho: "generada",
+      corridaId: portada.corridaId,
       modelo: portada.modelo,
       pasos: portada.pasos,
       tools: portada.tools,
@@ -169,6 +171,19 @@ export function componentesDe(pantalla: PantallaDeInicio): string[] {
  * Una linea JSON por revision, como el turno del agente: es lo unico que dice cuanto
  * cuesta la portada (`entrada`/`cache`) y cuantas veces el reloj paso de largo.
  */
+/**
+ * Cada decision del servicio queda en consola y en `banorte.registros` (fuente `inicio`),
+ * con la corrida del modelo cuando lo hubo. `sin-cambios` va como `debug`: el reloj lo
+ * escribe cada 10 minutos por persona y no es noticia.
+ */
 function registrar(linea: Record<string, unknown>): void {
-  console.log(JSON.stringify(linea));
+  const hecho = String(linea.hecho ?? "evento");
+  registrarEnLaBase({
+    fuente: "inicio",
+    nivel: hecho === "fallo" ? "warn" : hecho === "sin-cambios" ? "debug" : "info",
+    evento: hecho,
+    usuarioId: typeof linea.inicio === "string" ? linea.inicio : null,
+    corridaId: typeof linea.corridaId === "string" ? linea.corridaId : null,
+    datos: linea,
+  });
 }

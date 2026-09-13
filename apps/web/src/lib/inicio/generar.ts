@@ -1,7 +1,9 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
+import { stepCountIs, streamText, type LanguageModel, type ModelMessage, type ToolSet } from "ai";
 import type { MensajeA2UI } from "@maya/a2ui";
 import { crearCierre } from "@/lib/agente/cierre";
+import { escritorEnPostgres } from "@/lib/corridas/escritor";
+import { crearGrabadora, type Escritor, type Grabadora } from "@/lib/corridas/grabadora";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "@/lib/agente/mcp-cliente";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "@/lib/agente/pantalla";
 import { systemPrompt } from "@/lib/agente/prompt";
@@ -49,6 +51,10 @@ export type OpcionesDeGeneracion = {
    * superficie de fallo, y el que se usa menos es el que nadie prueba.
    */
   pregunta?: string;
+  /** Por que corre (reloj, visita, accion, api, pregunta): queda en `banorte.corridas.motivo`. */
+  motivo?: string;
+  /** Donde se guarda la corrida. Default: PostgreSQL (`lib/corridas/escritor.ts`). */
+  escritor?: Escritor;
 };
 
 export type PortadaGenerada =
@@ -65,8 +71,10 @@ export type PortadaGenerada =
       pasos: number;
       ms: number;
       modelo: string;
+      /** La fila de `banorte.corridas` con todo lo que paso. Solo si se grabo. */
+      corridaId?: string;
     }
-  | { ok: false; motivo: string; tools: string[]; pasos: number; ms: number; modelo: string };
+  | { ok: false; motivo: string; tools: string[]; pasos: number; ms: number; modelo: string; corridaId?: string };
 
 /** A partir de este uso del limite, la tarjeta es lo primero que hay que resolver (`panorama_inicial`). */
 const USO_ALTO = 0.5;
@@ -91,10 +99,17 @@ const MESES_DE_FONDO = 3;
  * Una tool que falle entra como `{ error }` y el modelo lo lee: la portada sale con lo
  * que si hay.
  */
-export async function reunirDatos(cliente: Client, usuarioId: string, usadas: LlamadaRegistrada[]): Promise<DatosDeLaPortada> {
+export async function reunirDatos(
+  cliente: Client,
+  usuarioId: string,
+  usadas: LlamadaRegistrada[],
+  grabadora?: Grabadora,
+): Promise<DatosDeLaPortada> {
   const pedir = async (nombre: string, argumentos: Record<string, unknown>) => {
-    const r = await llamarTool(cliente, nombre, { usuarioId, ...argumentos });
+    const conUsuario = { usuarioId, ...argumentos };
+    const r = await llamarTool(cliente, nombre, conUsuario, { corridaId: grabadora?.id });
     usadas.push({ nombre, ms: r.ms, ok: r.ok, mutacion: false });
+    grabadora?.toolDelHost({ nombre, argumentos: conUsuario, resultado: r.resultado, ok: r.ok, ms: r.ms });
     return [nombre, r.resultado] as const;
   };
 
@@ -144,7 +159,42 @@ export const TOOLS_DE_APOYO = [
 
 /** Dos entregas invalidas y se corta, como en el turno de conversacion. */
 
+/**
+ * La portada, grabada: modelo, datos reunidos, tools, pasos y la pantalla que salio quedan
+ * en `banorte.corridas` (`docs/como-funciona/corridas-en-db.md`), sin esperar a la base.
+ */
 export async function generarPortada(usuarioId: string, opciones: OpcionesDeGeneracion = {}): Promise<PortadaGenerada> {
+  const grabadora = crearGrabadora(
+    {
+      tipo: "portada",
+      usuarioId,
+      motivo: opciones.motivo ?? (opciones.pregunta ? "pregunta" : undefined),
+      peticion: opciones.pregunta ? { pregunta: opciones.pregunta } : null,
+    },
+    opciones.escritor ?? escritorEnPostgres,
+  );
+  try {
+    const portada = await generar(usuarioId, opciones, grabadora);
+    grabadora.resumir(
+      portada.ok
+        ? { estado: "ok", pasos: portada.pasos, texto: portada.texto }
+        : {
+            estado: portada.motivo.includes("se corto")
+              ? "timeout"
+              : portada.motivo.startsWith("la pantalla vino invalida") || portada.motivo.startsWith("el modelo no entrego")
+                ? "sin_pantalla"
+                : "error",
+            pasos: portada.pasos,
+            error: portada.motivo,
+          },
+    );
+    return grabadora.activa ? { ...portada, corridaId: grabadora.id } : portada;
+  } finally {
+    void grabadora.terminar();
+  }
+}
+
+async function generar(usuarioId: string, opciones: OpcionesDeGeneracion, grabadora: Grabadora): Promise<PortadaGenerada> {
   const inicio = Date.now();
   const usadas: LlamadaRegistrada[] = [];
   const modeloNombre = opciones.nombreDelModelo ?? configInicio.modelo;
@@ -166,8 +216,8 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     let datos = opciones.datos;
     if (!herramientas || !datos) {
       cliente = await conectarMcp();
-      herramientas ??= await herramientasDelMcp(cliente, { usuarioId, alTerminar: (l) => usadas.push(l) });
-      datos ??= await reunirDatos(cliente, usuarioId, usadas);
+      herramientas ??= await herramientasDelMcp(cliente, { usuarioId, corridaId: grabadora.id, alTerminar: (l) => usadas.push(l) });
+      datos ??= await reunirDatos(cliente, usuarioId, usadas, grabadora);
     }
 
     // Sin pantalla previa, `crearCierre` solo publica `pintar_pantalla`: en una portada no
@@ -185,23 +235,37 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     let errores: string[] = [];
     let corte: "timeout" | undefined;
 
-    const resultado = streamText({
-      model: opciones.modelo ?? modeloDelInicio(),
+    const modeloDeLaPortada = opciones.modelo ?? modeloDelInicio();
+    const promptSistema = systemPrompt();
+    const mensajes: ModelMessage[] = [
       // El system prompt va primero y sin datos de la persona, igual que en el turno:
       // es el prefijo que el proveedor cachea, y los tres usuarios lo comparten.
-      messages: [
-        {
-          role: "system",
-          content: systemPrompt(),
-          providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
-        },
-        {
-          role: "user",
-          content: opciones.pregunta
-            ? encargoDeConsulta(usuarioId, datos, opciones.pregunta)
-            : encargoDePortada(usuarioId, datos),
-        },
-      ],
+      {
+        role: "system",
+        content: promptSistema,
+        providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } },
+      },
+      {
+        role: "user",
+        content: opciones.pregunta
+          ? encargoDeConsulta(usuarioId, datos, opciones.pregunta)
+          : encargoDePortada(usuarioId, datos),
+      },
+    ];
+    const opcionesProveedor = opciones.modelo ? {} : opcionesDelInicio();
+    grabadora.configurar({
+      modelo: modeloDeLaPortada,
+      opcionesProveedor,
+      config: { maxPasos: configInicio.maxPasos, timeoutMs, toolsDeApoyo: TOOLS_DE_APOYO },
+      promptSistema,
+      mensajes,
+      tools,
+      origenDe: (nombre) => (nombre === "pintar_pantalla" ? "cierre" : "mcp"),
+    });
+
+    const resultado = streamText({
+      model: modeloDeLaPortada,
+      messages: mensajes,
       allowSystemInMessages: true,
       tools,
       stopWhen: [
@@ -211,17 +275,36 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       ],
       // Paso 0: pedir lo que falte (o pintar de una vez). Del 1 en adelante: solo pintar,
       // y el modelo solo ve esa tool.
-      prepareStep: ({ stepNumber }) =>
-        stepNumber === 0
+      prepareStep: ({ stepNumber }) => {
+        grabadora.pasoPreparado(stepNumber, stepNumber === 0 ? Object.keys(tools) : ["pintar_pantalla"], stepNumber === 0 ? "auto" : "pintar_pantalla");
+        return stepNumber === 0
           ? undefined
-          : { toolChoice: { type: "tool", toolName: "pintar_pantalla" }, activeTools: ["pintar_pantalla"] },
-      providerOptions: opciones.modelo ? {} : opcionesDelInicio(),
+          : { toolChoice: { type: "tool", toolName: "pintar_pantalla" }, activeTools: ["pintar_pantalla"] };
+      },
+      onStepFinish: (paso) => grabadora.paso(paso),
+      providerOptions: opcionesProveedor,
       abortSignal: AbortSignal.timeout(timeoutMs),
     });
 
     for await (const parte of resultado.fullStream) {
       switch (parte.type) {
+        case "tool-call":
+          grabadora.toolPedida(parte.toolCallId, parte.toolName, parte.input);
+          break;
+        case "tool-error":
+          grabadora.toolTermino(parte.toolCallId, {
+            ok: false,
+            error: parte.error instanceof Error ? parte.error.message : String(parte.error),
+          });
+          break;
         case "tool-result":
+          grabadora.toolTermino(parte.toolCallId, {
+            resultado: parte.output,
+            ok:
+              parte.toolName === "pintar_pantalla"
+                ? (parte.output as ResultadoPintar).ok
+                : !(typeof parte.output === "object" && parte.output !== null && "error" in parte.output),
+          });
           if (parte.toolName === "pintar_pantalla") {
             const salida = parte.output as ResultadoPintar;
             if (!salida.ok) errores = salida.errores;
@@ -252,9 +335,15 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
 
     // `totalUsage`: `usage` es solo el ultimo paso (AI SDK 5), y la portada hace 2-3 peticiones.
     const consumo = await resultado.totalUsage.catch(() => undefined);
+    const mensajesA2ui = cierre.tomarMensajes();
+    grabadora.resumir({ estado: "ok", pasos, uso: consumo, cierre: "pintar", texto: ultima.texto });
+    // La pantalla que salio, como si fuera el stream de un turno: asi se lee igual en `pnpm corridas`.
+    for (const mensaje of mensajesA2ui) grabadora.linea({ tipo: "a2ui", mensaje });
+    grabadora.linea({ tipo: "texto", valor: ultima.texto });
+    grabadora.linea({ tipo: "razon", valor: ultima.razon });
     return {
       ok: true,
-      mensajes: cierre.tomarMensajes(),
+      mensajes: mensajesA2ui,
       texto: ultima.texto,
       razon: ultima.razon,
       sugerencias: ultima.sugerencias,

@@ -188,8 +188,9 @@ Lo que se lee ahí:
 3. **El agente ligero baja ~45 % la entrada, pero Gemini cachea peor su prefijo** (más chico
    y seguido de un resultado de `ver_componentes` que cambia en cada turno). Si el caché pega
    bien, sale igual o más caro; si el caché no pega —como en los 55 turnos de la mañana del
-   12—, sale ~45 % más barato. En 6 turnos medidos tuvo un JSON mal cerrado (0 con el
-   completo). Por eso está **apagado por default**.
+   12—, sale ~45 % más barato. Por eso está **apagado por default**. (El `componentesJson`
+   mal cerrado que costó un reintento en 1 de sus 6 turnos no es propio del modo ligero: el
+   completo lo tuvo en el prompt real del CI de `7d329a3`.)
 
 ### El agente ligero: el catálogo como menú (`FEATURE_AGENTE_LIGERO=1`)
 
