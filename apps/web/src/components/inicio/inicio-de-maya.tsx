@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useState } from "react";
-import { estadoVacio, procesarVarios, type Accion, type EstadoSuperficie } from "@maya/a2ui";
+import { estadoVacio, nombresVisibles, procesarVarios, type Accion, type EstadoSuperficie } from "@maya/a2ui";
 import { Conclusion } from "@maya/catalogo";
 import { Info } from "lucide-react";
 import { Lienzo } from "@/components/maya/lienzo";
@@ -21,11 +21,16 @@ import { MARCA } from "@/lib/marca";
  * era el elemento con menos peso visual de la pantalla. Ahora es una tarjeta del catalogo
  * como las demas.
  *
- * La pinta el HOST y no el modelo: el `texto` y la `razon` ya vienen calculados y
- * validados en la portada, asi que la conclusion **siempre** aparece. Si dependiera de que
- * el modelo emitiera el componente, una omision suya dejaria la pantalla sin veredicto
- * (pasa: la doc de `inicio-personalizado.md` registra que el modelo chico omitio props
- * obligatorias dos corridas seguidas teniendo la regla escrita).
+ * **La pinta el modelo; el host solo si falta.** La del modelo es mas rica (titular,
+ * detalle, hasta 3 cifras de apoyo y las sugerencias, todo dentro de una sola tarjeta), y
+ * los dos encargos de `generar.ts` la piden como primera tarjeta. Pero si el modelo la
+ * omite, la pantalla se quedaria sin veredicto —pasa: `inicio-personalizado.md` registra
+ * que el modelo chico omitio props obligatorias dos corridas seguidas teniendo la regla
+ * escrita—, asi que el host arma una con el `texto` y la `razon`, que ya vienen validados.
+ *
+ * Hasta el 2026-09-12 el host la pintaba SIEMPRE, sin mirar el arbol, y salian dos
+ * conclusiones en la misma pantalla: la rica del modelo y encima una pobre armada con una
+ * frase corta. Era garantizado, no intermitente, en la ruta de preguntar desde Inicio.
  *
  * Los botones de las tarjetas funcionan: un toque manda a la persona a Maya con esa
  * accion ya disparada (`/maya?accion=…`). Inicio no ejecuta nada por si mismo; el ciclo
@@ -39,6 +44,14 @@ export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio;
     return estado.values().next().value;
   }, [pantalla.mensajes]);
 
+  // Lo que se va a VER, no lo que venia en el mensaje: `nombresVisibles` recorre el arbol
+  // desde la raiz, asi que una Conclusion que el modelo mando pero no colgo de ningun
+  // lado no cuenta —y en ese caso el host si tiene que poner la suya.
+  const laPintaElModelo = useMemo(
+    () => (superficie ? nombresVisibles(superficie).includes("Conclusion") : false),
+    [superficie],
+  );
+
   const irAMaya = useCallback(
     (accion: Accion) => {
       router.push(`/maya?accion=${encodeURIComponent(JSON.stringify(accion))}`);
@@ -50,19 +63,21 @@ export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio;
 
   return (
     <div className="flex flex-col gap-3 md:gap-4">
-      <Conclusion
-        saludo={`Hola, ${nombre.split(" ")[0]}`}
-        titular={titular}
-        detalle={detalle}
-        sugerencias={pantalla.sugerencias}
-        razon={pantalla.razon}
-        // Una sugerencia de la portada lleva a Maya con esa pregunta, igual que antes: la
-        // consulta desde Inicio vive en la barra flotante, que reemplaza la portada.
-        alAccionar={(contexto) => {
-          const pregunta = typeof contexto?.pregunta === "string" ? contexto.pregunta : "";
-          if (pregunta) router.push(`/maya?intencion=${encodeURIComponent(pregunta)}`);
-        }}
-      />
+      {!laPintaElModelo && (
+        <Conclusion
+          saludo={`Hola, ${nombre.split(" ")[0]}`}
+          titular={titular}
+          detalle={detalle}
+          sugerencias={pantalla.sugerencias}
+          razon={pantalla.razon}
+          // Una sugerencia de la portada lleva a Maya con esa pregunta, igual que antes: la
+          // consulta desde Inicio vive en la barra flotante, que reemplaza la portada.
+          alAccionar={(contexto) => {
+            const pregunta = typeof contexto?.pregunta === "string" ? contexto.pregunta : "";
+            if (pregunta) router.push(`/maya?intencion=${encodeURIComponent(pregunta)}`);
+          }}
+        />
+      )}
       <Lienzo superficie={superficie} conversacionId="inicio" alAccionar={irAMaya} />
       <EvidenciaDeMaya pantalla={pantalla} />
     </div>

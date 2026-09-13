@@ -26,9 +26,22 @@ export const DatoDeApoyo = z.object({
         "pantalla es lo que hace que nadie crea ninguna",
     ),
   tono: z
-    .enum(["neutro", "bueno", "alerta"])
+    .string()
     .default("neutro")
-    .describe("`bueno` lo pinta verde, `alerta` en ambar. Usa `neutro` salvo que el dato sea la buena o la mala noticia"),
+    // Texto libre y no un `enum`, a proposito, y es la unica prop del catalogo que lo es.
+    // El modelo alcanza otras palabras para esto (`positivo`, `negativo`, `exito`) y, desde
+    // que `Conclusion` es obligatoria en toda pantalla, ese error costaba un reintento y un
+    // paso del turno en 3 de cada 10 turnos del guion (medido el 2026-09-12). Con un `enum`
+    // no basta con ser tolerante en Zod: el catalogo publicado se genera de aqui y la capa
+    // de los JSON Schema oficiales rechazaria igual, asi que las dos capas tienen que decir
+    // lo mismo. El tono es DECORACION —el color de una cifra—: tumbar la pantalla por el
+    // nombre de un color, cuando la cifra viene bien, es un mal trato. Lo que no reconoce el
+    // componente se pinta neutro (`componente.tsx`).
+    .describe(
+      "Exactamente uno de estos tres: `neutro`, `bueno` o `alerta` (no `positivo` ni `negativo`, no " +
+        "se pintan). `bueno` lo pinta verde, `alerta` en ambar. Usa `neutro` salvo que el dato sea " +
+        "la buena o la mala noticia",
+    ),
 });
 
 export const schemaConclusion = PropsBase.extend({

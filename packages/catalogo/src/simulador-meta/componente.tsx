@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
@@ -11,6 +10,7 @@ import { EsqueletoBarra, EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, Esq
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, formatearFecha, formatearMonto, formatearPorcentaje, hoyISO, sumarMeses } from "../comunes";
+import { usarEstadoSeguido } from "../estado";
 import type { PropsSimuladorMeta } from "./schema";
 
 /** El slider trabaja en pesos: el paso de un centavo no significa nada para nadie. */
@@ -24,7 +24,11 @@ const PASO_CENTAVOS = 10000;
  * accion.
  *
  * **El numero grande es la fecha a la que llegas**, porque es lo que la persona viene a
- * ver y lo que cambia al arrastrar. El objetivo queda como contexto arriba.
+ * ver y lo que cambia al arrastrar.
+ *
+ * La aportacion la sigue `usarEstadoSeguido`: si el agente la parchea con
+ * `ajustar_pantalla`, el slider se mueve; sin eso se quedaria en el valor con el que monto
+ * (ver `estado.ts`). El objetivo queda como contexto arriba.
  */
 export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -41,7 +45,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
     razon,
     alAccionar,
   } = props;
-  const [aportacion, setAportacion] = useState(aportacionCentavos ?? 0);
+  const [aportacion, setAportacion] = usarEstadoSeguido(aportacionCentavos ?? 0);
 
   if (
     typeof metaCentavos !== "number" ||

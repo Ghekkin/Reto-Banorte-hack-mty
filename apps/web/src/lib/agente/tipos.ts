@@ -1,5 +1,5 @@
 import { z } from "zod";
-import type { MensajeA2UI } from "@maya/a2ui";
+import type { Componente, MensajeA2UI } from "@maya/a2ui";
 
 /**
  * El contrato agente <-> cliente, en tipos. La fuente es
@@ -44,6 +44,20 @@ export type PeticionAgente = {
   superficie?: {
     surfaceId: string;
     componentes: string[];
+    /**
+     * Los componentes que se estan viendo, **tal cual se emitieron**: con su `id`, sus
+     * props (los enlaces `{ path }` intactos), sus `children` y su `action`.
+     *
+     * Es lo que permite `ajustar_pantalla`: sin los ids, el modelo no tiene forma de
+     * referirse a una tarjeta que ya existe y su unica salida es repintar la pantalla
+     * completa desde las tools. Y van completos, no solo las props, porque un parche
+     * fusiona por id: `updateComponents` REEMPLAZA el componente, asi que para parchear
+     * una prop hay que volver a mandar el resto.
+     *
+     * Opcional a proposito: un cliente viejo que solo manda `componentes` sigue
+     * funcionando, y el agente se limita a `pintar_pantalla`.
+     */
+    arbol?: Componente[];
     dataModel: Record<string, unknown>;
   };
   /** `client_capabilities.json`: que catalogos soporta el cliente. Opcional. */
@@ -93,6 +107,19 @@ export const esquemaPeticion = z
       .object({
         surfaceId: z.string().min(1).max(64),
         componentes: z.array(z.string().max(64)).max(200).default([]),
+        arbol: z
+          .array(
+            z
+              .object({
+                id: z.string().min(1).max(128),
+                component: z.string().min(1).max(64),
+              })
+              // Las props son planas y distintas por componente: van tal cual llegan, y el
+              // schema de cada una se valida contra el catalogo, no aqui.
+              .catchall(z.unknown()),
+          )
+          .max(60)
+          .optional(),
         dataModel: z.record(z.string(), z.unknown()).default({}),
       })
       .optional(),
@@ -122,6 +149,13 @@ export type LineaStream =
   | { tipo: "razon"; valor: string }
   | { tipo: "sugerencias"; valores: string[] }
   | { tipo: "error"; codigo: "tool" | "a2ui" | "modelo" | "timeout"; mensaje: string }
-  | { tipo: "fin"; pasos: number; ms: number; /** tokens que el proveedor sirvio desde su cache */ cacheLeido?: number };
+  | { tipo: "fin"; pasos: number; ms: number; /** tokens que el proveedor sirvio desde su cache */ cacheLeido?: number;
+      /**
+       * Con cual de las tres salidas cerro el modelo. El cliente lo necesita para una cosa
+       * concreta: un `ajustar` **actualiza la pantalla que ya estaba** en el hilo en vez de
+       * apilar otra debajo, que es lo que hace que el cambio se vea live y no como un chat
+       * con tarjetas pegadas.
+       */
+      cierre?: "pintar" | "ajustar" | "responder" };
 
 export const TIMEOUT_TURNO_MS = 30_000;

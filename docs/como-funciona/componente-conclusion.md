@@ -46,7 +46,8 @@ respuesta.
 `sugerencias` (hasta 3) son opcionales, así que la tarjeta funciona con lo mínimo que el
 host tenga.
 
-Las cifras de `datos` llevan `tono` (`neutro` | `bueno` | `alerta`) y son las **mismas** que
+Las cifras de `datos` llevan `tono` (`neutro` | `bueno` | `alerta`; ver abajo, es texto libre a
+propósito) y son las **mismas** que
 ya están en las otras tarjetas, ya formateadas. El schema es explícito sobre esto: *"Si es
 dinero, va con centavos y EXACTAMENTE igual que en la tarjeta que lo reporta: dos cifras
 distintas para el mismo monto en la misma pantalla es lo que hace que nadie crea ninguna"*.
@@ -68,20 +69,41 @@ del párrafo.
 `text-balance` en el titular y `text-pretty` en el detalle: con dos renglones el navegador
 reparte las palabras en vez de dejar una colgando.
 
-### En Inicio la pinta el host
+### La pinta el modelo; el host solo si falta
 
-`InicioDeMaya` la arma con el `texto` y la `razon` que la portada **ya trae** validados,
-partiendo el texto en titular y detalle con `partirEnTitular()` (corta en el primer punto
-seguido de espacio; sin punto, todo es titular).
+Los dos encargos de la portada (`encargoDePortada` y `encargoDeConsulta`) le piden al modelo que la
+**primera tarjeta sea `Conclusion`**, y esa gana: es la rica, con titular, detalle, hasta 3 cifras de
+apoyo y las sugerencias, todo dentro de una tarjeta.
 
-Es deliberado. Si dependiera de que el modelo emitiera el componente, una omisión suya
-dejaría la pantalla sin veredicto — y `inicio-personalizado.md` registra que el modelo chico
-omitió props obligatorias dos corridas seguidas teniendo la regla escrita. El componente
-**sí** está en el catálogo, así que el agente de `/maya` puede emitirlo, y el encargo de
-consulta (`encargoDeConsulta`) le pide explícitamente que la primera tarjeta sea esta.
+`InicioDeMaya` pinta la suya **solo si el árbol A2UI no trae ninguna**, y la arma con el `texto` y la
+`razon` que la portada ya trae validados, partiendo el texto en titular y detalle con
+`partirEnTitular()` (corta en el primer punto seguido de espacio; sin punto, todo es titular). Esa
+red hace falta: `inicio-personalizado.md` registra que el modelo chico omitió props obligatorias dos
+corridas seguidas teniendo la regla escrita.
 
-Verificado con el modelo real: dos consultas distintas emitieron `Column · Conclusion ·
-GastoPorCategoria` y `Column · Conclusion · ResumenTarjeta`, ninguna con `Text`.
+La comprobación es `nombresVisibles(superficie).includes("Conclusion")` — el árbol alcanzable desde
+la raíz, no la lista del mensaje: una `Conclusion` que el modelo mandó pero no colgó de ningún lado
+no se ve, y en ese caso el host sí tiene que poner la suya.
+
+> **Hasta el 2026-09-12 salían DOS.** El host la pintaba siempre, sin mirar el árbol, y el prompt se
+> la pedía al modelo: la rica del modelo, y encima una pobre armada con la frase corta del `texto`.
+> No era intermitente — en la ruta de preguntar desde Inicio estaba garantizado. Ninguna prueba lo
+> veía porque `inicio-pinta.spec.ts` usaba un ejemplo que no trae `Conclusion`; ahora hay un caso
+> con `conclusion.jsonl` que cuenta cuántas se pintan.
+
+Verificado con el modelo real (2026-09-12, `pnpm probar-inicio`): 3 de 3 portadas con exactamente
+una `Conclusion`, y siempre primera.
+
+### `tono` es texto libre, y es la única prop del catálogo que lo es
+
+`tono` **no** es un `enum` aunque solo tres valores pinten algo. Desde que el tope de tarjetas hace
+que `Conclusion` esté en toda pantalla, el modelo alcanzando otra palabra (`positivo`, `negativo`)
+costaba un reintento y un paso del turno en 3 de cada 10 turnos del guion (medido el 2026-09-12).
+
+Con un `enum` no basta con ser tolerante en Zod: el catálogo publicado se genera de ese schema y la
+capa de los JSON Schema oficiales rechazaría igual, así que **las dos capas tienen que decir lo
+mismo**. El tono es decoración —el color de una cifra—: tumbar la pantalla por el nombre de un color,
+cuando la cifra viene bien, es un mal trato. El componente pinta neutro lo que no reconoce.
 
 ### La acción
 

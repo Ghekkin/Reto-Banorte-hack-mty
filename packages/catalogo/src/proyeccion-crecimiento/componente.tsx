@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Area, AreaChart, ReferenceDot, XAxis, YAxis } from "recharts";
 import { Button } from "@/components/ui/button";
@@ -9,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Slider } from "@/components/ui/slider";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { usarEstadoSeguido } from "../estado";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { CLASES_GRAFICA, EJE, ETIQUETA, Ficha, Grafica, Leyenda, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
@@ -53,7 +53,8 @@ export function ProyeccionCrecimiento(props: Partial<PropsProyeccionCrecimiento>
     alAccionar,
   } = props;
 
-  const [aportacion, setAportacion] = useState(aportacionMensualCentavos ?? 0);
+  // La sigue el agente: un `ajustar_pantalla` sobre la aportacion mueve el slider (estado.ts).
+  const [aportacion, setAportacion] = usarEstadoSeguido(aportacionMensualCentavos ?? 0);
 
   if (
     typeof capitalInicialCentavos !== "number" ||

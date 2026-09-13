@@ -24,16 +24,25 @@ vi.mock("next/link", () => ({
 const { InicioDeMaya, haceCuanto, partirEnTitular } = await import("@/components/inicio/inicio-de-maya");
 
 const EJEMPLO = fileURLToPath(new URL("../../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url));
+const EJEMPLO_CON_CONCLUSION = fileURLToPath(
+  new URL("../../../../../../packages/catalogo/ejemplos/conclusion.jsonl", import.meta.url),
+);
 
-function pantallaDelEjemplo(): PantallaDeInicio {
-  const mensajes = readFileSync(EJEMPLO, "utf8")
+/** El titular de `Conclusion` es el unico `text-2xl` con `text-balance` de la pantalla. */
+const MARCA_DE_CONCLUSION = /text-balance text-2xl font-semibold leading-tight/g;
+
+function mensajesDe(archivo: string): MensajeA2UI[] {
+  return readFileSync(archivo, "utf8")
     .split("\n")
     .filter((l) => l.trim() !== "")
     .map((l) => JSON.parse(l) as MensajeA2UI);
+}
+
+function pantallaDelEjemplo(archivo = EJEMPLO): PantallaDeInicio {
   return {
     usuarioId: "usr_beto",
     huella: "v1|c18|a:0:0|m:812:2026-09-10",
-    mensajes,
+    mensajes: mensajesDe(archivo),
     texto: "Hoy lo urgente es la tarjeta: con el plan a 18 meses bajas la mensualidad a $3,193.",
     razon: "Tienes la tarjeta al 96.7 % de su limite y 12 dias de atraso",
     sugerencias: ["¿Cuanto me ahorro con el plan?", "¿En que se me fue el dinero?"],
@@ -90,6 +99,38 @@ describe("el Inicio que armo Maya", () => {
     expect(html).toContain("¿Cuanto me ahorro con el plan?");
     expect(html).toContain("¿En que se me fue el dinero?");
     expect(html).toContain("<button");
+  });
+
+  it("hay UNA sola conclusion cuando el modelo no la manda", () => {
+    expect(html.match(MARCA_DE_CONCLUSION)).toHaveLength(1);
+  });
+});
+
+/**
+ * El caso que faltaba, y era el bug: hasta el 2026-09-12 el host pintaba su `Conclusion`
+ * SIEMPRE, sin mirar el arbol, asi que cuando el modelo mandaba la suya —que los dos
+ * encargos de `generar.ts` le piden— salian DOS conclusiones en la misma pantalla: la rica
+ * del modelo y encima una pobre armada con una frase corta.
+ *
+ * No era intermitente: en la ruta de preguntar desde Inicio estaba garantizado. Y ninguna
+ * prueba lo veia porque el ejemplo de arriba (`plan-de-pago.jsonl`) no trae `Conclusion`.
+ */
+describe("cuando el modelo YA mando su Conclusion", () => {
+  const html = renderToStaticMarkup(
+    createElement(InicioDeMaya, { pantalla: pantallaDelEjemplo(EJEMPLO_CON_CONCLUSION), nombre: "Alberto Ramírez" }),
+  );
+
+  it("gana la del modelo y el host no pone la suya", () => {
+    expect(html.match(MARCA_DE_CONCLUSION)).toHaveLength(1);
+    // La del modelo trae su titular y sus cifras de apoyo.
+    expect(html).toContain("Tu plan de tarjeta ya está activo");
+    expect(html).toContain("Retiros de efectivo");
+    // Y la pobre del host, armada con `pantalla.texto`, no aparece.
+    expect(html).not.toContain("Hoy lo urgente es la tarjeta");
+  });
+
+  it("el saludo sigue saliendo una sola vez", () => {
+    expect(html.split("Hola, Alberto")).toHaveLength(2);
   });
 });
 

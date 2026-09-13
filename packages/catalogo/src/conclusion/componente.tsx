@@ -6,7 +6,7 @@ import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_FILA_TOCABLE } from "../comunes";
 import { useConfiguracionCatalogo } from "../contexto";
-import type { DatoDeApoyo, PropsConclusion } from "./schema";
+import type { PropsConclusion } from "./schema";
 
 /**
  * La conclusion: lo que Maya te dice, con el peso que merece.
@@ -32,7 +32,12 @@ import type { DatoDeApoyo, PropsConclusion } from "./schema";
  * que es lo que hacia el parrafo.
  */
 
-const TONO: Record<DatoDeApoyo["tono"], string> = {
+/**
+ * Los tres tonos que esta tarjeta sabe pintar. `tono` llega como texto libre (ver el schema:
+ * las dos capas de validacion tienen que decir lo mismo y un `enum` costaba un reintento por
+ * turno), asi que lo que no este aqui se pinta neutro.
+ */
+const TONO: Record<string, string> = {
   neutro: "text-foreground",
   bueno: "text-exito",
   alerta: "text-advertencia",
@@ -85,7 +90,9 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
             {datos.map((d) => (
               <li key={d.etiqueta} className="flex flex-col">
                 <span className="text-xs text-muted-foreground">{d.etiqueta}</span>
-                <span className={`monto text-lg font-semibold ${TONO[d.tono ?? "neutro"]}`}>{d.valor}</span>
+                {/* `?? TONO.neutro` porque `tono` es texto libre: un valor que no esta en el
+                    mapa se pinta neutro en vez de dejar `undefined` en el className. */}
+                <span className={`monto text-lg font-semibold ${TONO[d.tono ?? "neutro"] ?? TONO.neutro}`}>{d.valor}</span>
               </li>
             ))}
           </ul>

@@ -1,8 +1,9 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { stepCountIs, streamText, type LanguageModel, type ToolSet } from "ai";
 import type { MensajeA2UI } from "@maya/a2ui";
+import { crearCierre } from "@/lib/agente/cierre";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "@/lib/agente/mcp-cliente";
-import { crearPintor, type ResultadoPintar } from "@/lib/agente/pantalla";
+import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "@/lib/agente/pantalla";
 import { systemPrompt } from "@/lib/agente/prompt";
 import { configInicio } from "./config";
 import { modeloDelInicio, opcionesDelInicio } from "./modelo";
@@ -142,7 +143,6 @@ export const TOOLS_DE_APOYO = [
 ] as const;
 
 /** Dos entregas invalidas y se corta, como en el turno de conversacion. */
-const MAX_INTENTOS_DE_PANTALLA = 2;
 
 export async function generarPortada(usuarioId: string, opciones: OpcionesDeGeneracion = {}): Promise<PortadaGenerada> {
   const inicio = Date.now();
@@ -170,11 +170,14 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       datos ??= await reunirDatos(cliente, usuarioId, usadas);
     }
 
-    const pintor = crearPintor();
+    // Sin pantalla previa, `crearCierre` solo publica `pintar_pantalla`: en una portada no
+    // hay nada que ajustar ni que aclarar, y `responder` con texto seria justo lo contrario
+    // de lo que la portada es.
+    const cierre = crearCierre();
     // Al modelo solo le llegan las tools de apoyo y la de pintar. Las de accion no se
     // filtran con `activeTools`: **no estan en el conjunto**, asi que ni un modelo que
     // se las invente puede ejecutarlas desde aqui.
-    const tools: ToolSet = { pintar_pantalla: pintor.herramienta };
+    const tools: ToolSet = { ...cierre.herramientas };
     for (const nombre of TOOLS_DE_APOYO) {
       const tool = herramientas[nombre];
       if (tool) tools[nombre] = tool;
@@ -203,8 +206,8 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       tools,
       stopWhen: [
         stepCountIs(configInicio.maxPasos),
-        () => pintor.pintada(),
-        () => pintor.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
+        () => cierre.cerrado(),
+        () => cierre.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
       ],
       // Paso 0: pedir lo que falte (o pintar de una vez). Del 1 en adelante: solo pintar,
       // y el modelo solo ve esa tool.
@@ -237,9 +240,9 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       }
     }
 
-    const ultima = pintor.ultima();
-    if (corte === "timeout" && !pintor.pintada()) return fallo(`la generacion paso de ${timeoutMs / 1000} s y se corto`);
-    if (!pintor.pintada() || !ultima) {
+    const ultima = cierre.ultima();
+    if (corte === "timeout" && !cierre.cerrado()) return fallo(`la generacion paso de ${timeoutMs / 1000} s y se corto`);
+    if (!cierre.cerrado() || !ultima) {
       return fallo(
         errores.length
           ? `la pantalla vino invalida: ${errores.join("; ")}`
@@ -250,7 +253,7 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     const consumo = await resultado.usage.catch(() => undefined);
     return {
       ok: true,
-      mensajes: pintor.tomarMensajes(),
+      mensajes: cierre.tomarMensajes(),
       texto: ultima.texto,
       razon: ultima.razon,
       sugerencias: ultima.sugerencias,
@@ -277,8 +280,8 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
  * turno en `historial.ts`: es lo unico que cambia entre personas, y por eso va al final.
  *
  * Las reglas son las de una portada, no las de una respuesta: sin pregunta, sin accion
- * previa, 3 o 4 tarjetas en orden de urgencia y una sola heroe. Los datos ya
- * calculados se muestran tal cual salieron del MCP: el modelo enlaza, no inventa.
+ * previa, `Conclusion` mas dos tarjetas en orden de urgencia y una sola heroe. Los datos
+ * ya calculados se muestran tal cual salieron del MCP: el modelo enlaza, no inventa.
  */
 export function encargoDePortada(usuarioId: string, datos: DatosDeLaPortada): string {
   const lineasDeDatos = Object.entries(datos).map(([tool, valor]) => `${tool}: ${JSON.stringify(valor)}`);
@@ -291,37 +294,50 @@ export function encargoDePortada(usuarioId: string, datos: DatosDeLaPortada): st
     "primero que ve al abrir la app. La portada responde \"¿como estoy hoy y que me conviene hacer?\".",
     "",
     "Reglas de la portada:",
-    "1. SIEMPRE de 3 a 4 tarjetas del catalogo, nunca menos de 3, en orden de urgencia. Para elegir la",
-    "   primera (la heroe) recorre esta escalera y quedate con lo PRIMERO que aplique:",
+    "1. EXACTAMENTE 3 tarjetas, y la primera es `Conclusion`: ahi va tu lectura de como esta hoy en una",
+    "   frase (`titular`), el porque y la recomendacion (`detalle`), hasta 3 cifras de apoyo (`datos`,",
+    "   las MISMAS que estan en las otras dos tarjetas) y 3 preguntas de seguimiento (`sugerencias`).",
+    "   Y el `saludo`: «Hola, <su primer nombre>» (el nombre viene en `panorama_inicial.usuario.nombre`);",
+    "   es lo primero que lee al abrir la app. Tres es un tope de verdad: una cuarta tarjeta hace que la",
+    "   pantalla se rechace.",
+    "2. Las OTRAS DOS son la tarjeta 2 y la 3, y salen de esta escalera. Recorrela DE ARRIBA A",
+    "   ABAJO y quedate con el PRIMER caso que aplique a los datos de abajo. No la saltes porque",
+    "   otro caso te parezca mas interesante: el orden ES la urgencia, y el caso que aplica es el",
+    "   problema que esta persona tiene que resolver hoy.",
     "   a) tarjeta de credito al limite (`usoDelLimite` >= 0.5) o con mora -> `ResumenTarjeta` heroe y",
     "      `PlanDePago` (pide `simular_reestructura`); si `tienePlanActivo` ya es true, `ResumenTarjeta`",
-    "      con el plan y SIN `PlanDePago`;",
-    "   b) sin tarjeta (`tarjeta: null`) pero con creditos a plazo -> `ProyeccionPagoCredito` heroe con su",
-    "      credito mas caro (pide `consultar_creditos` con `incluirAmortizacion: true`, `proximosPagos: 12`),",
-    "      y `SimuladorMeta` con lo que le sobra al mes (pide `proyectar_ahorro`);",
-    "   c) portafolio desviado de su modelo -> `DistribucionPortafolio` heroe y `OrdenRebalanceo`;",
+    "      con el plan y en vez de `PlanDePago` la siguiente que aplique;",
+    "   b) sin tarjeta (`tarjeta: null`) pero con creditos a plazo con saldo -> `ProyeccionPagoCredito`",
+    "      heroe con su credito mas caro (pide `consultar_creditos` con `incluirAmortizacion: true`,",
+    "      `proximosPagos: 12`), y `SimuladorMeta` con lo que le sobra al mes (pide `proyectar_ahorro`).",
+    "      **Sin tarjeta NO es sin deuda, y \"al corriente\" NO es \"resuelto\":** mientras tenga saldo",
+    "      insoluto esta pagando intereses cada mes, y eso le cuesta mas que cualquier desviacion de su",
+    "      portafolio. Aqui no se salta al caso (c) aunque su portafolio se vea mas interesante;",
+    "   c) SIN deuda (ni tarjeta al limite ni credito con saldo) y con portafolio desviado de su modelo",
+    "      -> `DistribucionPortafolio` heroe y `OrdenRebalanceo`;",
     "   d) topes excedidos o fugas -> `AlertaFugas` o `GastoPorCategoria`;",
     "   e) meta activa -> `MetaActiva`; sin meta y con `capacidadPagoMensualCentavos` > 0 -> `SimuladorMeta`.",
-    "   Despues de la heroe completa hasta 3 o 4 con lo que siga aplicando de la escalera y con contexto:",
-    "   `GastoPorCategoria` (siempre hay gasto en `analizar_gasto`) y `TermometroSaludFinanciera` (siempre",
-    "   hay puntaje en `panorama_inicial.salud`). Dos personas con datos distintos reciben portadas distintas.",
-    "2. Exactamente UNA tarjeta con `heroe: true`: la primera, y solo en un componente que declare esa prop.",
-    "3. Nada de `Confirmacion` (no hubo accion) ni de `Text` (no hay pregunta que contestar).",
-    "4. Todo numero sale de los datos ya calculados de abajo o de una tool. Si a una tarjeta le falta",
+    "   Si el caso que aplico solo te da una tarjeta, la tercera es contexto: `GastoPorCategoria` (siempre",
+    "   hay gasto en `analizar_gasto`) o `TermometroSaludFinanciera` (siempre hay puntaje en",
+    "   `panorama_inicial.salud`). Dos personas con datos distintos reciben portadas distintas.",
+    "3. La tarjeta 2 —la primera de la escalera— lleva `heroe: true`, y es la UNICA que lo lleva.",
+    "   Una portada sin heroe no tiene jerarquia: se pinta plana y no se sabe que mirar primero. Si esa",
+    "   tarjeta no declara `heroe` en su lista de props, ponselo a la 3; si ninguna de las dos lo declara,",
+    "   cambia la 3 por una que si (`GastoPorCategoria` y `TermometroSaludFinanciera` lo declaran).",
+    "   `Conclusion` NO lleva `heroe`: es la primera, pero no es la heroe.",
+    "4. Nada de `Confirmacion` (no hubo accion) ni de `Text` (para eso esta `Conclusion`).",
+    "5. Todo numero sale de los datos ya calculados de abajo o de una tool. Si a una tarjeta le falta",
     "   su dato —la simulacion de plazos para `PlanDePago`, la proyeccion para `SimuladorMeta` (propon",
     "   el objetivo si no hay meta), el historico para `RendimientoHistorico`, la amortizacion para",
     "   `ProyeccionPagoCredito`—, pide esas tools AHORA, todas en este mismo paso: en el siguiente",
     "   solo vas a poder pintar. `proyectar_ahorro` falla si `capacidadPagoMensualCentavos` es 0: no la",
     "   pidas en ese caso.",
-    "5. Los botones se quedan y FUNCIONAN: toda tarjeta con boton lleva su `action` declarado, igual",
+    "6. Los botones se quedan y FUNCIONAN: toda tarjeta con boton lleva su `action` declarado, igual",
     "   que en los ejemplos (`PlanDePago` -> `aplicar_plan_pago` con `context: { tarjetaId }`;",
     "   `SimuladorMeta` -> `crear_apartado`; `AlertaFugas` -> `cancelar_suscripcion`; `OrdenRebalanceo` ->",
     "   `confirmar_rebalanceo`). Sin `action`, el boton sale apagado. Al tocarlo, la persona pasa a Maya",
     "   con esa accion ya disparada.",
-    "6. `texto`: de una a tres frases, como si la saludaras al abrir la app: que ves hoy y que le",
-    "   recomiendas, con el numero que lo sostiene. Empieza por lo de la tarjeta heroe: es lo",
-    "   importante, no lo ultimo. `sugerencias`: 3 preguntas que le convendria hacerle a Maya con",
-    "   estos datos.",
+    "7. `texto`: una frase corta, porque el veredicto ya va en `Conclusion` y no se repite.",
     "",
     "datos ya calculados (lo que devolvio cada tool del MCP):",
     ...lineasDeDatos,
@@ -356,12 +372,13 @@ export function encargoDeConsulta(usuarioId: string, datos: DatosDeLaPortada, pr
     "",
     "Reglas de la consulta:",
     "1. La respuesta es una PANTALLA, no un mensaje. La persona no abrio un chat: escribio en su",
-    "   dashboard y espera que su dashboard cambie. De 2 a 4 tarjetas del catalogo.",
+    "   dashboard y espera que su dashboard cambie. EXACTAMENTE 3 tarjetas del catalogo, y tres es un",
+    "   tope de verdad: una cuarta hace que la pantalla se rechace.",
     "2. La PRIMERA tarjeta es `Conclusion`, siempre: ahi va tu lectura en una frase (`titular`), el",
     "   porque y la recomendacion (`detalle`), hasta 3 cifras de apoyo (`datos`, las MISMAS que estan",
     "   en las otras tarjetas y con centavos si son dinero) y 3 preguntas de seguimiento",
     "   (`sugerencias`). Es la que contesta; las demas la sostienen.",
-    "3. Despues de `Conclusion`, las tarjetas que respondan la pregunta con datos: el gasto si pregunto",
+    "3. Las OTRAS DOS son las que respondan la pregunta con datos: el gasto si pregunto",
     "   por su gasto, el credito si pregunto por su deuda, el portafolio si pregunto por sus",
     "   inversiones. Si la pregunta no aplica a su situacion, NO contestes con texto: arma la pantalla",
     "   de lo que si le sirve y explicalo en la `razon`.",

@@ -11,8 +11,27 @@
 | `totalCentavos`, `variacionPct` | El total del periodo y su variación contra el anterior |
 | `categorias[]` | `{ categoriaId?, nombre, montoCentavos, variacionPct? }`, de mayor a menor |
 | `categoriaAtipica` | El **nombre** de la que se salió de su patrón: se pinta en rojo, el resto en plata |
+| `orden` | Variante de vista: `monto` (default) · `variacion` · `nombre` |
+| `limite` | Variante de vista: cuántas filas se listan tras ordenar; el resto se agrupa |
 | `ancho` | Default `amplio`: la gráfica pide dos columnas |
 | `heroe`, `razon` | Comunes |
+
+## Variantes: `orden` y `limite`
+
+Las dos son props de **vista**, no de datos, y existen para el ciclo live
+(`docs/como-funciona/ciclo-live.md`): "ordenénalo por variación" o "solo las 3 más grandes" no es otra
+pantalla ni otra consulta, es la misma tarjeta vista de otra forma. El agente las cambia con
+`ajustar_pantalla` y la tarjeta se reordena sin volver a pedir nada al MCP.
+
+`orden: "variacion"` manda al final las categorías **sin** `variacionPct`: una categoría sin dato no
+es una que no cambió, y ponerlas en medio mezclaría "no se sabe" con "se quedó igual".
+
+`limite` **no desaparece** lo que deja fuera: lo agrupa en un renglón neutro del pie ("otras 2:
+$4,702.00"). Es la única forma de recortar sin romper la invariante de esta tarjeta —que el total del
+encabezado cuadre con lo que lista— y sin encender el aviso ámbar "Faltan X sin desglosar", que sigue
+reservado para cuando el modelo recortó `categorias` de verdad (ver
+`docs/como-funciona/bug-gasto-total-no-cuadra.md`). Por eso el schema insiste en que se manden
+**todas** las categorías y se use `limite` para acotar la vista.
 
 ## Acciones
 

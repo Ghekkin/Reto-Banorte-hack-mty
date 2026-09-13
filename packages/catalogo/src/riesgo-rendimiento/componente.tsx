@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -8,6 +7,7 @@ import { CardContent, CardHeader } from "@/components/ui/card";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { usarEstadoSeguido } from "../estado";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsRiesgoRendimiento } from "./schema";
@@ -38,7 +38,9 @@ export function RiesgoRendimiento(props: Partial<PropsRiesgoRendimiento> & Pick<
     alAccionar,
   } = props;
 
-  const [seleccionadoId, setSeleccionadoId] = useState<string>(
+  // `instrumentoSeleccionadoId` es el selector de variante: el agente lo parchea con
+  // `ajustar_pantalla` y la ficha cambia sin repintar la tarjeta (estado.ts).
+  const [seleccionadoId, setSeleccionadoId] = usarEstadoSeguido<string>(
     instrumentoSeleccionadoId ?? instrumentos?.find((i) => i.recomendado)?.id ?? instrumentos?.[0]?.id ?? "",
   );
 

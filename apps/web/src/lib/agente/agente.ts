@@ -1,21 +1,27 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { stepCountIs, streamText, type LanguageModel, type LanguageModelUsage, type ToolSet } from "ai";
 import { config } from "./config";
+import { crearCierre, esToolDeCierre, type CierreDelTurno, type ResultadoAjustar, type ResultadoResponder } from "./cierre";
 import { mensajesDelTurno } from "./historial";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
-import { crearPintor, crearRespondedor, type ResultadoPintar } from "./pantalla";
+import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "./pantalla";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
 
 /**
  * El turno del agente: interpreta la intencion, llama tools del MCP, emite la interfaz
  * en A2UI y cierra el ciclo cuando la persona toca algo.
  *
- * Es un bucle de tools del AI SDK con una sola regla rara: **entregar la pantalla
- * tambien es una tool** (`pintar_pantalla`, en `pantalla.ts`). Con eso, el turno termina
- * cuando hay una pantalla valida, un JSON malo se reintenta como cualquier otro error de
- * tool, y nada llega al renderer sin validarse.
+ * Es un bucle de tools del AI SDK con una sola regla rara: **cerrar el turno tambien es
+ * una tool**, y hay tres (`cierre.ts`). Con eso, el turno termina cuando hay una salida
+ * valida, un JSON malo se reintenta como cualquier otro error de tool, y nada llega al
+ * renderer sin validarse.
+ *
+ * La tool con la que cierra **es** la clasificacion de intencion, sin llamada extra:
+ * `pintar_pantalla` (otra pantalla), `ajustar_pantalla` (cambiar lo que ya se ve, sin
+ * recrearla) o `responder` (aclarar sin tocar nada). Las dos ultimas solo existen si ya
+ * hay pantalla que ajustar.
  *
  * Los tres pasos del reto quedan visibles en el stream: `tool` (interpretar con datos),
  * `a2ui` (generar la interfaz), y —cuando viene una accion— la tool de mutacion seguida
@@ -38,11 +44,8 @@ export type OpcionesDeTurno = {
   alMutar?: (usuarioId: string) => void;
 };
 
-/** Dos entregas invalidas y se corta: el contrato permite un reintento, no una barra libre. */
-const MAX_INTENTOS_DE_PANTALLA = 2;
-
 /**
- * Cuantos pasos del tope se le guardan a `pintar_pantalla`. Con 2, el modelo tiene
+ * Cuantos pasos del tope se le guardan a las tools de cierre. Con 2, el modelo tiene
  * `maxPasos - 2` para consultar y en el siguiente paso se le fuerza la tool de pintar:
  * uno para pintar y uno de gracia si la primera entrega viene invalida.
  */
@@ -70,6 +73,9 @@ export async function* correrTurno(
   let pasos = 0;
   /** Que corto el turno antes de tiempo, si algo lo corto. Decide que error se reporta. */
   let corte: "timeout" | "cliente" | "modelo" | undefined;
+  /** Con cual de las tres salidas cerro. Viaja en el `fin` para que el cliente sepa si
+   * actualizar la pantalla que ya estaba o apilar una nueva. */
+  let cerroCon: CierreDelTurno | undefined;
 
   try {
     let herramientas = opciones.herramientas;
@@ -134,8 +140,16 @@ export async function* correrTurno(
     const porTiempo = AbortSignal.timeout(timeoutMs);
     const senal = opciones.senal ? AbortSignal.any([porTiempo, opciones.senal]) : porTiempo;
 
-    const pintor = crearPintor();
-    const respondedor = crearRespondedor();
+    // Las tres salidas del turno. `ajustar_pantalla` y `responder` solo existen si el
+    // cliente reporto que hay pantalla y con que ids: sin eso no hay nada que parchear ni
+    // que aclarar, y ofrecerlas invitaria al modelo a contestar con texto.
+    const pantallaActual =
+      peticion.superficie?.arbol?.length
+        ? { arbol: peticion.superficie.arbol, dataModel: peticion.superficie.dataModel ?? {} }
+        : undefined;
+    const cierre = crearCierre(pantallaActual);
+    const nombresDeCierre = Object.keys(cierre.herramientas);
+
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
       // El system prompt va como PRIMER MENSAJE, no en `system`, para poder marcarlo
@@ -148,21 +162,28 @@ export async function* correrTurno(
       // persona entra como `user`. Va explicito para que la decision se lea en el codigo y
       // no como un warning que todos aprenden a ignorar.
       allowSystemInMessages: true,
-      tools: {
-        ...herramientas,
-        pintar_pantalla: pintor.herramienta,
-        responder_conversacion: respondedor.herramienta,
-      },
+      tools: { ...herramientas, ...cierre.herramientas },
       stopWhen: [
         stepCountIs(config.maxPasos),
-        () => pintor.pintada() || respondedor.respondida(),
-        () => pintor.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
+        () => cierre.cerrado(),
+        () => cierre.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
       ],
-      // El ultimo paso se reserva para entregar pantalla o respuesta. Sin esto, un turno
-      // que se entretiene consultando se queda sin pasos y contesta en prosa disculpandose.
+      // El ultimo paso se reserva para cerrar. Sin esto, un turno que se entretiene
+      // consultando se queda sin pasos y contesta en prosa disculpandose: paso el
+      // 2026-09-12 con "simula mi fondo de emergencia", donde el modelo llamo
+      // `proyectar_ahorro` seis veces y murio en el paso 8 sin pintar nada. Mas vale una
+      // pantalla con lo que ya sabe que una disculpa.
+      // Y cuando llega ese paso, el modelo solo ve las tools de cierre: las 21 definiciones
+      // de tools del MCP son ~6,600 tokens de entrada que se reenvian en CADA peticion, y
+      // en el paso de cerrar no sirven para nada. Recortarlas ahi baja la peticion mas
+      // cara del turno de ~14,000 a ~7,400 tokens, y de paso le quita al modelo la
+      // tentacion de consultar una vez mas en vez de entregar la pantalla.
+      // `required` en vez de forzar una tool concreta: con tres salidas, cual usar es la
+      // decision del modelo (es la clasificacion de intencion), lo que no se negocia es
+      // que cierre. Con una sola disponible —el primer turno— equivale a forzarla.
       prepareStep: ({ stepNumber }) =>
         stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR
-          ? { toolChoice: "required", activeTools: ["pintar_pantalla", "responder_conversacion"] }
+          ? { toolChoice: "required", activeTools: nombresDeCierre }
           : undefined,
       providerOptions: opcionesDelProveedor(),
       abortSignal: senal,
@@ -175,14 +196,21 @@ export async function* correrTurno(
       switch (parte.type) {
         case "tool-call":
           enVuelo.set(parte.toolCallId, { nombre: parte.toolName, inicio: Date.now() });
-          yield { tipo: "estado", valor: parte.toolName === "pintar_pantalla" ? "pintando" : "consultando" };
+          // `responder` no pinta: decir "pintando" ahi seria mentirle a la persona.
+          yield {
+            tipo: "estado",
+            valor:
+              parte.toolName === "responder"
+                ? "pensando"
+                : esToolDeCierre(parte.toolName)
+                  ? "pintando"
+                  : "consultando",
+          };
           break;
 
         case "tool-result":
-          if (parte.toolName === "pintar_pantalla") {
-            yield* emitirPantalla(parte.output as ResultadoPintar, pintor);
-          } else if (parte.toolName === "responder_conversacion") {
-            // Entrega conversacional: no se emite como tool de datos externa
+          if (esToolDeCierre(parte.toolName)) {
+            yield* emitirCierre(parte.output as ResultadoPintar | ResultadoAjustar | ResultadoResponder, cierre);
           } else {
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.
@@ -233,16 +261,12 @@ export async function* correrTurno(
       }
     }
 
-    const ultima = pintor.ultima();
-    const conversacion = respondedor.ultima();
-
-    if (pintor.pintada() && ultima) {
+    const ultima = cierre.ultima();
+    cerroCon = cierre.con();
+    if (cierre.cerrado() && ultima) {
       yield { tipo: "texto", valor: ultima.texto };
       yield { tipo: "razon", valor: ultima.razon };
       if (ultima.sugerencias.length) yield { tipo: "sugerencias", valores: ultima.sugerencias };
-    } else if (respondedor.respondida() && conversacion) {
-      yield { tipo: "texto", valor: conversacion.texto };
-      if (conversacion.sugerencias.length) yield { tipo: "sugerencias", valores: conversacion.sugerencias };
     } else if (corte === "timeout") {
       yield { tipo: "error", codigo: "timeout", mensaje: `el turno paso de ${timeoutMs / 1000} s y se corto` };
       yield { tipo: "texto", valor: "Me tarde de mas. Intenta de nuevo." };
@@ -251,11 +275,12 @@ export async function* correrTurno(
     } else if (corte === "modelo") {
       // El error del proveedor ya salio arriba; solo falta que la conversacion no quede muda.
       yield { tipo: "texto", valor: "Algo falló de mi lado. Intenta de nuevo." };
-    } else if (prosa.trim() && pintor.intentosFallidos() === 0) {
+    } else if (prosa.trim() && cierre.intentosFallidos() === 0) {
       // El modelo contestó en texto conversacional sin errores de pantalla
       yield { tipo: "texto", valor: prosa.trim() };
     } else {
-      // Nunca llego una pantalla valida tras intentarlo o no hubo respuesta.
+      // Nunca cerro con ninguna de las tres. La conversacion no se queda muda: se contesta
+      // con lo que el modelo haya escrito en prosa (contrato agente-cliente, errores).
       yield {
         tipo: "error",
         codigo: "a2ui",
@@ -286,7 +311,8 @@ export async function* correrTurno(
         usuario: peticion.usuarioId,
         pasos,
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
-        pintada: pintor.pintada() || respondedor.respondida(),
+        pintada: cierre.cerrado(),
+        cierre: cierre.con() ?? null,
         corte: corte ?? null,
         entrada: consumo?.inputTokens ?? null,
         salida: consumo?.outputTokens ?? null,
@@ -313,7 +339,7 @@ export async function* correrTurno(
     await cliente?.close().catch(() => undefined);
   }
 
-  yield { tipo: "fin", pasos, ms: Date.now() - inicio, ...(await tokensDeCache(uso)) };
+  yield { tipo: "fin", pasos, ms: Date.now() - inicio, ...(cerroCon ? { cierre: cerroCon } : {}), ...(await tokensDeCache(uso)) };
 }
 
 /**
@@ -342,16 +368,21 @@ function esResultadoConError(salida: unknown): boolean {
   return typeof salida === "object" && salida !== null && "error" in salida;
 }
 
-/** Los mensajes A2UI ya validados, o el error para que el modelo lo corrija. */
-async function* emitirPantalla(
-  resultado: ResultadoPintar,
-  pintor: ReturnType<typeof crearPintor>,
+/**
+ * Los mensajes A2UI ya validados, o el error para que el modelo lo corrija.
+ *
+ * `responder` cierra el turno sin mensajes: la pantalla se queda como esta, y el cliente
+ * ya lo tolera (`usarAgente` solo congela una pantalla si tiene componentes).
+ */
+async function* emitirCierre(
+  resultado: ResultadoPintar | ResultadoAjustar | ResultadoResponder,
+  cierre: ReturnType<typeof crearCierre>,
 ): AsyncGenerator<LineaStream> {
   if (!resultado.ok) {
     yield { tipo: "error", codigo: "a2ui", mensaje: resultado.errores.join("; ") };
     return;
   }
-  for (const mensaje of pintor.tomarMensajes()) {
+  for (const mensaje of cierre.tomarMensajes()) {
     yield { tipo: "a2ui", mensaje };
   }
 }

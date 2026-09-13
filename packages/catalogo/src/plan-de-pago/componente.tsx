@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight, Star } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +9,7 @@ import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoOpciones, EsqueletoPie, 
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { usarEstadoSeguido } from "../estado";
 import type { PropsPlanDePago } from "./schema";
 
 /**
@@ -21,7 +21,9 @@ import type { PropsPlanDePago } from "./schema";
  *
  * La seleccion del plazo vive aqui (estado de interfaz, no dato de negocio): ir al agente
  * por cada clic en un radio seria un turno completo por toque. Lo que si viaja es la
- * confirmacion, con el plazo elegido en el `contextoExtra` de la accion.
+ * confirmacion, con el plazo elegido en el `contextoExtra` de la accion. Y `usarEstadoSeguido`
+ * hace que un `ajustar_pantalla` sobre `plazoElegido` SI mueva el radio: sin eso, el agente
+ * cambia el plazo y la tarjeta se queda marcando el viejo (ver `estado.ts`).
  *
  * Cada opcion es un `<label>` de 48 px con su radio: a 360 px el nombre se recorta y el
  * monto nunca se sale, porque va en su propia columna con `shrink-0`.
@@ -29,7 +31,7 @@ import type { PropsPlanDePago } from "./schema";
 export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponente, "alAccionar">) {
   const { opciones, plazoElegido, tarjetaId, etiquetaBoton = "Aplicar plan", razon, alAccionar } = props;
   const recomendado = opciones?.find((o) => o.recomendado)?.plazoMeses;
-  const [seleccion, setSeleccion] = useState<number | undefined>(
+  const [seleccion, setSeleccion] = usarEstadoSeguido<number | undefined>(
     plazoElegido ?? recomendado ?? opciones?.[0]?.plazoMeses,
   );
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { estadoVacio, procesarVarios, VERSION_A2UI, type EstadoSuperficie, type MensajeA2UI } from "@maya/a2ui";
-import { calcularSuperficieViva, SUPERFICIE, type EntradaDelHilo } from "@/lib/agente/usar-agente";
+import { calcularSuperficieViva, colocarPantalla, SUPERFICIE, type EntradaDelHilo } from "@/lib/agente/usar-agente";
 
 /**
  * El hilo guarda las pantallas de los turnos anteriores, y la del turno en curso se pinta
@@ -24,7 +24,7 @@ function pantalla(titulo: string): EstadoSuperficie {
 }
 
 const mensaje = (texto: string): EntradaDelHilo => ({ tipo: "mensaje", rol: "usuario", texto });
-const congelada = (superficie: EstadoSuperficie): EntradaDelHilo => ({
+const congelada = (superficie: EstadoSuperficie): Extract<EntradaDelHilo, { tipo: "pantalla" }> => ({
   tipo: "pantalla",
   superficie,
   transparencia: [],
@@ -65,5 +65,50 @@ describe("calcularSuperficieViva", () => {
 
   it("el hilo vacio no pinta nada", () => {
     expect(calcularSuperficieViva([], undefined)).toBeUndefined();
+  });
+});
+
+/**
+ * Lo que hace que un ajuste se vea LIVE: la pantalla no se apila, se actualiza donde ya
+ * estaba. Si se apilara, la version vieja quedaria congelada justo encima de la nueva.
+ */
+describe("colocarPantalla", () => {
+  const uno = pantalla("primera");
+  const dos = pantalla("segunda");
+
+  it("un repintado apila la pantalla nueva al final", () => {
+    const hilo = [mensaje("hola"), congelada(uno), mensaje("y ahora?")];
+    const salida = colocarPantalla(hilo, congelada(dos), false);
+    expect(salida).toHaveLength(4);
+    expect(salida.at(-1)).toMatchObject({ tipo: "pantalla", superficie: dos });
+  });
+
+  it("un ajuste reemplaza la ultima pantalla y deja la conversacion intacta", () => {
+    const hilo = [mensaje("¿en que gaste?"), congelada(uno), mensaje("muestrame julio")];
+    const salida = colocarPantalla(hilo, congelada(dos), true);
+    expect(salida).toHaveLength(3);
+    // La pantalla sigue en su lugar, con los datos nuevos.
+    expect(salida[1]).toMatchObject({ tipo: "pantalla", superficie: dos });
+    expect(salida[0]).toEqual(hilo[0]);
+    expect(salida[2]).toEqual(hilo[2]);
+  });
+
+  it("un ajuste mira la ULTIMA pantalla, no la primera", () => {
+    const hilo = [congelada(uno), mensaje("otra cosa"), congelada(pantalla("segunda"))];
+    const salida = colocarPantalla(hilo, congelada(dos), true);
+    expect(salida[0]).toMatchObject({ superficie: uno });
+    expect(salida[2]).toMatchObject({ superficie: dos });
+  });
+
+  it("un ajuste sin pantalla previa no se pierde: se agrega", () => {
+    const salida = colocarPantalla([mensaje("hola")], congelada(dos), true);
+    expect(salida).toHaveLength(2);
+    expect(salida.at(-1)).toMatchObject({ tipo: "pantalla" });
+  });
+
+  it("no muta el hilo que recibe", () => {
+    const hilo = [congelada(uno)];
+    colocarPantalla(hilo, congelada(dos), true);
+    expect(hilo[0]).toMatchObject({ superficie: uno });
   });
 });

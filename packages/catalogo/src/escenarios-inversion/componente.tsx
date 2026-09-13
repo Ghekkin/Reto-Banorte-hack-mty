@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_BOTON_PIE, CLASES_FILA_TOCABLE, formatearMonto, formatearPorcentaje } from "../comunes";
+import { usarEstadoSeguido } from "../estado";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsEscenariosInversion } from "./schema";
@@ -34,7 +34,9 @@ export function EscenariosInversion(props: Partial<PropsEscenariosInversion> & P
     alAccionar,
   } = props;
 
-  const [seleccionado, setSeleccionado] = useState<TipoEscenario>(escenarioInicial ?? "esperado");
+  // `escenarioInicial` es el selector de variante de esta tarjeta: el agente lo parchea con
+  // `ajustar_pantalla` y el escenario mostrado cambia sin repintar nada (estado.ts).
+  const [seleccionado, setSeleccionado] = usarEstadoSeguido<TipoEscenario>(escenarioInicial ?? "esperado");
 
   if (typeof montoInvertidoCentavos !== "number" || typeof horizonteMeses !== "number" || !escenarioPesimista || !escenarioEsperado || !escenarioOptimista) {
     return (

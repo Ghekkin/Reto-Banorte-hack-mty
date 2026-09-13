@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import {
+  componentesVisibles,
   estadoVacio,
   nombresVisibles,
   procesar,
@@ -62,6 +63,35 @@ export function calcularSuperficieViva(
 export type EntradaDelHilo =
   | { tipo: "mensaje"; rol: MensajeHistorial["rol"]; texto: string }
   | { tipo: "pantalla"; superficie: EstadoSuperficie; transparencia: LineaStream[] };
+
+/**
+ * Donde va la pantalla del turno que acaba de cerrar.
+ *
+ * Un `pintar` **apila**: es otra pantalla, y la anterior se queda arriba como parte de la
+ * conversacion. Un `ajustar` **actualiza la que ya estaba**, porque es LA MISMA pantalla con
+ * otro parametro: apilarla dejaria la version vieja congelada justo encima de la nueva y el
+ * cambio se leeria como un chat con tarjetas pegadas en vez de un dashboard que se mueve.
+ *
+ * Es una funcion pura y esta probada porque equivocarse aqui no rompe nada visiblemente:
+ * solo hace que la misma pantalla aparezca dos veces.
+ */
+export function colocarPantalla(
+  hilo: EntradaDelHilo[],
+  entrada: Extract<EntradaDelHilo, { tipo: "pantalla" }>,
+  esAjuste: boolean,
+): EntradaDelHilo[] {
+  if (!esAjuste) return [...hilo, entrada];
+  for (let i = hilo.length - 1; i >= 0; i--) {
+    if (hilo[i]!.tipo === "pantalla") {
+      const copia = [...hilo];
+      copia[i] = entrada;
+      return copia;
+    }
+  }
+  // Un ajuste sin pantalla previa en el hilo no deberia pasar (sin pantalla no hay tool que
+  // ajustar), pero si pasa, mas vale pintarla que perderla.
+  return [...hilo, entrada];
+}
 
 /** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
 const TOPE_DE_FALLOS = 2;
@@ -128,7 +158,10 @@ export function usarAgente(usuarioId: string) {
                   surfaceId: superficie.id,
                   // Lo alcanzable desde la raiz, no el Map completo: ese acumula los
                   // componentes de toda la conversacion y le mentiria al agente (issue #3).
+                  // Los nombres para leer de un vistazo; el arbol completo (ids, props,
+                  // enlaces) para que el agente pueda PARCHEAR en vez de repintar todo.
                   componentes: nombresVisibles(superficie),
+                  arbol: componentesVisibles(superficie),
                   dataModel: superficie.dataModel,
                 }
               : undefined,
@@ -165,13 +198,14 @@ export function usarAgente(usuarioId: string) {
               break;
             case "fin": {
               // La pantalla del turno se queda en el hilo, con su tira de transparencia.
-              // Un turno que no pinto nada (conversacion, prosa, error) no congela nada: no hay que
-              // dejar un hueco vacio en la conversacion ni duplicar una pantalla previa.
+              // Un turno que no pinto nada (prosa, error, `responder`) no congela nada: no
+              // hay que dejar un hueco vacio en la conversacion.
               const emitioA2ui = lineas.some((l) => l.tipo === "a2ui");
               const pantalla = actual.get(SUPERFICIE);
-              if (emitioA2ui && pantalla && pantalla.componentes.size > 0) {
+              if (emitioA2ui && pantalla && pantalla.componentes.size > 0 && linea.cierre !== "responder") {
                 const congelada = [...lineas];
-                setHilo((h) => [...h, { tipo: "pantalla", superficie: pantalla, transparencia: congelada }]);
+                const entrada = { tipo: "pantalla" as const, superficie: pantalla, transparencia: congelada };
+                setHilo((h) => colocarPantalla(h, entrada, linea.cierre === "ajustar"));
               }
               break;
             }
@@ -259,8 +293,7 @@ export function usarAgente(usuarioId: string) {
   };
 }
 
-/** Lee el cuerpo como JSONL: una linea, un mensaje, sin esperar al final. */
-async function* leerJSONL(cuerpo: ReadableStream<Uint8Array>): AsyncGenerator<LineaStream> {
+/** Lee el cuerpo como JSONL: una linea, un mensaje, sin esperar al final. */async function* leerJSONL(cuerpo: ReadableStream<Uint8Array>): AsyncGenerator<LineaStream> {
   const lector = cuerpo.getReader();
   const decodificador = new TextDecoder();
   let resto = "";

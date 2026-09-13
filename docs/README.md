@@ -73,6 +73,7 @@ quien.
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
+- [El ciclo LIVE](como-funciona/ciclo-live.md) — las tres salidas del turno (aclarar, ajustar lo que ya se ve sin recrearlo, repintar), el tope de 3 tarjetas y por qué el motor A2UI ya lo soportaba
 - [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard
 - [El bug del gasto que no cuadraba](como-funciona/bug-gasto-total-no-cuadra.md) — un total contra seis de once categorías, por qué el culpable era el ejemplo del few-shot y no el código, y las pruebas que ahora lo cazan
 
@@ -88,6 +89,7 @@ quien.
 - [Gráficas del catálogo](algoritmos/graficas-del-catalogo.md) — qué forma para cada dato, el orden de colores que pasa el validador de daltonismo, la serie calibrada del slider y las referencias de los pilares
 - [La portada de Maya](algoritmos/portada-de-maya.md) — la huella que decide cuándo rearmar y la escalera de urgencia con la que se eligen las tarjetas
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
+- [Intención y parcheo](algoritmos/intencion-y-parcheo.md) — cómo se clasifica una pregunta de seguimiento sin clasificador, el tope de tarjetas con su poda determinista, qué valida un parche y quién gana el slider cuando la persona y el agente no coinciden
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

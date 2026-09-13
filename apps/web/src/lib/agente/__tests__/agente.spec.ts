@@ -2,10 +2,19 @@ import { describe, expect, it, vi } from "vitest";
 import { tool, type ToolSet } from "ai";
 import { z } from "zod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import type { Componente } from "@maya/a2ui";
 import { correrTurno } from "../agente";
-import { mensajesDelTurno } from "../historial";
+import { armarParches } from "../ajustar";
+import { mensajesDelTurno, resumirDataModel } from "../historial";
 import { herramientasDelMcp } from "../mcp-cliente";
-import { armarMensajes, quitarComasColgantes, rescatarJson } from "../pantalla";
+import {
+  armarMensajes,
+  podarAlTope,
+  quitarComasColgantes,
+  rescatarJson,
+  tarjetasDePantalla,
+  TOPE_DE_TARJETAS,
+} from "../pantalla";
 import type { LineaStream, PeticionAgente } from "../tipos";
 import { esquemaPeticion } from "../tipos";
 import { modeloColgado, modeloGuionizado, pasoConTexto, pasoConTool } from "./ayudas";
@@ -306,8 +315,279 @@ describe("correrTurno", () => {
   });
 });
 
-describe("cortes del turno", () => {
-  it("un proveedor que no contesta termina en error timeout, no en 'no entrego pantalla'", async () => {
+/**
+ * El ciclo LIVE: las tres salidas del turno. La tool con la que el modelo cierra ES la
+ * clasificacion de intencion, asi que lo que se prueba aqui es que cada una haga lo suyo
+ * y —sobre todo— que `ajustar_pantalla` NO emita `createSurface`, porque `createSurface`
+ * borra el data model y con el se iria justo lo que se queria conservar.
+ */
+describe("las tres salidas del turno", () => {
+  const PANTALLA_EN_CURSO: PeticionAgente["superficie"] = {
+    surfaceId: "principal",
+    componentes: ["Column", "GastoPorCategoria"],
+    arbol: [
+      { id: "root", component: "Column", children: ["gasto"] },
+      {
+        id: "gasto",
+        component: "GastoPorCategoria",
+        periodo: { path: "/gasto/periodo" },
+        totalCentavos: { path: "/gasto/totalCentavos" },
+        categorias: { path: "/gasto/categorias" },
+        razon: "Tu gasto subio 7 % contra julio",
+        action: { event: { name: "ver_categoria", context: {} } },
+      },
+    ],
+    dataModel: {
+      gasto: {
+        periodo: "2026-08",
+        totalCentavos: 4520000,
+        categorias: [{ nombre: "Restaurantes", montoCentavos: 4520000 }],
+      },
+    },
+  };
+
+  const conPantalla = (extra: Partial<PeticionAgente> = {}) =>
+    peticion({ superficie: PANTALLA_EN_CURSO, ...extra });
+
+  it("ajustar_pantalla parchea el data model y NO manda createSurface", async () => {
+    const lineas = await recolectar(
+      correrTurno(conPantalla(), {
+        modelo: modeloGuionizado([
+          pasoConTool("ajustar_pantalla", {
+            razon: "Pediste julio y en julio gastaste $43,100",
+            texto: "Julio te salio $2,100 mas barato que agosto.",
+            parchesDatos: JSON.stringify([
+              { path: "/gasto/periodo", value: "2026-07" },
+              { path: "/gasto/totalCentavos", value: 4310050 },
+            ]),
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const a2ui = lineas.filter((l) => l.tipo === "a2ui").map((l) => (l as { mensaje: Record<string, unknown> }).mensaje);
+    expect(a2ui).toHaveLength(2);
+    // Lo que hace posible el ciclo live: sin createSurface, el data model sobrevive.
+    expect(a2ui.some((m) => "createSurface" in m)).toBe(false);
+    expect(a2ui.every((m) => "updateDataModel" in m)).toBe(true);
+    // Y con el path REAL, no con "/": un `updateDataModel` en la raiz reemplazaria todo.
+    expect(a2ui[0]).toMatchObject({ updateDataModel: { path: "/gasto/periodo", value: "2026-07" } });
+    expect(lineas.find((l) => l.tipo === "texto")).toMatchObject({ valor: expect.stringContaining("Julio") });
+    expect(lineas).not.toContainEqual(expect.objectContaining({ tipo: "error" }));
+    // El `fin` lleva con que cerro: es lo que le dice al cliente que ACTUALICE la pantalla
+    // que ya estaba en el hilo en vez de apilar otra debajo.
+    expect(lineas.at(-1)).toMatchObject({ tipo: "fin", cierre: "ajustar" });
+  });
+
+  it("un parche de props manda el componente COMPLETO, porque updateComponents reemplaza", async () => {
+    const lineas = await recolectar(
+      correrTurno(conPantalla(), {
+        modelo: modeloGuionizado([
+          pasoConTool("ajustar_pantalla", {
+            razon: "Pediste verlo por variacion y ahi resalta Restaurantes",
+            texto: "Ordenado por variacion.",
+            parchesDatos: "[]",
+            parchesComponentes: JSON.stringify([{ id: "gasto", props: { categoriaAtipica: "Restaurantes" } }]),
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const a2ui = lineas.filter((l) => l.tipo === "a2ui").map((l) => (l as { mensaje: Record<string, unknown> }).mensaje);
+    expect(a2ui).toHaveLength(1);
+    const componentes = (a2ui[0] as { updateComponents: { components: Componente[] } }).updateComponents.components;
+    expect(componentes).toHaveLength(1);
+    // La prop nueva, y TODO lo viejo: enlaces, razon y action. Si solo mandara la prop
+    // nueva, `procesar` reemplazaria el componente y la tarjeta se quedaria sin datos.
+    expect(componentes[0]).toMatchObject({
+      id: "gasto",
+      component: "GastoPorCategoria",
+      categoriaAtipica: "Restaurantes",
+      categorias: { path: "/gasto/categorias" },
+      action: { event: { name: "ver_categoria", context: {} } },
+    });
+  });
+
+  it("responder no toca la pantalla: cero mensajes A2UI", async () => {
+    const lineas = await recolectar(
+      correrTurno(conPantalla(), {
+        modelo: modeloGuionizado([
+          pasoConTool("responder", {
+            razon: "El total ya esta en la tarjeta que estas viendo",
+            texto: "Son $45,200 porque Restaurantes se llevo casi todo el mes.",
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    expect(lineas.filter((l) => l.tipo === "a2ui")).toHaveLength(0);
+    expect(lineas.find((l) => l.tipo === "texto")).toMatchObject({ valor: expect.stringContaining("$45,200") });
+    expect(lineas.find((l) => l.tipo === "razon")).toBeDefined();
+    expect(lineas.at(-1)).toMatchObject({ tipo: "fin", cierre: "responder" });
+    expect(lineas).not.toContainEqual(expect.objectContaining({ tipo: "error" }));
+  });
+
+  it("en el primer turno no existen ajustar_pantalla ni responder", async () => {
+    // Sin pantalla previa el modelo no puede ajustar: la llamada no encuentra la tool.
+    const lineas = await recolectar(
+      correrTurno(peticion(), {
+        modelo: modeloGuionizado([
+          pasoConTool("ajustar_pantalla", {
+            razon: "Una razon suficientemente larga",
+            texto: "Ajustando.",
+            parchesDatos: JSON.stringify([{ path: "/gasto/periodo", value: "2026-07" }]),
+          }),
+          pasoConTool("pintar_pantalla", {
+            razon: "Tu tarjeta esta al 97 % de su limite",
+            texto: "Aqui esta tu pantalla.",
+            componentesJson: PANTALLA_VALIDA,
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    // El turno no se rompe: acaba pintando, que es la unica salida que habia.
+    expect(lineas.filter((l) => l.tipo === "a2ui")).toHaveLength(3);
+    expect(lineas.at(-1)?.tipo).toBe("fin");
+  });
+
+  it("un parche a una ruta que no existe le vuelve al modelo con las rutas que si hay", async () => {
+    const lineas = await recolectar(
+      correrTurno(conPantalla(), {
+        modelo: modeloGuionizado([
+          pasoConTool("ajustar_pantalla", {
+            razon: "Una razon suficientemente larga para el schema",
+            texto: "Ajustando.",
+            parchesDatos: JSON.stringify([{ path: "/inversiones/portafolio/clases", value: [] }]),
+          }),
+          pasoConTool("pintar_pantalla", {
+            razon: "Tu tarjeta esta al 97 % de su limite",
+            texto: "Mejor te pinto la pantalla completa.",
+            componentesJson: PANTALLA_VALIDA,
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const errores = lineas.filter((l) => l.tipo === "error");
+    expect(errores).toHaveLength(1);
+    expect((errores[0] as { mensaje: string }).mensaje).toMatch(/no existe en el data model/);
+    expect((errores[0] as { mensaje: string }).mensaje).toContain("/gasto");
+    // Y el reintento con la pantalla completa si sale.
+    expect(lineas.filter((l) => l.tipo === "a2ui")).toHaveLength(3);
+  });
+
+  it("un parche a un id que no esta en pantalla se rechaza con la lista de ids", () => {
+    const r = armarParches(
+      {
+        razon: "Una razon suficientemente larga para el schema",
+        texto: "Ajustando.",
+        parchesDatos: "[]",
+        parchesComponentes: JSON.stringify([{ id: "fantasma", props: { periodo: "2026-07" } }]),
+      },
+      { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errores.join(" ")).toMatch(/no hay ningun componente con id "fantasma"/);
+      expect(r.errores.join(" ")).toContain("root, gasto");
+    }
+  });
+
+  it("un ajuste no puede cambiar la estructura ni las acciones: eso es repintar", () => {
+    for (const props of [{ children: ["otra"] }, { action: { event: { name: "aplicar_plan_pago", context: {} } } }]) {
+      const r = armarParches(
+        {
+          razon: "Una razon suficientemente larga para el schema",
+          texto: "Ajustando.",
+          parchesDatos: "[]",
+          parchesComponentes: JSON.stringify([{ id: "gasto", props }]),
+        },
+        { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+      );
+      expect(r.ok).toBe(false);
+      if (!r.ok) expect(r.errores.join(" ")).toMatch(/pintar_pantalla/);
+    }
+  });
+
+  it("un parche vacio manda al modelo a la salida que si le sirve", () => {
+    const r = armarParches(
+      { razon: "Una razon suficientemente larga", texto: "Nada cambia.", parchesDatos: "[]" },
+      { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores.join(" ")).toMatch(/`responder`/);
+  });
+
+  it("una prop mal escrita se cacha aqui, no en el navegador", () => {
+    const r = armarParches(
+      {
+        razon: "Una razon suficientemente larga para el schema",
+        texto: "Ajustando.",
+        parchesDatos: "[]",
+        parchesComponentes: JSON.stringify([{ id: "gasto", props: { totalCentavos: "cuarenta mil" } }]),
+      },
+      { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+    );
+    expect(r.ok).toBe(false);
+    if (!r.ok) expect(r.errores.join(" ")).toMatch(/totalCentavos/);
+  });
+
+  /**
+   * Agregar una llave a un objeto que ya existe es legitimo (activar una variante que el
+   * data model todavia no tenia); inventarse un subarbol completo, no.
+   */
+  it("acepta una llave nueva dentro de un objeto que ya existe", () => {
+    const r = armarParches(
+      {
+        razon: "Una razon suficientemente larga para el schema",
+        texto: "Ordenado por variacion.",
+        parchesDatos: JSON.stringify([{ path: "/gasto/orden", value: "variacion" }]),
+      },
+      { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+    );
+    expect(r.ok).toBe(true);
+  });
+
+  /**
+   * El 2026-09-12, en el primer ensayo con el modelo real, Gemini mando los parches como
+   * arreglo nativo en vez de texto JSON: el turno gasto un paso reintentando y saco una
+   * linea de error por algo que no era error de nadie. Las dos formas valen.
+   */
+  it("acepta los parches como arreglo nativo, no solo como texto JSON", () => {
+    const pantalla = { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel };
+    const base = { razon: "Una razon suficientemente larga para el schema", texto: "Ordenado." };
+
+    const comoArreglo = armarParches({ ...base, parchesDatos: [{ path: "/gasto/orden", value: "variacion" }] }, pantalla);
+    const comoTexto = armarParches(
+      { ...base, parchesDatos: JSON.stringify([{ path: "/gasto/orden", value: "variacion" }]) },
+      pantalla,
+    );
+    expect(comoArreglo.ok).toBe(true);
+    expect(comoTexto.ok).toBe(true);
+    if (comoArreglo.ok && comoTexto.ok) expect(comoArreglo.mensajes).toEqual(comoTexto.mensajes);
+  });
+
+  it("tambien acepta parchesComponentes como arreglo nativo", () => {
+    const r = armarParches(
+      {
+        razon: "Una razon suficientemente larga para el schema",
+        texto: "Resaltado.",
+        parchesDatos: [],
+        parchesComponentes: [{ id: "gasto", props: { orden: "variacion" } }],
+      },
+      { arbol: PANTALLA_EN_CURSO!.arbol!, dataModel: PANTALLA_EN_CURSO!.dataModel },
+    );
+    expect(r.ok).toBe(true);
+  });
+});
+
+describe("cortes del turno", () => {  it("un proveedor que no contesta termina en error timeout, no en 'no entrego pantalla'", async () => {
     const lineas = await recolectar(
       correrTurno(peticion(), { modelo: modeloColgado(), herramientas: toolsDePrueba(), timeoutMs: 80 }),
     );
@@ -577,6 +857,113 @@ describe("armarMensajes", () => {
   });
 });
 
+/**
+ * El tope de tarjetas. Es de codigo y no del prompt porque el prompt ya lo pedia y el
+ * modelo se pasaba igual: seis tarjetas no caben en un celular. Lo que se cuenta es el
+ * ARBOL, no el arreglo, y el ultimo intento poda en vez de morir.
+ */
+describe("el tope de tarjetas por pantalla", () => {
+  const base = { razon: "Una razon suficientemente larga", texto: "Listo." };
+  const tarjeta = (id: string) => ({
+    id,
+    component: "Confirmacion",
+    titulo: `Titulo ${id}`,
+    detalle: "Detalle",
+    razon: "Una razon con su dato para esta tarjeta",
+  });
+  const pantalla = (ids: string[]) =>
+    JSON.stringify([{ id: "root", component: "Column", children: ids }, ...ids.map(tarjeta)]);
+
+  it("cuenta solo las tarjetas, no los componentes de layout", () => {
+    const componentes = [
+      { id: "root", component: "Column", children: ["fila", "c"] },
+      { id: "fila", component: "Row", children: ["a", "b"] },
+      ...["a", "b", "c"].map(tarjeta),
+    ];
+    expect(tarjetasDePantalla(componentes).map((c) => c.id)).toEqual(["c", "a", "b"]);
+  });
+
+  it("no cuenta un componente que nadie declara como hijo: no se pinta", () => {
+    const componentes = [
+      { id: "root", component: "Column", children: ["a"] },
+      ...["a", "huerfana"].map(tarjeta),
+    ];
+    expect(tarjetasDePantalla(componentes)).toHaveLength(1);
+  });
+
+  it("acepta tres tarjetas", () => {
+    expect(armarMensajes({ ...base, componentesJson: pantalla(["a", "b", "c"]) }).ok).toBe(true);
+  });
+
+  it("rechaza la cuarta y le dice al modelo cuantas trae", () => {
+    const r = armarMensajes({ ...base, componentesJson: pantalla(["a", "b", "c", "d"]) });
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.errores).toHaveLength(1);
+      expect(r.errores[0]).toMatch(/4 tarjetas/);
+      expect(r.errores[0]).toMatch(/el tope es 3/);
+    }
+  });
+
+  it("con podarTarjetas recorta en vez de rechazar, y el arbol queda valido", () => {
+    const r = armarMensajes({ ...base, componentesJson: pantalla(["a", "b", "c", "d", "e"]) }, { podarTarjetas: true });
+    expect(r.ok).toBe(true);
+    if (r.ok) {
+      expect(r.componentes).toBe(TOPE_DE_TARJETAS + 1); // las 3 tarjetas + la raiz
+      const { components } = (r.mensajes[1] as { updateComponents: { components: Componente[] } }).updateComponents;
+      expect(tarjetasDePantalla(components).map((c) => c.id)).toEqual(["a", "b", "c"]);
+      const raiz = components.find((c) => c.id === "root")!;
+      expect(raiz.children).toEqual(["a", "b", "c"]);
+    }
+  });
+
+  it("al podar, la Conclusion se queda aunque venga al final", () => {
+    const componentes = [
+      { id: "root", component: "Column", children: ["a", "b", "c", "d", "veredicto"] },
+      ...["a", "b", "c", "d"].map(tarjeta),
+      {
+        id: "veredicto",
+        component: "Conclusion",
+        titular: "Tu tarjeta esta al limite y te conviene reestructurar",
+        razon: "Tienes el 96.7 % de tu limite usado",
+      },
+    ];
+    const podados = podarAlTope(componentes);
+    const nombres = tarjetasDePantalla(podados).map((c) => c.component);
+    expect(nombres).toHaveLength(TOPE_DE_TARJETAS);
+    expect(nombres[0]).toBe("Conclusion");
+  });
+
+  it("podar no toca una pantalla que ya cabe", () => {
+    const componentes = [{ id: "root", component: "Column", children: ["a"] }, tarjeta("a")];
+    expect(podarAlTope(componentes)).toBe(componentes);
+  });
+
+  it("el turno no muere por el tope: el segundo intento sale podado", async () => {
+    const seisTarjetas = {
+      razon: "Tu tarjeta esta al 97 % de su limite",
+      texto: "Ahi va.",
+      componentesJson: pantalla(["a", "b", "c", "d", "e", "f"]),
+    };
+    const lineas = await recolectar(
+      correrTurno(peticion(), {
+        modelo: modeloGuionizado([pasoConTool("pintar_pantalla", seisTarjetas), pasoConTool("pintar_pantalla", seisTarjetas)]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    // El primer intento le vuelve al modelo como error; el segundo se poda y pinta.
+    const errores = lineas.filter((l) => l.tipo === "error");
+    expect(errores).toHaveLength(1);
+    expect((errores[0] as { mensaje: string }).mensaje).toMatch(/el tope es 3/);
+    expect(lineas.filter((l) => l.tipo === "a2ui")).toHaveLength(3);
+
+    const a2ui = lineas.filter((l) => l.tipo === "a2ui").map((l) => (l as { mensaje: Record<string, unknown> }).mensaje);
+    const componentes = (a2ui[1] as { updateComponents: { components: Componente[] } }).updateComponents.components;
+    expect(tarjetasDePantalla(componentes)).toHaveLength(TOPE_DE_TARJETAS);
+  });
+});
+
 describe("mensajesDelTurno", () => {
   it("manda el historial como texto y el contexto al final", () => {
     const mensajes = mensajesDelTurno(
@@ -677,6 +1064,77 @@ describe("mensajesDelTurno", () => {
     const contexto = String(mensajes.at(-1)!.content);
     expect(contexto).toContain("La interfaz NO pudo pintar lo que mandaste en el turno anterior (/componentes/0): componente Inventado no existe");
     expect(contexto).toContain("Vuelve a pintar la misma pantalla sin ese componente");
+  });
+
+  /**
+   * Sin los ids y los enlaces de lo que esta en pantalla, el modelo no tiene forma de
+   * referirse a una tarjeta que ya existe y su unica salida es repintar todo. Esto es el
+   * prerrequisito de `ajustar_pantalla`.
+   */
+  it("le dice los ids y los enlaces de cada tarjeta en pantalla", () => {
+    const mensajes = mensajesDelTurno(
+      peticion({
+        superficie: {
+          surfaceId: "principal",
+          componentes: ["Column", "GastoPorCategoria"],
+          arbol: [
+            { id: "root", component: "Column", children: ["gasto"] },
+            {
+              id: "gasto",
+              component: "GastoPorCategoria",
+              periodo: "2026-08",
+              categorias: { path: "/gasto/categorias" },
+              razon: "Tienes el 96.7 % de tu limite usado y el gasto subio 7 %",
+            },
+          ],
+          dataModel: { gasto: { categorias: [{ nombre: "Restaurantes" }] } },
+        },
+      }),
+    );
+    const contexto = String(mensajes.at(-1)!.content);
+    expect(contexto).toContain("componentes en pantalla");
+    expect(contexto).toContain("gasto · GastoPorCategoria");
+    // El enlace se marca con la flecha: es la parte parcheable.
+    expect(contexto).toContain("categorias→/gasto/categorias");
+    // Y el literal con su valor de ahora, que es lo que hace falta para cambiarlo.
+    expect(contexto).toContain('periodo="2026-08"');
+    // `razon` no: es una frase larga y no se parchea.
+    expect(contexto).not.toContain("del limite usado");
+  });
+
+  it("un cliente que no manda el arbol sigue funcionando", () => {
+    const mensajes = mensajesDelTurno(
+      peticion({ superficie: { surfaceId: "principal", componentes: ["PlanDePago"], dataModel: {} } }),
+    );
+    const contexto = String(mensajes.at(-1)!.content);
+    expect(contexto).toContain("pantalla actual: PlanDePago");
+    expect(contexto).not.toContain("componentes en pantalla");
+  });
+});
+
+/**
+ * Un data model grande recortado a la mitad es lo peor de los dos mundos: se pierde el
+ * final, que es donde estan las rutas que el modelo necesitaria para parchear, y queda un
+ * JSON roto que invita a copiarlo mal.
+ */
+describe("resumirDataModel", () => {
+  it("lo manda completo si cabe", () => {
+    expect(resumirDataModel({ plan: { plazo: 18 } })).toBe('{"plan":{"plazo":18}}');
+  });
+
+  it("cuando no cabe, manda las rutas con su tipo en vez de un JSON cortado", () => {
+    const grande = {
+      gasto: {
+        periodo: "2026-08",
+        categorias: Array.from({ length: 40 }, (_, i) => ({ nombre: `Categoria numero ${i}`, montoCentavos: i * 1000 })),
+      },
+    };
+    const resumen = resumirDataModel(grande);
+    expect(resumen).toContain("estas son sus rutas");
+    expect(resumen).toContain("/gasto/categorias: array[40]");
+    expect(resumen).toContain('/gasto/periodo: string = "2026-08"');
+    // Y no queda un JSON a medias que el modelo pueda copiar mal.
+    expect(resumen).not.toContain("(recortado)");
   });
 });
 

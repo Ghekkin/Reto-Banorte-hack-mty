@@ -10,8 +10,9 @@
  * datos, elija las tarjetas correctas para cada persona— solo se sabe llamandolo.
  *
  * Para cada usuario demo: rearma la portada a la fuerza (`POST /api/inicio?forzar=1`,
- * con el `MCP_TOKEN` del .env), y revisa lo que una portada tiene que cumplir: de 3 a 4
- * tarjetas, exactamente una heroe, ninguna `Confirmacion`, al menos una de las tarjetas
+ * con el `MCP_TOKEN` del .env), y revisa lo que una portada tiene que cumplir: exactamente 3
+ * tarjetas (`Conclusion` incluida; el tope lo hace cumplir `armarMensajes`), exactamente una
+ * heroe, ninguna `Confirmacion`, al menos una de las tarjetas
  * que resuelven la situacion de esa persona, texto con consejo y menos de 20 s.
  */
 import { readFileSync, existsSync } from "node:fs";
@@ -75,7 +76,8 @@ for (const caso of CASOS) {
   const heroes = (actualizacion?.updateComponents.components ?? []).filter((c) => c.heroe === true).length;
 
   if (cuerpo.hecho === "generada") {
-    if (tarjetas.length < 3 || tarjetas.length > 4) problemas.push(`${tarjetas.length} tarjetas (se esperan 3 o 4)`);
+    if (tarjetas.length !== 3) problemas.push(`${tarjetas.length} tarjetas (se esperan exactamente 3, Conclusion incluida)`);
+    if (!componentes.includes("Conclusion")) problemas.push("sin Conclusion: la portada queda sin veredicto");
     if (heroes !== 1) problemas.push(`${heroes} heroes (se espera exactamente 1)`);
     if (componentes.includes("Confirmacion")) problemas.push("trae Confirmacion sin accion");
     if (!caso.esperadas.some((e) => componentes.includes(e))) {

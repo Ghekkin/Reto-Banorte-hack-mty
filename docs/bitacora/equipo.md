@@ -1,4 +1,4 @@
-# Bitácora del equipo
+﻿# Bitácora del equipo
 
 > **Horas en hora de Monterrey (UTC-6).** Las entradas del 2026-09-12 anteriores a esta
 > nota se escribieron con la hora del servidor (UTC+2): réstales 8 h — ocurrieron la
@@ -17,6 +17,68 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 ---
 
 ## 2026-09-12
+
+- **sáb 18:53 · decisión + hecho · contrato** — **el ciclo es LIVE: un turno ya no siempre
+  repinta.** El agente cierra con **una de tres tools** (`apps/web/src/lib/agente/cierre.ts`) y
+  *cuál elige es la clasificación de intención*, sin llamada extra ni heurísticas sobre el texto:
+  `responder` (aclara, cero mensajes A2UI, la pantalla intacta), `ajustar_pantalla` (parchea el
+  data model o una prop, **sin `createSurface`**) y `pintar_pantalla` (la de siempre). En el primer
+  turno solo existe la tercera; una acción que muta estado cierra siempre con ella.
+
+  Lo importante para quien lo lea después: **no hubo que tocar `packages/a2ui`.** El motor ya era
+  reactivo (`procesar` aplica un `updateDataModel` sin tocar `componentes`, y `<Superficie>`
+  re-resuelve las props en cada render). Lo que faltaba era mandar el parche, porque `armarMensajes`
+  emitía los tres mensajes juntos y `createSurface` **borra** el data model. Medido con el modelo
+  real: pantalla nueva 4.7 s, ajuste 1.5 s, aclaración 2.9 s.
+
+  Para poder parchear, el contrato cambió: la petición lleva `superficie.arbol` con los componentes
+  **tal cual se emitieron** (ids, props, enlaces, `action`). Antes el modelo solo recibía *nombres*,
+  así que no podía referirse a nada de lo que estaba viendo. Y el `fin` del stream lleva `cierre`,
+  que es lo que le dice al cliente si **actualiza** la pantalla del hilo o **apila** una nueva.
+
+- **sáb 18:53 · hecho · web** — **tope de 3 tarjetas por pantalla, `Conclusion` incluida, en
+  código.** El prompt ya lo pedía ("de 1 a 4") y el modelo se pasaba igual; lo único que se validaba
+  por cantidad era `heroe <= 1`. Se cuenta sobre el árbol alcanzable desde `root`; el primer rebase
+  vuelve al modelo para que él elija cuál sobra, y en el último intento se **poda** de forma
+  determinista. Un turno nunca muere por el tope.
+
+- **sáb 18:53 · hecho · web** — **la `Conclusion` ya no sale duplicada.** El host la pintaba
+  *siempre*, sin mirar el árbol, y los dos encargos de la portada se la piden al modelo: salían dos,
+  la rica del modelo y encima una pobre hecha con una frase corta. Estaba **garantizado** en la ruta
+  de preguntar desde Inicio, y ninguna prueba lo veía porque el ejemplo que usaba
+  `inicio-pinta.spec.ts` no trae `Conclusion`. Ahora gana la del modelo y el host solo pone la suya
+  si el árbol no trae ninguna.
+
+- **sáb 18:53 · hecho · web** — **cinco componentes no se resincronizaban** (`PlanDePago`,
+  `SimuladorMeta`, `ProyeccionCrecimiento`, `EscenariosInversion`, `RiesgoRendimiento`): sembraban su
+  `useState` desde las props solo al montar, y como la `key` la deriva el motor del id, la tarjeta no
+  se remonta entre turnos. Un ajuste re-renderizaba la tarjeta y **dejaba el slider en el valor
+  viejo** — o sea, la persona pedía un cambio y no pasaba nada. Era un bug latente que el ciclo live
+  habría hecho sistemático. Lo arregla `usarEstadoSeguido` ajustando el estado *durante el render*
+  (el patrón de React), no con un `useEffect`, que pintaría un frame con el valor viejo.
+
+- **sáb 18:53 · decisión · web** — **`tono` de `Conclusion` pasa de `enum` a texto libre**, y es la
+  única prop del catálogo que lo es. Desde que el tope hace que `Conclusion` esté en toda pantalla,
+  el modelo alcanzando otra palabra (`positivo`, `negativo`) costaba un reintento y un paso del turno
+  en 3 de cada 10 turnos del guion. Con un `enum` no basta con ser tolerante en Zod: el catálogo
+  publicado se genera de ahí y la capa de los JSON Schema oficiales rechaza igual — **las dos capas
+  tienen que decir lo mismo**. El tono es el color de una cifra; tumbar la pantalla por eso, con la
+  cifra bien, es un mal trato.
+
+- **sáb 18:53 · idea · web** — se pensaron props de variante para `RendimientoHistorico`
+  (`escala: precio|variacion`) y `ProyeccionPagoCredito` (`granularidad`), y **no se hicieron**: la
+  primera obliga a un segundo modo de gráfica después de la hora 24, y la segunda no tiene datos que
+  la sostengan (los hitos de amortización traen etiquetas de texto libre, filtrarlos sería adivinar).
+  Una prop que finge tener datos es peor que no tenerla. Sí se hicieron `orden` y `limite` en
+  `GastoPorCategoria`, que es la tarjeta del guion.
+
+- **sáb 18:53 · hecho · infra** — **el issue #12 (cuota de Gemini) está reabierto**: el tope ampliado
+  ayer se agotó otra vez, a media verificación. Lo consumió una tarde de verificación honesta (9
+  portadas + 10 turnos del guion + 2 ensayos del ciclo live), no un bucle. El hallazgo es ese: **no
+  hay presupuesto para ensayar con el modelo real tantas veces como el pitch necesita**, y
+  `MODELO=claude` dejó de ser solo un respaldo de producción. `ANTHROPIC_API_KEY` sigue vacía.
+
+---
 
 - **sáb 16:40 · CI** — `main` quedó en rojo con `5d471eb` (dos componentes nuevos): el
   `catalogo.json` commiteado se generó con un `comunes.ts` viejo (la descripción de

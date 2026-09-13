@@ -83,7 +83,7 @@ tools del MCP, la misma `pintar_pantalla` con sus cuatro validaciones
 (`docs/como-funciona/agente.md`). Tres diferencias, y las tres son de costo:
 
 1. **Otro modelo.** `MODELO_INICIO`, por default `gemini-3.5-flash-lite`. No hay intención
-   que interpretar; el trabajo es elegir 3 o 4 tarjetas y enlazar números.
+   que interpretar; el trabajo es elegir 3 tarjetas y enlazar números.
 2. **Arranca con los datos en la mano.** Antes de llamar al modelo, `reunirDatos` pide al
    MCP lo que toda portada necesita, según la situación (prefetch determinista, O3):
    `panorama_inicial`; luego en paralelo `analizar_gasto`, `analizar_ahorro`,
@@ -101,10 +101,18 @@ tool visible; y un reintento si la pantalla vino inválida. Tope de 45 s.
 
 El bloque de contexto (`encargoDePortada`) va después del system prompt, como el del
 turno: es lo único que cambia entre personas, y así el prefijo se cachea. Pide una
-portada, no una respuesta: de 3 a 4 tarjetas en orden de urgencia siguiendo una
-**escalera** (tarjeta al límite → crédito a plazo → portafolio desviado → topes y fugas →
-meta), exactamente una `heroe`, nada de `Confirmacion` ni `Text`, todo número de los datos,
-los botones con su `action`, y un `texto` que saluda con lo de la tarjeta principal.
+portada, no una respuesta: **exactamente 3 tarjetas** (tope de código, `TOPE_DE_TARJETAS`), la
+primera `Conclusion` con el veredicto y el saludo, y las otras dos de una **escalera** de urgencia
+recorrida en orden (tarjeta al límite → crédito a plazo con saldo → portafolio desviado → topes y
+fugas → meta), la primera de la escalera con `heroe: true` y solo esa, nada de `Confirmacion` ni
+`Text`, todo número de los datos, los botones con su `action`, y un `texto` corto porque el veredicto
+ya va en la `Conclusion`.
+
+El orden de la escalera es **no negociable** y hubo que decirlo dos veces: con solo dos huecos libres
+(la `Conclusion` se come uno), el modelo chico se saltaba el caso del crédito de Ana —"va al
+corriente", razonaba— y se iba al portafolio, que se ve más interesante. Los casos de la escalera son
+excluyentes en el texto: el del portafolio exige **sin deuda**, y "al corriente" no es "resuelto"
+mientras haya saldo insoluto pagando intereses.
 
 Dos cosas que el servidor completa y no le pide al modelo (en `lib/agente/pantalla.ts`,
 así que valen también para la conversación):
@@ -170,13 +178,16 @@ como las demás: titular en `text-2xl`, detalle, hasta 3 cifras de apoyo y las s
 como botones. La evidencia (modelo, tools, tiempo) bajó a una línea de `text-xs` **debajo**
 del dashboard: es información para el jurado, no para la persona.
 
-**La pinta el host, no el modelo.** `InicioDeMaya` la arma con el `texto` y la `razon` que
-la portada ya trae, partiendo el texto en titular (primera frase) y detalle
-(`partirEnTitular`). Es deliberado: si dependiera de que el modelo emitiera el componente,
-una omisión suya dejaría la pantalla sin veredicto, y este documento ya registra que el
-modelo chico omitió props obligatorias dos corridas seguidas teniendo la regla escrita. El
-componente **sí** está en el catálogo, así que el agente de `/maya` puede emitirlo —y en
-modo consulta se le pide que lo haga.
+**La pinta el modelo; el host solo si falta.** Los dos encargos le piden al modelo que la primera
+tarjeta sea `Conclusion`, y la suya gana porque es la rica (titular, detalle, hasta 3 cifras,
+sugerencias). `InicioDeMaya` pinta la suya —armada con el `texto` y la `razon` de la portada,
+partiendo el texto en titular y detalle con `partirEnTitular`— **solo si el árbol A2UI no trae
+ninguna**. Esa red hace falta: este documento ya registra que el modelo chico omitió props
+obligatorias dos corridas seguidas teniendo la regla escrita.
+
+Hasta el 2026-09-12 el host la pintaba **siempre**, sin mirar el árbol, así que salían dos
+conclusiones en la misma pantalla: la del modelo y encima una pobre hecha con una frase corta. El
+detalle está en `componente-conclusion.md`.
 
 ### La consulta desde Inicio: el pizarrón que se borra
 

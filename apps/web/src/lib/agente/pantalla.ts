@@ -1,9 +1,10 @@
 import { z } from "zod";
-import { tool, type Tool } from "ai";
 import {
+  ID_RAIZ,
   NOMBRES_DE_LAYOUT,
   VERSION_A2UI,
   esBinding,
+  hijosFijos,
   propsDe,
   validarMensaje,
   type Componente,
@@ -63,73 +64,9 @@ export type EntradaPintarPantalla = z.infer<typeof entradaPintarPantalla>;
 
 export type ResultadoPintar = { ok: true; componentes: number } | { ok: false; errores: string[] };
 
-export const entradaResponderConversacion = z.object({
-  texto: z
-    .string()
-    .min(1)
-    .describe(
-      "Tu respuesta bancaria y cordial. Para saludos o dudas, responde con calidez humana y deja opciones claras.",
-    ),
-  sugerencias: z
-    .array(z.string())
-    .max(3)
-    .optional()
-    .describe("Hasta 3 opciones u orientaciones que le interesen según su perfil."),
-});
+export const MAX_INTENTOS_DE_PANTALLA = 2;
 
-export type EntradaResponderConversacion = z.infer<typeof entradaResponderConversacion>;
-
-export type Respondedor = {
-  herramienta: Tool;
-  ultima: () => { texto: string; sugerencias: string[] } | undefined;
-  respondida: () => boolean;
-};
-
-export function crearRespondedor(): Respondedor {
-  let ultima: { texto: string; sugerencias: string[] } | undefined;
-  let respondida = false;
-
-  const herramienta = tool({
-    description:
-      "Usa esta tool para responder de manera conversacional y cordial cuando NO sea necesario construir una " +
-      "pantalla visual con tarjetas (por ejemplo: saludos, preguntas conceptuales cortas, orientación bancaria rápida o agradecimientos). " +
-      "Te permite devolver tu respuesta en texto y hasta 3 sugerencias interactivas personalizadas para la persona.",
-    inputSchema: entradaResponderConversacion,
-    execute: (entrada: EntradaResponderConversacion) => {
-      ultima = {
-        texto: entrada.texto,
-        sugerencias: entrada.sugerencias ?? [],
-      };
-      respondida = true;
-      return { ok: true };
-    },
-  });
-
-  return {
-    herramienta,
-    ultima: () => ultima,
-    respondida: () => respondida,
-  };
-}
-
-export type Pintor = {
-  /** La tool que se le pasa al modelo. */
-  herramienta: Tool;
-  /** Los mensajes A2UI listos para emitir; se vacia al leerlos. */
-  tomarMensajes: () => MensajeA2UI[];
-  /** Lo que el modelo escribio junto a la pantalla. */
-  ultima: () => { razon: string; texto: string; sugerencias: string[] } | undefined;
-  /** true en cuanto una pantalla valida salio: el turno puede terminar. */
-  pintada: () => boolean;
-  /** Cuantas veces el modelo entrego una pantalla invalida. */
-  intentosFallidos: () => number;
-};
-
-/**
- * Cada turno crea su propio pintor: guarda los mensajes validados para que el turno los
- * emita en orden, y cuenta los intentos para no reintentar para siempre.
- */
-function resolverSugerenciasPantalla(entrada: EntradaPintarPantalla): string[] {
+export function resolverSugerenciasPantalla(entrada: EntradaPintarPantalla): string[] {
   if (entrada.sugerencias && entrada.sugerencias.length > 0) {
     return entrada.sugerencias.slice(0, 3);
   }
@@ -168,46 +105,95 @@ function resolverSugerenciasPantalla(entrada: EntradaPintarPantalla): string[] {
   return [];
 }
 
-export function crearPintor(): Pintor {
-  let mensajes: MensajeA2UI[] = [];
-  let ultima: { razon: string; texto: string; sugerencias: string[] } | undefined;
-  let pintada = false;
-  let fallidos = 0;
+/**
+ * Cuantas tarjetas puede traer una pantalla, `Conclusion` incluida.
+ *
+ * Es un tope de CODIGO y no una linea del prompt porque el prompt ya lo decia ("de 1 a 4")
+ * y el modelo se pasaba igual: una pantalla de seis tarjetas no cabe en un celular, obliga
+ * a desplazar para encontrar el boton y deja de tener "una sola idea principal". Lo unico
+ * que se validaba por cantidad era `heroe <= 1`.
+ */
+export const TOPE_DE_TARJETAS = 3;
 
-  const herramienta = tool({
-    description:
-      "Entrega la interfaz que resuelve el problema de la persona. Llamala UNA vez por turno, al final, " +
-      "cuando ya tengas los datos que necesitas. Usa solo componentes del catalogo. Si algo viene mal, " +
-      "te devuelvo los errores y la vuelves a llamar corregida.",
-    inputSchema: entradaPintarPantalla,
-    execute: (entrada: EntradaPintarPantalla): ResultadoPintar => {
-      const armado = armarMensajes(entrada);
-      if (!armado.ok) {
-        fallidos++;
-        return { ok: false, errores: armado.errores };
-      }
-      mensajes = armado.mensajes;
-      ultima = {
-        razon: entrada.razon,
-        texto: entrada.texto,
-        sugerencias: resolverSugerenciasPantalla(entrada),
-      };
-      pintada = true;
-      return { ok: true, componentes: armado.componentes };
-    },
-  });
+const LAYOUT = new Set<string>(NOMBRES_DE_LAYOUT);
 
-  return {
-    herramienta,
-    tomarMensajes: () => {
-      const salida = mensajes;
-      mensajes = [];
-      return salida;
-    },
-    ultima: () => ultima,
-    pintada: () => pintada,
-    intentosFallidos: () => fallidos,
+/**
+ * Las tarjetas que la persona va a ver de verdad: lo alcanzable desde `root`, sin los
+ * componentes de layout (agrupan, no son una idea).
+ *
+ * Se cuenta sobre el ARBOL y no sobre el arreglo por la misma razon que existe
+ * `componentesVisibles` en el motor: un componente que nadie declara como hijo no se
+ * pinta, y contarlo haria rechazar pantallas que en pantalla caben de sobra.
+ */
+export function tarjetasDePantalla(componentes: Componente[]): Componente[] {
+  const porId = new Map(componentes.map((c) => [c.id, c]));
+  const vistos = new Set<string>();
+  const tarjetas: Componente[] = [];
+  const pendientes: string[] = [ID_RAIZ];
+
+  while (pendientes.length > 0) {
+    const id = pendientes.shift()!;
+    if (vistos.has(id)) continue;
+    vistos.add(id);
+    const componente = porId.get(id);
+    if (!componente) continue;
+    if (!LAYOUT.has(componente.component)) tarjetas.push(componente);
+    pendientes.push(...hijosFijos(componente));
+    const plantilla = componente.children;
+    if (plantilla && !Array.isArray(plantilla)) pendientes.push(plantilla.componentId);
+  }
+  return tarjetas;
+}
+
+/**
+ * Recorta la pantalla al tope, de forma determinista.
+ *
+ * Es la red de seguridad del ultimo intento: el primer rebase le vuelve al modelo como
+ * error de tool para que lo corrija (que es lo que se quiere, porque el modelo sabe cual
+ * de sus tarjetas contesta la pregunta), pero si insiste, mas vale una pantalla de tres
+ * tarjetas que ninguna. Un turno **nunca** muere por el tope.
+ *
+ * Se queda con la `Conclusion` —es el veredicto— y con las demas en el orden en que se lee
+ * la pantalla. La raiz se rearma como `Column` con solo las que quedaron: reusar sus
+ * `children` viejos dejaria ids que ya no existen, y un hijo fantasma tumba el arbol.
+ */
+export function podarAlTope(componentes: Componente[], tope = TOPE_DE_TARJETAS): Componente[] {
+  const tarjetas = tarjetasDePantalla(componentes);
+  if (tarjetas.length <= tope) return componentes;
+
+  const porId = new Map(componentes.map((c) => [c.id, c]));
+  const raizVieja = porId.get(ID_RAIZ);
+  // Con una tarjeta como raiz no hay nada que recortar sin inventar un arbol: las tarjetas
+  // del catalogo no llevan hijos, asi que este caso no se da con una pantalla real. Se
+  // deja pasar en vez de devolver un arbol roto.
+  if (!raizVieja || !LAYOUT.has(raizVieja.component)) return componentes;
+
+  const conclusion = tarjetas.filter((c) => c.component === "Conclusion").slice(0, 1);
+  const resto = tarjetas.filter((c) => c.component !== "Conclusion");
+  const conservadas = [...conclusion, ...resto].slice(0, tope);
+
+  const salida = new Map<string, Componente>();
+  for (const tarjeta of conservadas) recolectarSubarbol(tarjeta.id, porId, salida);
+  salida.delete(ID_RAIZ);
+
+  const raiz: Componente = {
+    ...raizVieja,
+    id: ID_RAIZ,
+    component: "Column",
+    children: conservadas.map((c) => c.id),
   };
+  return [raiz, ...salida.values()];
+}
+
+/** El componente y todo lo que cuelga de el, para que podar no deje hijos sin definir. */
+function recolectarSubarbol(id: string, porId: Map<string, Componente>, salida: Map<string, Componente>): void {
+  if (salida.has(id)) return;
+  const componente = porId.get(id);
+  if (!componente) return;
+  salida.set(id, componente);
+  for (const hijo of hijosFijos(componente)) recolectarSubarbol(hijo, porId, salida);
+  const plantilla = componente.children;
+  if (plantilla && !Array.isArray(plantilla)) recolectarSubarbol(plantilla.componentId, porId, salida);
 }
 
 /**
@@ -228,30 +214,56 @@ export function nombresPermitidos(): Set<string> {
 
 type Armado = { ok: true; mensajes: MensajeA2UI[]; componentes: number } | { ok: false; errores: string[] };
 
+/** Lo que cambia entre el primer intento del modelo y el ultimo. */
+export type OpcionesDeArmado = {
+  /**
+   * Recorta al tope en vez de rechazar. Solo en el ultimo intento: antes de eso, el rebase
+   * le vuelve al modelo para que elija el mismo cuales tarjetas se quedan.
+   */
+  podarTarjetas?: boolean;
+};
+
 /**
  * De lo que dijo el modelo a los tres mensajes A2UI del turno.
  *
- * La superficie se **rearma completa** en cada turno (`createSurface` + la lista entera
- * de componentes + el data model entero). Es mas simple y mas predecible que mandar
- * parches: `procesar()` fusiona componentes por id, asi que un update parcial dejaria
- * vivos los de la pantalla anterior y la interfaz mentiria.
+ * Este es el camino de `pintar_pantalla`: la superficie se **rearma completa**
+ * (`createSurface` + la lista entera de componentes + el data model entero). Para cambiar
+ * un parametro de lo que ya esta en pantalla sin recrear nada existe `ajustar_pantalla`
+ * (`ajustar.ts`), que manda solo los parches y no emite `createSurface`.
  */
-export function armarMensajes(entrada: EntradaPintarPantalla): Armado {
+export function armarMensajes(entrada: EntradaPintarPantalla, opciones: OpcionesDeArmado = {}): Armado {
   const errores: string[] = [];
 
-  const componentes = parsear(entrada.componentesJson, "componentesJson", errores);
+  const parseados = parsear(entrada.componentesJson, "componentesJson", errores);
   const datos = entrada.datosJson ? parsear(entrada.datosJson, "datosJson", errores) : {};
   if (errores.length) return { ok: false, errores };
 
-  if (!Array.isArray(componentes)) return { ok: false, errores: ["componentesJson tiene que ser un arreglo de componentes"] };
-  if (componentes.length === 0) return { ok: false, errores: ["componentesJson viene vacio"] };
+  if (!Array.isArray(parseados)) return { ok: false, errores: ["componentesJson tiene que ser un arreglo de componentes"] };
+  if (parseados.length === 0) return { ok: false, errores: ["componentesJson viene vacio"] };
   // El data model es la raiz del JSON Pointer: tiene que ser un objeto. Un arreglo o un
   // texto ahi dejarian al renderer resolviendo `/plan/plazo` contra algo que no lo tiene.
   if (!esObjetoPlano(datos)) return { ok: false, errores: ["datosJson tiene que ser un objeto JSON ({ ... })"] };
 
+  const componentes = opciones.podarTarjetas
+    ? podarAlTope(parseados as Componente[])
+    : (parseados as Componente[]);
+
+  // El tope va antes de lo demas y corta aqui: con seis tarjetas, los errores de props de
+  // las tres que sobran solo estorban en el reintento.
+  const tarjetas = tarjetasDePantalla(componentes);
+  if (tarjetas.length > TOPE_DE_TARJETAS) {
+    return {
+      ok: false,
+      errores: [
+        `la pantalla trae ${tarjetas.length} tarjetas (${tarjetas.map((t) => t.component).join(", ")}) y el tope es ` +
+          `${TOPE_DE_TARJETAS}, \`Conclusion\` incluida. Quedate con las que contestan la pregunta y quita el resto.`,
+      ],
+    };
+  }
+
   const mensajes: MensajeA2UI[] = [
     { version: VERSION_A2UI, createSurface: { surfaceId: SUPERFICIE, catalogId: config.urlCatalogo } },
-    { version: VERSION_A2UI, updateComponents: { surfaceId: SUPERFICIE, components: componentes as Componente[] } },
+    { version: VERSION_A2UI, updateComponents: { surfaceId: SUPERFICIE, components: componentes } },
     { version: VERSION_A2UI, updateDataModel: { surfaceId: SUPERFICIE, path: "/", value: datos } },
   ];
 
@@ -265,11 +277,11 @@ export function armarMensajes(entrada: EntradaPintarPantalla): Armado {
 
   // 3) Las props de cada componente, contra el schema de su entrada del catalogo, y la
   // regla de diseno que ningun schema individual puede ver: un solo heroe por pantalla.
-  for (const componente of componentes as Componente[]) {
+  for (const componente of componentes) {
     errores.push(...revisarProps(componente, entrada.razon));
     completarAccion(componente);
   }
-  const heroes = (componentes as Componente[]).filter((c) => c.heroe === true).map((c) => c.id);
+  const heroes = componentes.filter((c) => c.heroe === true).map((c) => c.id);
   if (heroes.length > 1) {
     errores.push(`solo un componente por pantalla puede llevar heroe: true; lo llevan ${heroes.join(", ")}`);
   }
@@ -429,13 +441,14 @@ function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {
  *
  * `razon` es obligatoria en todo componente del catalogo y es la evidencia de que el
  * agente decidio; si al modelo se le olvida en un componente, se le pone la del turno en
- * vez de rechazar la pantalla completa por una frase.
+ * vez de rechazar la pantalla completa por una frase. Sin `razonDelTurno` (un parche de
+ * `ajustar_pantalla`, donde no hay componente completo que validar) no se completa nada.
  */
-function revisarProps(componente: Componente, razonDelTurno: string): string[] {
+export function revisarProps(componente: Componente, razonDelTurno?: string): string[] {
   const entrada = CATALOGO.find((c) => c.nombre === componente.component);
   if (!entrada) return []; // layout: no tiene schema propio
 
-  if (componente.razon === undefined) componente.razon = razonDelTurno;
+  if (componente.razon === undefined && razonDelTurno !== undefined) componente.razon = razonDelTurno;
 
   const props = propsDe(componente);
   const enlazadas = new Set(Object.keys(props).filter((k) => esBinding(props[k])));

@@ -43,7 +43,7 @@ const FILAS_VISIBLES = 6;
 const ALTO_DE_FILA_REM = 3.75;
 
 export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<PropsComponente, "alAccionar">) {
-  const { periodo, totalCentavos, variacionPct, categorias, categoriaAtipica, razon, alAccionar } = props;
+  const { periodo, totalCentavos, variacionPct, categorias, categoriaAtipica, orden = "monto", limite, razon, alAccionar } = props;
 
   if (!categorias || typeof totalCentavos !== "number") {
     return (
@@ -58,10 +58,18 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
   }
 
   const titulo = periodo && /^\d{4}-\d{2}$/.test(periodo) ? formatearPeriodo(periodo) : periodo;
+  // `orden` y `limite` son props de VISTA: el agente las cambia con `ajustar_pantalla` y la
+  // tarjeta se reordena sin volver a pedir los datos ni repintar la pantalla.
+  const ordenadas = ordenar(categorias, orden);
+  const visibles = limite === undefined ? ordenadas : ordenadas.slice(0, limite);
+  // Lo que el limite dejo fuera se agrupa en un renglon neutro, NO se desaparece: el total
+  // del encabezado tiene que seguir cuadrando con lo que la tarjeta lista.
+  const agrupadas = ordenadas.length - visibles.length;
+  const montoAgrupado = ordenadas.slice(visibles.length).reduce((s, c) => s + c.montoCentavos, 0);
   // La barra se mide contra la categoria mas grande, no contra el total: con seis
   // categorias todas las barras saldrian cortas y no se compararia nada.
-  const mayor = categorias.reduce((max, c) => Math.max(max, c.montoCentavos), 0) || 1;
-  const hayQueDesplazar = categorias.length > FILAS_VISIBLES;
+  const mayor = visibles.reduce((max, c) => Math.max(max, c.montoCentavos), 0) || 1;
+  const hayQueDesplazar = visibles.length > FILAS_VISIBLES;
   // La suma de lo que se lista contra el total que dice el encabezado. Si no cuadra, el
   // modelo recorto la lista pese al schema: se avisa en el pie en vez de callarlo, porque
   // un total que no cuadra con sus renglones es lo que hace que nadie crea la pantalla.
@@ -97,10 +105,10 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
         className="grid overflow-y-auto overscroll-contain @2xl/tarjeta:grid-cols-2 @2xl/tarjeta:gap-x-6"
         style={hayQueDesplazar ? { maxHeight: `${FILAS_VISIBLES * ALTO_DE_FILA_REM}rem` } : undefined}
       >
-        {categorias.length === 0 ? (
+        {visibles.length === 0 ? (
           <p className="text-sm text-muted-foreground">No hay gasto registrado en este periodo.</p>
         ) : (
-          categorias.map((c) => {
+          visibles.map((c) => {
             const atipica = c.nombre === categoriaAtipica;
             const proporcion = Math.max(2, Math.round((c.montoCentavos / mayor) * 100));
             const Fila = alAccionar ? "button" : "div";
@@ -149,12 +157,14 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
       </CardContent>
 
       <PieTarjeta razon={razon}>
-        {categorias.length > 0 && (
+        {visibles.length > 0 && (
           <span className="text-xs text-muted-foreground">
-            {categorias.length} {categorias.length === 1 ? "categoría" : "categorías"}
+            {visibles.length} {visibles.length === 1 ? "categoría" : "categorías"}
             {hayQueDesplazar && " · desplázate para ver todas"}
+            {agrupadas > 0 && ` · otras ${agrupadas}: ${formatearMonto(montoAgrupado)}`}
             {/* El aviso solo aparece si el modelo desobedeció el schema y recortó. Es feo a
-                propósito: es un dato faltante, no una decisión de diseño. */}
+                propósito: es un dato faltante, no una decisión de diseño. Lo que deja fuera
+                `limite` NO cuenta: ese se reporta arriba, neutro, porque es deliberado. */}
             {faltante > 0 && (
               <span className="block text-advertencia">
                 Faltan {formatearMonto(faltante)} sin desglosar
@@ -165,4 +175,28 @@ export function GastoPorCategoria(props: Partial<PropsGastoPorCategoria> & Pick<
       </PieTarjeta>
     </Tarjeta>
   );
+}
+
+/**
+ * El orden de la lista, que es una decision de VISTA y por eso se puede cambiar con un
+ * parche sin volver a pedir datos.
+ *
+ * `variacion` ordena de la que mas subio a la que mas bajo y manda al final las que no
+ * traen variacion: una categoria sin dato no es una que no cambio, y ponerlas en medio
+ * mezclaria "no se sabe" con "se quedo igual".
+ */
+function ordenar(
+  categorias: PropsGastoPorCategoria["categorias"],
+  orden: NonNullable<PropsGastoPorCategoria["orden"]>,
+): PropsGastoPorCategoria["categorias"] {
+  const copia = [...categorias];
+  if (orden === "nombre") return copia.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
+  if (orden === "variacion") {
+    return copia.sort((a, b) => {
+      if (a.variacionPct === undefined) return b.variacionPct === undefined ? 0 : 1;
+      if (b.variacionPct === undefined) return -1;
+      return b.variacionPct - a.variacionPct;
+    });
+  }
+  return copia.sort((a, b) => b.montoCentavos - a.montoCentavos);
 }

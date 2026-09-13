@@ -160,9 +160,12 @@ describe("encargoDePortada", () => {
     expect(encargo).toContain(`analizar_ahorro: ${JSON.stringify(DATOS.analizar_ahorro)}`);
   });
 
-  it("pide una portada, no una respuesta: sin Confirmacion, una heroe, y pintar al final", () => {
+  it("pide una portada, no una respuesta: 3 tarjetas con Conclusion, una heroe, y pintar al final", () => {
     expect(encargo).toContain("MODO PORTADA");
-    expect(encargo).toContain("Exactamente UNA tarjeta con `heroe: true`");
+    // El tope es de codigo (`TOPE_DE_TARJETAS` en `agente/pantalla.ts`); aqui se comprueba
+    // que el encargo lo diga, para que el modelo no gaste un turno en descubrirlo.
+    expect(encargo).toContain("EXACTAMENTE 3 tarjetas, y la primera es `Conclusion`");
+    expect(encargo).toContain("lleva `heroe: true`, y es la UNICA que lo lleva");
     expect(encargo).toContain("Nada de `Confirmacion`");
     expect(encargo.trim().endsWith("Termina llamando `pintar_pantalla` exactamente una vez.")).toBe(true);
   });

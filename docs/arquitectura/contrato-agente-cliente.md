@@ -52,9 +52,13 @@ ajeno necesita saber antes de hablar. Lo arma `capacidadesDelServidor()` en `tip
     "path": "/components/2",
     "message": "componente 'Grafica' no está en el catálogo"
   },
-  "superficie": {                       // opcional: estado actual de la superficie, compacto
+  "superficie": {                       // opcional: estado actual de la superficie
     "surfaceId": "principal",
     "componentes": ["ResumenTarjeta", "PlanDePago"],
+    "arbol": [                          // opcional: los componentes TAL CUAL se emitieron
+      { "id": "root", "component": "Column", "children": ["resumen", "plan"] },
+      { "id": "plan", "component": "PlanDePago", "opciones": { "path": "/opciones" }, "razon": "…" }
+    ],
     "dataModel": { "tarjeta": { "saldo": 1840000 }, "planElegido": 18 }
   },
   "clientCapabilities": {               // opcional: client_capabilities.json; qué catálogos pinta el cliente
@@ -81,6 +85,14 @@ Reglas:
   mandarle una pantalla que no sabe pintar.
 - `superficie.dataModel` es lo que el cliente tiene ahora; el agente lo usa como
   contexto, no lo copia de vuelta.
+- `superficie.componentes` son los **nombres** de lo visible; `superficie.arbol`, los componentes
+  completos —id, props con sus enlaces `{ path }`, `children`, `action`—. Los dos salen de
+  `componentesVisibles(superficie)`: lo alcanzable desde la raíz, **no** el `Map` de la superficie,
+  que acumula la conversación entera (issue #3).
+  `arbol` es **opcional y habilita `ajustar_pantalla`**: sin él el agente no puede nombrar lo que ya
+  está en pantalla y su única salida es `pintar_pantalla`. Van completos y no solo las props porque
+  `updateComponents` reemplaza el componente por id: para parchear una prop hay que volver a mandar
+  el resto. Tope: 60 componentes.
 - El cuerpo se valida con `esquemaPeticion` (`apps/web/src/lib/agente/tipos.ts`); lo que
   no cumple devuelve **400** con `{ error, detalle[] }` antes de abrir el stream. Topes:
   40 mensajes, 4 000 caracteres por mensaje, `usuarioId` con el patrón `usr_…`.
@@ -95,7 +107,15 @@ Reglas:
 {"tipo":"a2ui","mensaje":{"version":"v0.9.1","updateDataModel":{"surfaceId":"principal","path":"/","value":{...}}}}
 {"tipo":"texto","valor":"Elige el plazo que te acomode; el de 18 meses es el que más intereses te ahorra."}
 {"tipo":"razon","valor":"Te muestro planes de pago porque tu tarjeta está al 94% y hoy pagas $612 de intereses al mes."}
-{"tipo":"fin","pasos":3,"ms":4180}
+{"tipo":"fin","pasos":3,"ms":4180,"cierre":"pintar"}
+```
+
+Un turno de **ajuste** manda solo los parches, sin `createSurface`, y un turno de **aclaración** no
+manda ningún `a2ui`:
+
+```jsonl
+{"tipo":"a2ui","mensaje":{"version":"v0.9.1","updateDataModel":{"surfaceId":"principal","path":"/gasto/periodo","value":"2026-07"}}}
+{"tipo":"fin","pasos":1,"ms":1520,"cierre":"ajustar"}
 ```
 
 | `tipo` | Qué es | Quién lo consume |
@@ -106,7 +126,7 @@ Reglas:
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |
-| `fin` | Métricas del turno: `pasos`, `ms` y `cacheLeido` (tokens que el proveedor sirvió desde su caché; ausente si no lo reporta) | Log, transparencia |
+| `fin` | Métricas del turno: `pasos`, `ms`, `cacheLeido` (tokens que el proveedor sirvió desde su caché; ausente si no lo reporta) y `cierre` (`pintar` \| `ajustar` \| `responder`) | Log, transparencia, y **el cliente** para decidir si actualiza la pantalla del hilo o apila una nueva |
 
 El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
 **siempre** termina en `fin`, pase lo que pase: la interfaz nunca se queda esperando.
@@ -115,23 +135,35 @@ El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
 resultado. El `ok` no viene de una excepción: una tool del MCP que falla devuelve
 `{ error: "…" }` (`apps/web/src/lib/agente/mcp-cliente.ts`), y de ahí se decide.
 
-### Cómo entrega el agente la interfaz
+### Cómo cierra el agente el turno: tres salidas
 
-Del lado del agente, la pantalla se entrega con una tool local, `pintar_pantalla`
-(`apps/web/src/lib/agente/pantalla.ts`): el modelo la llama con `razon`, `texto`,
-los componentes y el data model, y ahí se validan **antes** de convertirse en las tres
-líneas `a2ui`. El detalle y el por qué están en `docs/como-funciona/agente.md`.
+Todo turno cierra llamando **una** tool local de `apps/web/src/lib/agente/cierre.ts`, y **la que
+elige es la clasificación de intención** (no hay clasificador aparte):
+
+| Tool | Cuándo | Emite |
+|---|---|---|
+| `pintar_pantalla` | otra pregunta, otras tarjetas | los tres mensajes (`pantalla.ts`) |
+| `ajustar_pantalla` | lo mismo con otro parámetro | solo parches, **sin `createSurface`** (`ajustar.ts`) |
+| `responder` | aclarar lo que ya se ve | nada |
+
+`ajustar_pantalla` y `responder` **solo existen si la petición trae `superficie.arbol`**: en el primer
+turno no hay nada que ajustar ni que aclarar. Una acción que muta estado cierra siempre con
+`pintar_pantalla`. Tope de 3 tarjetas por pantalla, `Conclusion` incluida, validado en código. El
+detalle está en `docs/como-funciona/ciclo-live.md` y el algoritmo en
+`docs/algoritmos/intencion-y-parcheo.md`.
 
 ### Superficies
 
-- Una superficie `principal` por conversación, y el agente la **rearma completa en cada
-  turno**: `createSurface` + `updateComponents` con la lista entera + `updateDataModel` en
-  `/` con el data model entero. Al cambiar de usuario no hace falta `deleteSurface`: el
-  cliente vacía su propio estado en `reiniciar()` (`usar-agente.ts`).
-- Rearmar y no parchar es una decisión, no un descuido: `procesar()` **fusiona**
-  componentes por id, así que un `updateComponents` parcial dejaría vivos los componentes
-  de la pantalla anterior y la interfaz mentiría. Como el agente siempre manda el árbol
-  completo, el resultado visual es idéntico y el estado es predecible.
+- Una superficie `principal` por conversación. `pintar_pantalla` la **rearma completa**:
+  `createSurface` + `updateComponents` con la lista entera + `updateDataModel` en `/` con el data
+  model entero. Al cambiar de usuario no hace falta `deleteSurface`: el cliente vacía su propio
+  estado en `reiniciar()` (`usar-agente.ts`).
+- Rearmar y no parchar es la decisión **por defecto**, no un descuido: `procesar()` **fusiona**
+  componentes por id, así que un `updateComponents` parcial dejaría vivos los de la pantalla
+  anterior y la interfaz mentiría.
+- La excepción es `ajustar_pantalla`, y por eso valida tanto: solo parchea ids y rutas que **ya
+  existen** en la superficie que el cliente reportó, y manda el componente **fusionado** (viejo +
+  nuevo), nunca uno parcial. No puede agregar, quitar ni reordenar tarjetas.
 - Superficies secundarias (`detalle`, `confirmacion`) solo si el catálogo lo pide
   (modal). Por defecto, todo en `principal`.
 

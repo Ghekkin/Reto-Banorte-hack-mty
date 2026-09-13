@@ -28,6 +28,26 @@ export const schemaGastoPorCategoria = PropsBase.extend({
         "de acotar su alto y dejar el resto scrollable.",
     ),
   categoriaAtipica: z.string().optional().describe("El nombre de la que se salio de su patron; se pinta en rojo"),
+  orden: z
+    .enum(["monto", "variacion", "nombre"])
+    .default("monto")
+    .describe(
+      "Como se ordena la lista. `monto`: de mayor gasto a menor (el default y casi siempre el " +
+        "correcto). `variacion`: de la que mas subio a la que mas bajo, para 'que se me disparo'. " +
+        "`nombre`: alfabetico, para buscar una en concreto. Es una prop de VISTA: cambiarla con " +
+        "ajustar_pantalla reordena la tarjeta sin volver a pedir los datos",
+    ),
+  limite: z
+    .number()
+    .int()
+    .min(1)
+    .optional()
+    .describe(
+      "Cuantas categorias se listan tras ordenar; el resto se agrupa en un renglon 'Otras N'. " +
+        "Solo cuando la persona pida ver las N mas grandes: sin esto se listan todas y la tarjeta " +
+        "acota su alto sola. NO recortes `categorias` para lograr esto, usa esta prop: la suma " +
+        "tiene que seguir cuadrando con el total",
+    ),
 });
 
 export type PropsGastoPorCategoria = z.infer<typeof schemaGastoPorCategoria>;
@@ -35,7 +55,7 @@ export type PropsGastoPorCategoria = z.infer<typeof schemaGastoPorCategoria>;
 export const entradaGastoPorCategoria = {
   nombre: "GastoPorCategoria",
   cuandoUsarlo:
-    "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }.",
+    "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }. Si despues pide otro orden, las N mas grandes o resaltar una, eso es `ajustar_pantalla` sobre `orden`, `limite` o `categoriaAtipica`: no vuelvas a pintar la tarjeta.",
   schema: schemaGastoPorCategoria,
   acciones: ["ver_categoria"],
 };
