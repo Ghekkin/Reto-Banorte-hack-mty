@@ -248,6 +248,17 @@ El encargo de consulta insiste en dos cosas que el modelo tiende a romper cuando
 pregunta: que conteste con **tarjetas** (no con `Text`) y que la primera sea `Conclusion`.
 Sin la primera regla cae en prosa; sin la segunda, la respuesta queda sin veredicto.
 
+### Una portada por dispositivo (ADR 0012)
+
+Desde la migración 0007 la portada no es una por persona para todos: **cada visitante tiene la
+suya en cuanto hace algo**. Mientras un dispositivo no ha aplicado nada, ve la portada común de
+`pantallas_inicio` (la del reloj) y no cuesta modelo. Cuando aplica una acción, pregunta en la
+barra o ajusta una tarjeta, su portada vive en `pantallas_por_dispositivo` y la común queda
+intacta para los demás. Las cuatro puertas reciben `{ dispositivoId }` (la página, `/api/inicio`
+y la acción lo leen de la cookie `maya_dispositivo`); el reloj solo rearma las tres comunes. La
+huella cuenta las acciones **del dispositivo**. Detalle en `estado-por-dispositivo.md` y
+`docs/algoritmos/portada-por-dispositivo.md`.
+
 ### Variables de entorno
 
 | Variable | Default | Qué hace |

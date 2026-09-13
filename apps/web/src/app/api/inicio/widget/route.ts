@@ -1,9 +1,10 @@
 import { z } from "zod";
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { conectarMcp, llamarTool } from "@/lib/agente/mcp-cliente";
+import { dispositivoActivo } from "@/lib/dispositivo-activo";
 import { almacenEnPostgres } from "@/lib/inicio/almacen";
 import { configInicio } from "@/lib/inicio/config";
-import { inicioActivo } from "@/lib/inicio/servicio";
+import { estadoDelInicio, inicioActivo } from "@/lib/inicio/servicio";
 import { usuarioActivo } from "@/lib/usuario-activo";
 import { auditarWidgets, type Auditoria } from "@/lib/widgets/auditar";
 import { paraLaPersona, type LineaDeWidget } from "@/lib/widgets/linea";
@@ -32,6 +33,8 @@ import { turnoDeWidget } from "@/lib/widgets/turno";
  *
  * El ajuste se guarda fundido en la portada (`pantallas_inicio`) con la huella intacta:
  * recargar la pagina conserva lo que la persona pidio, hasta que sus datos cambien de verdad.
+ * Y se guarda en la portada de ESTE dispositivo (ADR 0012): si estaba viendo la comun, el
+ * ajuste se vuelve su portada propia y la comun queda intacta para los demas visitantes.
  * Ver `docs/como-funciona/widgets-vivos.md`.
  */
 export const runtime = "nodejs";
@@ -61,8 +64,9 @@ export async function POST(peticion: Request): Promise<Response> {
     return Response.json({ error: "Los widgets vivos estan apagados (FEATURE_WIDGETS_VIVOS)." }, { status: 409 });
   }
 
-  const usuario = await usuarioActivo();
-  const pantalla = await almacenEnPostgres.leer(usuario.id);
+  const [usuario, dispositivoId] = await Promise.all([usuarioActivo(), dispositivoActivo()]);
+  // La misma portada que la pagina le pinto a este dispositivo: la propia o la comun.
+  const pantalla = (await estadoDelInicio(usuario.id, { dispositivoId })).pantalla;
   if (!pantalla || Object.keys(pantalla.procedencias).length === 0) {
     return Response.json({ error: "Tu Inicio todavía no está listo para preguntas por tarjeta; Maya lo está armando." }, { status: 409 });
   }
@@ -73,7 +77,7 @@ export async function POST(peticion: Request): Promise<Response> {
       const emitir = (linea: LineaDeWidget) => controlador.enqueue(codificador.encode(JSON.stringify(linea) + "\n"));
       let cliente: Client | undefined;
       try {
-        cliente = await conectarMcp();
+        cliente = await conectarMcp({ dispositivoId });
         const abierto = cliente;
         const turno = await turnoDeWidget(
           {
@@ -113,9 +117,11 @@ export async function POST(peticion: Request): Promise<Response> {
           guardada = Boolean(
             await almacenEnPostgres.ajustar?.({
               usuarioId: usuario.id,
+              dispositivoId,
               mensajes,
               procedencias: turno.procedencias,
               generadaEn: pantalla.generadaEn,
+              base: pantalla,
             }),
           );
         }

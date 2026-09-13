@@ -1,5 +1,6 @@
 import { CATALOGO } from "@maya/catalogo";
 import { consultar } from "@/lib/datos/tablas";
+import { DISPOSITIVO_COMUN } from "@/lib/dispositivo";
 
 /**
  * La huella: con que datos se armo la portada de una persona.
@@ -31,15 +32,22 @@ export function armarHuella(partes: PartesDeHuella): string {
   return `v${version}|c${componentes}|a:${partes.acciones}|m:${partes.movimientos}`;
 }
 
-/** Dos subconsultas con indice, no dos tablas enteras: corre en cada visita a Inicio. */
-export async function huellaDe(usuarioId: string): Promise<string> {
+/**
+ * Dos subconsultas con indice, no dos tablas enteras: corre en cada visita a Inicio.
+ *
+ * Las acciones que cuentan son las del dispositivo (ADR 0012): cada visitante tiene su propio
+ * estado, asi que su portada se arma con SUS acciones. Un dispositivo que no ha aplicado nada
+ * tiene la misma huella que el comun sin acciones, y eso es lo que le permite ver la portada
+ * comun sin gastar modelo (`servicio.ts`).
+ */
+export async function huellaDe(usuarioId: string, dispositivoId: string = DISPOSITIVO_COMUN): Promise<string> {
   const [fila] = await consultar<{ acciones: string; movimientos: string }>(
     `select
        (select count(*) || ':' || coalesce(max(id), 0)
-          from banorte.acciones_aplicadas where usuario_id = $1) as acciones,
+          from banorte.acciones_aplicadas where usuario_id = $1 and dispositivo_id = $2) as acciones,
        (select count(*) || ':' || coalesce(max(fecha)::text, '')
           from banorte.movimientos where usuario_id = $1) as movimientos`,
-    [usuarioId],
+    [usuarioId, dispositivoId],
   );
   return armarHuella({ acciones: fila?.acciones ?? "0:0", movimientos: fila?.movimientos ?? "0:" });
 }

@@ -1682,3 +1682,34 @@ contrato, `ciclo-live.md`, `intencion-y-parcheo.md`, guion. En paralelo, dos sub
 (dominio del abono, dos tools, migración 0005, pruebas) y catálogo (`ProyeccionPagoCredito` con
 antes/después, botón, programado y resaltado). Toque ajeno: `apps/web/src/components/maya/`
 (web), `apps/mcp` y `packages/catalogo` vía subagentes.
+
+### 03:58 (dom 13) — Cada visitante tiene su propio estado (ADR 0012)
+
+Pedido: con muchos visitantes probando la demo a la vez, lo que uno modifica le cambia la
+demo a todos. Confirmado en la base: a las 03:40 había un plan de Beto y un apartado de Ana
+aplicados en el estado compartido, y `preguntarEnInicio` y el ajuste de widgets reescribían
+`pantallas_inicio` para todos. Lo que se pidió: modificaciones aisladas por dispositivo,
+guardadas en la base, que sigan ahí al volver.
+
+Hecho: cookie `maya_dispositivo` que pone `apps/web/src/proxy.ts`; `conectarMcp({ dispositivoId })`
+manda `x-maya-dispositivo` y `registro.ts` del MCP abre un `AsyncLocalStorage` por tool, así
+que ninguna tool cambió su schema; `acciones_aplicadas.dispositivo_id` con la llave de
+idempotencia prefijada; `pantallas_por_dispositivo` para la portada de quien ya se apartó de la
+común (la común se sigue sirviendo a quien no ha hecho nada, sin pagar modelo); `dispositivo_id`
+en `corridas` y `conversaciones`. Migración 0007 aditiva, **ya aplicada a la base compartida**.
+Pruebas: 5 del MCP (`dispositivos.spec.ts`), 5 de servicio y 4 de proxy/id en web; suites
+completas en verde (a2ui 120, mcp 178, catálogo 151, web 321). Verificado en vivo con dos
+dispositivos contra la base real (filas de la prueba borradas).
+
+Trabajé en un worktree aparte (`/root/reto-dispositivo`) sobre `origin/main`, porque la carpeta
+compartida iba 6 commits atrás y tiene trabajo sin commitear de otras sesiones (fase 2 de ajustes
+en vivo) en `agente.ts` y `estado.ts`, que también toqué: en líneas distintas.
+
+Toque ajeno: `apps/mcp` (mcp), `lib/inicio` y `app/api/inicio/widget` (web/contrato de aldair).
+De paso, issue #27: `preguntarEnInicio` guardaba sin `procedencias` y con widgets vivos la
+respuesta se tiraba al siguiente render; arreglado en el mismo commit.
+
+Queda: al recargar `/maya` la conversación no se restaura (ya se guarda con su dispositivo).
+Antes de abrir la liga al público, `pnpm reiniciar-estado`: con acciones en `comun`, cada
+dispositivo nuevo arma su propia portada.
+

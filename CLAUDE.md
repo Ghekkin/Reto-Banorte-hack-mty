@@ -122,7 +122,7 @@ el campo nuevo es opcional.
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
-| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010). La 0004 agrega las tablas de historia: corridas del modelo, chat y registros (`docs/como-funciona/corridas-en-db.md`); la 0005, las procedencias de los widgets vivos | existe |
+| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010). La 0004 agrega las tablas de historia: corridas del modelo, chat y registros (`docs/como-funciona/corridas-en-db.md`); la 0005, las procedencias de los widgets vivos; la 0007, **el estado por dispositivo**: cada visitante tiene sus acciones y su portada (ADR 0012, `docs/como-funciona/estado-por-dispositivo.md`) | existe |
 | `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `corridas.mjs` (lee corridas, chat y registros), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |

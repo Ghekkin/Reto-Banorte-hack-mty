@@ -78,4 +78,5 @@ export function filtrar(nombre: string, campo: string, valor: string): Fila[] {
 
 export * from "./fila.js";
 export * from "./estado.js";
+export * from "./dispositivo.js";
 export { cerrarPool, obtenerPool } from "./postgres.js";

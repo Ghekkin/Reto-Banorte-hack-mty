@@ -14,6 +14,7 @@ import {
 } from "@/components/inicio/tarjetas-inicio";
 import { cuentasDe, movimientosRecientes, resumenDe, tarjetasDe } from "@/lib/datos/consultas";
 import { configInicio } from "@/lib/inicio/config";
+import { dispositivoActivo } from "@/lib/dispositivo-activo";
 import { estadoDelInicio, regenerarSiCambio } from "@/lib/inicio/servicio";
 import { usuarioActivo } from "@/lib/usuario-activo";
 
@@ -43,11 +44,12 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  * con la misma cascada al revertir. Ver `docs/como-funciona/transicion-del-inicio.md`.
  */
 export default async function PaginaInicio() {
-  const usuario = await usuarioActivo();
-  const inicio = await estadoDelInicio(usuario.id);
+  // La portada es la de ESTE dispositivo (ADR 0012): la propia si ya hizo algo, la comun si no.
+  const [usuario, dispositivoId] = await Promise.all([usuarioActivo(), dispositivoActivo()]);
+  const inicio = await estadoDelInicio(usuario.id, { dispositivoId });
 
   if (inicio.activo && inicio.desactualizada) {
-    after(() => regenerarSiCambio(usuario.id, "visita"));
+    after(() => regenerarSiCambio(usuario.id, "visita", { dispositivoId }));
   }
 
   if (inicio.activo && inicio.pantalla && !inicio.desactualizada) {

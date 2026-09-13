@@ -6,6 +6,7 @@ import { almacenEnPostgres } from "@/lib/inicio/almacen";
 import { generarPortada } from "@/lib/inicio/generar";
 import { huellaDe } from "@/lib/inicio/huella";
 import { inicioActivo } from "@/lib/inicio/servicio";
+import { dispositivoActivo } from "@/lib/dispositivo-activo";
 import { COOKIE_USUARIO, usuarioActivo } from "@/lib/usuario-activo";
 import { USUARIOS } from "@/lib/usuarios";
 
@@ -63,8 +64,10 @@ export async function preguntarEnInicio(pregunta: string): Promise<ResultadoDeCo
     return { ok: false, motivo: "El Inicio personalizado esta apagado (FEATURE_INICIO_PERSONALIZADO)." };
   }
 
-  const usuario = await usuarioActivo();
-  const generada = await generarPortada(usuario.id, { pregunta: limpia });
+  // La respuesta es de ESTE dispositivo (ADR 0012): se guarda como su portada propia y no le
+  // borra el Inicio a nadie que haya abierto a la misma persona.
+  const [usuario, dispositivoId] = await Promise.all([usuarioActivo(), dispositivoActivo()]);
+  const generada = await generarPortada(usuario.id, { pregunta: limpia, dispositivoId });
 
   if (!generada.ok) {
     // El motivo real, no un "algo salio mal": quien ve esto en la demo es del equipo.
@@ -73,7 +76,8 @@ export async function preguntarEnInicio(pregunta: string): Promise<ResultadoDeCo
 
   await almacenEnPostgres.guardar({
     usuarioId: usuario.id,
-    huella: await huellaDe(usuario.id),
+    dispositivoId,
+    huella: await huellaDe(usuario.id, dispositivoId),
     mensajes: generada.mensajes,
     texto: generada.texto,
     razon: generada.razon,
@@ -84,6 +88,10 @@ export async function preguntarEnInicio(pregunta: string): Promise<ResultadoDeCo
     salidaTokens: generada.salidaTokens,
     cacheTokens: generada.cacheTokens,
     ms: generada.ms,
+    // Con widgets vivos, sin esto la portada queda sin procedencias, `vencida()` la da por
+    // vieja y la siguiente visita tira la respuesta (issue #27).
+    procedencias: generada.procedencias,
+    referencias: generada.referencias,
   });
 
   revalidatePath("/");

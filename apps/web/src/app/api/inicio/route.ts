@@ -1,6 +1,7 @@
 import { after } from "next/server";
 import { config } from "@/lib/agente/config";
 import { conManejoDeErrores, error, respuesta, usuarioDeLaUrl } from "@/lib/api/comun";
+import { dispositivoActivo } from "@/lib/dispositivo-activo";
 import type { PantallaDeInicio } from "@/lib/inicio/almacen";
 import { componentesDe, estadoDelInicio, regenerarSiCambio } from "@/lib/inicio/servicio";
 
@@ -18,6 +19,10 @@ import { componentesDe, estadoDelInicio, regenerarSiCambio } from "@/lib/inicio/
  * vivo. Llama al modelo, asi que va con el `MCP_TOKEN` en `Authorization: Bearer`; sin
  * token configurado solo se permite en desarrollo. `forzar` la rearma aunque la huella
  * no haya cambiado.
+ *
+ * Las dos hablan del Inicio del **dispositivo** que llama (cookie `maya_dispositivo`, ADR
+ * 0012): el aviso de "Maya esta armando tu inicio" pregunta por la portada que ESE navegador
+ * esta esperando. Sin cookie (curl, `pnpm probar-inicio`) es la portada comun.
  */
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -27,9 +32,10 @@ export function GET(peticion: Request): Promise<Response> {
     const usuario = usuarioDeLaUrl(peticion.url);
     if ("problema" in usuario) return usuario.problema;
 
-    const estado = await estadoDelInicio(usuario.usuarioId);
+    const dispositivoId = await dispositivoActivo();
+    const estado = await estadoDelInicio(usuario.usuarioId, { dispositivoId });
     if (estado.activo && estado.desactualizada) {
-      after(() => regenerarSiCambio(usuario.usuarioId, "consulta"));
+      after(() => regenerarSiCambio(usuario.usuarioId, "consulta", { dispositivoId }));
     }
     return respuesta({
       usuarioId: usuario.usuarioId,
@@ -49,7 +55,7 @@ export function POST(peticion: Request): Promise<Response> {
     if ("problema" in usuario) return usuario.problema;
 
     const forzar = new URL(peticion.url).searchParams.get("forzar") === "1";
-    const resultado = await regenerarSiCambio(usuario.usuarioId, "manual", { forzar });
+    const resultado = await regenerarSiCambio(usuario.usuarioId, "manual", { forzar, dispositivoId: await dispositivoActivo() });
     return respuesta(
       {
         usuarioId: usuario.usuarioId,

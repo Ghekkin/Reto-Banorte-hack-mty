@@ -41,6 +41,7 @@ function mensajesDe(archivo: string): MensajeA2UI[] {
 function pantallaDelEjemplo(archivo = EJEMPLO): PantallaDeInicio {
   return {
     usuarioId: "usr_beto",
+    dispositivoId: "comun",
     huella: "v1|c18|a:0:0|m:812:2026-09-10",
     mensajes: mensajesDe(archivo),
     texto: "Hoy lo urgente es la tarjeta: con el plan a 18 meses bajas la mensualidad a $3,193.",

@@ -44,9 +44,10 @@ async function guardarCorrida(c: FilaCorrida): Promise<void> {
     `insert into banorte.corridas (
        id, tipo, usuario_id, conversacion_id, motivo, estado, proveedor, modelo, opciones_proveedor, config,
        version_app, prompt_sistema_hash, tools_hash, tools_ofrecidas, peticion, mensajes_modelo, lineas, cierre,
-       pasos, tokens_entrada, tokens_salida, tokens_cache, tokens_razonamiento, texto, error, ms, iniciada_en, terminada_en
+       pasos, tokens_entrada, tokens_salida, tokens_cache, tokens_razonamiento, texto, error, ms, iniciada_en, terminada_en,
+       dispositivo_id
      ) values ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::jsonb,$11,$12,$13,$14::jsonb,$15::jsonb,$16::jsonb,$17::jsonb,$18,
-               $19,$20,$21,$22,$23,$24,$25,$26,$27,$28)
+               $19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29)
      on conflict (id) do update set
        estado = excluded.estado, proveedor = excluded.proveedor, modelo = excluded.modelo,
        opciones_proveedor = excluded.opciones_proveedor, config = excluded.config,
@@ -61,7 +62,7 @@ async function guardarCorrida(c: FilaCorrida): Promise<void> {
       json(c.opcionesProveedor), json(c.config), c.versionApp, c.promptSistemaHash, c.toolsHash,
       json(c.toolsOfrecidas), json(c.peticion), json(c.mensajesModelo), json(c.lineas), c.cierre,
       c.pasos, c.tokensEntrada, c.tokensSalida, c.tokensCache, c.tokensRazonamiento, c.texto, c.error,
-      c.ms, c.iniciadaEn, c.terminadaEn,
+      c.ms, c.iniciadaEn, c.terminadaEn, c.dispositivoId,
     ],
   );
 }
@@ -110,9 +111,9 @@ async function terminar(t: CorridaTerminada): Promise<void> {
 
   if (t.chat) {
     await consultar(
-      `insert into banorte.conversaciones (id, usuario_id, turnos) values ($1, $2, 1)
+      `insert into banorte.conversaciones (id, usuario_id, turnos, dispositivo_id) values ($1, $2, 1, $3)
        on conflict (id) do update set turnos = banorte.conversaciones.turnos + 1, actualizada_en = now()`,
-      [t.chat.conversacionId, t.chat.usuarioId],
+      [t.chat.conversacionId, t.chat.usuarioId, t.chat.dispositivoId],
     );
     await insertarVarias(
       "mensajes_chat",

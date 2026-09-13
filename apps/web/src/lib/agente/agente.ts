@@ -48,6 +48,12 @@ export type OpcionesDeTurno = {
   alMutar?: (usuarioId: string) => void;
   /** Donde se guarda la corrida. Default: PostgreSQL (`lib/corridas/escritor.ts`). */
   escritor?: Escritor;
+  /**
+   * De que visitante es el turno (ADR 0012). Lo pone la ruta desde la cookie, nunca el cuerpo
+   * de la peticion. Viaja en la conexion al MCP: las acciones de este turno solo cambian el
+   * estado de este dispositivo. Sin el, el estado comun.
+   */
+  dispositivoId?: string;
 };
 
 /**
@@ -77,6 +83,7 @@ export async function* correrTurno(
       conversacionId: peticion.conversacionId,
       motivo: peticion.error ? "aviso_interfaz" : peticion.accion ? `accion:${peticion.accion.name}` : "mensaje",
       peticion,
+      dispositivoId: opciones.dispositivoId,
     },
     opciones.escritor ?? escritorEnPostgres,
   );
@@ -126,7 +133,7 @@ async function* turno(
       // El MCP caido es un error de TOOLS, no del modelo: el panel de transparencia y
       // quien lea el log tienen que saber donde mirar.
       try {
-        cliente = await conectarMcp();
+        cliente = await conectarMcp({ dispositivoId: opciones.dispositivoId });
         herramientas = await herramientasDelMcp(cliente, {
           usuarioId: peticion.usuarioId,
           corridaId: grabadora.id,

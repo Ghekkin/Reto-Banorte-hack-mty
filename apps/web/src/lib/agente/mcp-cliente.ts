@@ -1,6 +1,7 @@
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
 import { dynamicTool, jsonSchema, type ToolSet } from "ai";
+import { CABECERA_DISPOSITIVO, DISPOSITIVO_COMUN } from "@/lib/dispositivo";
 import { config } from "./config";
 
 /**
@@ -9,10 +10,20 @@ import { config } from "./config";
  *
  * Es la unica forma en que el agente toca datos o ejecuta acciones. Nada de fetch
  * directo a la base ni logica de negocio de este lado.
+ *
+ * `dispositivoId` (ADR 0012): de que visitante es esta conexion. Viaja en una cabecera y
+ * no en los argumentos de cada tool: asi TODA llamada de la conexion —las del modelo, el
+ * prefetch, el auditor de widgets— lee y escribe el estado de ese dispositivo, sin que haya
+ * que acordarse de pasarlo en cada una, y el modelo no lo ve. Sin dispositivo, el comun.
  */
-export async function conectarMcp(): Promise<Client> {
+export async function conectarMcp(opciones: { dispositivoId?: string } = {}): Promise<Client> {
+  const cabeceras: Record<string, string> = {};
+  if (config.tokenMcp) cabeceras.Authorization = `Bearer ${config.tokenMcp}`;
+  if (opciones.dispositivoId && opciones.dispositivoId !== DISPOSITIVO_COMUN) {
+    cabeceras[CABECERA_DISPOSITIVO] = opciones.dispositivoId;
+  }
   const transporte = new StreamableHTTPClientTransport(new URL(config.urlMcp), {
-    requestInit: config.tokenMcp ? { headers: { Authorization: `Bearer ${config.tokenMcp}` } } : undefined,
+    requestInit: Object.keys(cabeceras).length ? { headers: cabeceras } : undefined,
   });
   const cliente = new Client({ name: "maya-web", version: "0.1.0" });
   await cliente.connect(transporte);

@@ -1,4 +1,5 @@
 import { registrar as registrarEnLaBase } from "@/lib/corridas/escritor";
+import { DISPOSITIVO_COMUN, dispositivoParaRegistro } from "@/lib/dispositivo";
 import { USUARIOS } from "@/lib/usuarios";
 import { componentesDe as tarjetasDe } from "@/lib/widgets/pantalla-viva";
 import { almacenEnPostgres, type Almacen, type PantallaDeInicio } from "./almacen";
@@ -15,6 +16,10 @@ import { hayLlaveDelInicio } from "./modelo";
  * La regla que lo gobierna es una: **el modelo corre solo cuando algo cambio.** Una
  * portada se rearma si no existe o si su huella (`huella.ts`) ya no es la de los datos
  * de hoy. Si es la misma, ninguna de las cuatro puertas gasta un token.
+ *
+ * **Y cada dispositivo ve la suya** (ADR 0012). Hay una portada comun por persona y, aparte,
+ * la de cada dispositivo que ya se aparto de ella. Cual se pinta y cual se rearma lo decide
+ * `vistaDe`; el algoritmo esta en `docs/algoritmos/portada-por-dispositivo.md`.
  */
 
 export type EstadoDelInicio = {
@@ -36,7 +41,7 @@ export type ResultadoDeRegeneracion = {
 /** Lo inyectable, para que las pruebas corran sin base, sin MCP y sin modelo. */
 export type Dependencias = {
   almacen: Almacen;
-  huella: (usuarioId: string) => Promise<string>;
+  huella: (usuarioId: string, dispositivoId: string) => Promise<string>;
   generar: (usuarioId: string, opciones?: OpcionesDeGeneracion) => Promise<PortadaGenerada>;
   activo: () => boolean;
   /** Si Inicio se arma con widgets vivos. Inyectable para las pruebas. */
@@ -55,12 +60,16 @@ export function inicioActivo(): boolean {
   return configInicio.activo && hayLlaveDelInicio() && Boolean(process.env.DATABASE_URL);
 }
 
+/** De que visitante se habla. Sin `dispositivoId`, el estado comun (el reloj, un script). */
+export type Ambito = { dispositivoId?: string; deps?: Dependencias };
+
 /** Lo que la pagina necesita para decidir que pintar. No dispara nada. */
-export async function estadoDelInicio(usuarioId: string, deps: Dependencias = porDefecto): Promise<EstadoDelInicio> {
+export async function estadoDelInicio(usuarioId: string, ambito: Ambito = {}): Promise<EstadoDelInicio> {
+  const deps = ambito.deps ?? porDefecto;
   if (!deps.activo()) return { activo: false, desactualizada: false };
   try {
-    const [pantalla, huella] = await Promise.all([deps.almacen.leer(usuarioId), deps.huella(usuarioId)]);
-    return { activo: true, pantalla, huella, desactualizada: vencida(pantalla, huella, deps) };
+    const vista = await vistaDe(usuarioId, ambito.dispositivoId ?? DISPOSITIVO_COMUN, deps);
+    return { activo: true, pantalla: vista.pantalla, huella: vista.huella, desactualizada: vista.vencida };
   } catch (error) {
     // Sin base no hay portada ni forma de saber si cambio: la pagina programada sigue.
     console.warn(`[inicio] no pude leer la portada de ${usuarioId}: ${error instanceof Error ? error.message : String(error)}`);
@@ -69,49 +78,121 @@ export async function estadoDelInicio(usuarioId: string, deps: Dependencias = po
 }
 
 /**
- * Una generacion en vuelo por persona. Las cuatro puertas pueden pedirla a la vez (el
- * reloj, una visita, la accion, la ruta) y el modelo se llama una sola vez: las demas
- * esperan ese mismo resultado.
+ * Que portada le toca a un dispositivo, si esta vencida y, si lo esta, DONDE se rearma.
+ *
+ *  1. Su portada propia, si la tiene y esta al dia: ya se aparto de la comun (aplico una
+ *     accion, pregunto algo en Inicio, ajusto una tarjeta) y eso es suyo.
+ *  2. Si sus datos son los comunes —misma huella: no ha aplicado nada—, la comun. Si esta
+ *     vencida, se rearma LA COMUN: le sirve a el y a todos los que tampoco han hecho nada,
+ *     y cien visitantes nuevos no son cien portadas pagadas. Una propia vieja queda tapada.
+ *  3. Si sus datos ya no son los comunes, su portada es suya y se rearma en su ambito.
+ *
+ * Mientras se rearma, `pantalla` es la mejor que hay (la propia vieja o la comun) para que
+ * el aviso de "Maya esta armando tu inicio" sepa cual esperar que cambie.
+ */
+type Vista = { huella: string; pantalla?: PantallaDeInicio; vencida: boolean; destino: string };
+
+async function vistaDe(usuarioId: string, dispositivoId: string, deps: Dependencias): Promise<Vista> {
+  if (dispositivoId === DISPOSITIVO_COMUN) {
+    const [huella, pantalla] = await Promise.all([deps.huella(usuarioId, DISPOSITIVO_COMUN), deps.almacen.leer(usuarioId, DISPOSITIVO_COMUN)]);
+    return { huella, pantalla, vencida: vencida(pantalla, huella, deps), destino: DISPOSITIVO_COMUN };
+  }
+
+  const [huella, huellaComun, propia, comun] = await Promise.all([
+    deps.huella(usuarioId, dispositivoId),
+    deps.huella(usuarioId, DISPOSITIVO_COMUN),
+    deps.almacen.leer(usuarioId, dispositivoId),
+    deps.almacen.leer(usuarioId, DISPOSITIVO_COMUN),
+  ]);
+  if (propia && !vencida(propia, huella, deps)) return { huella, pantalla: propia, vencida: false, destino: dispositivoId };
+  if (huella === huellaComun) {
+    const alDia = Boolean(comun) && !vencida(comun, huella, deps);
+    return { huella, pantalla: comun ?? propia, vencida: !alDia, destino: DISPOSITIVO_COMUN };
+  }
+  return { huella, pantalla: propia ?? comun, vencida: true, destino: dispositivoId };
+}
+
+/**
+ * Una generacion en vuelo por portada: (ambito, persona). Las cuatro puertas pueden pedirla
+ * a la vez (el reloj, una visita, la accion, la ruta) y el modelo se llama una sola vez: las
+ * demas esperan ese mismo resultado. Dos visitantes nuevos que abren a Beto a la vez esperan
+ * la MISMA portada comun.
  */
 const enVuelo = new Map<string, Promise<ResultadoDeRegeneracion>>();
 
 export function regenerarSiCambio(
   usuarioId: string,
   motivo: string,
-  opciones: { forzar?: boolean; deps?: Dependencias } = {},
+  opciones: { forzar?: boolean; deps?: Dependencias; dispositivoId?: string } = {},
 ): Promise<ResultadoDeRegeneracion> {
-  const pendiente = enVuelo.get(usuarioId);
+  const deps = opciones.deps ?? porDefecto;
+  const forzar = opciones.forzar ?? false;
+  const dispositivoId = opciones.dispositivoId ?? DISPOSITIVO_COMUN;
+  // La comun decide sin esperar nada: dos llamadas en el mismo tick comparten la generacion.
+  if (dispositivoId === DISPOSITIVO_COMUN) return enUnVuelo(usuarioId, DISPOSITIVO_COMUN, motivo, forzar, deps);
+  return regenerarDeDispositivo(usuarioId, dispositivoId, motivo, forzar, deps);
+}
+
+function enUnVuelo(usuarioId: string, ambito: string, motivo: string, forzar: boolean, deps: Dependencias): Promise<ResultadoDeRegeneracion> {
+  const clave = `${ambito}|${usuarioId}`;
+  const pendiente = enVuelo.get(clave);
   if (pendiente) return pendiente;
 
-  const trabajo = regenerar(usuarioId, motivo, opciones.forzar ?? false, opciones.deps ?? porDefecto).finally(() =>
-    enVuelo.delete(usuarioId),
-  );
-  enVuelo.set(usuarioId, trabajo);
+  const trabajo = regenerar(usuarioId, ambito, motivo, forzar, deps).finally(() => enVuelo.delete(clave));
+  enVuelo.set(clave, trabajo);
   return trabajo;
 }
 
-async function regenerar(usuarioId: string, motivo: string, forzar: boolean, deps: Dependencias): Promise<ResultadoDeRegeneracion> {
+async function regenerarDeDispositivo(
+  usuarioId: string,
+  dispositivoId: string,
+  motivo: string,
+  forzar: boolean,
+  deps: Dependencias,
+): Promise<ResultadoDeRegeneracion> {
   if (!deps.activo()) return { hecho: "inactivo", motivo: "flag apagado, sin llave o sin base" };
   const inicio = Date.now();
+  let vista: Vista;
+  try {
+    vista = await vistaDe(usuarioId, dispositivoId, deps);
+  } catch (error) {
+    const detalle = error instanceof Error ? error.message : String(error);
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "fallo", detalle: `sin base: ${detalle}`, ms: Date.now() - inicio });
+    return { hecho: "fallo", motivo: detalle };
+  }
+  if (!forzar && !vista.vencida) {
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "sin-cambios", huella: vista.huella, ms: Date.now() - inicio });
+    return { hecho: "sin-cambios", pantalla: vista.pantalla, ms: Date.now() - inicio };
+  }
+  return enUnVuelo(usuarioId, vista.destino, motivo, forzar, deps);
+}
+
+/** Rearma la portada de UN ambito (`comun` o un dispositivo) si sus datos cambiaron. */
+async function regenerar(usuarioId: string, ambito: string, motivo: string, forzar: boolean, deps: Dependencias): Promise<ResultadoDeRegeneracion> {
+  if (!deps.activo()) return { hecho: "inactivo", motivo: "flag apagado, sin llave o sin base" };
+  const inicio = Date.now();
+  const dispositivoId = dispositivoParaRegistro(ambito);
 
   let huella: string;
   let anterior: PantallaDeInicio | undefined;
   try {
-    [huella, anterior] = await Promise.all([deps.huella(usuarioId), deps.almacen.leer(usuarioId)]);
+    [huella, anterior] = await Promise.all([deps.huella(usuarioId, ambito), deps.almacen.leer(usuarioId, ambito)]);
   } catch (error) {
     const detalle = error instanceof Error ? error.message : String(error);
-    registrar({ inicio: usuarioId, motivo, hecho: "fallo", detalle: `sin base: ${detalle}`, ms: Date.now() - inicio });
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "fallo", detalle: `sin base: ${detalle}`, ms: Date.now() - inicio });
     return { hecho: "fallo", motivo: detalle };
   }
 
   if (!forzar && !vencida(anterior, huella, deps)) {
-    registrar({ inicio: usuarioId, motivo, hecho: "sin-cambios", huella, ms: Date.now() - inicio });
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "sin-cambios", huella, ms: Date.now() - inicio });
     return { hecho: "sin-cambios", pantalla: anterior, ms: Date.now() - inicio };
   }
 
-  const portada = await deps.generar(usuarioId, { motivo });
+  // El MCP de esta generacion lee el estado de ESE ambito: una portada de dispositivo se
+  // arma con sus acciones, no con las del comun.
+  const portada = await deps.generar(usuarioId, { motivo, dispositivoId: ambito });
   if (!portada.ok) {
-    registrar({ inicio: usuarioId, motivo, hecho: "fallo", corridaId: portada.corridaId, modelo: portada.modelo, pasos: portada.pasos, tools: portada.tools, detalle: portada.motivo, ms: portada.ms });
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "fallo", corridaId: portada.corridaId, modelo: portada.modelo, pasos: portada.pasos, tools: portada.tools, detalle: portada.motivo, ms: portada.ms });
     return { hecho: "fallo", motivo: portada.motivo, pantalla: anterior, ms: portada.ms };
   }
 
@@ -120,6 +201,7 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     // algo cambio mientras el modelo pensaba, la siguiente revision lo nota y rearma.
     const pantalla = await deps.almacen.guardar({
       usuarioId,
+      dispositivoId: ambito,
       huella,
       mensajes: portada.mensajes,
       texto: portada.texto,
@@ -136,6 +218,7 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     });
     registrar({
       inicio: usuarioId,
+      dispositivoId,
       motivo,
       hecho: "generada",
       corridaId: portada.corridaId,
@@ -151,7 +234,7 @@ async function regenerar(usuarioId: string, motivo: string, forzar: boolean, dep
     return { hecho: "generada", pantalla, ms: portada.ms };
   } catch (error) {
     const detalle = error instanceof Error ? error.message : String(error);
-    registrar({ inicio: usuarioId, motivo, hecho: "fallo", detalle: `no se pudo guardar: ${detalle}`, ms: Date.now() - inicio });
+    registrar({ inicio: usuarioId, dispositivoId, motivo, hecho: "fallo", detalle: `no se pudo guardar: ${detalle}`, ms: Date.now() - inicio });
     return { hecho: "fallo", motivo: detalle, pantalla: anterior };
   }
 }
@@ -176,7 +259,11 @@ function vencida(pantalla: PantallaDeInicio | undefined, huella: string, deps: D
   return ids.length === 0 || ids.some((id) => tarjetas.get(id)?.component !== pantalla.procedencias[id]?.componente);
 }
 
-/** Los tres usuarios, uno tras otro: es un reloj, no una carrera contra el proveedor. */
+/**
+ * Los tres usuarios, uno tras otro: es un reloj, no una carrera contra el proveedor. Solo la
+ * portada COMUN: la de un dispositivo se rearma cuando ese dispositivo vuelve (visita) o
+ * aplica algo (accion), asi que el costo del reloj no crece con los visitantes.
+ */
 export async function regenerarTodos(motivo: string, deps?: Dependencias): Promise<Record<string, ResultadoDeRegeneracion>> {
   const salida: Record<string, ResultadoDeRegeneracion> = {};
   for (const usuario of USUARIOS) {

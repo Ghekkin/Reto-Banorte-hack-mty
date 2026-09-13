@@ -640,3 +640,24 @@ y no le suma disco al VPS.
 el build de docs falla, no tumba el deploy de web ni mcp; el sitio sigue con la versión
 anterior y el error se ve en Coolify. Detalle en `docs/arquitectura/deploy.md` → "El
 sitio de docs".
+
+## dom 13 · 03:58 — Cada visitante tiene su propio estado (ADR 0012)
+
+Con muchos visitantes a la vez, el plan que uno aplicaba a Beto le aparecía aplicado a todos, y
+la pregunta que alguien hacía en Inicio le cambiaba el Inicio al resto. **Decidido**: cada
+navegador es un dispositivo (cookie `maya_dispositivo`) y lo que muta —acciones y portada de
+Inicio— se guarda en la base con su id. Nadie ve lo de otro; al volver, sigue donde se quedó.
+
+Lo que cambia para el equipo:
+
+- **Una ventana de incógnito es una demo limpia**, sin borrarle nada a los visitantes.
+- **`pnpm reiniciar-estado` sigue siendo de todos** (acciones de todos los dispositivos y sus
+  portadas).
+- **Los scripts** (`humo`, `probar-guion`, `probar-inicio`) no mandan cookie: trabajan sobre el
+  estado `comun`, que **ningún navegador ve**.
+- Una lectura nueva del MCP tiene que pasar por `accionesDe`; si consulta `acciones_aplicadas`
+  directo, se salta el aislamiento.
+
+Detalle: `docs/como-funciona/estado-por-dispositivo.md`, ADR 0012, migración 0007 (aditiva, ya
+aplicada).
+

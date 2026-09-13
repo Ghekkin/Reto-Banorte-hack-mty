@@ -57,6 +57,11 @@ export type OpcionesDeGeneracion = {
   pregunta?: string;
   /** Por que corre (reloj, visita, accion, api, pregunta): queda en `banorte.corridas.motivo`. */
   motivo?: string;
+  /**
+   * De que ambito es la portada (ADR 0012): `comun` o un dispositivo. Viaja en la conexion al
+   * MCP, asi que la portada de un dispositivo se arma con SUS acciones. Sin el, la comun.
+   */
+  dispositivoId?: string;
   /** Donde se guarda la corrida. Default: PostgreSQL (`lib/corridas/escritor.ts`). */
   escritor?: Escritor;
   /**
@@ -190,6 +195,7 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
       usuarioId,
       motivo: opciones.motivo ?? (opciones.pregunta ? "pregunta" : undefined),
       peticion: opciones.pregunta ? { pregunta: opciones.pregunta } : null,
+      dispositivoId: opciones.dispositivoId,
     },
     opciones.escritor ?? escritorEnPostgres,
   );
@@ -236,7 +242,7 @@ async function generar(usuarioId: string, opciones: OpcionesDeGeneracion, grabad
     let herramientas = opciones.herramientas;
     let datos = opciones.datos;
     if (!herramientas || !datos) {
-      cliente = await conectarMcp();
+      cliente = await conectarMcp({ dispositivoId: opciones.dispositivoId });
       herramientas ??= await herramientasDelMcp(cliente, { usuarioId, corridaId: grabadora.id, alTerminar: (l) => usadas.push(l) });
       datos ??= await reunirDatos(cliente, usuarioId, usadas, grabadora);
     }
@@ -545,7 +551,7 @@ async function generarPortadaDeWidgets(usuarioId: string, opciones: OpcionesDeGe
     let llamar = opciones.llamar;
     let datos = opciones.datos;
     if (!llamar || !datos) {
-      cliente = await conectarMcp();
+      cliente = await conectarMcp({ dispositivoId: opciones.dispositivoId });
       const abierto = cliente;
       // Las consultas de los widgets tambien quedan en la corrida, como las del prefetch.
       llamar ??= async (tool, argumentos) => {

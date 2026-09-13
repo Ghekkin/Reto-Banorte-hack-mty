@@ -42,24 +42,31 @@ function portadaOk(): PortadaGenerada {
   };
 }
 
-/** Un almacen en memoria con la misma forma que el de Postgres. */
-function almacenEnMemoria(inicial?: PantallaDeInicio): Almacen & { filas: Map<string, PantallaDeInicio> } {
+/**
+ * Un almacen en memoria con la misma forma que el de Postgres. Las filas comunes van por
+ * `usuarioId` (como `pantallas_inicio`) y las de un dispositivo por `dispositivo|usuario`.
+ */
+const clave = (usuarioId: string, dispositivoId = "comun") => (dispositivoId === "comun" ? usuarioId : `${dispositivoId}|${usuarioId}`);
+
+function almacenEnMemoria(...iniciales: PantallaDeInicio[]): Almacen & { filas: Map<string, PantallaDeInicio> } {
   const filas = new Map<string, PantallaDeInicio>();
-  if (inicial) filas.set(inicial.usuarioId, inicial);
+  for (const inicial of iniciales) filas.set(clave(inicial.usuarioId, inicial.dispositivoId), inicial);
   return {
     filas,
-    leer: async (usuarioId) => filas.get(usuarioId),
+    leer: async (usuarioId, dispositivoId) => filas.get(clave(usuarioId, dispositivoId)),
     guardar: async (p: PantallaNueva) => {
-      const guardada = { ...p, generadaEn: new Date().toISOString(), procedencias: p.procedencias ?? {}, referencias: p.referencias ?? [], ajustadaEn: null };
-      filas.set(p.usuarioId, guardada);
+      const dispositivoId = p.dispositivoId ?? "comun";
+      const guardada = { ...p, dispositivoId, generadaEn: new Date().toISOString(), procedencias: p.procedencias ?? {}, referencias: p.referencias ?? [], ajustadaEn: null };
+      filas.set(clave(p.usuarioId, dispositivoId), guardada);
       return guardada;
     },
   };
 }
 
-function guardada(usuarioId: string, huella: string): PantallaDeInicio {
+function guardada(usuarioId: string, huella: string, dispositivoId = "comun"): PantallaDeInicio {
   return {
     usuarioId,
+    dispositivoId,
     huella,
     procedencias: {},
     referencias: [],
@@ -211,7 +218,7 @@ describe("estadoDelInicio", () => {
     const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
     const d = deps({ almacen, huella: async () => "v1|c18|a:1:7|m:812:2026-09-10" });
 
-    const estado = await estadoDelInicio("usr_beto", d);
+    const estado = await estadoDelInicio("usr_beto", { deps: d });
 
     expect(estado.activo).toBe(true);
     expect(estado.desactualizada).toBe(true);
@@ -220,13 +227,13 @@ describe("estadoDelInicio", () => {
 
   it("al dia cuando coincide", async () => {
     const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
-    const estado = await estadoDelInicio("usr_beto", deps({ almacen }));
+    const estado = await estadoDelInicio("usr_beto", { deps: deps({ almacen }) });
     expect(estado.desactualizada).toBe(false);
   });
 
   it("sin portada, desactualizada; inactivo, ni eso", async () => {
-    expect((await estadoDelInicio("usr_beto", deps({ almacen: almacenEnMemoria() }))).desactualizada).toBe(true);
-    const inactivo = await estadoDelInicio("usr_beto", deps({ almacen: almacenEnMemoria(), activo: () => false }));
+    expect((await estadoDelInicio("usr_beto", { deps: deps({ almacen: almacenEnMemoria() }) })).desactualizada).toBe(true);
+    const inactivo = await estadoDelInicio("usr_beto", { deps: deps({ almacen: almacenEnMemoria(), activo: () => false }) });
     expect(inactivo).toEqual({ activo: false, desactualizada: false });
   });
 });
@@ -247,9 +254,9 @@ describe("widgets vivos encendidos", () => {
   it("una portada sin procedencias se rearma UNA vez, aunque la huella sea la misma", async () => {
     const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
     const d = deps({ almacen, widgets: () => true });
-    expect((await estadoDelInicio("usr_beto", d)).desactualizada).toBe(true);
+    expect((await estadoDelInicio("usr_beto", { deps: d })).desactualizada).toBe(true);
     almacen.filas.set("usr_beto", { ...guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"), procedencias: { c: procedencia } });
-    expect((await estadoDelInicio("usr_beto", d)).desactualizada).toBe(false);
+    expect((await estadoDelInicio("usr_beto", { deps: d })).desactualizada).toBe(false);
   });
 
   it("con procedencias de OTRA portada (otro proceso la rearmo sin esa columna), tambien", async () => {
@@ -257,12 +264,100 @@ describe("widgets vivos encendidos", () => {
       ...guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"),
       procedencias: { c: { ...procedencia, componente: "PlanDePago" } },
     });
-    expect((await estadoDelInicio("usr_beto", deps({ almacen, widgets: () => true }))).desactualizada).toBe(true);
+    expect((await estadoDelInicio("usr_beto", { deps: deps({ almacen, widgets: () => true }) })).desactualizada).toBe(true);
   });
 
   it("con el flag apagado, una portada sin procedencias esta al dia: los dos modos no se pelean la base", async () => {
     const almacen = almacenEnMemoria(guardada("usr_beto", "v1|c18|a:0:0|m:812:2026-09-10"));
-    expect((await estadoDelInicio("usr_beto", deps({ almacen, widgets: () => false }))).desactualizada).toBe(false);
+    expect((await estadoDelInicio("usr_beto", { deps: deps({ almacen, widgets: () => false }) })).desactualizada).toBe(false);
+  });
+});
+
+/**
+ * El estado por dispositivo (ADR 0012): lo que un visitante hace en su Inicio no le cambia el
+ * Inicio a otro, y un visitante que no ha hecho nada no cuesta una portada.
+ */
+describe("por dispositivo", () => {
+  const JUEZ = "dis_juez000000001";
+  const OTRO = "dis_otro000000002";
+  const SIN_ACCIONES = "v1|c18|a:0:0|m:812:2026-09-10";
+  const CON_PLAN = "v1|c18|a:1:7|m:812:2026-09-10";
+  /** El juez aplico un plan; nadie mas hizo nada. */
+  const huellaConPlanDelJuez = async (_u: string, dispositivoId: string) => (dispositivoId === JUEZ ? CON_PLAN : SIN_ACCIONES);
+
+  it("un dispositivo que no ha hecho nada ve la portada comun y no gasta modelo", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", SIN_ACCIONES));
+    const d = deps({ almacen });
+
+    const estado = await estadoDelInicio("usr_beto", { dispositivoId: JUEZ, deps: d });
+    const resultado = await regenerarSiCambio("usr_beto", "visita", { dispositivoId: JUEZ, deps: d });
+
+    expect(estado.desactualizada).toBe(false);
+    expect(estado.pantalla?.dispositivoId).toBe("comun");
+    expect(resultado.hecho).toBe("sin-cambios");
+    expect(d.generar).not.toHaveBeenCalled();
+  });
+
+  it("cuando aplica algo, su portada se arma aparte, con SU estado, y la comun queda intacta para los demas", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", SIN_ACCIONES));
+    const d = deps({ almacen, huella: huellaConPlanDelJuez });
+
+    expect((await estadoDelInicio("usr_beto", { dispositivoId: JUEZ, deps: d })).desactualizada).toBe(true);
+    const resultado = await regenerarSiCambio("usr_beto", "accion", { dispositivoId: JUEZ, deps: d });
+
+    expect(resultado.hecho).toBe("generada");
+    expect(d.generar).toHaveBeenCalledWith("usr_beto", expect.objectContaining({ dispositivoId: JUEZ }));
+    expect(almacen.filas.get(clave("usr_beto", JUEZ))?.huella).toBe(CON_PLAN);
+    expect(almacen.filas.get("usr_beto")?.texto).toBe("vieja");
+
+    const delJuez = await estadoDelInicio("usr_beto", { dispositivoId: JUEZ, deps: d });
+    const delOtro = await estadoDelInicio("usr_beto", { dispositivoId: OTRO, deps: d });
+    expect(delJuez.pantalla?.texto).toBe("Hoy lo urgente es la tarjeta.");
+    expect(delJuez.desactualizada).toBe(false);
+    expect(delOtro.pantalla?.texto).toBe("vieja");
+    expect(delOtro.desactualizada).toBe(false);
+  });
+
+  it("con la comun vencida y sin cambios propios, se rearma LA COMUN, una vez para dos visitantes a la vez", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", "v0|vieja"));
+    const d = deps({ almacen });
+
+    const [a, b] = await Promise.all([
+      regenerarSiCambio("usr_beto", "visita", { dispositivoId: JUEZ, deps: d }),
+      regenerarSiCambio("usr_beto", "visita", { dispositivoId: OTRO, deps: d }),
+    ]);
+
+    expect(a.hecho).toBe("generada");
+    expect(b.hecho).toBe("generada");
+    expect(d.generar).toHaveBeenCalledTimes(1);
+    expect(d.generar).toHaveBeenCalledWith("usr_beto", expect.objectContaining({ dispositivoId: "comun" }));
+    expect(almacen.filas.get("usr_beto")?.huella).toBe(SIN_ACCIONES);
+    expect(almacen.filas.has(clave("usr_beto", JUEZ))).toBe(false);
+  });
+
+  it("una portada propia al dia (una pregunta) gana sobre la comun, solo en ese dispositivo", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", SIN_ACCIONES), {
+      ...guardada("usr_beto", SIN_ACCIONES, JUEZ),
+      texto: "lo que pregunto el juez",
+    });
+    const d = deps({ almacen });
+
+    expect((await estadoDelInicio("usr_beto", { dispositivoId: JUEZ, deps: d })).pantalla?.texto).toBe("lo que pregunto el juez");
+    expect((await estadoDelInicio("usr_beto", { dispositivoId: OTRO, deps: d })).pantalla?.texto).toBe("vieja");
+    expect((await estadoDelInicio("usr_beto", { deps: d })).pantalla?.texto).toBe("vieja");
+  });
+
+  it("tras reiniciar la demo, una portada propia vieja queda tapada por la comun y no se paga otra", async () => {
+    const almacen = almacenEnMemoria(guardada("usr_beto", SIN_ACCIONES), guardada("usr_beto", CON_PLAN, JUEZ));
+    const d = deps({ almacen });
+
+    const estado = await estadoDelInicio("usr_beto", { dispositivoId: JUEZ, deps: d });
+    const resultado = await regenerarSiCambio("usr_beto", "visita", { dispositivoId: JUEZ, deps: d });
+
+    expect(estado.pantalla?.dispositivoId).toBe("comun");
+    expect(estado.desactualizada).toBe(false);
+    expect(resultado.hecho).toBe("sin-cambios");
+    expect(d.generar).not.toHaveBeenCalled();
   });
 });
 

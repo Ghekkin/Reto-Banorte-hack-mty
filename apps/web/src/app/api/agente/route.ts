@@ -1,5 +1,6 @@
 import { after } from "next/server";
 import { correrTurno } from "@/lib/agente/agente";
+import { dispositivoActivo } from "@/lib/dispositivo-activo";
 import { config } from "@/lib/agente/config";
 import { capacidadesDelServidor, esquemaPeticion, type LineaStream, type PeticionAgente } from "@/lib/agente/tipos";
 import { regenerarSiCambio } from "@/lib/inicio/servicio";
@@ -50,6 +51,10 @@ export async function POST(request: Request): Promise<Response> {
     );
   }
 
+  // De que visitante es el turno (ADR 0012): de la cookie, no del cuerpo. Sin cookie (un
+  // script, curl) es el estado comun de siempre.
+  const dispositivoId = await dispositivoActivo();
+
   const codificador = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controlador) {
@@ -61,14 +66,15 @@ export async function POST(request: Request): Promise<Response> {
         // tools (ni, peor, una accion) para nadie.
         for await (const linea of correrTurno(peticion, {
           senal: request.signal,
+          dispositivoId,
           // Una accion aplicada cambia los datos de la portada: se rearma en segundo
           // plano, despues de cerrar el stream, sin que este turno espere al otro modelo.
           alMutar: (usuarioId) => {
             try {
-              after(() => regenerarSiCambio(usuarioId, "accion"));
+              after(() => regenerarSiCambio(usuarioId, "accion", { dispositivoId }));
             } catch {
               // Fuera del alcance de la peticion (no deberia pasar): se rearma igual.
-              void regenerarSiCambio(usuarioId, "accion");
+              void regenerarSiCambio(usuarioId, "accion", { dispositivoId });
             }
           },
         }))
