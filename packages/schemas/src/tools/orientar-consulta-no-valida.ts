@@ -26,12 +26,22 @@ export const EntradaOrientarConsultaNoValida = z.object({
 });
 export type EntradaOrientarConsultaNoValida = z.infer<typeof EntradaOrientarConsultaNoValida>;
 
+/**
+ * Por qué no procede la consulta. Son EXACTAMENTE los valores que acepta y sabe pintar el
+ * componente `AvisoConsultaNoValida` (`packages/catalogo/src/aviso-consulta-no-valida/schema.ts`):
+ * `pantalla.ts` copia este valor al componente cuando el modelo lo omite, y uno que el componente no
+ * acepte rechaza el aviso en cada intento. Lo amarra
+ * `apps/web/src/lib/agente/__tests__/contrato-aviso-consulta.spec.ts`.
+ *
+ * Lo que la regulación o la política de Banorte no permite (cripto, apuestas, pirámides) es
+ * `fuera_de_alcance`; hubo un `incompatible_con_politica` que ningún caso devolvía y el componente
+ * no aceptaba (issue #41).
+ */
 export const TipoInvalidez = z.enum([
   "producto_no_aplica",
   "deuda_prioritaria",
   "fuera_de_alcance",
   "sin_datos_suficientes",
-  "incompatible_con_politica",
 ]);
 export type TipoInvalidez = z.infer<typeof TipoInvalidez>;
 

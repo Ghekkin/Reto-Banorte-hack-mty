@@ -11,6 +11,10 @@ import { Ancho, Centavos, Heroe, PropsBase } from "../comunes";
 export const schemaAvisoConsultaNoValida = PropsBase.extend({
   ancho: Ancho.default("amplio"),
   heroe: Heroe,
+  // Los mismos valores que `TipoInvalidez` de `orientar_consulta_no_valida` (packages/schemas): el
+  // host copia el de la tool cuando el modelo lo omite. Un valor nuevo va en los dos enums, en
+  // `ICONOS_POR_TIPO`/`ETIQUETAS_POR_TIPO` del componente y en
+  // `apps/web/src/lib/agente/__tests__/contrato-aviso-consulta.spec.ts` (issue #41).
   tipoInvalidez: z
     .enum(["producto_no_aplica", "deuda_prioritaria", "fuera_de_alcance", "sin_datos_suficientes"])
     .describe("Tipo de invalidez o inviabilidad financiera de la consulta"),

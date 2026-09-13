@@ -6,6 +6,25 @@ Orienta al usuario con claridad pedagógica y datos cuantitativos cuando formula
 
 El agente lo elige tras invocar `orientar_consulta_no_valida` cuando detecta que la solicitud no es procedente o viable. Presenta el motivo cuantitativo y sugiere rutas alternativas beneficiosas para el cliente.
 
+## Tipos de invalidez
+
+Cada aviso dice por qué la consulta no procede, con una etiqueta y un ícono propios. Los valores
+son los mismos que devuelve `orientar_consulta_no_valida` en `tipoInvalidez`: si la tool devolviera
+uno que el componente no acepta, el aviso se rechazaría en cada intento (issue #41).
+
+| `tipoInvalidez` | Cuándo lo devuelve la tool | Etiqueta |
+|---|---|---|
+| `deuda_prioritaria` | Quiere invertir con la tarjeta en mora o arriba del 80 % del límite | Prioridad Financiera |
+| `producto_no_aplica` | Pide algo de un producto que no tiene (reestructurar sin tarjeta, cancelar sin suscripciones) | Situación al Corriente |
+| `fuera_de_alcance` | Algo que la regulación o la política de Banorte no permite (cripto, apuestas, pirámides, forex) | Fuera de Catálogo Regulado |
+| `sin_datos_suficientes` | Ningún caso anterior aplica | Información Adicional |
+
+Técnico: el enum vive dos veces, en `packages/schemas/src/tools/orientar-consulta-no-valida.ts`
+(`TipoInvalidez`) y en `schema.ts` de este componente, porque `@maya/catalogo` no depende de
+`@maya/schemas`. Los amarra `apps/web/src/lib/agente/__tests__/contrato-aviso-consulta.spec.ts`: todo
+valor de la tool valida en el componente y se pinta con su etiqueta. Un valor nuevo va en los dos
+enums, en `ICONOS_POR_TIPO`/`ETIQUETAS_POR_TIPO` de `componente.tsx` y en esa prueba.
+
 ## Acciones que emite
 
 - `simular_plan`: Dirige al usuario a simular una reestructura o plan de pagos si su prioridad es liquidar deuda.
