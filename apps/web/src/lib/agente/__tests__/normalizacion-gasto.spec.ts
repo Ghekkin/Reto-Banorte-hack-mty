@@ -117,7 +117,7 @@ describe("normalización de GastoPorCategoria y DetalleCategoria con bindings", 
     }
   });
 
-  it("sigue reparando GastoPorCategoria cuando categorias/totalCentavos vienen como literales ausentes (comportamiento previo intacto)", () => {
+  it("sigue reparando GastoPorCategoria cuando categorias/totalCentavos vienen ausentes, con el analisis de gasto del turno", () => {
     const componentes = [
       {
         id: "root",
@@ -125,11 +125,28 @@ describe("normalización de GastoPorCategoria y DetalleCategoria con bindings", 
         razon: base.razon,
       },
     ];
+    // La forma real de `analizar_gasto`: el mes viene ANIDADO en `gasto` (#23).
+    const datosBase = {
+      analizar_gasto: {
+        gasto: {
+          periodo: "2026-08",
+          periodoAnterior: "2026-07",
+          gastoCentavos: 3141050,
+          gastoAnteriorCentavos: 2640100,
+          variacionPct: 0.1897,
+          categoriaAtipicaId: "cat_restaurantes",
+          categorias: [
+            { categoriaId: "cat_vivienda", nombre: "Vivienda", montoCentavos: 2415500, variacionPct: 0 },
+            { categoriaId: "cat_restaurantes", nombre: "Restaurantes", montoCentavos: 725550, variacionPct: 0.61 },
+          ],
+        },
+      },
+    };
 
     const r = armarMensajes({
       ...base,
       componentesJson: JSON.stringify(componentes),
-    });
+    }, { datosBase });
 
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -137,9 +154,18 @@ describe("normalización de GastoPorCategoria y DetalleCategoria con bindings", 
         updateComponents: { components: Array<Record<string, unknown>> };
       };
       const comp = updateMsg.updateComponents.components.find((c) => c.component === "GastoPorCategoria");
-      expect(Array.isArray(comp!.categorias)).toBe(true);
-      expect(typeof comp!.totalCentavos).toBe("number");
-      expect(comp!.totalCentavos).toBeGreaterThan(0);
+      expect((comp!.categorias as Array<{ nombre: string }>).map((c) => c.nombre)).toEqual(["Vivienda", "Restaurantes"]);
+      expect(comp!.totalCentavos).toBe(3141050);
+      expect(comp!.periodo).toBe("2026-08");
     }
+  });
+
+  it("sin analisis de gasto en el turno no inventa categorias de ejemplo (#23)", () => {
+    const r = armarMensajes({
+      ...base,
+      componentesJson: JSON.stringify([{ id: "root", component: "GastoPorCategoria", razon: base.razon }]),
+    });
+    expect(r.ok).toBe(false);
+    expect(JSON.stringify(r)).not.toContain("620000");
   });
 });

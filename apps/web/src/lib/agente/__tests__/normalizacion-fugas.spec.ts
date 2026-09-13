@@ -6,6 +6,9 @@ describe("normalización de AlertaFugas y componentes del catálogo", { timeout:
     razon: "Detectamos gastos recurrentes para que puedas optimizar tu dinero.",
     texto: "Aquí tienes el desglose de tus suscripciones activas.",
   };
+  // El `pctDelIngreso` que el modelo omite sale de su ingreso real, nunca de un 5 % fijo (#23):
+  // sin `detectar_fugas` en el turno, el prefetch de `panorama_inicial` trae el ingreso.
+  const conIngreso = { datosBase: { panorama_inicial: { perfil: { ingresoMensualCentavos: 3200000 } } } };
 
   it("repara AlertaFugas cuando las fugas traen 'monto' en vez de 'montoCentavos' (reporte de usuario)", () => {
     const componentes = [
@@ -28,7 +31,7 @@ describe("normalización de AlertaFugas y componentes del catálogo", { timeout:
     const r = armarMensajes({
       ...base,
       componentesJson: JSON.stringify(componentes),
-    });
+    }, conIngreso);
 
     if (!r.ok) console.log("Test 1 errores:", r.errores);
     expect(r.ok).toBe(true);
@@ -61,7 +64,7 @@ describe("normalización de AlertaFugas y componentes del catálogo", { timeout:
     const r = armarMensajes({
       ...base,
       componentesJson: JSON.stringify(componentes),
-    });
+    }, conIngreso);
 
     expect(r.ok).toBe(true);
     if (r.ok) {
@@ -75,7 +78,21 @@ describe("normalización de AlertaFugas y componentes del catálogo", { timeout:
       expect(fugas[0]!.id).toBeDefined();
       expect(fugas[0]!.periodicidad).toBe("mensual");
       expect(fugas[0]!.sinUsoReciente).toBe(false);
+      expect(fugasComp!.pctDelIngreso).toBe(Number((14900 / 3200000).toFixed(4)));
     }
+  });
+
+  it("sin detectar_fugas ni el ingreso de la persona, no inventa el porcentaje ni fugas de ejemplo (#23)", () => {
+    const soloNombre = armarMensajes({ ...base, componentesJson: JSON.stringify([{ id: "fugas", component: "AlertaFugas" }]) });
+    expect(soloNombre.ok).toBe(false);
+    expect(JSON.stringify(soloNombre)).not.toContain("19900");
+
+    const sinIngreso = armarMensajes({
+      ...base,
+      componentesJson: JSON.stringify([{ id: "fugas", component: "AlertaFugas", fugas: [{ concepto: "Spotify", comercio: "Spotify", monto: 149 }] }]),
+    });
+    expect(sinIngreso.ok).toBe(false);
+    if (!sinIngreso.ok) expect(sinIngreso.errores.join(" ")).toContain("pctDelIngreso");
   });
 
   it("recupera las suscripciones desde datosBase cuando fugas viene incompleto o vacío", () => {
@@ -138,7 +155,7 @@ describe("normalización de AlertaFugas y componentes del catálogo", { timeout:
     const r = armarMensajes({
       ...base,
       componentesJson: JSON.stringify(componentes),
-    });
+    }, conIngreso);
 
     if (!r.ok) console.log("Test 4 errores:", r.errores);
     expect(r.ok).toBe(true);

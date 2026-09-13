@@ -14,6 +14,7 @@ import {
 import { crearValidador } from "@maya/a2ui/esquema";
 import { CATALOGO } from "@maya/catalogo";
 import catalogoPublicado from "@maya/catalogo/catalogo.json";
+import { fuentesDe } from "@/lib/widgets/fuentes";
 import { SUPERFICIE, config } from "./config";
 
 /**
@@ -58,12 +59,12 @@ export const entradaPintarPantalla = z.object({
     .describe(
       "Arreglo JSON de componentes A2UI (o string JSON del arreglo). Cada elemento DEBE ser un OBJETO con `id`, `component` y sus props (NO envies solo nombres de tarjetas en texto). " +
         'Un componente con `id: "root"` y `component: "Column"` es la raiz. Ejemplo: ' +
-        '[{"id":"root","component":"Column","children":["tarjeta"]},{"id":"tarjeta","component":"Confirmacion","titulo":"ÔÇª","detalle":"ÔÇª","razon":"ÔÇª"}]',
+        '[{"id":"root","component":"Column","children":["tarjeta"]},{"id":"tarjeta","component":"Confirmacion","titulo":"…","detalle":"…","razon":"…"}]',
     ),
   datosJson: z
     .union([z.string(), z.record(z.string(), z.unknown())])
     .optional()
-    .describe('Objeto JSON del data model, si usas enlaces {"path":"/ÔÇª"} en las props. Default: {}'),
+    .describe('Objeto JSON del data model, si usas enlaces {"path":"/…"} en las props. Default: {}'),
   sugerencias: z
     .array(z.string())
     .max(3)
@@ -88,8 +89,8 @@ function comoValor(campo: unknown): unknown {
 /**
  * Normaliza la lista de componentes:
  * - Si un elemento es string JSON, lo parsea a objeto.
- * - Si un elemento es el nombre de un componente del cat├ílogo (ej. "Conclusion"), sintetiza el objeto.
- * - Si falta la ra├¡z "root" (Column), la construye agrupando los componentes.
+ * - Si un elemento es el nombre de un componente del catálogo (ej. "Conclusion"), sintetiza el objeto.
+ * - Si falta la raíz "root" (Column), la construye agrupando los componentes.
  */
 export function normalizarListaDeComponentes(
   lista: unknown[],
@@ -123,13 +124,13 @@ export function normalizarListaDeComponentes(
       }
     }
 
-    // 2. Si el parseo devolvi├│ un array anidado, aplanar
+    // 2. Si el parseo devolvió un array anidado, aplanar
     if (Array.isArray(item)) {
       salida.push(...normalizarListaDeComponentes(item, entrada, datos));
       continue;
     }
 
-    // 3. Si sigue siendo string, ┬┐es el nombre de un componente del cat├ílogo o layout?
+    // 3. Si sigue siendo string, ¿es el nombre de un componente del catálogo o layout?
     if (typeof item === "string") {
       const nombre = item.trim().replace(/^["']|["']$/g, "");
       if (nombre === "Conclusion") {
@@ -141,68 +142,13 @@ export function normalizarListaDeComponentes(
           detalle: entrada.razon,
           sugerencias: entrada.sugerencias ?? [],
         };
-      } else if (nombre === "ProyeccionPagoCredito") {
-        const creditosData = esObjetoPlano(datos.consultar_creditos) && Array.isArray((datos.consultar_creditos as Record<string, unknown>).creditos)
-          ? ((datos.consultar_creditos as Record<string, unknown>).creditos as Record<string, unknown>[])
-          : [];
-        const cred = creditosData[0] ?? {};
+      } else if (nombre === "ProyeccionPagoCredito" || nombre === "ComparadorAntesDespues") {
+        // Solo el esqueleto: las cifras las pone el paso 4 con lo que devolvio el MCP (issue #23).
         item = {
-          id: "proyeccion_credito",
-          component: "ProyeccionPagoCredito",
+          id: nombre === "ProyeccionPagoCredito" ? "proyeccion_credito" : `comp_comparadorantesdespues_${i}`,
+          component: nombre,
           heroe: true,
           razon: entrada.razon,
-          creditoId: (cred.id as string) ?? (cred.creditoId as string) ?? "cred_personal",
-          alias: (cred.alias as string) ?? "Cr├®dito Personal",
-          saldoInsolutoCentavos: (cred.saldoInsolutoCentavos as number) ?? (cred.saldoActualCentavos as number) ?? (cred.saldoCentavos as number) ?? 4738600,
-          mensualidadCentavos: (cred.mensualidadCentavos as number) ?? (cred.pagoMensualCentavos as number) ?? 550000,
-          tasaAnualPct: (cred.tasaAnualPct as number) ?? (cred.tasaInteresAnual as number) ?? 0.279,
-          plazoRestanteMeses: (cred.plazoRestanteMeses as number) ?? (cred.pagosRestantes as number) ?? 12,
-          totalInteresesEstimadosCentavos: (cred.totalInteresesEstimadosCentavos as number) ?? 500000,
-          amortizacionResumen: (cred.amortizacionResumen as unknown[]) ?? (cred.amortizacion as unknown[]) ?? [
-            { numeroPago: 1, periodo: "Mes 1", capitalCentavos: 400000, interesCentavos: 150000, saldoFinalCentavos: 4338600 },
-            { numeroPago: 12, periodo: "Mes 12", capitalCentavos: 500000, interesCentavos: 50000, saldoFinalCentavos: 0 },
-          ],
-        };
-      } else if (nombre === "ComparadorAntesDespues") {
-        const simCred = (datos.simular_credito ?? {}) as Record<string, unknown>;
-        const reest = (datos.simular_reestructura ?? {}) as Record<string, unknown>;
-        const reestOpciones = Array.isArray(reest.opciones) ? (reest.opciones as Record<string, unknown>[]) : [];
-        const opc = reestOpciones.find((o) => o.esRecomendado) ?? reestOpciones[0] ?? {};
-
-        const saldo = Number(simCred.saldoInsolutoCentavos ?? 4738600);
-        const intAct = Number(simCred.interesesActualesCentavos ?? 761832);
-        const intNuev = Number(simCred.interesesNuevosCentavos ?? 510000);
-        const ahorroNeto = Math.max(
-          0,
-          Math.round(Number(simCred.ahorroInteresesCentavos ?? opc.ahorroVsMinimoCentavos ?? 251832))
-        );
-        const ahorroMeses = Math.max(
-          0,
-          Math.round(Number(simCred.mesesQueAdelanta ?? opc.mesesVsMinimo ?? 2))
-        );
-
-        item = {
-          id: `comp_comparadorantesdespues_${i}`,
-          component: "ComparadorAntesDespues",
-          heroe: true,
-          razon: entrada.razon,
-          titulo: "Comparativa de Pago de Cr├®dito",
-          ahorroNetoCentavos: ahorroNeto,
-          ahorroTiempoMeses: ahorroMeses,
-          escenarioActual: {
-            etiqueta: "Camino actual",
-            mensualidadCentavos: Number(simCred.mensualidadActualCentavos ?? 480000),
-            costoTotalCentavos: saldo + intAct,
-            tiempoMeses: Number(simCred.plazoRestanteActualMeses ?? 14),
-            descripcion: "Mantener el pago mensual pactado",
-          },
-          escenarioEstrategia: {
-            etiqueta: "Con estrategia Maya",
-            mensualidadCentavos: Number(simCred.mensualidadNuevaCentavos ?? 550000),
-            costoTotalCentavos: saldo + intNuev,
-            tiempoMeses: Number(simCred.plazoNuevoMeses ?? 12),
-            descripcion: "Pagando $5,500 al mes terminas 2 meses antes y ahorras intereses",
-          },
         };
       } else if (CATALOGO.some((c) => c.nombre === nombre) || (NOMBRES_DE_LAYOUT as readonly string[]).includes(nombre)) {
         item = {
@@ -269,6 +215,13 @@ export function normalizarListaDeComponentes(
         comp.razon = entrada.razon;
       }
 
+      // Un binding {"path": "..."} es la forma correcta y documentada de mandar una prop (los
+      // ejemplos few-shot enlazan casi todo a datosJson), y se resuelve despues, en revisarProps.
+      // Las reparaciones de abajo miran el valor CRUDO: un binding no es `undefined` ni arreglo,
+      // y `Number({path})` es NaN. Se guardan aqui y se reponen tal cual al final, para todos los
+      // componentes a la vez, en vez de cuidarlos bloque por bloque (#39).
+      const enlazadas = Object.entries(comp).filter(([, valor]) => esBinding(valor));
+
       // Si es Conclusion y le faltan props obligatorias:
       if (comp.component === "Conclusion") {
         if (!comp.titular) {
@@ -284,128 +237,76 @@ export function normalizarListaDeComponentes(
 
       // Si es ProyeccionPagoCredito y le faltan props obligatorias:
       if (comp.component === "ProyeccionPagoCredito") {
-        const creditosData = esObjetoPlano(datos.consultar_creditos) && Array.isArray((datos.consultar_creditos as Record<string, unknown>).creditos)
-          ? ((datos.consultar_creditos as Record<string, unknown>).creditos as Record<string, unknown>[])
-          : [];
-        const cred = creditosData[0] ?? {};
-        if (!comp.creditoId) comp.creditoId = (cred.id as string) ?? (cred.creditoId as string) ?? "cred_personal";
-        if (!comp.alias) comp.alias = (cred.alias as string) ?? "Cr├®dito Personal";
-        if (comp.saldoInsolutoCentavos === undefined) {
-          comp.saldoInsolutoCentavos = (cred.saldoInsolutoCentavos as number) ?? (cred.saldoActualCentavos as number) ?? (cred.saldoCentavos as number) ?? 4738600;
+        // Las cifras que falten salen del adaptador de widgets sobre `consultar_creditos`; sin la
+        // tool en el turno no hay de donde, y la validacion le pide al modelo consultarla (#23).
+        const mcp = propsDelMcp("ProyeccionPagoCredito", datos, typeof comp.creditoId === "string" ? { creditoId: comp.creditoId } : {});
+        for (const prop of ["creditoId", "alias", "saldoInsolutoCentavos", "mensualidadCentavos", "tasaAnualPct", "plazoRestanteMeses", "totalInteresesEstimadosCentavos"]) {
+          completar(comp, prop, mcp[prop]);
         }
-        if (comp.mensualidadCentavos === undefined) {
-          comp.mensualidadCentavos = (cred.mensualidadCentavos as number) ?? (cred.pagoMensualCentavos as number) ?? 550000;
-        }
-        if (comp.tasaAnualPct === undefined) {
-          comp.tasaAnualPct = (cred.tasaAnualPct as number) ?? (cred.tasaInteresAnual as number) ?? 0.279;
-        }
-        if (comp.plazoRestanteMeses === undefined) {
-          comp.plazoRestanteMeses = (cred.plazoRestanteMeses as number) ?? (cred.pagosRestantes as number) ?? 12;
-        }
-        if (comp.totalInteresesEstimadosCentavos === undefined) {
-          comp.totalInteresesEstimadosCentavos = (cred.totalInteresesEstimadosCentavos as number) ?? 500000;
-        }
-        if (!Array.isArray(comp.amortizacionResumen) || comp.amortizacionResumen.length < 2) {
-          comp.amortizacionResumen = (Array.isArray(cred.amortizacionResumen) && cred.amortizacionResumen.length >= 2)
-            ? cred.amortizacionResumen
-            : (Array.isArray(cred.amortizacion) && cred.amortizacion.length >= 2)
-            ? (cred.amortizacion as Record<string, unknown>[]).map((h, idx) => ({
-                numeroPago: (h.numeroPago as number) ?? idx + 1,
-                periodo: (h.periodo as string) ?? `Mes ${idx + 1}`,
-                capitalCentavos: (h.capitalCentavos as number) ?? 400000,
-                interesCentavos: (h.interesCentavos as number) ?? 150000,
-                saldoFinalCentavos: (h.saldoFinalCentavos as number) ?? 4338600,
-              }))
-            : [
-                { numeroPago: 1, periodo: "Mes 1", capitalCentavos: 400000, interesCentavos: 150000, saldoFinalCentavos: 4338600 },
-                { numeroPago: 12, periodo: "Mes 12", capitalCentavos: 500000, interesCentavos: 50000, saldoFinalCentavos: 0 },
-              ];
+        if ((!Array.isArray(comp.amortizacionResumen) || comp.amortizacionResumen.length < 2) && Array.isArray(mcp.amortizacionResumen)) {
+          comp.amortizacionResumen = mcp.amortizacionResumen;
         }
       }
 
       // Si es SimuladorMeta y le faltan props obligatorias:
       if (comp.component === "SimuladorMeta") {
-        if (comp.metaCentavos === undefined) comp.metaCentavos = (comp.objetivoCentavos as number) ?? 5578308;
-        if (comp.aportacionCentavos === undefined) comp.aportacionCentavos = (comp.aportacionMensualCentavos as number) ?? 200000;
-        if (comp.aportacionMinimaCentavos === undefined) comp.aportacionMinimaCentavos = 50000;
-        if (comp.aportacionMaximaCentavos === undefined) comp.aportacionMaximaCentavos = 662905;
+        completar(comp, "metaCentavos", comp.objetivoCentavos);
+        completar(comp, "aportacionCentavos", comp.aportacionMensualCentavos);
+        const mcp = propsDelMcp("SimuladorMeta", datos);
+        for (const prop of ["metaCentavos", "aportacionCentavos", "aportacionMinimaCentavos", "aportacionMaximaCentavos"]) {
+          completar(comp, prop, mcp[prop]);
+        }
+        // Sin `proyectar_ahorro`, el tope del slider sigue siendo un dato real: su capacidad de pago.
+        const panorama = esObjetoPlano(datos.panorama_inicial) ? datos.panorama_inicial : {};
+        completar(comp, "aportacionMaximaCentavos", panorama.capacidadPagoMensualCentavos);
       }
 
       // Si es ComparadorAntesDespues y le faltan props obligatorias:
       if (comp.component === "ComparadorAntesDespues") {
         if (!comp.titulo || typeof comp.titulo !== "string") {
-          comp.titulo = (typeof comp.title === "string" ? comp.title : undefined) || "Comparativa de Pago de Cr├®dito";
+          comp.titulo = (typeof comp.title === "string" ? comp.title : undefined) || "Comparativa de pago";
         }
 
-        const simCred = (datos.simular_credito ?? {}) as Record<string, unknown>;
-        const reest = (datos.simular_reestructura ?? {}) as Record<string, unknown>;
-        const reestOpciones = Array.isArray(reest.opciones) ? (reest.opciones as Record<string, unknown>[]) : [];
-        const opc = reestOpciones.find((o) => o.esRecomendado) ?? reestOpciones[0] ?? {};
+        // Los dos caminos salen de una simulacion real del turno, o no salen (#23).
+        const mcp = comparacionDelMcp(datos);
 
-        const saldo = Number(simCred.saldoInsolutoCentavos ?? 4738600);
-        const intAct = Number(simCred.interesesActualesCentavos ?? 761832);
-        const intNuev = Number(simCred.interesesNuevosCentavos ?? 510000);
-
-        if (comp.ahorroNetoCentavos === undefined) {
-          const ahorroRaw = comp.ahorroCentavos ?? comp.ahorro ?? comp.ahorroNeto ?? simCred.ahorroInteresesCentavos ?? opc.ahorroVsMinimoCentavos ?? 251832;
-          comp.ahorroNetoCentavos = Math.max(0, Math.round(Number(ahorroRaw) || 0));
-        } else {
+        completar(comp, "ahorroNetoCentavos", comp.ahorroCentavos ?? comp.ahorro ?? comp.ahorroNeto);
+        completar(comp, "ahorroNetoCentavos", mcp.ahorroNetoCentavos);
+        if (comp.ahorroNetoCentavos !== undefined && !esBinding(comp.ahorroNetoCentavos)) {
           comp.ahorroNetoCentavos = Math.max(0, Math.round(Number(comp.ahorroNetoCentavos) || 0));
         }
 
-        if (comp.ahorroTiempoMeses === undefined) {
-          const mesesRaw = comp.mesesAhorrados ?? comp.ahorroMeses ?? simCred.mesesQueAdelanta ?? opc.mesesVsMinimo ?? 2;
-          comp.ahorroTiempoMeses = Math.max(0, Math.round(Number(mesesRaw) || 0));
-        } else {
+        completar(comp, "ahorroTiempoMeses", comp.mesesAhorrados ?? comp.ahorroMeses);
+        completar(comp, "ahorroTiempoMeses", mcp.ahorroTiempoMeses);
+        if (comp.ahorroTiempoMeses !== undefined && !esBinding(comp.ahorroTiempoMeses)) {
           comp.ahorroTiempoMeses = Math.max(0, Math.round(Number(comp.ahorroTiempoMeses) || 0));
         }
 
         const actualRaw = (comp.escenarioActual ?? comp.actual ?? comp.antes ?? comp.escenario1 ?? {}) as Record<string, unknown>;
-        const actualMensualidad = actualRaw.mensualidadCentavos ?? actualRaw.mensualidad ?? simCred.mensualidadActualCentavos ?? 480000;
-        const actualCostoTotal = actualRaw.costoTotalCentavos ?? actualRaw.costoTotal ?? actualRaw.totalCentavos ?? (saldo + intAct);
-        const actualTiempoMeses = actualRaw.tiempoMeses ?? actualRaw.tiempo ?? actualRaw.plazoMeses ?? actualRaw.meses ?? simCred.plazoRestanteActualMeses ?? 14;
-
-        comp.escenarioActual = {
-          etiqueta: String(actualRaw.etiqueta || actualRaw.nombre || "Camino actual"),
-          mensualidadCentavos: Math.round(Number(actualMensualidad) || 0),
-          costoTotalCentavos: Math.round(Number(actualCostoTotal) || 0),
-          tiempoMeses: Math.max(1, Math.round(Number(actualTiempoMeses) || 0)),
-          descripcion: String(actualRaw.descripcion || actualRaw.detalle || "Mantener el pago mensual pactado"),
-        };
+        comp.escenarioActual = escenarioComparado(
+          actualRaw,
+          mcp.actual,
+          String(actualRaw.etiqueta || actualRaw.nombre || "Camino actual"),
+          String(actualRaw.descripcion || actualRaw.detalle || "Seguir pagando como hasta hoy"),
+        );
 
         const estrRaw = (comp.escenarioEstrategia ?? comp.estrategia ?? comp.despues ?? comp.escenario2 ?? comp.propuesta ?? {}) as Record<string, unknown>;
-        const estrMensualidad = estrRaw.mensualidadCentavos ?? estrRaw.mensualidad ?? simCred.mensualidadNuevaCentavos ?? 550000;
-        const estrCostoTotal = estrRaw.costoTotalCentavos ?? estrRaw.costoTotal ?? estrRaw.totalCentavos ?? (saldo + intNuev);
-        const estrTiempoMeses = estrRaw.tiempoMeses ?? estrRaw.tiempo ?? estrRaw.plazoMeses ?? estrRaw.meses ?? simCred.plazoNuevoMeses ?? 12;
-
-        comp.escenarioEstrategia = {
-          etiqueta: String(estrRaw.etiqueta || estrRaw.nombre || "Con estrategia Maya"),
-          mensualidadCentavos: Math.round(Number(estrMensualidad) || 0),
-          costoTotalCentavos: Math.round(Number(estrCostoTotal) || 0),
-          tiempoMeses: Math.max(1, Math.round(Number(estrTiempoMeses) || 0)),
-          descripcion: String(estrRaw.descripcion || estrRaw.detalle || "Pagando $5,500 al mes terminas 2 meses antes y ahorras intereses"),
-        };
+        comp.escenarioEstrategia = escenarioComparado(
+          estrRaw,
+          mcp.estrategia,
+          String(estrRaw.etiqueta || estrRaw.nombre || "Con estrategia Maya"),
+          String(estrRaw.descripcion || estrRaw.detalle || "Con la estrategia que te propone Maya"),
+        );
       }
 
       // Si es PlanDePago y le faltan props obligatorias:
       if (comp.component === "PlanDePago") {
-        if (!Array.isArray(comp.opciones) || comp.opciones.length === 0) {
-          const reest = (datos.simular_reestructura ?? {}) as Record<string, unknown>;
-          const reestOpciones = Array.isArray(reest.opciones) ? (reest.opciones as Record<string, unknown>[]) : [];
-          comp.opciones = reestOpciones.length > 0
-            ? reestOpciones.map((o) => ({
-                plazoMeses: Math.round(Number(o.plazoMeses ?? 12)),
-                mensualidadCentavos: Math.round(Number(o.mensualidadCentavos ?? 245000)),
-                cat: Number(o.cat ?? 0.2858),
-                ahorroCentavos: Math.round(Number(o.ahorroVsMinimoCentavos ?? o.ahorroCentavos ?? 520000)),
-                recomendado: Boolean(o.esRecomendado ?? o.recomendado),
-              }))
-            : [
-                { plazoMeses: 12, mensualidadCentavos: 245000, cat: 0.2858, ahorroCentavos: 520000, recomendado: true },
-                { plazoMeses: 18, mensualidadCentavos: 175000, cat: 0.2858, ahorroCentavos: 380000 },
-                { plazoMeses: 24, mensualidadCentavos: 140000, cat: 0.2858, ahorroCentavos: 250000 },
-              ];
+        const mcp = propsDelMcp("PlanDePago", datos);
+        if ((!Array.isArray(comp.opciones) || comp.opciones.length === 0) && Array.isArray(mcp.opciones)) {
+          comp.opciones = mcp.opciones;
         }
+        // Sin `tarjetaId`, el boton «Aplicar plan» no sabe que tarjeta diferir.
+        completar(comp, "tarjetaId", mcp.tarjetaId);
         if (!comp.etiquetaBoton || typeof comp.etiquetaBoton !== "string") {
           comp.etiquetaBoton = "Aplicar plan";
         }
@@ -413,21 +314,21 @@ export function normalizarListaDeComponentes(
 
       // Si es ResumenTarjeta y le faltan props obligatorias:
       if (comp.component === "ResumenTarjeta") {
-        const tarjetaData = (
-          datos.consultar_tarjeta ??
-          (esObjetoPlano(datos.panorama_inicial) ? (datos.panorama_inicial as Record<string, unknown>).tarjeta : undefined) ??
-          {}
-        ) as Record<string, unknown>;
+        // `consultar_tarjeta` trae la tarjeta ANIDADA (`{ tarjeta: {...} }`): el adaptador de
+        // widgets la lee bien. Sin esa tool, la del prefetch de `panorama_inicial` (#23, #28).
+        const mcp = propsDelMcp("ResumenTarjeta", datos);
+        const panorama = esObjetoPlano(datos.panorama_inicial) && esObjetoPlano(datos.panorama_inicial.tarjeta) ? datos.panorama_inicial.tarjeta : {};
         if (!comp.mascara || typeof comp.mascara !== "string") {
-          comp.mascara = (tarjetaData.mascara as string) ?? "ÔÇóÔÇóÔÇóÔÇó 4821";
+          const mascara = mcp.mascara ?? panorama.mascara;
+          if (typeof mascara === "string") comp.mascara = mascara;
         }
         if (comp.saldoCentavos === undefined) {
-          comp.saldoCentavos = Math.round(Number(tarjetaData.saldoCentavos ?? 2850000));
+          completar(comp, "saldoCentavos", mcp.saldoCentavos ?? panorama.saldoCentavos);
         } else {
           comp.saldoCentavos = Math.round(Number(comp.saldoCentavos) || 0);
         }
         if (comp.limiteCentavos === undefined) {
-          comp.limiteCentavos = Math.round(Number(tarjetaData.limiteCentavos ?? 3000000));
+          completar(comp, "limiteCentavos", mcp.limiteCentavos ?? panorama.limiteCentavos);
         } else {
           comp.limiteCentavos = Math.round(Number(comp.limiteCentavos) || 0);
         }
@@ -435,23 +336,14 @@ export function normalizarListaDeComponentes(
 
       // Si es GastoPorCategoria y le faltan props obligatorias:
       if (comp.component === "GastoPorCategoria") {
-        if (!comp.periodo || typeof comp.periodo !== "string") {
-          comp.periodo = "2026-08";
+        // `analizar_gasto` trae el mes ANIDADO en `gasto`: lo lee el adaptador de widgets (#23).
+        const mcp = propsDelMcp("GastoPorCategoria", datos);
+        if ((!comp.periodo || typeof comp.periodo !== "string") && typeof mcp.periodo === "string") {
+          comp.periodo = mcp.periodo;
         }
-        if (!esBinding(comp.categorias) && (!Array.isArray(comp.categorias) || comp.categorias.length === 0)) {
-          const gastoData = (datos.analizar_gasto ?? {}) as Record<string, unknown>;
-          const cats = Array.isArray(gastoData.categorias) ? (gastoData.categorias as Record<string, unknown>[]) : [];
-          comp.categorias = cats.length > 0
-            ? cats.map((c) => ({
-                categoriaId: String(c.categoriaId ?? c.id ?? "cat_general"),
-                nombre: String(c.nombre ?? "General"),
-                montoCentavos: Math.round(Number(c.montoCentavos ?? c.gastoCentavos ?? 500000)),
-                variacionPct: c.variacionPct !== undefined ? Number(c.variacionPct) : undefined,
-              }))
-            : [
-                { categoriaId: "cat_restaurantes", nombre: "Restaurantes", montoCentavos: 620000 },
-                { categoriaId: "cat_super", nombre: "Supermercado", montoCentavos: 830000 },
-              ];
+        if (!esBinding(comp.categorias) && (!Array.isArray(comp.categorias) || comp.categorias.length === 0) && Array.isArray(mcp.categorias)) {
+          comp.categorias = mcp.categorias;
+          completar(comp, "totalCentavos", mcp.totalCentavos);
         }
         // Un binding {"path": "..."} es la forma correcta y documentada de mandar el total
         // (los ejemplos few-shot lo enlazan a datosJson): se deja intacto y se resuelve
@@ -459,16 +351,18 @@ export function normalizarListaDeComponentes(
         if (esBinding(comp.totalCentavos)) {
           // no tocar: es un binding legitimo
         } else if (comp.totalCentavos === undefined) {
-          comp.totalCentavos = (comp.categorias as { montoCentavos: number }[]).reduce(
-            (sum, c) => sum + (Number(c.montoCentavos) || 0),
-            0,
-          );
+          if (Array.isArray(comp.categorias)) {
+            comp.totalCentavos = (comp.categorias as { montoCentavos: number }[]).reduce(
+              (sum, c) => sum + (Number(c.montoCentavos) || 0),
+              0,
+            );
+          }
         } else {
           comp.totalCentavos = Math.round(Number(comp.totalCentavos) || 0);
         }
       }
 
-            
+
       // Si es AlertaFugas y le faltan props obligatorias o fugas con monto sin centavos:
       if (comp.component === "AlertaFugas") {
         const fugasData = (
@@ -491,20 +385,17 @@ export function normalizarListaDeComponentes(
         }
 
         if (!Array.isArray(comp.fugas) || comp.fugas.length === 0) {
+          // Sin suscripciones de una tool no hay fugas que mostrar: nada de una de ejemplo (#23).
           if (suscripcionesBase.length > 0) {
             comp.fugas = suscripcionesBase.map((s) => ({
               id: String(s.id ?? "sus_1"),
               concepto: String(s.concepto ?? s.nombre ?? "Suscripción"),
               comercio: String(s.comercio ?? s.concepto ?? "Comercio"),
-              montoCentavos: Math.round(Number(s.montoCentavos ?? s.monto ?? 19900)),
+              montoCentavos: typeof (s.montoCentavos ?? s.monto) === "number" ? Math.round(Number(s.montoCentavos ?? s.monto)) : undefined,
               sinUsoReciente: Boolean(s.sinUsoReciente),
               periodicidad: String(s.periodicidad ?? "mensual"),
               mesesSinUso: s.mesesSinUso !== undefined ? Math.round(Number(s.mesesSinUso)) : undefined,
             }));
-          } else {
-            comp.fugas = [
-              { id: "sus_1", concepto: "Streaming", comercio: "Streaming Co", montoCentavos: 19900, sinUsoReciente: true, periodicidad: "mensual", mesesSinUso: 3 },
-            ];
           }
         } else {
           // Si ya trae fugas, reparar cada elemento para que montoCentavos, periodicidad, etc. nunca sean undefined
@@ -527,8 +418,8 @@ export function normalizarListaDeComponentes(
                   : Math.round(n);
               }
             }
-            if (montoCentavos === undefined || isNaN(montoCentavos)) {
-              montoCentavos = matchDb ? Math.round(Number(matchDb.montoCentavos) || 19900) : 19900;
+            if ((montoCentavos === undefined || isNaN(montoCentavos)) && typeof matchDb?.montoCentavos === "number") {
+              montoCentavos = Math.round(matchDb.montoCentavos);
             }
 
             const concepto = String(f.concepto ?? f.nombre ?? f.servicio ?? matchDb?.concepto ?? "Suscripción");
@@ -557,56 +448,67 @@ export function normalizarListaDeComponentes(
           });
         }
 
-        const fugasLista = comp.fugas as Array<{ montoCentavos: number }>;
+        const fugasLista = (Array.isArray(comp.fugas) ? comp.fugas : []) as Array<{ montoCentavos: number }>;
         const sumaMensual = fugasLista.reduce((acc, f) => acc + (f.montoCentavos || 0), 0);
 
+        // Sin fugas ni totales de una tool no hay nada que sumar: un total de $0 tambien seria inventado (#23).
         if (comp.totalMensualCentavos === undefined) {
-          const posibleTotal = fugasData.totalMensualCentavos ?? comp.totalMensual ?? comp.total_mensual_centavos ?? sumaMensual;
-          comp.totalMensualCentavos = Math.round(Number(posibleTotal) || sumaMensual);
+          const posibleTotal = fugasData.totalMensualCentavos ?? comp.totalMensual ?? comp.total_mensual_centavos ?? (fugasLista.length > 0 ? sumaMensual : undefined);
+          if (posibleTotal !== undefined) comp.totalMensualCentavos = Math.round(Number(posibleTotal) || sumaMensual);
         } else {
           comp.totalMensualCentavos = Math.round(Number(comp.totalMensualCentavos) || sumaMensual);
         }
 
         if (comp.totalAnualCentavos === undefined) {
-          const posibleAnual = fugasData.totalAnualCentavos ?? comp.totalAnual ?? comp.total_anual_centavos ?? (Number(comp.totalMensualCentavos) * 12);
-          comp.totalAnualCentavos = Math.round(Number(posibleAnual) || (Number(comp.totalMensualCentavos) * 12));
+          const posibleAnual = fugasData.totalAnualCentavos ?? comp.totalAnual ?? comp.total_anual_centavos ??
+            (comp.totalMensualCentavos !== undefined ? Number(comp.totalMensualCentavos) * 12 : undefined);
+          if (posibleAnual !== undefined) comp.totalAnualCentavos = Math.round(Number(posibleAnual) || (Number(comp.totalMensualCentavos) * 12));
         } else {
           comp.totalAnualCentavos = Math.round(Number(comp.totalAnualCentavos) || (Number(comp.totalMensualCentavos) * 12));
         }
 
+        // El porcentaje sale de la tool o de su ingreso real (`panorama_inicial`); nunca un 5 % fijo (#23).
         if (comp.pctDelIngreso === undefined) {
-          const posiblePct = fugasData.pctDelIngreso ?? comp.pct_del_ingreso ?? 0.05;
-          comp.pctDelIngreso = Number(Number(posiblePct).toFixed(4)) || 0.05;
-        } else {
-          comp.pctDelIngreso = Number(Number(comp.pctDelIngreso).toFixed(4)) || 0.05;
+          const perfil = esObjetoPlano(datos.panorama_inicial) && esObjetoPlano(datos.panorama_inicial.perfil) ? datos.panorama_inicial.perfil : {};
+          const ingreso = Number(perfil.ingresoMensualCentavos);
+          const posiblePct =
+            fugasData.pctDelIngreso ??
+            comp.pct_del_ingreso ??
+            (ingreso > 0 && Number(comp.totalMensualCentavos) > 0 ? Number(comp.totalMensualCentavos) / ingreso : undefined);
+          if (posiblePct !== undefined && Number.isFinite(Number(posiblePct))) comp.pctDelIngreso = Number(Number(posiblePct).toFixed(4));
+        } else if (!esBinding(comp.pctDelIngreso) && Number.isFinite(Number(comp.pctDelIngreso))) {
+          comp.pctDelIngreso = Number(Number(comp.pctDelIngreso).toFixed(4));
         }
       }
 
       // Si es DetalleCategoria y le faltan props obligatorias:
       if (comp.component === "DetalleCategoria") {
-        if (!comp.categoria || typeof comp.categoria !== "string") comp.categoria = "Gastos generales";
+        const mcp = propsDelMcp("DetalleCategoria", datos);
+        if ((!comp.categoria || typeof comp.categoria !== "string") && typeof mcp.categoria === "string") comp.categoria = mcp.categoria;
         if (typeof comp.movimientos === "string") {
           try { comp.movimientos = JSON.parse(comp.movimientos); } catch {}
         }
         if (!esBinding(comp.movimientos) && (!Array.isArray(comp.movimientos) || comp.movimientos.length === 0)) {
-          comp.movimientos = [
-            { fecha: "2026-08-15", comercio: "Cargo general", montoCentavos: 35000 },
-          ];
+          // Los movimientos salen de `consultar_movimientos` o no salen: nada de un cargo de ejemplo (#23).
+          if (Array.isArray(mcp.movimientos)) {
+            comp.movimientos = mcp.movimientos;
+            completar(comp, "totalCentavos", mcp.totalCentavos);
+          }
         } else if (Array.isArray(comp.movimientos)) {
           comp.movimientos = (comp.movimientos as Array<Record<string, unknown>>).map((m) => {
             if (typeof m === "string") {
               try { m = JSON.parse(m); } catch { m = { comercio: m }; }
             }
             if (!m || typeof m !== "object") m = {};
-            const montoVal = m.montoCentavos ?? m.monto ?? m.costo ?? m.importe ?? 35000;
+            const montoVal = m.montoCentavos ?? m.monto ?? m.costo ?? m.importe;
             const n = Number(montoVal);
-            const montoCentavos = !isNaN(n)
+            const montoCentavos = montoVal !== undefined && !isNaN(n)
               ? (n > 0 && n < 1000 ? Math.round(n * 100) : Math.round(n))
-              : 35000;
+              : undefined;
             return {
-              fecha: String(m.fecha ?? "2026-08-15"),
+              ...(m.fecha !== undefined ? { fecha: String(m.fecha) } : {}),
               comercio: String(m.comercio ?? m.descripcion ?? "Comercio"),
-              montoCentavos,
+              ...(montoCentavos !== undefined ? { montoCentavos } : {}),
               ...(m.descripcion ? { descripcion: String(m.descripcion) } : {}),
               ...(m.recurrente !== undefined ? { recurrente: Boolean(m.recurrente) } : {}),
             };
@@ -615,12 +517,12 @@ export function normalizarListaDeComponentes(
         if (esBinding(comp.totalCentavos)) {
           // no tocar: es un binding legitimo, ver comentario igual en GastoPorCategoria
         } else if (comp.totalCentavos === undefined) {
-          comp.totalCentavos = Array.isArray(comp.movimientos)
-            ? (comp.movimientos as Array<{ montoCentavos: number }>).reduce(
-                (acc, m) => acc + (m.montoCentavos || 0),
-                0,
-              )
-            : 0;
+          if (Array.isArray(comp.movimientos)) {
+            comp.totalCentavos = (comp.movimientos as Array<{ montoCentavos: number }>).reduce(
+              (acc, m) => acc + (m.montoCentavos || 0),
+              0,
+            );
+          }
         } else {
           comp.totalCentavos = Math.round(Number(comp.totalCentavos) || 0);
         }
@@ -628,108 +530,103 @@ export function normalizarListaDeComponentes(
 
       // Si es OrdenRebalanceo y le faltan props obligatorias:
       if (comp.component === "OrdenRebalanceo") {
-        if (!comp.portafolioId || typeof comp.portafolioId !== "string") comp.portafolioId = "port_balanceado";
-        if (!comp.nombrePortafolio || typeof comp.nombrePortafolio !== "string") comp.nombrePortafolio = "Estrategia Balanceada Banorte";
+        // Las ordenes salen de `simular_rebalanceo` o no salen: nada de un CETES contra NAFTRAC de ejemplo (#23).
+        const mcp = propsDelMcp("OrdenRebalanceo", datos);
+        if ((!comp.portafolioId || typeof comp.portafolioId !== "string") && typeof mcp.portafolioId === "string") comp.portafolioId = mcp.portafolioId;
+        if ((!comp.nombrePortafolio || typeof comp.nombrePortafolio !== "string") && typeof mcp.nombrePortafolio === "string") comp.nombrePortafolio = mcp.nombrePortafolio;
         if (typeof comp.movimientos === "string") {
           try { comp.movimientos = JSON.parse(comp.movimientos); } catch {}
         }
         if (!Array.isArray(comp.movimientos) || comp.movimientos.length === 0) {
-          comp.movimientos = [
-            { tipo: "compra", claseActivo: "Renta fija", instrumentoClave: "CETES28", montoCentavos: 500000, pesoAnteriorPct: 0.4, pesoNuevoPct: 0.5 },
-            { tipo: "venta", claseActivo: "Renta variable", instrumentoClave: "NAFTRAC", montoCentavos: 500000, pesoAnteriorPct: 0.6, pesoNuevoPct: 0.5 },
-          ];
+          if (Array.isArray(mcp.movimientos)) comp.movimientos = mcp.movimientos;
         } else {
           comp.movimientos = (comp.movimientos as Array<Record<string, unknown>>).map((m) => {
             if (!m || typeof m !== "object") m = {};
-            const montoVal = m.montoCentavos ?? m.monto ?? 500000;
+            const montoVal = m.montoCentavos ?? m.monto;
             return {
               tipo: m.tipo === "venta" ? "venta" : "compra",
-              claseActivo: String(m.claseActivo ?? "Renta fija"),
-              instrumentoClave: String(m.instrumentoClave ?? "CETES28"),
-              montoCentavos: Math.round(Number(montoVal) || 500000),
-              pesoAnteriorPct: Number(m.pesoAnteriorPct ?? 0.4),
-              pesoNuevoPct: Number(m.pesoNuevoPct ?? 0.5),
+              ...(m.claseActivo !== undefined ? { claseActivo: String(m.claseActivo) } : {}),
+              ...(m.instrumentoClave !== undefined ? { instrumentoClave: String(m.instrumentoClave) } : {}),
+              ...(Number.isFinite(Number(montoVal)) && montoVal !== undefined ? { montoCentavos: Math.round(Number(montoVal)) } : {}),
+              ...(m.pesoAnteriorPct !== undefined ? { pesoAnteriorPct: Number(m.pesoAnteriorPct) } : {}),
+              ...(m.pesoNuevoPct !== undefined ? { pesoNuevoPct: Number(m.pesoNuevoPct) } : {}),
             };
           });
         }
-        if (comp.valorTotalCentavos === undefined) comp.valorTotalCentavos = 5000000;
-        else comp.valorTotalCentavos = Math.round(Number(comp.valorTotalCentavos) || 5000000);
-        if (comp.comisionTotalCentavos === undefined) comp.comisionTotalCentavos = 0;
+        if (comp.valorTotalCentavos === undefined) completar(comp, "valorTotalCentavos", mcp.valorTotalCentavos);
+        else if (Number.isFinite(Number(comp.valorTotalCentavos))) comp.valorTotalCentavos = Math.round(Number(comp.valorTotalCentavos));
+        if (comp.comisionTotalCentavos === undefined) completar(comp, "comisionTotalCentavos", mcp.comisionTotalCentavos);
         else comp.comisionTotalCentavos = Math.round(Number(comp.comisionTotalCentavos) || 0);
       }
 
       // Si es RiesgoRendimiento y le faltan props obligatorias:
       if (comp.component === "RiesgoRendimiento") {
-        if (!comp.perfilInversionista || typeof comp.perfilInversionista !== "string") comp.perfilInversionista = "Moderado";
-        if (comp.toleranciaRiesgoMax === undefined) comp.toleranciaRiesgoMax = 3;
-        else comp.toleranciaRiesgoMax = Math.max(1, Math.min(5, Math.round(Number(comp.toleranciaRiesgoMax) || 3)));
-        if (comp.montoReferenciaCentavos === undefined) comp.montoReferenciaCentavos = 1000000;
-        else comp.montoReferenciaCentavos = Math.round(Number(comp.montoReferenciaCentavos) || 1000000);
+        // Ninguna tool arma esta tarjeta todavia: el perfil sale de `consultar_inversiones` y el
+        // resto lo tiene que traer el modelo. Nada de un perfil «Moderado» ni CETES de ejemplo (#23).
+        const salidaInversiones = datos.consultar_inversiones ?? salidaAnidada("consultar_inversiones", datos);
+        const inversiones = esObjetoPlano(salidaInversiones) && esObjetoPlano(salidaInversiones.perfil) ? salidaInversiones.perfil : {};
+        if ((!comp.perfilInversionista || typeof comp.perfilInversionista !== "string") && typeof inversiones.tipo === "string") {
+          comp.perfilInversionista = inversiones.tipo;
+        }
+        if (comp.toleranciaRiesgoMax !== undefined && Number.isFinite(Number(comp.toleranciaRiesgoMax))) {
+          comp.toleranciaRiesgoMax = Math.max(1, Math.min(5, Math.round(Number(comp.toleranciaRiesgoMax))));
+        }
+        if (comp.montoReferenciaCentavos !== undefined && Number.isFinite(Number(comp.montoReferenciaCentavos))) {
+          comp.montoReferenciaCentavos = Math.round(Number(comp.montoReferenciaCentavos));
+        }
         if (typeof comp.instrumentos === "string") {
           try { comp.instrumentos = JSON.parse(comp.instrumentos); } catch {}
-        }
-        if (!Array.isArray(comp.instrumentos) || comp.instrumentos.length < 2) {
-          comp.instrumentos = [
-            { id: "inst_cetes_28", clave: "CETES28", nombre: "CETES 28 días", tipo: "Deuda gubernamental", riesgo: 1, rendimientoAnualEsperado: 0.11, recomendado: true },
-            { id: "inst_pagare_91", clave: "PAGARE91", nombre: "Pagaré Banorte 91 días", tipo: "Pagaré bancario", riesgo: 2, rendimientoAnualEsperado: 0.105 },
-          ];
         }
       }
 
       // Si es AvisoConsultaNoValida y le faltan props obligatorias:
       if (comp.component === "AvisoConsultaNoValida") {
-        if (!comp.titulo || typeof comp.titulo !== "string") comp.titulo = "Consulta no disponible";
-        if (!comp.motivo || typeof comp.motivo !== "string") comp.motivo = "Por políticas de seguridad y regulación financiera, no podemos procesar esa solicitud.";
-        if (!Array.isArray(comp.sugerencias)) comp.sugerencias = ["Ver mis finanzas", "Consultar mis gastos", "Ver alternativas de inversión"];
+        // Solo props que el schema declara, y solo con lo que devolvio `orientar_consulta_no_valida`.
+        // Antes se le agregaban `motivo` y `sugerencias`, que el schema no tiene: el validador
+        // oficial rechazaba el aviso en cada intento y el turno moria sin pantalla (#40).
+        const orientacion = esObjetoPlano(datos.orientar_consulta_no_valida) ? datos.orientar_consulta_no_valida : {};
+        for (const prop of ["tipoInvalidez", "titulo", "explicacion", "datoClave", "alternativasSugeridas", "accionSugerida"]) {
+          completar(comp, prop, orientacion[prop]);
+        }
       }
 
 // Si es TermometroSaludFinanciera y le faltan props obligatorias:
       if (comp.component === "TermometroSaludFinanciera") {
-        const salud = (
-          (esObjetoPlano(datos.panorama_inicial) ? (datos.panorama_inicial as Record<string, unknown>).salud : undefined) ??
-          (datos.diagnostico_salud_financiera ?? {})
-        ) as Record<string, unknown>;
-        if (comp.puntajeSalud === undefined) comp.puntajeSalud = Math.round(Number(salud.puntaje ?? salud.score ?? 68));
+        // El diagnostico completo sale del adaptador de widgets; `panorama_inicial.salud` solo trae
+        // puntaje, calificacion y tendencia. Lo que ninguno trae se queda sin llenar (#23).
+        const mcp = propsDelMcp("TermometroSaludFinanciera", datos);
+        const panorama = esObjetoPlano(datos.panorama_inicial) && esObjetoPlano(datos.panorama_inicial.salud) ? datos.panorama_inicial.salud : {};
+        if (comp.puntajeSalud === undefined) completar(comp, "puntajeSalud", mcp.puntajeSalud ?? panorama.puntajeSalud);
         else comp.puntajeSalud = Math.round(Number(comp.puntajeSalud) || 0);
-        if (!comp.calificacion) comp.calificacion = (salud.calificacion as string) ?? "estable";
-        if (!comp.tendencia) comp.tendencia = (salud.tendencia as string) ?? "mejora";
-        if (comp.cambioVsMesAnterior === undefined) comp.cambioVsMesAnterior = Math.round(Number(salud.cambioVsMesAnterior ?? 3));
-        if (comp.ratioDeudaIngresoPct === undefined) comp.ratioDeudaIngresoPct = Number(salud.ratioDeudaIngresoPct ?? 0.28);
-        if (comp.tasaAhorroPct === undefined) comp.tasaAhorroPct = Number(salud.tasaAhorroPct ?? 0.15);
-        if (comp.mesesFondoEmergencia === undefined) comp.mesesFondoEmergencia = Number(salud.mesesFondoEmergencia ?? 1.5);
-        if (comp.montoAhorradoCentavos === undefined) comp.montoAhorradoCentavos = Math.round(Number(salud.montoAhorradoCentavos ?? 3500000));
+        if (!comp.calificacion) completar(comp, "calificacion", mcp.calificacion ?? panorama.calificacion);
+        if (!comp.tendencia) completar(comp, "tendencia", mcp.tendencia ?? panorama.tendencia);
+        for (const prop of ["cambioVsMesAnterior", "ratioDeudaIngresoPct", "tasaAhorroPct", "mesesFondoEmergencia"]) {
+          completar(comp, prop, mcp[prop]);
+        }
+        if (comp.montoAhorradoCentavos === undefined) completar(comp, "montoAhorradoCentavos", mcp.montoAhorradoCentavos);
         else comp.montoAhorradoCentavos = Math.round(Number(comp.montoAhorradoCentavos) || 0);
       }
 
       // Si es DistribucionPortafolio y le faltan props obligatorias:
       if (comp.component === "DistribucionPortafolio") {
-        if (!Array.isArray(comp.clases) || comp.clases.length === 0) {
-          const invData = (datos.consultar_inversiones ?? {}) as Record<string, unknown>;
-          const clasesData = Array.isArray(invData.clases) ? (invData.clases as Record<string, unknown>[]) : [];
-          comp.clases = clasesData.length > 0
-            ? clasesData.map((c, idx) => ({
-                claseId: String(c.claseId ?? c.id ?? `clase_${idx}`),
-                nombre: String(c.nombre ?? "Renta fija"),
-                tipo: String(c.tipo ?? "Deuda"),
-                montoCentavos: Math.round(Number(c.montoCentavos ?? 1000000)),
-                pesoPct: Number(c.pesoPct ?? 0.5),
-                pesoObjetivoPct: c.pesoObjetivoPct !== undefined ? Number(c.pesoObjetivoPct) : undefined,
-              }))
-            : [
-                { claseId: "cetes", nombre: "CETES / Deuda gubernamental", tipo: "Renta fija", montoCentavos: 1500000, pesoPct: 0.6, pesoObjetivoPct: 0.5 },
-                { claseId: "rv_global", nombre: "Renta variable global", tipo: "Renta variable", montoCentavos: 1000000, pesoPct: 0.4, pesoObjetivoPct: 0.5 },
-              ];
+        // `consultar_inversiones` trae posiciones, no `clases`: las acomoda el adaptador de widgets (#23).
+        const mcp = propsDelMcp("DistribucionPortafolio", datos);
+        if ((!Array.isArray(comp.clases) || comp.clases.length === 0) && Array.isArray(mcp.clases)) {
+          comp.clases = mcp.clases;
+          completar(comp, "valorTotalCentavos", mcp.valorTotalCentavos);
         }
         if (comp.valorTotalCentavos === undefined) {
-          comp.valorTotalCentavos = (comp.clases as { montoCentavos: number }[]).reduce(
-            (sum, c) => sum + (Number(c.montoCentavos) || 0),
-            0,
-          );
+          if (Array.isArray(comp.clases)) {
+            comp.valorTotalCentavos = (comp.clases as { montoCentavos: number }[]).reduce(
+              (sum, c) => sum + (Number(c.montoCentavos) || 0),
+              0,
+            );
+          }
         } else {
           comp.valorTotalCentavos = Math.round(Number(comp.valorTotalCentavos) || 0);
         }
         if (comp.rendimientoTotalPct === undefined) {
-          comp.rendimientoTotalPct = 0.087;
+          completar(comp, "rendimientoTotalPct", mcp.rendimientoTotalPct);
         } else {
           comp.rendimientoTotalPct = Number(comp.rendimientoTotalPct);
         }
@@ -740,87 +637,60 @@ export function normalizarListaDeComponentes(
 
       // Si es RendimientoHistorico y le faltan props obligatorias:
       if (comp.component === "RendimientoHistorico") {
-        if (!comp.instrumentoId || typeof comp.instrumentoId !== "string") comp.instrumentoId = "inst_cetes_28";
-        if (!comp.nombre || typeof comp.nombre !== "string") comp.nombre = "CETES 28 días";
-        if (!comp.clave || typeof comp.clave !== "string") comp.clave = "CETES28";
-        if (!comp.tipo || typeof comp.tipo !== "string") comp.tipo = "Deuda gubernamental";
-        if (!comp.periodo || typeof comp.periodo !== "string") comp.periodo = "Últimas 12 semanas";
-        if (comp.precioInicialCentavos === undefined) comp.precioInicialCentavos = 1000;
+        // El historico sale de `consultar_historico_inversion` o no sale: nada de un CETES de ejemplo (#23).
+        const mcp = propsDelMcp("RendimientoHistorico", datos);
+        for (const prop of ["instrumentoId", "nombre", "clave", "tipo", "periodo"]) {
+          if ((!comp[prop] || typeof comp[prop] !== "string") && typeof mcp[prop] === "string") comp[prop] = mcp[prop];
+        }
+        if (comp.precioInicialCentavos === undefined) completar(comp, "precioInicialCentavos", mcp.precioInicialCentavos);
         else comp.precioInicialCentavos = Math.round(Number(comp.precioInicialCentavos) || 0);
-        if (comp.precioFinalCentavos === undefined) comp.precioFinalCentavos = 1114;
+        if (comp.precioFinalCentavos === undefined) completar(comp, "precioFinalCentavos", mcp.precioFinalCentavos);
         else comp.precioFinalCentavos = Math.round(Number(comp.precioFinalCentavos) || 0);
-        if (comp.rendimientoPeriodoPct === undefined) comp.rendimientoPeriodoPct = 0.114;
+        if (comp.rendimientoPeriodoPct === undefined) completar(comp, "rendimientoPeriodoPct", mcp.rendimientoPeriodoPct);
         else comp.rendimientoPeriodoPct = Number(comp.rendimientoPeriodoPct);
-        if (!Array.isArray(comp.puntos) || comp.puntos.length < 2) {
-          comp.puntos = [
-            { fecha: "2026-06-01", precioCentavos: 1000, variacionPct: 0 },
-            { fecha: "2026-07-01", precioCentavos: 1055, variacionPct: 0.055 },
-            { fecha: "2026-08-01", precioCentavos: 1114, variacionPct: 0.059 },
-          ];
+        if ((!Array.isArray(comp.puntos) || comp.puntos.length < 2) && Array.isArray(mcp.puntos)) {
+          comp.puntos = mcp.puntos;
         }
       }
 
       // Si es ProyeccionCrecimiento y le faltan props obligatorias:
       if (comp.component === "ProyeccionCrecimiento") {
-        if (comp.capitalInicialCentavos === undefined) comp.capitalInicialCentavos = 5000000;
-        else comp.capitalInicialCentavos = Math.round(Number(comp.capitalInicialCentavos) || 0);
-        if (comp.aportacionMensualCentavos === undefined) comp.aportacionMensualCentavos = 200000;
-        else comp.aportacionMensualCentavos = Math.round(Number(comp.aportacionMensualCentavos) || 0);
-        if (comp.plazoMeses === undefined) comp.plazoMeses = 36;
-        else comp.plazoMeses = Math.round(Number(comp.plazoMeses) || 0);
-        if (comp.tasaAnualEstimadaPct === undefined) comp.tasaAnualEstimadaPct = 0.105;
-        else comp.tasaAnualEstimadaPct = Number(comp.tasaAnualEstimadaPct);
+        // Ninguna tool la llena todavia (#19): lo que no traiga el modelo se queda sin llenar. Solo
+        // se derivan los totales cuando sus sumandos vienen (#23).
+        if (comp.capitalInicialCentavos !== undefined) comp.capitalInicialCentavos = Math.round(Number(comp.capitalInicialCentavos) || 0);
+        if (comp.aportacionMensualCentavos !== undefined) comp.aportacionMensualCentavos = Math.round(Number(comp.aportacionMensualCentavos) || 0);
+        if (comp.plazoMeses !== undefined) comp.plazoMeses = Math.round(Number(comp.plazoMeses) || 0);
+        if (comp.tasaAnualEstimadaPct !== undefined) comp.tasaAnualEstimadaPct = Number(comp.tasaAnualEstimadaPct);
+        const sumandos = [comp.capitalInicialCentavos, comp.aportacionMensualCentavos, comp.plazoMeses];
         if (comp.totalAportadoCentavos === undefined) {
-          comp.totalAportadoCentavos = Number(comp.capitalInicialCentavos) + Number(comp.aportacionMensualCentavos) * Number(comp.plazoMeses);
+          if (sumandos.every((v) => typeof v === "number" && Number.isFinite(v))) {
+            comp.totalAportadoCentavos = Number(comp.capitalInicialCentavos) + Number(comp.aportacionMensualCentavos) * Number(comp.plazoMeses);
+          }
         } else {
           comp.totalAportadoCentavos = Math.round(Number(comp.totalAportadoCentavos) || 0);
         }
-        if (comp.rendimientoEstimadoCentavos === undefined) comp.rendimientoEstimadoCentavos = 1850000;
-        else comp.rendimientoEstimadoCentavos = Math.round(Number(comp.rendimientoEstimadoCentavos) || 0);
+        if (comp.rendimientoEstimadoCentavos !== undefined) comp.rendimientoEstimadoCentavos = Math.round(Number(comp.rendimientoEstimadoCentavos) || 0);
         if (comp.valorFinalEstimadoCentavos === undefined) {
-          comp.valorFinalEstimadoCentavos = Number(comp.totalAportadoCentavos) + Number(comp.rendimientoEstimadoCentavos);
+          if (typeof comp.totalAportadoCentavos === "number" && typeof comp.rendimientoEstimadoCentavos === "number") {
+            comp.valorFinalEstimadoCentavos = comp.totalAportadoCentavos + comp.rendimientoEstimadoCentavos;
+          }
         } else {
           comp.valorFinalEstimadoCentavos = Math.round(Number(comp.valorFinalEstimadoCentavos) || 0);
-        }
-        if (!Array.isArray(comp.hitos) || comp.hitos.length === 0) {
-          comp.hitos = [
-            { mes: 12, etiqueta: "Año 1", aportadoCentavos: 7400000, saldoEstimadoCentavos: 7920000 },
-            { mes: 24, etiqueta: "Año 2", aportadoCentavos: 9800000, saldoEstimadoCentavos: 11150000 },
-            { mes: 36, etiqueta: "Año 3", aportadoCentavos: 12200000, saldoEstimadoCentavos: 14050000 },
-          ];
         }
       }
 
       // Si es EscenariosInversion y le faltan props obligatorias:
       if (comp.component === "EscenariosInversion") {
-        if (comp.montoInvertidoCentavos === undefined) comp.montoInvertidoCentavos = 5000000;
-        else comp.montoInvertidoCentavos = Math.round(Number(comp.montoInvertidoCentavos) || 0);
-        if (comp.horizonteMeses === undefined) comp.horizonteMeses = 12;
-        else comp.horizonteMeses = Math.round(Number(comp.horizonteMeses) || 0);
-        if (!comp.escenarioPesimista || typeof comp.escenarioPesimista !== "object") {
-          comp.escenarioPesimista = {
-            tasaAnualPct: 0.04,
-            valorFinalCentavos: 5200000,
-            rendimientoCentavos: 200000,
-            descripcion: "Escenario conservador con tasas a la baja",
-          };
-        }
-        if (!comp.escenarioEsperado || typeof comp.escenarioEsperado !== "object") {
-          comp.escenarioEsperado = {
-            tasaAnualPct: 0.10,
-            valorFinalCentavos: 5500000,
-            rendimientoCentavos: 500000,
-            descripcion: "Escenario base manteniendo el portafolio sugerido",
-          };
-        }
-        if (!comp.escenarioOptimista || typeof comp.escenarioOptimista !== "object") {
-          comp.escenarioOptimista = {
-            tasaAnualPct: 0.14,
-            valorFinalCentavos: 5700000,
-            rendimientoCentavos: 700000,
-            descripcion: "Escenario optimista con mercado favorable",
-          };
-        }
+        // Ninguna tool la llena todavia: sin escenarios del modelo no hay escenarios de ejemplo (#23).
+        if (comp.montoInvertidoCentavos !== undefined) comp.montoInvertidoCentavos = Math.round(Number(comp.montoInvertidoCentavos) || 0);
+        if (comp.horizonteMeses !== undefined) comp.horizonteMeses = Math.round(Number(comp.horizonteMeses) || 0);
+      }
+
+      for (const [prop, valor] of enlazadas) comp[prop] = valor;
+      // Y una cuenta hecha sobre un binding o un texto da NaN: se quita en vez de pintarla. La
+      // validacion la reporta como faltante y el modelo la corrige (#39).
+      for (const [prop, valor] of Object.entries(comp)) {
+        if (typeof valor === "number" && Number.isNaN(valor)) delete comp[prop];
       }
 
       if (typeof comp.component === "string") {
@@ -971,7 +841,7 @@ export function tarjetasDePantalla(componentes: Componente[]): Componente[] {
  * de sus tarjetas contesta la pregunta), pero si insiste, mas vale una pantalla de tres
  * tarjetas que ninguna. Un turno **nunca** muere por el tope.
  *
- * Se queda con la `Conclusion` ÔÇöes el veredictoÔÇö y con las demas en el orden en que se lee
+ * Se queda con la `Conclusion` —es el veredicto— y con las demas en el orden en que se lee
  * la pantalla. La raiz se rearma como `Column` con solo las que quedaron: reusar sus
  * `children` viejos dejaria ids que ya no existen, y un hijo fantasma tumba el arbol.
  */
@@ -1040,7 +910,7 @@ export type OpcionesDeArmado = {
    */
   podarTarjetas?: boolean;
   /**
-   * Datos precalculados o de tools MCP por si el modelo omiti├│ datosJson.
+   * Datos precalculados o de tools MCP por si el modelo omitió datosJson.
    */
   datosBase?: Record<string, unknown>;
 };
@@ -1138,7 +1008,7 @@ export function armarMensajes(entrada: EntradaPintarPantalla, opciones: Opciones
  * Un componente con boton y sin `action` es un boton apagado. El catalogo declara que
  * accion dispara cada componente (`acciones`), y todos los componentes ponen en el
  * `context` lo que su accion necesita al tocarse (el plazo elegido, la suscripcion de
- * la filaÔÇª), asi que la accion por default vale con `context: {}`. Si el modelo la
+ * la fila…), asi que la accion por default vale con `context: {}`. Si el modelo la
  * declaro, se respeta tal cual.
  *
  * Paso el 2026-09-12 con la portada de Inicio: el modelo chico pintaba `PlanDePago`
@@ -1278,6 +1148,138 @@ function fragmentoDelError(texto: string, detalle: string): string {
 
 function esObjetoPlano(valor: unknown): valor is Record<string, unknown> {
   return typeof valor === "object" && valor !== null && !Array.isArray(valor);
+}
+
+/**
+ * Las props de DATOS de un componente, sacadas de lo que devolvio una tool del MCP en el turno
+ * con el mismo adaptador que arma los widgets de Inicio (`widgets/fuentes.ts`, ADR 0011).
+ *
+ * Es la unica fuente de cifras con la que la normalizacion completa lo que el modelo omitio
+ * (issue #23). Hasta el 2026-09-13 ese hueco se llenaba con literales (el saldo de la tarjeta
+ * de Beto, una tasa de 27.9 %, un portafolio de CETES de ejemplo) y la pantalla pasaba la
+ * validacion con cifras que no eran de nadie. Si la tool no esta en `datos`, o su salida no
+ * tiene la forma del schema, no hay cifras: la prop se queda sin llenar y la validacion le
+ * pide al modelo que consulte y corrija.
+ */
+function propsDelMcp(componente: string, datos: Record<string, unknown>, parametros: Record<string, unknown> = {}): Record<string, unknown> {
+  for (const definicion of fuentesDe(componente)) {
+    const salida = datos[definicion.tool] ?? salidaAnidada(definicion.tool, datos);
+    if (salida === undefined) continue;
+    try {
+      const adaptado = definicion.adaptar(salida, parametros);
+      if (adaptado.ok) return adaptado.props;
+    } catch {
+      // Una salida con otra forma (otra version del MCP, un campo que no se pidio): sin cifras.
+    }
+  }
+  return {};
+}
+
+/**
+ * Las tools compuestas del MCP devuelven, dentro, la salida entera de otra tool de lectura
+ * (`analizar_ahorro.ahorro` es la de `proyectar_ahorro`; `.inversion`, la de
+ * `consultar_inversiones`). La portada del Inicio las recibe asi, sin la tool suelta.
+ */
+const SALIDAS_ANIDADAS: Record<string, ReadonlyArray<readonly [tool: string, campo: string]>> = {
+  proyectar_ahorro: [["analizar_ahorro", "ahorro"]],
+  consultar_inversiones: [["analizar_ahorro", "inversion"]],
+  detectar_fugas: [["analizar_gasto", "fugas"]],
+};
+
+function salidaAnidada(tool: string, datos: Record<string, unknown>): unknown {
+  for (const [compuesta, campo] of SALIDAS_ANIDADAS[tool] ?? []) {
+    const salida = datos[compuesta];
+    if (esObjetoPlano(salida) && esObjetoPlano(salida[campo])) return salida[campo];
+  }
+  return undefined;
+}
+
+/** Pone `valor` en `prop` solo si el modelo no la mando y hay un valor real que poner. */
+function completar(comp: Record<string, unknown>, prop: string, valor: unknown): void {
+  if (comp[prop] === undefined && valor !== undefined && valor !== null) comp[prop] = valor;
+}
+
+type Escenario = { mensualidadCentavos?: number; costoTotalCentavos?: number; tiempoMeses?: number };
+
+/**
+ * Los dos caminos de `ComparadorAntesDespues`, de una simulacion real del turno:
+ * `simular_pago_credito` (lo `actual` contra lo `simulado`) o, si no esta, `simular_reestructura`
+ * (seguir con el minimo contra la opcion recomendada). El costo total es saldo + intereses, la
+ * misma cuenta que usaba el relleno viejo, solo que con los numeros de la tool.
+ */
+function comparacionDelMcp(datos: Record<string, unknown>): {
+  ahorroNetoCentavos?: number;
+  ahorroTiempoMeses?: number;
+  actual: Escenario;
+  estrategia: Escenario;
+} {
+  const numero = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
+  const pago = datos.simular_pago_credito;
+  if (esObjetoPlano(pago) && esObjetoPlano(pago.actual) && esObjetoPlano(pago.simulado)) {
+    const saldo = numero(pago.saldoInsolutoCentavos);
+    const camino = (e: Record<string, unknown>): Escenario => ({
+      mensualidadCentavos: numero(e.mensualidadCentavos),
+      costoTotalCentavos: saldo !== undefined && numero(e.totalInteresesEstimadosCentavos) !== undefined
+        ? saldo + Number(e.totalInteresesEstimadosCentavos)
+        : undefined,
+      tiempoMeses: numero(e.plazoRestanteMeses),
+    });
+    return {
+      ahorroNetoCentavos: numero(pago.ahorroInteresesCentavos),
+      ahorroTiempoMeses: numero(pago.mesesMenos),
+      actual: camino(pago.actual),
+      estrategia: camino(pago.simulado),
+    };
+  }
+  const reestructura = datos.simular_reestructura;
+  if (esObjetoPlano(reestructura) && Array.isArray(reestructura.opciones) && reestructura.opciones.length > 0) {
+    const opciones = reestructura.opciones.filter(esObjetoPlano);
+    const opcion = opciones.find((o) => o.esRecomendado === true) ?? opciones[0];
+    const minimo = esObjetoPlano(reestructura.escenarioMinimo) ? reestructura.escenarioMinimo : {};
+    const tarjeta = esObjetoPlano(datos.consultar_tarjeta) && esObjetoPlano(datos.consultar_tarjeta.tarjeta) ? datos.consultar_tarjeta.tarjeta : {};
+    return {
+      ahorroNetoCentavos: numero(opcion?.ahorroVsMinimoCentavos),
+      ahorroTiempoMeses: numero(opcion?.mesesVsMinimo),
+      actual: {
+        mensualidadCentavos: numero(tarjeta.pagoMinimoCentavos),
+        costoTotalCentavos: numero(minimo.totalPagadoCentavos),
+        tiempoMeses: minimo.nuncaLiquida === true ? undefined : numero(minimo.meses),
+      },
+      estrategia: {
+        mensualidadCentavos: numero(opcion?.mensualidadCentavos),
+        costoTotalCentavos: numero(opcion?.totalAPagarCentavos),
+        tiempoMeses: numero(opcion?.plazoMeses),
+      },
+    };
+  }
+  return { actual: {}, estrategia: {} };
+}
+
+/**
+ * Un escenario de `ComparadorAntesDespues`: lo que mando el modelo (con sus alias de nombre), y lo
+ * que falte, de la simulacion. Un binding se queda como binding (#39). Lo que no venga de ningun
+ * lado no se escribe: antes salia un 0 o un «1 mes» y la tarjeta mentia (#23).
+ */
+function escenarioComparado(
+  crudo: Record<string, unknown>,
+  delMcp: Escenario,
+  etiqueta: string,
+  descripcion: string,
+): Record<string, unknown> {
+  const valor = (v: unknown, minimo = 0): unknown => {
+    if (esBinding(v)) return v;
+    if (v === undefined || v === null || !Number.isFinite(Number(v))) return undefined;
+    return Math.max(minimo, Math.round(Number(v)));
+  };
+  const escenario: Record<string, unknown> = { etiqueta };
+  const mensualidad = valor(crudo.mensualidadCentavos ?? crudo.mensualidad ?? delMcp.mensualidadCentavos);
+  const costoTotal = valor(crudo.costoTotalCentavos ?? crudo.costoTotal ?? crudo.totalCentavos ?? delMcp.costoTotalCentavos);
+  const tiempo = valor(crudo.tiempoMeses ?? crudo.tiempo ?? crudo.plazoMeses ?? crudo.meses ?? delMcp.tiempoMeses, 1);
+  if (mensualidad !== undefined) escenario.mensualidadCentavos = mensualidad;
+  if (costoTotal !== undefined) escenario.costoTotalCentavos = costoTotal;
+  if (tiempo !== undefined) escenario.tiempoMeses = tiempo;
+  escenario.descripcion = descripcion;
+  return escenario;
 }
 
 /**

@@ -263,8 +263,14 @@ Y en `pantalla.ts`, al armar los mensajes:
 - **Comas colgantes.** `parsear` hace un tercer intento quitando las comas antes de `}` o
   `]` (sin tocar cadenas): el error de sintaxis más común de un modelo chico en un JSON
   largo. El fragmento alrededor del error va al log.
+- **Lo que el modelo omite se completa con lo que dijo el banco, o no se completa.**
+  `normalizarListaDeComponentes` llena las props faltantes con los adaptadores de los widgets
+  (`widgets/fuentes.ts`) sobre las tools del turno; sin la tool, la prop queda vacía y la pantalla
+  se rechaza para que el modelo consulte. Nunca con un número de ejemplo (#23, #28), un enlace
+  `{path}` se deja intacto (#39) y no agrega props que el schema no tiene (#40). Algoritmo:
+  `docs/algoritmos/normalizacion-de-pantalla.md`.
 
-Los dos nacieron con el Inicio personalizado (`inicio-personalizado.md`), que usa este
+Los dos primeros nacieron con el Inicio personalizado (`inicio-personalizado.md`), que usa este
 mismo `armarMensajes` con un modelo más chico, pero valen para la conversación.
 
 Al cerrar un turno en el que una tool de acción aplicó algo, `correrTurno` llama

@@ -19,6 +19,10 @@ Una fuente es un par **(tool del MCP, componente del catálogo)** con dos funcio
 parámetros a argumentos, y de salida a props. Como son puras y deterministas, sirven dos veces:
 para armar la tarjeta y para **auditarla** (volver a correrlas y comparar).
 
+Y una tercera, fuera de Inicio: `pintar_pantalla` usa los mismos adaptadores para completar las
+props que el modelo omite con las tools del turno, en vez de con cifras de ejemplo
+(`propsDelMcp` en `apps/web/src/lib/agente/pantalla.ts`, `normalizacion-de-pantalla.md`).
+
 ## Paso a paso
 
 1. El modelo manda `{ id, fuente, parametros?, variantes?, heroe?, razon }`.
