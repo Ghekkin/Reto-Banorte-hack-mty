@@ -38,7 +38,8 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Inicio: una pregunta cambia una tarjeta en su lugar | construido por aldair (widgets vivos, ADR 0011); `FEATURE_WIDGETS_VIVOS=1` en local y producción desde 2026-09-13 04:10 |
 | Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | en progreso |
 | Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | construido: `proyectar_ahorro` con `fechaObjetivo`/`montoObjetivoCentavos`; el host pone meta, aportación y tope. Ensayado: Ana «para diciembre» → $15,950.00 al mes con aviso (7.3 s) |
-| Plan de la tarjeta con cualquier plazo o mensualidad objetivo, y «Aplicar plan» en su lugar | pendiente |
+| Plan de la tarjeta con cualquier plazo («¿y si fueran 30 meses?») | construido: el host funde las opciones de `simular_reestructura` con las que se veían y deja elegido el plazo nuevo. Ensayado con Beto: 2.9 s |
+| «Aplicar plan» en su lugar y mensualidad objetivo del plan | **no se hace** (decisión 2026-09-13 04:35): cambiaría el paso ya ensayado del guion antes del último ensayo; «Aplicar plan» sigue con `Confirmacion` |
 
 Decisiones que no se vuelven a discutir: los números los calcula una tool MCP (no el componente);
 simular y aplicar con botón; señal «antes → después» con resaltado; si es riesgoso se ajusta y se
@@ -150,7 +151,8 @@ La matemática, sus límites y por qué es abono a capital: `docs/algoritmos/abo
 pnpm --filter @maya/mcp test        # simular-pago-credito, programar-abono-capital, ejecutar_decision
 pnpm --filter @maya/catalogo test   # la tarjeta: antes/después, botón, programado, resaltado
 pnpm --filter @maya/web test        # ajustes-en-vivo.spec.ts, hilo.spec.ts
-pnpm reiniciar-estado               # antes de ensayar: un abono de la corrida anterior falsea todo
+pnpm reiniciar-estado               # antes de ensayar en el estado comun: un abono viejo falsea todo
+node scripts/probar-guion.mjs --aislado --solo "Ana ·"   # o con un dispositivo nuevo (ADR 0012), sin limpiar nada
 ```
 
 A mano, con `pnpm dev` y Ana: «Quiero pagar menos intereses» → «¿y si pago $6,000 al mes?» (la

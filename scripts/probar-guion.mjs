@@ -5,6 +5,7 @@
  *   node scripts/probar-guion.mjs                      # contra localhost:3000
  *   node scripts/probar-guion.mjs https://mi-dominio   # contra lo publicado
  *   node scripts/probar-guion.mjs --solo "Ana ·"       # solo los casos cuyo nombre lo contiene
+ *   node scripts/probar-guion.mjs --aislado            # con un dispositivo nuevo: estado limpio (ADR 0012)
  *
  * Por que existe: las 300 pruebas del repo usan un modelo simulado. Prueban el cableado
  * —que un mensaje valide, que el reducer lo aplique, que el lienzo pinte— y no pueden
@@ -16,9 +17,13 @@
  * no pinta, que pinta el componente equivocado o que tarda de mas, sale marcado.
  */
 // `--solo <texto>` (repetible) corre solo los casos cuyo nombre lo contiene; lo demas es la URL.
+// `--aislado`: todo el ensayo con un dispositivo propio y nuevo (ADR 0012), asi el estado arranca
+// limpio sin `reiniciar-estado` y lo que se aplica no toca el estado comun de nadie.
 const argumentos = process.argv.slice(2);
 const SOLO = argumentos.flatMap((a, i) => (argumentos[i - 1] === "--solo" ? [a] : []));
-const BASE = (argumentos.find((a, i) => a !== "--solo" && argumentos[i - 1] !== "--solo") ?? "http://localhost:3000").replace(/\/$/, "");
+const AISLADO = argumentos.includes("--aislado");
+const BASE = (argumentos.find((a, i) => !a.startsWith("--") && argumentos[i - 1] !== "--solo") ?? "http://localhost:3000").replace(/\/$/, "");
+const COOKIE = AISLADO ? `maya_dispositivo=dis_ensayo${Math.random().toString(36).slice(2, 14).padEnd(12, "0")}` : undefined;
 const LIMITE_MS = 15000;
 
 /**
@@ -32,6 +37,15 @@ const CASOS = [
     texto: "Quiero pagar menos intereses de mi tarjeta",
     componentes: ["ResumenTarjeta", "PlanDePago"],
     prohibidos: ["Confirmacion"],
+  },
+  {
+    // Otro plazo sobre la MISMA tarjeta del plan: se cotiza con la tool y se ajusta en su lugar.
+    nombre: "Beto · ¿y si fueran 30 meses? (el plan cambia en su lugar)",
+    usuario: "usr_beto",
+    texto: "¿Y si fueran 30 meses?",
+    cierre: "ajustar",
+    tools: ["simular_reestructura"],
+    pantallaContiene: '"plazoMeses":30',
   },
   {
     nombre: "Beto · el ciclo se cierra (accion real)",
@@ -246,7 +260,7 @@ async function turno({ usuario, conversacionId, mensajes, accion, superficie }) 
 
   const respuesta = await fetch(`${BASE}/api/agente`, {
     method: "POST",
-    headers: { "content-type": "application/json" },
+    headers: { "content-type": "application/json", ...(COOKIE ? { cookie: COOKIE } : {}) },
     body: JSON.stringify(cuerpo),
   });
   if (!respuesta.ok) {

@@ -442,3 +442,60 @@ describe("null en un parche de props", () => {
     expect(c).toMatchObject({ id: "gasto", totalCentavos: 4520000 });
   });
 });
+
+describe("parchesDeterministas: plan de la tarjeta", () => {
+  const conPlan = {
+    arbol: [
+      { id: "root", component: "Column", children: ["plan"] },
+      {
+        id: "plan",
+        component: "PlanDePago",
+        tarjetaId: "tar_beto_clasica",
+        opciones: [
+          { plazoMeses: 12, mensualidadCentavos: 450000, cat: 0.3, ahorroCentavos: 100000 },
+          { plazoMeses: 18, mensualidadCentavos: 319335, cat: 0.28, ahorroCentavos: 130000, recomendado: true },
+        ],
+        razon: "Tu tarjeta esta al 97 %",
+      },
+    ],
+    dataModel: {},
+  };
+
+  it("«¿y si fueran 30 meses?»: agrega el plazo nuevo, lo deja elegido y conserva el recomendado de antes", () => {
+    const datos = {
+      simular_reestructura: {
+        tarjetaId: "tar_beto_clasica",
+        opciones: [{ plazoMeses: 30, mensualidadCentavos: 210000, cat: 0.29, ahorroVsMinimoCentavos: 90000, esRecomendado: true }],
+      },
+    };
+    const [parche] = parchesDeterministas(conPlan, datos);
+    expect(parche!.props.plazoElegido).toBe(30);
+    expect((parche!.props.opciones as Array<Record<string, unknown>>).map((o) => [o.plazoMeses, o.recomendado ?? false])).toEqual([
+      [12, false],
+      [18, true],
+      [30, false],
+    ]);
+  });
+
+  it("si la tool cotizo todos los plazos, manda su recomendado y sus cifras", () => {
+    const datos = {
+      simular_reestructura: {
+        tarjetaId: "tar_beto_clasica",
+        opciones: [
+          { plazoMeses: 12, mensualidadCentavos: 451000, cat: 0.3, ahorroVsMinimoCentavos: 100500, esRecomendado: true },
+          { plazoMeses: 18, mensualidadCentavos: 320000, cat: 0.28, ahorroVsMinimoCentavos: 131000, esRecomendado: false },
+        ],
+      },
+    };
+    const opciones = parchesDeterministas(conPlan, datos)[0]!.props.opciones as Array<Record<string, unknown>>;
+    expect(opciones).toEqual([
+      { plazoMeses: 12, mensualidadCentavos: 451000, cat: 0.3, ahorroCentavos: 100500, recomendado: true },
+      { plazoMeses: 18, mensualidadCentavos: 320000, cat: 0.28, ahorroCentavos: 131000 },
+    ]);
+  });
+
+  it("no toca el plan de otra tarjeta", () => {
+    const datos = { simular_reestructura: { tarjetaId: "tar_otra", opciones: [{ plazoMeses: 30, mensualidadCentavos: 1, cat: 0.1, ahorroVsMinimoCentavos: 1 }] } };
+    expect(parchesDeterministas(conPlan, datos)).toEqual([]);
+  });
+});
