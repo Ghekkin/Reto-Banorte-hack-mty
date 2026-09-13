@@ -223,9 +223,19 @@ La conversación de Maya es **una sola lista en orden** (`hilo`, en
 construyó. Al cerrar un turno (la línea `fin` del stream) la superficie se **congela** en
 esa lista (con las líneas del stream de ese turno, que no se pintan) y ahí se queda.
 
-**Lo que ve la persona mientras Maya trabaja** (`components/maya/progreso-maya.tsx`): un
-renglón con spinner que sigue la última línea `estado` del stream —"Entendiendo lo que
-necesitas", "Consultando tus datos", "Armando tu pantalla"— y **desaparece al terminar**.
+**Lo que ve la persona mientras Maya trabaja** (`components/maya/progreso-maya.tsx`): una
+tarjeta «Maya está trabajando en tu respuesta» con **un renglón por cada cosa que el agente de
+verdad hace**, en palabras de cliente y en tiempo real: «Entendiendo lo que necesitas» →
+«Revisando tu panorama financiero» → «Revisando tus créditos» → «Calculando tu crédito pagando
+$6,000.00 al mes» → «Armando tu pantalla». El renglón en curso lleva spinner; al terminar se
+palomea (o dice «no respondió, sigo con lo demás»). Entre una herramienta y la siguiente, mientras
+el modelo decide, aparece «Pensando cómo mostrártelo» para que nunca se vea detenido; a los 8 s,
+«Sigo en eso…». **Desaparece al terminar.** Cada renglón nace de la línea `estado` con `paso` que el
+servidor manda cuando el modelo pide una herramienta, y se palomea con la línea `tool` del mismo
+`id` (`lib/pasos-de-maya.ts`: `textoDelPaso` y `pasosDelTurno`, con 10 pruebas). El texto dice el
+dato que pidió la persona (una mensualidad, un plazo, un mes), nunca un resultado. Pedido del
+usuario el 2026-09-13 («se ve muy tieso… que se vea en tiempo real qué va haciendo el agente, no tan
+técnico»); verificado con el modelo real a 1440 px y en iPhone 13.
 Hasta el 2026-09-13 era una tira con los badges LLM · MCP · A2UI, los nombres de las tools y
 "3 pasos · 5.2 s", y se quedaba pegada a cada pantalla del hilo; se quitó porque era texto
 técnico en la pantalla de la persona. Por lo mismo:

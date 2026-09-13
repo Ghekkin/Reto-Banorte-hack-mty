@@ -130,8 +130,8 @@ manda ningún `a2ui`:
 
 | `tipo` | Qué es | Quién lo consume |
 |---|---|---|
-| `estado` | `pensando` / `consultando` / `pintando` | Indicador de la UI |
-| `tool` | Una llamada MCP terminada | Panel de transparencia (modo demo) |
+| `estado` | `pensando` / `consultando` / `pintando`, y `paso: { id, texto }` cuando el modelo pide una herramienta («Revisando tus créditos», dicho para la persona) | La línea de tiempo en vivo de `ProgresoMaya` |
+| `tool` | Una llamada MCP terminada, con `id` = el del `paso` que termina | Palomea ese renglón; el log y la transparencia |
 | `a2ui` | Un mensaje A2UI v0.9.1 **ya validado** contra los schemas oficiales y el catálogo | `procesar()` de `packages/a2ui` |
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |

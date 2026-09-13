@@ -12,6 +12,7 @@ import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./model
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "./pantalla";
 import { detalleDeComponentes } from "./prompt";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
+import { textoDelPaso } from "@/lib/pasos-de-maya";
 
 /**
  * El turno del agente: interpreta la intencion, llama tools del MCP, emite la interfaz
@@ -155,6 +156,8 @@ async function* turno(
     // se consulta panorama_inicial antes del bucle del modelo para ahorrar un round trip.
     let panorama: unknown = undefined;
     if (!peticion.superficie) {
+      // El prefetch tambien es un paso que la persona ve: es lo primero que tarda.
+      yield { tipo: "estado", valor: "consultando", paso: { id: "prefetch", texto: textoDelPaso("panorama_inicial") } };
       if (cliente) {
         try {
           const res = await llamarTool(cliente, "panorama_inicial", { usuarioId: peticion.usuarioId }, { corridaId: grabadora.id });
@@ -162,7 +165,7 @@ async function* turno(
           if (res.ok && res.resultado && typeof res.resultado === "object" && !("error" in (res.resultado as Record<string, unknown>))) {
             panorama = res.resultado;
             usadas.push({ nombre: "panorama_inicial", ms: res.ms, ok: true });
-            yield { tipo: "tool", nombre: "panorama_inicial", ms: res.ms, ok: true };
+            yield { tipo: "tool", nombre: "panorama_inicial", ms: res.ms, ok: true, id: "prefetch" };
           }
         } catch {
           // Si el prefetch falla, no tumba el turno: cae a como esta hoy
@@ -177,7 +180,7 @@ async function* turno(
               panorama = res;
               const ms = Date.now() - inicioTool;
               usadas.push({ nombre: "panorama_inicial", ms, ok: true });
-              yield { tipo: "tool", nombre: "panorama_inicial", ms, ok: true };
+              yield { tipo: "tool", nombre: "panorama_inicial", ms, ok: true, id: "prefetch" };
             }
           }
         } catch {
@@ -306,6 +309,8 @@ async function* turno(
                 : esToolDeCierre(parte.toolName)
                   ? "pintando"
                   : "consultando",
+            // Lo que Maya esta haciendo, dicho para la persona (`lib/pasos-de-maya.ts`).
+            paso: { id: parte.toolCallId, texto: textoDelPaso(parte.toolName, parte.input) },
           };
           break;
 
@@ -332,6 +337,7 @@ async function* turno(
               nombre: parte.toolName,
               ms: transcurrido(enVuelo, parte.toolCallId),
               ok: !esResultadoConError(parte.output),
+              id: parte.toolCallId,
             };
           }
           break;
@@ -341,7 +347,7 @@ async function* turno(
             ok: false,
             error: parte.error instanceof Error ? parte.error.message : String(parte.error),
           });
-          yield { tipo: "tool", nombre: parte.toolName, ms: transcurrido(enVuelo, parte.toolCallId), ok: false };
+          yield { tipo: "tool", nombre: parte.toolName, ms: transcurrido(enVuelo, parte.toolCallId), ok: false, id: parte.toolCallId };
           yield {
             tipo: "error",
             codigo: "tool",

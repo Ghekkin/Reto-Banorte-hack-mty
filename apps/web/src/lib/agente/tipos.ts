@@ -189,8 +189,17 @@ export function capacidadesDelServidor(urlCatalogo: string): { "v0.9": { support
 
 /** Una linea del stream JSONL de respuesta. El cliente ignora lo que no conoce. */
 export type LineaStream =
-  | { tipo: "estado"; valor: "pensando" | "consultando" | "pintando" }
-  | { tipo: "tool"; nombre: string; ms: number; ok: boolean }
+  | {
+      tipo: "estado";
+      valor: "pensando" | "consultando" | "pintando";
+      /**
+       * Lo que Maya empieza a hacer, en palabras de la persona («Revisando tus créditos»). Lo manda
+       * el servidor cuando el modelo pide una herramienta; `id` es el de esa llamada, y la línea
+       * `tool` con el mismo `id` lo marca como terminado (`lib/pasos-de-maya.ts`).
+       */
+      paso?: { id: string; texto: string };
+    }
+  | { tipo: "tool"; nombre: string; ms: number; ok: boolean; /** El `id` del `paso` que termina. */ id?: string }
   | {
       tipo: "a2ui";
       mensaje: MensajeA2UI;
