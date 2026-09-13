@@ -57,7 +57,8 @@ export type PeticionDeWidget = {
 export type CierreDeWidget = "modificar" | "reemplazar" | "responder";
 
 export type EventoDeTurno =
-  | { tipo: "estado"; valor: "pensando" | "consultando" | "armando" }
+  // `verificando` no lo emite el turno: lo emite la ruta antes del auditor (`api/inicio/widget`).
+  | { tipo: "estado"; valor: "pensando" | "consultando" | "armando" | "verificando" }
   | { tipo: "tool"; nombre: string; ms: number; ok: boolean };
 
 export type TurnoDeWidget =

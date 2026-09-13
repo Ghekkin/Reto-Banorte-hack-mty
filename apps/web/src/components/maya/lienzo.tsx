@@ -4,7 +4,7 @@ import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender, PiezaDeRaiz } from "@maya/a2ui";
 import { ProveedorCatalogo } from "@maya/catalogo";
 import { LayoutGrid } from "lucide-react";
-import { Spinner } from "@/components/ui/spinner";
+import { Progress } from "@/components/ui/progress";
 import { Masonry } from "@/components/inicio/masonry";
 import { registrarComponentes } from "@/lib/registrar-componentes";
 import { CLASES_REJILLA, clasesDePieza, tamanoDePieza, type TamanoDePieza } from "@/lib/rejilla";
@@ -173,6 +173,13 @@ function MasonryDeLienzo({ piezas, decorar }: { piezas: PiezaDeRaiz[]; decorar?:
  * El resaltado va en un anillo alrededor y no en la tarjeta: la tarjeta es del catalogo y no
  * sabe que vive en Inicio. El pie (`debajo`) queda dentro del mismo hueco, asi el masonry lo
  * mide junto con la tarjeta.
+ *
+ * **Cargando: un brillo que la recorre, no un velo que la tapa.** Hasta el 2026-09-13 era un
+ * `bg-card/80` encima de toda la tarjeta con el aviso centrado arriba: la tarjeta se lavaba (en
+ * la heroe, rojo deslavado), y en un celular el aviso caia fuera de la pantalla. Ahora la tarjeta
+ * se sigue leyendo; encima pasa una franja de tinte (`pensando-brillo`) y en su borde de arriba
+ * corre una barra (`pensando-segmento`), las dos solo con `transform`. El texto de la etapa lo
+ * dice `PensandoMaya` sobre la barra; aqui queda para lectores de pantalla.
  */
 function PiezaDecorada({ nodo, deco }: { nodo: React.ReactNode; deco: DecoracionDePieza }) {
   return (
@@ -185,12 +192,16 @@ function PiezaDecorada({ nodo, deco }: { nodo: React.ReactNode; deco: Decoracion
       >
         {nodo}
         {deco.estado === "cargando" && (
-          <div role="status" className="animar-entrada absolute inset-0 grid place-items-center rounded-2xl bg-card/80">
-            <span className="flex items-center gap-2 rounded-full border border-borde-sutil bg-card px-4 py-2 text-sm text-foreground shadow-sm">
-              <Spinner className="size-4 text-primary" />
-              {deco.aviso ?? "Consultando al banco…"}
-            </span>
+          // `top/right/bottom/left` y no `inset-0`: `inset` no existe en Safari anterior a 14.1.
+          <div aria-hidden className="animar-entrada pointer-events-none absolute top-0 right-0 bottom-0 left-0 overflow-hidden rounded-2xl">
+            <div className="pensando-brillo absolute top-0 right-0 bottom-0 left-0" />
+            <Progress value={null} className="pensando-segmento absolute top-0 right-6 left-6 [&_[data-slot=progress-indicator]]:bg-primary [&_[data-slot=progress-track]]:bg-tinte" />
           </div>
+        )}
+        {deco.estado === "cargando" && (
+          <span role="status" className="sr-only">
+            {deco.aviso ?? "Consultando al banco…"}
+          </span>
         )}
       </div>
       {deco.debajo}

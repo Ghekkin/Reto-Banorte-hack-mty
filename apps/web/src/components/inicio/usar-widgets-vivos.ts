@@ -2,6 +2,7 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import { estadoVacio, procesar, procesarVarios, type Estado, type EstadoSuperficie, type MensajeA2UI } from "@maya/a2ui";
+import { avanzarProgreso, PROGRESO_INICIAL, type ProgresoDeConsulta } from "@/lib/widgets/etapas";
 import type { LineaDeWidget } from "@/lib/widgets/linea";
 
 /**
@@ -15,8 +16,6 @@ import type { LineaDeWidget } from "@/lib/widgets/linea";
  * hay `router.refresh()`: eso volveria a pintar la pagina entera, que es justo la
  * sensacion de "cambio de diapositiva" que esto existe para quitar.
  */
-
-export type EtapaDeConsulta = "pensando" | "consultando" | "armando";
 
 export type Nota = {
   texto: string;
@@ -33,9 +32,10 @@ export type ConsultaEnCurso = {
   pregunta: string;
   /** La tarjeta que se esta cambiando; `undefined` mientras el modelo decide cual. */
   widgetId?: string;
-  etapa: EtapaDeConsulta;
-  /** La ultima tool del MCP que se consulto, para el estado de la barra. */
-  tool?: string;
+  /** En que etapa va, segun las lineas reales del stream (`lib/widgets/etapas.ts`). */
+  progreso: ProgresoDeConsulta;
+  /** `Date.now()` al enviar: de aqui salen los segundos de espera que se muestran. */
+  desde: number;
 };
 
 const GENERAL = "general";
@@ -72,7 +72,7 @@ export function usarWidgetsVivos(mensajesIniciales: MensajeA2UI[]) {
       if (limpia.length < 3 || consulta) return;
       setFallo(undefined);
       setSugerencias([]);
-      setConsulta({ pregunta: limpia, widgetId: focoElegido, etapa: "pensando" });
+      setConsulta({ pregunta: limpia, widgetId: focoElegido, progreso: PROGRESO_INICIAL, desde: Date.now() });
 
       try {
         const respuesta = await fetch("/api/inicio/widget", {
@@ -109,12 +109,12 @@ export function usarWidgetsVivos(mensajesIniciales: MensajeA2UI[]) {
       }
 
       function atender(linea: LineaDeWidget, preguntaHecha: string): boolean {
+        if (linea.tipo !== "fin" && linea.tipo !== "error") {
+          setConsulta((c) => c && { ...c, progreso: avanzarProgreso(c.progreso, linea) });
+        }
         switch (linea.tipo) {
           case "estado":
-            setConsulta((c) => c && { ...c, etapa: linea.valor });
-            return false;
           case "tool":
-            setConsulta((c) => c && { ...c, etapa: "consultando", tool: linea.nombre });
             return false;
           case "a2ui": {
             const mensaje = linea.mensaje;

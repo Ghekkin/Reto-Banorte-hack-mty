@@ -680,6 +680,78 @@
   }
 }
 
+/* Mientras Maya piensa (Inicio con widgets vivos): la barra de etapas de `PensandoMaya` y el
+   brillo que recorre la tarjeta que se va a tocar (`PiezaDecorada` en `lienzo.tsx`).
+   Doc: docs/como-funciona/widgets-vivos.md, «Mientras Maya piensa».
+
+   Tres reglas, las mismas de la entrada de los widgets: solo `transform` y `opacity` (la GPU
+   los compone sola, tambien en Safari), nombres que NO empiezan con `widget-` (esos son la
+   coreografia de entrada y tienen su prueba), y con "reducir movimiento" nada se mueve: el
+   segmento actual queda lleno a medias, quieto, y la tarjeta sin brillo. */
+@layer utilities {
+  @keyframes pensando-barrido {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(250%);
+    }
+  }
+
+  @keyframes pensando-brillo {
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  @keyframes pensando-latido {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.6;
+    }
+  }
+
+  /* El segmento en curso: un `Progress` indeterminado (`value={null}`), cuyo indicador no trae
+     ancho propio. */
+  .pensando-segmento [data-slot="progress-indicator"] {
+    width: 40%;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .pensando-segmento [data-slot="progress-indicator"] {
+      animation: pensando-barrido 1100ms var(--motion-salida) infinite;
+    }
+
+    /* Una franja de tinte que cruza la tarjeta cada 1.6 s. La tarjeta se sigue leyendo. */
+    .pensando-brillo::after {
+      content: "";
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      left: 0;
+      background: linear-gradient(
+        100deg,
+        transparent 25%,
+        color-mix(in oklab, var(--tinte) 70%, transparent) 50%,
+        transparent 75%
+      );
+      transform: translateX(-100%);
+      animation: pensando-brillo 1600ms ease-in-out infinite;
+    }
+
+    .pensando-latido {
+      animation: pensando-latido 1400ms ease-in-out infinite;
+    }
+  }
+}
+
 /* Accesibilidad, y no es opcional: para quien tiene activado "reducir movimiento"
    en el sistema, TODO lo de arriba se apaga.
    Se apaga con `0.01ms` en vez de `none` porque hay codigo que espera el evento

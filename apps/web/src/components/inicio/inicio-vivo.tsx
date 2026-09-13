@@ -4,8 +4,10 @@ import { useRouter } from "next/navigation";
 import type { Accion, PiezaDeRaiz } from "@maya/a2ui";
 import { Lienzo, type DecoracionDePieza } from "@/components/maya/lienzo";
 import type { PantallaDeInicio } from "@/lib/inicio/almacen";
+import { textoDeEtapa } from "@/lib/widgets/etapas";
 import { etiquetaDe, sugerenciasDe } from "@/lib/widgets/etiquetas";
 import { EvidenciaDeMaya } from "./inicio-de-maya";
+import { PensandoMaya } from "./pensando-maya";
 import { PieDeWidget } from "./pie-de-widget";
 import { BarraFlotanteMaya } from "./tarjetas-inicio";
 import { usarWidgetsVivos, type ConsultaEnCurso } from "./usar-widgets-vivos";
@@ -19,10 +21,13 @@ import { usarWidgetsVivos, type ConsultaEnCurso } from "./usar-widgets-vivos";
  * nota), que se aplica en su lugar. Las demas no se mueven, no parpadean y no pierden lo que
  * la persona tenia elegido.
  *
- * Mientras se consulta, solo la tarjeta en foco lleva el velo de "Consultando al banco…";
- * sin foco, la barra dice que tool del MCP se esta leyendo. Cuando llega el cambio, la
- * tarjeta se resalta un momento y su nota dice de que tool salieron los datos y si el
- * auditor los verifico.
+ * **Mientras Maya piensa** (2 a 8 s, a veces mas), sobre la barra va `PensandoMaya`: la etapa
+ * real del turno («Consultando tus datos»), la pregunta que se hizo y los segundos de espera; y
+ * la tarjeta que se va a tocar lleva un brillo que la recorre, sin taparla. Antes era un velo
+ * blanco que lavaba la tarjeta con el aviso en su borde de arriba (fuera de la pantalla en un
+ * celular) y, sin foco, solo el placeholder de la barra. Ver `lib/widgets/etapas.ts`.
+ * Cuando llega el cambio, la tarjeta se resalta un momento y su nota dice de que tool salieron
+ * los datos y si el auditor los verifico.
  *
  * Los botones de accion de las tarjetas (aplicar un plan, crear un apartado) siguen yendo a
  * Maya con la accion disparada, igual que en la portada de siempre: el ciclo de accion vive
@@ -53,7 +58,7 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
     const cargando = consulta !== undefined && consulta.widgetId === pieza.id;
     return {
       estado: cargando ? "cargando" : actualizada === pieza.id ? "actualizada" : undefined,
-      aviso: cargando ? avisoDe(consulta) : undefined,
+      aviso: cargando ? `${textoDeEtapa(consulta.progreso.etapa, { conTarjeta: true })}…` : undefined,
       debajo: (
         <PieDeWidget
           etiqueta={etiqueta}
@@ -71,6 +76,12 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
 
   const componenteEnFoco = foco ? superficie?.componentes.get(foco)?.component : undefined;
 
+  /** La tarjeta por la que se pregunta, en palabras ("tu crédito"); sin tarjeta, nada. */
+  function sobreQue(c: ConsultaEnCurso): string | undefined {
+    const componente = c.widgetId ? superficie?.componentes.get(c.widgetId)?.component : undefined;
+    return componente ? etiquetaDe(componente).toLowerCase() : undefined;
+  }
+
   /** Las del modelo si las dio en la ultima respuesta; si no, las del tipo de tarjeta. */
   function sugerenciasDeLaTarjeta(componente: string): string[] {
     return vivo.sugerencias.length ? vivo.sugerencias : sugerenciasDe(componente);
@@ -87,7 +98,16 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
         vivo={{
           enviar: (texto) => void preguntar(texto),
           ocupado: consulta !== undefined,
-          estado: consulta ? avisoDe(consulta) : undefined,
+          // Corto: con el chip de foco, a 390 px cabe poco. Lo que pasa lo dice `PensandoMaya`.
+          estado: consulta ? "Un momento…" : undefined,
+          pensando: consulta && (
+            <PensandoMaya
+              pregunta={consulta.pregunta}
+              progreso={consulta.progreso}
+              desde={consulta.desde}
+              sobre={sobreQue(consulta)}
+            />
+          ),
           foco: foco && componenteEnFoco ? { etiqueta: etiquetaDe(componenteEnFoco), alQuitar: () => elegirFoco(undefined) } : undefined,
           // Con foco, las sugerencias viven en el pie de la tarjeta; sin foco, sobre la barra.
           sugerencias: foco ? [] : vivo.sugerencias,
@@ -99,9 +119,4 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
   );
 }
 
-/** Lo que se esta haciendo, dicho para la persona y con la tool para el jurado. */
-function avisoDe(consulta: ConsultaEnCurso): string {
-  if (consulta.etapa === "consultando" && consulta.tool) return `Consultando ${consulta.tool}…`;
-  if (consulta.etapa === "armando") return "Actualizando la tarjeta…";
-  return "Maya está pensando…";
-}
+

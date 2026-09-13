@@ -25,6 +25,12 @@ la nota lo dice: «Cifras verificadas con el banco». Si Maya escribe un número
 ese número también se revisa contra lo que el banco contestó; uno inventado no llega a tu
 pantalla.
 
+Mientras Maya contesta (de 2 a 8 segundos, a veces más) no te quedas viendo una pantalla quieta:
+sobre la barra aparece **qué está haciendo** («Entendiendo tu pregunta» → «Consultando tus datos» →
+«Verificando las cifras con el banco» → «Actualizando la tarjeta»), **tu pregunta** y cuántos
+segundos lleva, y la tarjeta que va a cambiar tiene un brillo que la recorre. Cada paso aparece
+cuando de verdad ocurre, no antes.
+
 Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como antes. **Está
 prendido en local y en producción desde el 2026-09-13 04:10** (a pedido del usuario: «no me gusta que
 borre todo en el inicio»); `pnpm probar-widgets` pasó 6 de 6 con el modelo real antes de prenderlo.
@@ -92,7 +98,8 @@ Con el flag encendido, `generarPortada` delega en `generarPortadaDeWidgets`:
 ### Una pregunta: `POST /api/inicio/widget`
 
 Cuerpo `{ pregunta, foco?, historial? }`; la persona sale de la cookie. Responde JSONL:
-`estado` → `tool` → `a2ui` (solo `updateComponents`) → `fin`, o `error`.
+`estado` → `tool` → `estado: verificando` (antes del auditor) → `a2ui` (solo `updateComponents`) →
+`fin`, o `error`.
 
 El turno (`turnoDeWidget`) le da al modelo la pantalla viva compacta (cada tarjeta con su fuente,
 parámetros, variantes y datos), el foco, y cierra con una de tres tools:
@@ -121,7 +128,8 @@ estaba viendo la común, `almacen.ajustar` no la toca: copia la común con la ta
 del motor): React re-renderiza solo la tarjeta que cambió. No hay `router.refresh()`. El lienzo
 recibe `decorar(pieza)` para envolver cada tarjeta con:
 
-- el velo «Consultando `<tool>`…» **solo en la tarjeta en foco**;
+- mientras se consulta, **en la tarjeta en foco** (o la que resultó cambiar) un brillo que la
+  recorre y una barra en su borde de arriba, sin taparla (ver «Mientras Maya piensa»);
 - un anillo `ring-primary/40` de 1.6 s cuando cambió;
 - el pie: nota de Maya con «Cifras verificadas con el banco · `<tool>` · `<s>`», el botón
   «Preguntar sobre esto» (`aria-pressed`, 48 px en móvil) y, con foco, las preguntas sugeridas
@@ -130,6 +138,43 @@ recibe `decorar(pieza)` para envolver cada tarjeta con:
 La tarjeta que responde se desplaza a la vista (`scrollIntoView({ block: "nearest" })`). Los
 botones de acción siguen yendo a `/maya?accion=`. Los errores se dicen para la persona
 (`paraLaPersona`); el motivo técnico queda en el log.
+
+### Mientras Maya piensa
+
+Pedido del usuario (2026-09-13): «se tarda muchísimo en procesar; en ese inter mostrar algo que sí
+está cargando, y que no se quede tan vacío». Los jueces lo verán en un celular.
+
+**Lo que había** (medido con Playwright, iPhone 13, `usr_ana`): sin foco, solo el placeholder gris
+de la barra cambiaba a «Maya está pensando…» y la pregunta escrita desaparecía; con foco, un velo
+`bg-card/80` lavaba la tarjeta entera y el aviso quedaba centrado en su borde de arriba, fuera de la
+pantalla del celular.
+
+**Lo que hay:**
+
+| Pieza | Qué muestra | Dónde |
+|---|---|---|
+| `PensandoMaya` | Sobre la barra: la etapa, «Sobre tu crédito · «¿y si pago $6,000 al mes?»», los segundos desde los 3 s («tarda más de lo normal» desde los 12 s) y tres segmentos (entender · consultar · responder) | `components/inicio/pensando-maya.tsx`, por el slot `pensando` de `BarraFlotanteMaya` |
+| Brillo de la tarjeta | Una franja de tinte que cruza la tarjeta cada 1.6 s y una barra que corre en su borde de arriba; la tarjeta se sigue leyendo | `PiezaDecorada` en `components/maya/lienzo.tsx`, clases `pensando-brillo` y `pensando-segmento` de `globals.css` |
+| Las etapas | Salen de las líneas del stream: `estado: pensando` → «Entendiendo tu pregunta», `tool`/`consultando` → «Consultando tus datos», `armando` → «Preparando el cambio» (o «tu respuesta»), `verificando` → «Verificando las cifras con el banco», `a2ui` → «Actualizando la tarjeta» | `lib/widgets/etapas.ts` (`avanzarProgreso`, `textoDeEtapa`, `segmentosDe`, `paraLaEspera`) |
+
+**Sin mentir.** Ninguna etapa avanza con un temporizador: si el stream no manda nada, el texto no
+cambia. Lo único que corre con el reloj son los segundos, que son verdad. Nunca retrocede (un
+reintento del modelo vuelve a mandar `pensando`) y «listo» solo existe con `fin` o `error`, cuando el
+panel ya se fue. `verificando` es una etapa nueva que emite la ruta justo antes de `auditarWidgets`:
+la re-consulta al MCP es una espera real.
+
+**Por qué sobre la barra.** En el celular la tarjeta suele quedar arriba o abajo de lo que se ve, y
+la pregunta se escribió en la barra: ahí están los ojos. La tarjeta lleva su brillo para decir CUÁL
+va a cambiar.
+
+**Movimiento y Safari.** Las tres animaciones (`pensando-barrido`, `pensando-brillo`,
+`pensando-latido`) mueven solo `transform` y `opacity`, van dentro de
+`@media (prefers-reduced-motion: no-preference)` y no se llaman `widget-*` (esas son la entrada de
+los widgets y tienen su prueba). Con «reducir movimiento», el segmento actual queda lleno a medias y
+quieto. Para Safari: `backdrop-blur` sale con `-webkit-backdrop-filter` (Tailwind lo prefija, visto
+en el CSS compilado), el `::after` y las capas de la tarjeta usan `top/right/bottom/left` y no `inset` (que
+no existe antes de Safari 14.1), la barra de la tarjeta usa `left-6 right-6`, y no se agregó `100vh`, `scrollIntoView` en contenedores ni `randomUUID` en el
+cliente.
 
 ### Convivencia con el modo anterior
 

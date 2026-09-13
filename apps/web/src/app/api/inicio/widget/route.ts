@@ -19,7 +19,7 @@ import { turnoDeWidget } from "@/lib/widgets/turno";
  *
  * Responde en JSONL, una linea por evento, igual que `/api/agente`:
  *
- *   {"tipo":"estado","valor":"pensando"|"consultando"|"armando"}
+ *   {"tipo":"estado","valor":"pensando"|"consultando"|"armando"|"verificando"}
  *   {"tipo":"tool","nombre":"analizar_gasto","ms":42,"ok":true}
  *   {"tipo":"a2ui","mensaje":{ "updateComponents": … }}      <- solo la tarjeta que cambio
  *   {"tipo":"fin", "cierre", "widgetId", "texto", "sugerencias", "auditoria", "guardada", …}
@@ -100,6 +100,9 @@ export async function POST(peticion: Request): Promise<Response> {
         let guardada = false;
         if (turno.mensajes.length && turno.widgetId) {
           const mensajes = fundirAjuste(pantalla.mensajes, turno.mensajes);
+          // La interfaz lo dice mientras espera («Verificando las cifras con el banco»): el
+          // auditor vuelve a consultar el MCP y es una espera real, no un adorno.
+          emitir({ tipo: "estado", valor: "verificando" });
           auditoria = await auditarWidgets(
             componentesDe(mensajes),
             turno.procedencias,

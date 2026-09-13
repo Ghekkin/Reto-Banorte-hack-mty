@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { ArrowRight, ArrowUp, X } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
 import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
@@ -231,8 +231,13 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
 export type BarraViva = {
   enviar: (texto: string) => void;
   ocupado: boolean;
-  /** "Consultando simular_reestructura…": lo que se esta haciendo ahora mismo. */
+  /** El placeholder de la barra mientras se consulta. */
   estado?: string;
+  /**
+   * Lo que se ve SOBRE la barra mientras Maya contesta (`PensandoMaya`): la etapa, la pregunta
+   * y la espera. Va aqui porque es donde estan los ojos de quien acaba de escribir.
+   */
+  pensando?: ReactNode;
   foco?: { etiqueta: string; alQuitar: () => void };
   sugerencias: string[];
   fallo?: string;
@@ -271,6 +276,7 @@ export function BarraFlotanteMaya({ vivo }: { vivo?: BarraViva } = {}) {
           )}
         </p>
       )}
+      {vivo && enviando && vivo.pensando}
       {vivo && !enviando && vivo.sugerencias.length > 0 && (
         <div className="animar-cascada pointer-events-auto flex max-w-2xl flex-wrap justify-center gap-2">
           {vivo.sugerencias.map((s) => (
