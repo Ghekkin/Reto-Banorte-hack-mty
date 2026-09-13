@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { validarMensaje, type MensajeA2UI } from "@maya/a2ui";
@@ -14,6 +15,37 @@ import type { LineaStream, PeticionAgente } from "./tipos";
  * pantalla fija. Con llave, este archivo no se ejecuta.
  */
 export async function* turnoDeEjemplo(peticion: PeticionAgente, inicio: number): AsyncGenerator<LineaStream> {
+  const ultimoTexto = peticion.mensajes.at(-1)?.texto.toLowerCase().trim() ?? "";
+  const esSaludo =
+    !peticion.accion &&
+    (ultimoTexto === "hola" ||
+      ultimoTexto === "hola maya" ||
+      ultimoTexto === "buen dia" ||
+      ultimoTexto === "buenos dias" ||
+      ultimoTexto === "buenas tardes");
+
+  if (esSaludo) {
+    const sugerenciasPorUsuario: Record<string, string[]> = {
+      usr_beto: ["Bajar intereses de mi tarjeta", "¿En qué se me fue el dinero?", "Diagnóstico de salud financiera"],
+      usr_ana: ["Quiero empezar a ahorrar", "Detectar suscripciones y fugas", "¿Cómo va mi crédito?"],
+      usr_carmen: ["Ver mi portafolio", "Sugerencias de inversión", "Balance y gastos del mes"],
+    };
+    const sugerencias = sugerenciasPorUsuario[peticion.usuarioId] ?? [
+      "¿Cómo está mi salud financiera?",
+      "¿En qué se me fue el dinero?",
+      "Quiero empezar a ahorrar",
+    ];
+
+    yield {
+      tipo: "texto",
+      valor:
+        "¡Hola! Qué gusto saludarte. Soy Maya, tu asesora de salud financiera en Banorte. ¿Qué te gustaría realizar hoy con tus finanzas y cuentas?",
+    };
+    yield { tipo: "sugerencias", valores: sugerencias };
+    yield { tipo: "fin", pasos: 1, ms: Date.now() - inicio };
+    return;
+  }
+
   yield {
     tipo: "error",
     codigo: "modelo",
@@ -45,7 +77,12 @@ export async function* turnoDeEjemplo(peticion: PeticionAgente, inicio: number):
 
 /** Lee el `.jsonl` de ejemplo del catalogo. */
 async function mensajesDeEjemplo(): Promise<MensajeA2UI[]> {
-  const ruta = join(process.cwd(), "..", "..", "packages", "catalogo", "ejemplos", "confirmacion.jsonl");
+  const opciones = [
+    join(process.cwd(), "packages", "catalogo", "ejemplos", "confirmacion.jsonl"),
+    join(process.cwd(), "..", "packages", "catalogo", "ejemplos", "confirmacion.jsonl"),
+    join(process.cwd(), "..", "..", "packages", "catalogo", "ejemplos", "confirmacion.jsonl"),
+  ];
+  const ruta = opciones.find((r) => existsSync(r)) ?? opciones[2]!;
   const texto = await readFile(ruta, "utf8");
   const mensajes = texto
     .split("\n")

@@ -89,10 +89,13 @@ function bloqueDeContexto(peticion: PeticionAgente, panorama?: unknown): string 
         : `"${name}" solo cambia la vista: no llames tools de accion, consulta lo que necesites y vuelve a pintar.`,
     );
   } else {
-    partes.push("", "Contesta el ultimo mensaje de la persona construyendo la pantalla que lo resuelve.");
+    partes.push("", "Contesta el ultimo mensaje de la persona con empatía y enfoque bancario.");
   }
 
-  partes.push("", "Termina llamando `pintar_pantalla` exactamente una vez.");
+  partes.push(
+    "",
+    "Si la persona solo saluda, hace una pregunta conversacional o no se requiere una interfaz visual interactiva, responde cordialmente usando `responder_conversacion` con opciones/sugerencias útiles según su perfil sin forzar una pantalla. Si la consulta involucra datos financieros, análisis, simulaciones o cambios de estado, llama las tools necesarias y termina llamando `pintar_pantalla` exactamente una vez.",
+  );
   return partes.join("\n");
 }
 

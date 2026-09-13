@@ -218,7 +218,13 @@ function Ficha({
           {/* El mismo `Lienzo` de /maya: si aqui se acomoda bien, alla tambien. */}
           <div className={`w-full ${claseAncho}`}>
             {conDatos ? (
-              <Lienzo superficie={conDatos} conversacionId="c_galeria" alAccionar={alAccionar} alFallar={alFallar} />
+              <Lienzo
+                superficie={conDatos}
+                conversacionId="c_galeria"
+                alAccionar={alAccionar}
+                alFallar={alFallar}
+                ocultarSugerenciasEnTarjeta={false}
+              />
             ) : (
               <p className="text-sm text-muted-foreground">
                 Falta <code>packages/catalogo/ejemplos/</code> para este componente.

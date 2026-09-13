@@ -2,6 +2,7 @@
 
 import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender, PiezaDeRaiz } from "@maya/a2ui";
+import { ProveedorCatalogo } from "@maya/catalogo";
 import { LayoutGrid } from "lucide-react";
 import { registrarComponentes } from "@/lib/registrar-componentes";
 import { CLASES_REJILLA, clasesDePieza, tamanoDePieza } from "@/lib/rejilla";
@@ -34,6 +35,7 @@ export function Lienzo({
   alAccionar,
   alFallar,
   vacio,
+  ocultarSugerenciasEnTarjeta = true,
 }: {
   superficie: EstadoSuperficie | undefined;
   conversacionId: string;
@@ -41,23 +43,31 @@ export function Lienzo({
   /** Un componente que el renderer no supo pintar: se le devuelve al agente. */
   alFallar?: (fallo: FalloDeRender) => void;
   vacio?: React.ReactNode;
+  /**
+   * Si es true (por omisión en Lienzo/consola), no se pintan las sugerencias duplicadas
+   * dentro de tarjetas como Conclusion porque la consola de conversación ya las renderiza
+   * abajo como opciones interactivas de la conversación.
+   */
+  ocultarSugerenciasEnTarjeta?: boolean;
 }) {
   const hayAlgo = superficie && superficie.componentes.size > 0;
 
   return (
-    <div data-lienzo="" className="@container/lienzo">
-      {hayAlgo ? (
-        <Superficie
-          superficie={superficie}
-          conversacionId={conversacionId}
-          alAccionar={alAccionar}
-          alFallar={alFallar}
-          disponer={(piezas) => <Rejilla piezas={piezas} />}
-        />
-      ) : (
-        vacio
-      )}
-    </div>
+    <ProveedorCatalogo configuracion={{ ocultarSugerenciasEnTarjeta }}>
+      <div data-lienzo="" className="@container/lienzo">
+        {hayAlgo ? (
+          <Superficie
+            superficie={superficie}
+            conversacionId={conversacionId}
+            alAccionar={alAccionar}
+            alFallar={alFallar}
+            disponer={(piezas) => <Rejilla piezas={piezas} />}
+          />
+        ) : (
+          vacio
+        )}
+      </div>
+    </ProveedorCatalogo>
   );
 }
 

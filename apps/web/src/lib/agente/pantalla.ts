@@ -63,6 +63,55 @@ export type EntradaPintarPantalla = z.infer<typeof entradaPintarPantalla>;
 
 export type ResultadoPintar = { ok: true; componentes: number } | { ok: false; errores: string[] };
 
+export const entradaResponderConversacion = z.object({
+  texto: z
+    .string()
+    .min(1)
+    .describe(
+      "Tu respuesta bancaria y cordial. Para saludos o dudas, responde con calidez humana y deja opciones claras.",
+    ),
+  sugerencias: z
+    .array(z.string())
+    .max(3)
+    .optional()
+    .describe("Hasta 3 opciones u orientaciones que le interesen según su perfil."),
+});
+
+export type EntradaResponderConversacion = z.infer<typeof entradaResponderConversacion>;
+
+export type Respondedor = {
+  herramienta: Tool;
+  ultima: () => { texto: string; sugerencias: string[] } | undefined;
+  respondida: () => boolean;
+};
+
+export function crearRespondedor(): Respondedor {
+  let ultima: { texto: string; sugerencias: string[] } | undefined;
+  let respondida = false;
+
+  const herramienta = tool({
+    description:
+      "Usa esta tool para responder de manera conversacional y cordial cuando NO sea necesario construir una " +
+      "pantalla visual con tarjetas (por ejemplo: saludos, preguntas conceptuales cortas, orientación bancaria rápida o agradecimientos). " +
+      "Te permite devolver tu respuesta en texto y hasta 3 sugerencias interactivas personalizadas para la persona.",
+    inputSchema: entradaResponderConversacion,
+    execute: (entrada: EntradaResponderConversacion) => {
+      ultima = {
+        texto: entrada.texto,
+        sugerencias: entrada.sugerencias ?? [],
+      };
+      respondida = true;
+      return { ok: true };
+    },
+  });
+
+  return {
+    herramienta,
+    ultima: () => ultima,
+    respondida: () => respondida,
+  };
+}
+
 export type Pintor = {
   /** La tool que se le pasa al modelo. */
   herramienta: Tool;
@@ -80,6 +129,45 @@ export type Pintor = {
  * Cada turno crea su propio pintor: guarda los mensajes validados para que el turno los
  * emita en orden, y cuenta los intentos para no reintentar para siempre.
  */
+function resolverSugerenciasPantalla(entrada: EntradaPintarPantalla): string[] {
+  if (entrada.sugerencias && entrada.sugerencias.length > 0) {
+    return entrada.sugerencias.slice(0, 3);
+  }
+  try {
+    const componentes = JSON.parse(entrada.componentesJson) as Array<Record<string, unknown>>;
+    const datos = entrada.datosJson ? (JSON.parse(entrada.datosJson) as Record<string, unknown>) : {};
+    const conclusion = componentes.find((c) => c && c.component === "Conclusion");
+    if (conclusion && conclusion.sugerencias) {
+      if (Array.isArray(conclusion.sugerencias)) {
+        return conclusion.sugerencias.filter((s): s is string => typeof s === "string").slice(0, 3);
+      }
+      if (
+        typeof conclusion.sugerencias === "object" &&
+        conclusion.sugerencias !== null &&
+        "path" in conclusion.sugerencias
+      ) {
+        const path = String((conclusion.sugerencias as { path: string }).path).replace(/^\//, "");
+        const partes = path.split("/");
+        let cursor: unknown = datos;
+        for (const p of partes) {
+          if (cursor && typeof cursor === "object" && p in cursor) {
+            cursor = (cursor as Record<string, unknown>)[p];
+          } else {
+            cursor = undefined;
+            break;
+          }
+        }
+        if (Array.isArray(cursor)) {
+          return cursor.filter((s): s is string => typeof s === "string").slice(0, 3);
+        }
+      }
+    }
+  } catch {
+    // Si no parsea, armarMensajes reporta el fallo
+  }
+  return [];
+}
+
 export function crearPintor(): Pintor {
   let mensajes: MensajeA2UI[] = [];
   let ultima: { razon: string; texto: string; sugerencias: string[] } | undefined;
@@ -102,7 +190,7 @@ export function crearPintor(): Pintor {
       ultima = {
         razon: entrada.razon,
         texto: entrada.texto,
-        sugerencias: entrada.sugerencias ?? [],
+        sugerencias: resolverSugerenciasPantalla(entrada),
       };
       pintada = true;
       return { ok: true, componentes: armado.componentes };

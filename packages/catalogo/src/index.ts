@@ -161,6 +161,7 @@ export {
   SugerenciasInversion,
 };
 export * from "./comunes";
+export * from "./contexto";
 export { PieTarjeta, Tarjeta } from "./tarjeta";
 
 

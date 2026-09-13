@@ -95,7 +95,7 @@ describe("el proveedor real con nuestras tools", () => {
     const declaraciones = (cuerpo!.tools as Array<{ functionDeclarations?: Array<{ name: string }> }>)
       .flatMap((t) => t.functionDeclarations ?? []);
     expect(declaraciones.map((d) => d.name).sort()).toEqual(
-      [...Object.keys(ENTRADAS), "pintar_pantalla"].sort(),
+      [...Object.keys(ENTRADAS), "pintar_pantalla", "responder_conversacion"].sort(),
     );
 
     // 2. Sin llaves que la API no conoce.

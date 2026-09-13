@@ -5,7 +5,7 @@ import { mensajesDelTurno } from "./historial";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
-import { crearPintor, type ResultadoPintar } from "./pantalla";
+import { crearPintor, crearRespondedor, type ResultadoPintar } from "./pantalla";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
 
 /**
@@ -135,6 +135,7 @@ export async function* correrTurno(
     const senal = opciones.senal ? AbortSignal.any([porTiempo, opciones.senal]) : porTiempo;
 
     const pintor = crearPintor();
+    const respondedor = crearRespondedor();
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
       // El system prompt va como PRIMER MENSAJE, no en `system`, para poder marcarlo
@@ -147,25 +148,21 @@ export async function* correrTurno(
       // persona entra como `user`. Va explicito para que la decision se lea en el codigo y
       // no como un warning que todos aprenden a ignorar.
       allowSystemInMessages: true,
-      tools: { ...herramientas, pintar_pantalla: pintor.herramienta },
+      tools: {
+        ...herramientas,
+        pintar_pantalla: pintor.herramienta,
+        responder_conversacion: respondedor.herramienta,
+      },
       stopWhen: [
         stepCountIs(config.maxPasos),
-        () => pintor.pintada(),
+        () => pintor.pintada() || respondedor.respondida(),
         () => pintor.intentosFallidos() >= MAX_INTENTOS_DE_PANTALLA,
       ],
-      // El ultimo paso se reserva para la pantalla. Sin esto, un turno que se entretiene
-      // consultando se queda sin pasos y contesta en prosa disculpandose: paso el
-      // 2026-09-12 con "simula mi fondo de emergencia", donde el modelo llamo
-      // `proyectar_ahorro` seis veces y murio en el paso 8 sin pintar nada. Mas vale una
-      // pantalla con lo que ya sabe que una disculpa.
-      // Y cuando llega ese paso, el modelo solo ve `pintar_pantalla`: las 21 definiciones
-      // de tools del MCP son ~6,600 tokens de entrada que se reenvian en CADA peticion, y
-      // en el paso de pintar no sirven para nada. Recortarlas ahi baja la peticion mas
-      // cara del turno de ~14,000 a ~7,400 tokens, y de paso le quita al modelo la
-      // tentacion de consultar una vez mas en vez de entregar la pantalla.
+      // El ultimo paso se reserva para entregar pantalla o respuesta. Sin esto, un turno
+      // que se entretiene consultando se queda sin pasos y contesta en prosa disculpandose.
       prepareStep: ({ stepNumber }) =>
         stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR
-          ? { toolChoice: { type: "tool", toolName: "pintar_pantalla" }, activeTools: ["pintar_pantalla"] }
+          ? { toolChoice: "required", activeTools: ["pintar_pantalla", "responder_conversacion"] }
           : undefined,
       providerOptions: opcionesDelProveedor(),
       abortSignal: senal,
@@ -184,6 +181,8 @@ export async function* correrTurno(
         case "tool-result":
           if (parte.toolName === "pintar_pantalla") {
             yield* emitirPantalla(parte.output as ResultadoPintar, pintor);
+          } else if (parte.toolName === "responder_conversacion") {
+            // Entrega conversacional: no se emite como tool de datos externa
           } else {
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.
@@ -235,10 +234,15 @@ export async function* correrTurno(
     }
 
     const ultima = pintor.ultima();
+    const conversacion = respondedor.ultima();
+
     if (pintor.pintada() && ultima) {
       yield { tipo: "texto", valor: ultima.texto };
       yield { tipo: "razon", valor: ultima.razon };
       if (ultima.sugerencias.length) yield { tipo: "sugerencias", valores: ultima.sugerencias };
+    } else if (respondedor.respondida() && conversacion) {
+      yield { tipo: "texto", valor: conversacion.texto };
+      if (conversacion.sugerencias.length) yield { tipo: "sugerencias", valores: conversacion.sugerencias };
     } else if (corte === "timeout") {
       yield { tipo: "error", codigo: "timeout", mensaje: `el turno paso de ${timeoutMs / 1000} s y se corto` };
       yield { tipo: "texto", valor: "Me tarde de mas. Intenta de nuevo." };
@@ -247,9 +251,11 @@ export async function* correrTurno(
     } else if (corte === "modelo") {
       // El error del proveedor ya salio arriba; solo falta que la conversacion no quede muda.
       yield { tipo: "texto", valor: "Algo falló de mi lado. Intenta de nuevo." };
+    } else if (prosa.trim() && pintor.intentosFallidos() === 0) {
+      // El modelo contestó en texto conversacional sin errores de pantalla
+      yield { tipo: "texto", valor: prosa.trim() };
     } else {
-      // Nunca llego una pantalla valida. La conversacion no se queda muda: se contesta
-      // con lo que el modelo haya escrito en prosa (contrato agente-cliente, errores).
+      // Nunca llego una pantalla valida tras intentarlo o no hubo respuesta.
       yield {
         tipo: "error",
         codigo: "a2ui",
@@ -280,7 +286,7 @@ export async function* correrTurno(
         usuario: peticion.usuarioId,
         pasos,
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
-        pintada: pintor.pintada(),
+        pintada: pintor.pintada() || respondedor.respondida(),
         corte: corte ?? null,
         entrada: consumo?.inputTokens ?? null,
         salida: consumo?.outputTokens ?? null,

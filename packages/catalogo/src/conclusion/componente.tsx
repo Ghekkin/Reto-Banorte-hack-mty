@@ -5,6 +5,7 @@ import { EsqueletoCuerpo, EsqueletoPie, EsqueletoTarjeta, Linea } from "../esque
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import type { PropsComponente } from "@maya/a2ui";
 import { CLASES_FILA_TOCABLE } from "../comunes";
+import { useConfiguracionCatalogo } from "../contexto";
 import type { DatoDeApoyo, PropsConclusion } from "./schema";
 
 /**
@@ -39,6 +40,8 @@ const TONO: Record<DatoDeApoyo["tono"], string> = {
 
 export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponente, "alAccionar">) {
   const { saludo, titular, detalle, datos, sugerencias, razon, alAccionar } = props;
+  const { ocultarSugerenciasEnTarjeta } = useConfiguracionCatalogo();
+  const debeMostrarSugerencias = !ocultarSugerenciasEnTarjeta && Boolean(sugerencias && sugerencias.length > 0);
 
   if (!titular) {
     return (
@@ -89,9 +92,9 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
         ) : null}
       </CardContent>
 
-      {sugerencias && sugerencias.length > 0 ? (
+      {debeMostrarSugerencias ? (
         <CardContent className="flex flex-wrap gap-2 pt-0">
-          {sugerencias.map((s) => (
+          {sugerencias!.map((s) => (
             // Sin `alAccionar` no son botones: en un lienzo de solo lectura (la galeria,
             // una portada sin host que atienda la accion) un boton que no hace nada al
             // tocarlo es peor que un texto que no invita a tocarlo.

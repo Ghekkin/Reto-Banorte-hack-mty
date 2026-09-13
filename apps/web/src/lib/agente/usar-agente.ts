@@ -165,10 +165,11 @@ export function usarAgente(usuarioId: string) {
               break;
             case "fin": {
               // La pantalla del turno se queda en el hilo, con su tira de transparencia.
-              // Un turno que no pinto nada (prosa, error) no congela nada: no hay que
-              // dejar un hueco vacio en la conversacion.
+              // Un turno que no pinto nada (conversacion, prosa, error) no congela nada: no hay que
+              // dejar un hueco vacio en la conversacion ni duplicar una pantalla previa.
+              const emitioA2ui = lineas.some((l) => l.tipo === "a2ui");
               const pantalla = actual.get(SUPERFICIE);
-              if (pantalla && pantalla.componentes.size > 0) {
+              if (emitioA2ui && pantalla && pantalla.componentes.size > 0) {
                 const congelada = [...lineas];
                 setHilo((h) => [...h, { tipo: "pantalla", superficie: pantalla, transparencia: congelada }]);
               }

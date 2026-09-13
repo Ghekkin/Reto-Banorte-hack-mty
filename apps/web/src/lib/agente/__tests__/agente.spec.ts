@@ -8,7 +8,7 @@ import { herramientasDelMcp } from "../mcp-cliente";
 import { armarMensajes, quitarComasColgantes, rescatarJson } from "../pantalla";
 import type { LineaStream, PeticionAgente } from "../tipos";
 import { esquemaPeticion } from "../tipos";
-import { modeloColgado, modeloGuionizado, pasoConTool } from "./ayudas";
+import { modeloColgado, modeloGuionizado, pasoConTexto, pasoConTool } from "./ayudas";
 
 /**
  * El bucle del agente con un modelo simulado: prueba el CABLEADO (tools -> A2UI ->
@@ -99,6 +99,50 @@ describe("correrTurno", () => {
     expect(lineas.find((l) => l.tipo === "razon")).toBeDefined();
     expect(lineas.find((l) => l.tipo === "sugerencias")).toMatchObject({ valores: ["¿Y en que se me va el dinero?"] });
     expect(lineas.at(-1)).toMatchObject({ tipo: "fin", pasos: 2 });
+  });
+
+  it("responde cordialmente con responder_conversacion sin pantalla visual ni error", async () => {
+    const lineas = await recolectar(
+      correrTurno(peticion({ mensajes: [{ rol: "usuario", texto: "hola" }] }), {
+        modelo: modeloGuionizado([
+          pasoConTool("responder_conversacion", {
+            texto: "¡Hola Alberto! Qué gusto saludarte. Soy Maya, tu asesora de salud financiera en Banorte. ¿Qué te gustaría realizar hoy?",
+            sugerencias: ["Bajar intereses de mi tarjeta", "¿En qué se me fue el dinero?", "¿Cómo está mi salud financiera?"],
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const tipos = lineas.map((l) => l.tipo);
+    expect(tipos).not.toContain("a2ui");
+    expect(tipos).not.toContain("error");
+    expect(lineas.find((l) => l.tipo === "texto")).toMatchObject({
+      valor: expect.stringContaining("¡Hola Alberto!"),
+    });
+    expect(lineas.find((l) => l.tipo === "sugerencias")).toMatchObject({
+      valores: ["Bajar intereses de mi tarjeta", "¿En qué se me fue el dinero?", "¿Cómo está mi salud financiera?"],
+    });
+    expect(lineas.at(-1)).toMatchObject({ tipo: "fin", pasos: 1 });
+  });
+
+  it("responde en prosa conversacional directa sin error a2ui cuando no se intenta pintar", async () => {
+    const lineas = await recolectar(
+      correrTurno(peticion({ mensajes: [{ rol: "usuario", texto: "hola" }] }), {
+        modelo: modeloGuionizado([
+          pasoConTexto("¡Hola! Con gusto te oriento sobre tus cuentas y opciones financieras."),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const tipos = lineas.map((l) => l.tipo);
+    expect(tipos).not.toContain("a2ui");
+    expect(tipos).not.toContain("error");
+    expect(lineas.find((l) => l.tipo === "texto")).toMatchObject({
+      valor: "¡Hola! Con gusto te oriento sobre tus cuentas y opciones financieras.",
+    });
+    expect(lineas.at(-1)).toMatchObject({ tipo: "fin" });
   });
 
   it("una pantalla invalida se reintenta una vez y no llega al renderer", async () => {

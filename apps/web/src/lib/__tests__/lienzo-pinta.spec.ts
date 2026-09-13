@@ -31,6 +31,9 @@ function superficieDelEjemplo(ruta: string) {
 // `fileURLToPath`, no `.pathname`: en Windows `.pathname` deja el driver letter con
 // una barra al frente y los espacios en `%20`, que `readFileSync` no resuelve.
 const EJEMPLO = fileURLToPath(new URL("../../../../../packages/a2ui/ejemplos/plan-de-pago.jsonl", import.meta.url));
+const EJEMPLO_CONCLUSION = fileURLToPath(
+  new URL("../../../../../packages/catalogo/ejemplos/conclusion.jsonl", import.meta.url),
+);
 
 describe("el lienzo de la demo", () => {
   const html = renderToStaticMarkup(
@@ -55,5 +58,36 @@ describe("el lienzo de la demo", () => {
     // El detalle del acomodo se prueba en `rejilla.spec.ts`; aqui, que el camino de la demo lo use.
     expect(html).toContain('data-pieza="resumen"');
     expect(html).toContain('data-pieza="plan"');
+  });
+});
+
+describe("Conclusion dentro del Lienzo (consola de chat)", () => {
+  it("oculta las sugerencias dentro de la tarjeta en el Lienzo por defecto para no duplicarlas con las opciones de abajo", () => {
+    const htmlConsola = renderToStaticMarkup(
+      createElement(Lienzo, {
+        superficie: superficieDelEjemplo(EJEMPLO_CONCLUSION),
+        conversacionId: "c_prueba",
+        alAccionar: () => {},
+      }),
+    );
+    expect(htmlConsola).toContain("Tu plan de tarjeta ya está activo");
+    expect(htmlConsola).toContain("¿Por qué veo esto?");
+    // No debe contener los botones de sugerencia dentro de la tarjeta
+    expect(htmlConsola).not.toContain("¿Cómo van mis pagos del plan?");
+    expect(htmlConsola).not.toContain("¿Por qué subieron mis retiros?");
+  });
+
+  it("permite mostrar las sugerencias si ocultarSugerenciasEnTarjeta es false (ej. galeria)", () => {
+    const htmlGaleria = renderToStaticMarkup(
+      createElement(Lienzo, {
+        superficie: superficieDelEjemplo(EJEMPLO_CONCLUSION),
+        conversacionId: "c_prueba",
+        alAccionar: () => {},
+        ocultarSugerenciasEnTarjeta: false,
+      }),
+    );
+    expect(htmlGaleria).toContain("Tu plan de tarjeta ya está activo");
+    expect(htmlGaleria).toContain("¿Cómo van mis pagos del plan?");
+    expect(htmlGaleria).toContain("¿Por qué subieron mis retiros?");
   });
 });
