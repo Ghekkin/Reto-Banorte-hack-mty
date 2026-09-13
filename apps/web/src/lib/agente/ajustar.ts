@@ -140,6 +140,7 @@ export function elegirPantalla(
  * | `ejecutar_decision` → `programar_abono_capital` | la misma | escenario `despues`, `antes`, `programado: true` |
  * | `simular_gasto_externo` | `GastoPorCategoria` | `categorias`, `totalCentavos` de `despues`, `antes`, `aviso` |
  * | `ejecutar_decision` → `registrar_gasto_externo` | la misma | `despues` ya guardado, `antes`, sin aviso |
+ * | `simular_reestructura` | `PlanDePago` de la misma tarjeta | `opciones` fundidas con las que se veian, `tarjetaId`, el plazo nuevo elegido |
  * | `proyectar_ahorro` | `SimuladorMeta` | meta, lo ahorrado, aportacion, tope (nunca debajo de la aportacion), frecuencia |
  * | cualquier accion con `capacidadAhorro` | `SimuladorMeta` | tope, y aportacion y piso recortados al tope |
  *
@@ -246,6 +247,45 @@ export function parchesDeterministas(
         aportacionCentavos: proyeccion.aportacionCentavos,
         aportacionMaximaCentavos: Math.max(capacidad, proyeccion.aportacionCentavos),
         ...(proyeccion.frecuencia === "mensual" || proyeccion.frecuencia === "quincenal" ? { frecuencia: proyeccion.frecuencia } : {}),
+      });
+    }
+  }
+
+  // El plan de la tarjeta: «¿y si fueran 30 meses?» cotiza ese plazo con `simular_reestructura`.
+  // Las opciones que la tool devolvio se escriben tal cual y se FUNDEN con las que ya se veian
+  // (la tool pudo cotizar solo el plazo nuevo): la persona no pierde el 12/18/24 por preguntar el
+  // 30. Si la tool no cotizo todos los plazos que habia, el `recomendado` de antes se conserva,
+  // porque el de la tool se eligio entre menos opciones. Un solo plazo nuevo queda elegido.
+  const reestructura = objeto(datosDelTurno.simular_reestructura);
+  const cotizadas = Array.isArray(reestructura?.opciones) ? (reestructura.opciones as unknown[]).map(objeto) : [];
+  if (reestructura && cotizadas.length > 0 && cotizadas.every((o) => typeof o?.plazoMeses === "number")) {
+    for (const c of deTipo("PlanDePago")) {
+      const tarjeta = valorDe(c, "tarjetaId");
+      if (typeof tarjeta === "string" && typeof reestructura.tarjetaId === "string" && tarjeta !== reestructura.tarjetaId) continue;
+      const previas = (Array.isArray(valorDe(c, "opciones")) ? (valorDe(c, "opciones") as unknown[]) : [])
+        .map(objeto)
+        .filter((o): o is Record<string, unknown> => typeof o?.plazoMeses === "number");
+      const plazosNuevos = cotizadas.map((o) => o!.plazoMeses as number);
+      const cubreTodas = previas.every((o) => plazosNuevos.includes(o.plazoMeses as number));
+      const porPlazo = new Map<number, Record<string, unknown>>();
+      for (const o of previas) porPlazo.set(o.plazoMeses as number, cubreTodas ? { ...o, recomendado: undefined } : o);
+      for (const o of cotizadas) {
+        porPlazo.set(o!.plazoMeses as number, {
+          plazoMeses: o!.plazoMeses,
+          mensualidadCentavos: o!.mensualidadCentavos,
+          cat: o!.cat,
+          ahorroCentavos: o!.ahorroVsMinimoCentavos,
+          ...(cubreTodas && o!.esRecomendado === true ? { recomendado: true } : {}),
+        });
+      }
+      const opciones = [...porPlazo.values()]
+        .sort((a, b) => (a.plazoMeses as number) - (b.plazoMeses as number))
+        .map((o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== undefined)));
+      const nuevos = plazosNuevos.filter((p) => !previas.some((o) => o.plazoMeses === p));
+      agregar(c.id, {
+        opciones,
+        ...(typeof reestructura.tarjetaId === "string" ? { tarjetaId: reestructura.tarjetaId } : {}),
+        ...(nuevos.length === 1 ? { plazoElegido: nuevos[0] } : {}),
       });
     }
   }
