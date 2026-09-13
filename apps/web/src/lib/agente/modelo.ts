@@ -5,7 +5,7 @@ import { config } from "./config";
 
 /**
  * Lo unico que sabe cual es el modelo. El resto del codigo pide "el modelo" y no le
- * importa cual (ADR 0005: Gemini 3.1 Flash Lite principal, Claude Sonnet 5 de respaldo,
+ * importa cual (ADR 0005: Gemini 3.8 Flash principal, Claude Sonnet 5 de respaldo,
  * se cambia con `MODELO=claude` sin tocar codigo).
  *
  * El id de Gemini se puede sobreescribir con `MODELO_GEMINI` porque la cuota gratuita es por
@@ -15,7 +15,9 @@ import { config } from "./config";
 export type ProveedorModelo = "gemini" | "claude";
 
 export const MODELOS: Record<ProveedorModelo, string> = {
-  gemini: "gemini-3.1-flash-lite",
+  get gemini() {
+    return config.modeloGemini;
+  },
   claude: "claude-sonnet-5",
 };
 

@@ -61,13 +61,3 @@ personas: hay que activar facturación desde el inicio.
 - Riesgo: JSON A2UI fuera del catálogo. Mitigación: structured output contra el
   schema del catálogo y validación antes de emitir (ADR 0003), en los dos proveedores.
 - El premio de Gemini pasa de "probable" a **objetivo**: `demo` registra la aplicación.
-
-## Actualización 2026-09-12
-
-Se cambia el modelo principal de `gemini-3.8-flash` a **`gemini-3.1-flash-lite`** en
-`modelo.ts` (mismo mecanismo: `MODELO=gemini`, respaldo `MODELO=claude` sin tocar
-código). La comparación de precios y latencia de la tabla de arriba corresponde al
-modelo anterior y queda como referencia histórica de por qué se eligió la familia
-Gemini; falta remedir costo y latencia con Flash Lite en el próximo ensayo del guion
-(hora 24). Si el guion falla dos veces con este modelo, aplica la misma regla del punto
-2 de Consecuencias: issue `alta` y se decide el modelo de demo.

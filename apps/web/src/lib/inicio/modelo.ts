@@ -13,8 +13,8 @@ import { configInicio } from "./config";
  * cierto tiempo, para tres personas: el costo por corrida importa mas que el ingenio.
  *
  * `MODELO_INICIO` acepta cualquier id: `gemini-3.5-flash-lite` (default),
- * `gemini-3.1-flash-lite` (el de la conversacion), `claude-haiku-4-5`… La llave es la
- * misma del agente segun el proveedor.
+ * `gemini-3.8-flash` (el de la conversacion), `claude-haiku-4-5`… La llave es la misma
+ * del agente segun el proveedor.
  */
 export function proveedorDelInicio(): "gemini" | "claude" {
   return configInicio.modelo.startsWith("claude") ? "claude" : "gemini";
