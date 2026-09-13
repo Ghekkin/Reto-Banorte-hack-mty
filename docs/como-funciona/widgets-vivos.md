@@ -93,7 +93,17 @@ Con el flag encendido, `generarPortada` delega en `generarPortadaDeWidgets`:
    referencia (`{etiqueta, widget, campo}` → valor formateado por el servidor), verifica el
    texto, y pasa todo por el **mismo** `armarMensajes` que `pintar_pantalla` (catálogo, árbol,
    tope de 3 tarjetas, JSON Schema oficial, `action` por omisión).
-4. Se guardan los tres mensajes **más** `procedencias` y `referencias` (migración 0005).
+   - **Una cifra de apoyo que no se puede leer se quita, no rechaza la portada** (issue #34,
+     2026-09-13): si cita una tarjeta que no está o un campo que la tarjeta no tiene (el modelo
+     chico pedía mucho `puntajeSalud` sin pintar `salud`), `armarConclusion` la descarta y sigue.
+     Antes eso devolvía `ok: false` y el modelo repetía la petición completa solo para quitar ese
+     dato: 8 de cada 10 portadas pagaban dos peticiones. Descartar no deja entrar ninguna cifra
+     inventada —el valor sigue saliendo solo de la tarjeta— y si no queda ninguna, la
+     `Conclusion` sale sin `datos`. Lo quitado va en el resultado de la tool
+     (`datosDescartados`, visible en `corrida_tools`) y en un `console.warn`.
+4. Se guardan los tres mensajes **más** `procedencias` y `referencias` (migración 0005). Las
+   `referencias` son **solo las de las cifras que quedaron**: `recalcularConclusion` no puede
+   resucitar después una cifra que nunca se mostró.
 
 ### Una pregunta: `POST /api/inicio/widget`
 

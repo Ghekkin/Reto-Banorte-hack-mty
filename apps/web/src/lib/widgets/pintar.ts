@@ -8,7 +8,6 @@ import {
   pedidoDeConclusion,
   pedidoDeWidget,
   raizDe,
-  referenciasDe,
   type PedidoDeWidget,
   type Procedencias,
   type ReferenciaDeDato,
@@ -49,6 +48,11 @@ export type PantallaDeWidgets = {
   sugerencias: string[];
   /** Cifras que el verificador quito del texto en el ultimo intento. Vacio casi siempre. */
   cifrasQuitadas: string[];
+  /**
+   * Cifras de apoyo de la conclusion que citaban una tarjeta o un campo que no esta y se
+   * quitaron en vez de rechazar la portada (issue #34). Vacio casi siempre.
+   */
+  datosDescartados: string[];
 };
 
 export type Armado<T> = ({ ok: true } & T) | { ok: false; errores: string[] };
@@ -75,8 +79,11 @@ export async function armarPantallaDeWidgets(
   }
   if (errores.length) return { ok: false, errores };
 
+  // Nunca rechaza: una cifra de apoyo que no se puede leer de su tarjeta se quita (issue #34).
   const conclusion = armarConclusion(entrada.conclusion, widgets, entrada.razon);
-  if (!conclusion.ok) return { ok: false, errores: conclusion.errores };
+  if (conclusion.descartados.length) {
+    console.warn(JSON.stringify({ widgets: "datos-descartados", descartados: conclusion.descartados }));
+  }
 
   // El texto se verifica contra TODO lo que el MCP devolvio en el turno, no solo contra lo
   // que quedo en las tarjetas: "tu ingreso es de $32,000" es cierto aunque ninguna tarjeta
@@ -123,11 +130,12 @@ export async function armarPantallaDeWidgets(
     ok: true,
     mensajes: armado.mensajes,
     procedencias: Object.fromEntries([...widgets.values()].map((w) => [w.componente.id, w.procedencia])),
-    referencias: referenciasDe(entrada.conclusion),
+    referencias: conclusion.referencias,
     texto,
     razon: entrada.razon,
     sugerencias: entrada.conclusion.sugerencias?.slice(0, 3) ?? [],
     cifrasQuitadas: cifrasQuitadas.map((c) => c.crudo),
+    datosDescartados: conclusion.descartados,
   };
 }
 
@@ -144,9 +152,9 @@ export type CierreDePortada = {
  * (`lib/inicio/widgets-por-cuenta.ts`), en ese orden y con la primera de heroe.
  *
  * Lo que el modelo mando para esas fuentes (id, parametros, variantes, razon) se respeta; una
- * fuente que no pidio se agrega con el id por defecto; una que pidio y no toca, se quita. Y las
- * cifras de la conclusion que citaban una tarjeta quitada se descartan, en vez de rechazar la
- * portada entera: es la misma causa del issue #34 (la conclusion cita `salud` sin pintarla).
+ * fuente que no pidio se agrega con el id por defecto; una que pidio y no toca, se quita. Las
+ * cifras de la conclusion que citaban una tarjeta quitada se reapuntan a la que la reemplaza
+ * por fuente, o se quitan; lo que siga sin resolverse lo descarta `armarConclusion` (#34).
  */
 export function forzarFuentes(
   entrada: EntradaPintarWidgets,
@@ -191,7 +199,12 @@ export function crearCierreDePortada(
           return { ok: false, errores: armado.errores };
         }
         resultado = armado;
-        return { ok: true, tarjetas: Object.keys(armado.procedencias).length + 1 };
+        // Lo descartado viaja en el resultado de la tool para que quede en `corrida_tools`.
+        return {
+          ok: true,
+          tarjetas: Object.keys(armado.procedencias).length + 1,
+          ...(armado.datosDescartados.length ? { datosDescartados: armado.datosDescartados } : {}),
+        };
       },
     }),
   };

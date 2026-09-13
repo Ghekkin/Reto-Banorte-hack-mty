@@ -259,7 +259,7 @@ export function formatearCampo(campo: string, valor: unknown): string | undefine
   return new Intl.NumberFormat("es-MX", { maximumFractionDigits: 2 }).format(valor);
 }
 
-/** Los campos de una tarjeta que sirven como cifra de apoyo, para el mensaje de error. */
+/** Los campos de una tarjeta que sirven como cifra de apoyo, para el log de lo descartado. */
 function camposCitables(props: Record<string, unknown>): string[] {
   return Object.entries(props)
     .filter(([, v]) => typeof v === "number" || typeof v === "string")
@@ -267,31 +267,50 @@ function camposCitables(props: Record<string, unknown>): string[] {
     .filter((k) => !["razon", "ancho", "id", "component"].includes(k));
 }
 
+export type ConclusionArmada = {
+  componente: Componente;
+  /** Solo las referencias de las cifras que SI quedaron en la conclusion. */
+  referencias: ReferenciaDeDato[];
+  /** Por que se quito cada cifra que no se pudo resolver; para el log y la corrida. */
+  descartados: string[];
+};
+
+/**
+ * La `Conclusion` con sus cifras de apoyo resueltas contra las tarjetas ya armadas.
+ *
+ * Una cifra que cita una tarjeta que no esta, o un campo que la tarjeta no tiene, **se
+ * descarta** en vez de rechazar la portada (issue #34): rechazarla le costaba al modelo una
+ * peticion completa solo para quitar ese dato, en 8 de cada 10 portadas. Descartar no abre
+ * ningun camino a una cifra inventada: el valor sigue saliendo solo de la tarjeta, y lo que
+ * no se puede leer ahi no se muestra. Si no queda ninguna, la conclusion sale sin `datos`.
+ */
 export function armarConclusion(
   pedido: PedidoDeConclusion,
   widgets: ReadonlyMap<string, WidgetArmado>,
   razon: string,
-): Resultado<{ componente: Componente }> {
-  const errores: string[] = [];
+): ConclusionArmada {
   const datos: Array<{ etiqueta: string; valor: string; tono: string }> = [];
+  const referencias: ReferenciaDeDato[] = [];
+  const descartados: string[] = [];
 
   for (const [i, dato] of (pedido.datos ?? []).entries()) {
     const widget = widgets.get(dato.widget);
     if (!widget) {
-      errores.push(`conclusion.datos[${i}]: no hay una tarjeta "${dato.widget}"; las que hay: ${[...widgets.keys()].join(", ")}`);
+      descartados.push(`conclusion.datos[${i}]: no hay una tarjeta "${dato.widget}"; las que hay: ${[...widgets.keys()].join(", ")}`);
       continue;
     }
     const valor = formatearCampo(dato.campo, leerCampo(widget.componente, dato.campo));
     if (valor === undefined) {
-      errores.push(
+      descartados.push(
         `conclusion.datos[${i}]: la tarjeta "${dato.widget}" no tiene una cifra en "${dato.campo}"; ` +
           `las que tiene: ${camposCitables(widget.componente).join(", ")}`,
       );
       continue;
     }
-    datos.push({ etiqueta: dato.etiqueta, valor, tono: TONOS.has(dato.tono ?? "") ? dato.tono! : "neutro" });
+    const tono = TONOS.has(dato.tono ?? "") ? dato.tono! : "neutro";
+    datos.push({ etiqueta: dato.etiqueta, valor, tono });
+    referencias.push({ etiqueta: dato.etiqueta, widget: dato.widget, campo: dato.campo, tono });
   }
-  if (errores.length) return { ok: false, errores };
 
   const componente: Componente = {
     id: "conclusion",
@@ -303,23 +322,15 @@ export function armarConclusion(
     ...(pedido.sugerencias?.length ? { sugerencias: pedido.sugerencias.slice(0, 3) } : {}),
     razon,
   };
-  return { ok: true, componente };
+  return { componente, referencias, descartados };
 }
 
 /**
  * Las referencias de las cifras de apoyo, guardadas junto a la portada: cuando una tarjeta
  * cambia, sus cifras en la `Conclusion` se rehacen con el valor nuevo (`recalcularConclusion`).
+ * Las arma `armarConclusion`, solo con las cifras que quedaron.
  */
 export type ReferenciaDeDato = { etiqueta: string; widget: string; campo: string; tono: string };
-
-export function referenciasDe(pedido: PedidoDeConclusion): ReferenciaDeDato[] {
-  return (pedido.datos ?? []).map((d) => ({
-    etiqueta: d.etiqueta,
-    widget: d.widget,
-    campo: d.campo,
-    tono: TONOS.has(d.tono ?? "") ? d.tono! : "neutro",
-  }));
-}
 
 /**
  * La `Conclusion` con sus cifras rehechas contra los componentes de hoy. Una referencia a

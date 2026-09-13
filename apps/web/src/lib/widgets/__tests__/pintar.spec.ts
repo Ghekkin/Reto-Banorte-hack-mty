@@ -114,14 +114,77 @@ describe("armarPantallaDeWidgets", () => {
     if (!r.ok) expect(r.errores.join(" ")).toMatch(/no aplica a esta persona.*Elige otra fuente/);
   });
 
-  it("una cifra de apoyo a un campo que la tarjeta no tiene dice cuales si", async () => {
+  // Issue #34: una cifra de apoyo que no se puede resolver le costaba a la portada una peticion
+  // entera al modelo. Ahora se descarta y la portada sale a la primera; ninguna cifra entra
+  // sin venir de una tarjeta, asi que no se abre ningun camino para numeros inventados.
+  it("una cifra de apoyo a un campo que la tarjeta no tiene se descarta y la portada sale a la primera", async () => {
     const { consultor } = consultorFalso("usr_beto");
     const r = await armarPantallaDeWidgets(
       { ...BUENA, conclusion: { ...BUENA.conclusion, datos: [{ etiqueta: "Deuda", widget: "tarjeta", campo: "deudaTotalCentavos" }] } },
       consultor,
     );
-    expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errores[0]).toMatch(/no tiene una cifra en "deudaTotalCentavos".*saldoCentavos/);
+    expect(r.ok, r.ok ? "" : r.errores.join("\n")).toBe(true);
+    if (!r.ok) return;
+    expect(componentes(r.mensajes).get("conclusion")!.datos).toBeUndefined();
+    expect(r.referencias).toEqual([]);
+    expect(r.datosDescartados).toEqual([expect.stringMatching(/no tiene una cifra en "deudaTotalCentavos".*saldoCentavos/)]);
+  });
+
+  it("REAL (corrida_tools 2227, Beto, 05:14 del 13): campo ausente y tarjeta ausente se descartan; lo valido queda", async () => {
+    // Los argumentos tal cual los mando gemini-3.5-flash-lite; se rechazaron con dos errores.
+    const pedida: EntradaPintarWidgets = {
+      razon: "Alberto tiene plan activo en su tarjeta y un crédito de nómina vigente, por lo que la prioridad es mostrarle el estado de su tarjeta y su crédito.",
+      texto: "Mantén el monitoreo de tus mensualidades vigentes.",
+      widgets: [
+        { id: "tarjeta", heroe: true, razon: "Consulta el estatus actual de tu tarjeta de crédito y tu plan activo.", fuente: "tarjeta" },
+        { id: "credito", heroe: false, razon: "Revisa los detalles y el saldo insoluto de tu crédito de nómina.", fuente: "credito" },
+      ],
+      conclusion: {
+        saludo: "Hola, Alberto",
+        titular: "Tu saldo está diferido y tus pagos están bajo control",
+        detalle: "Ya tienes un plan activo para diferir tu saldo en la tarjeta y mantienes al corriente tu crédito de nómina. Continúa con tus pagos puntuales para proteger tu salud financiera.",
+        datos: [
+          { tono: "neutro", campo: "saldoDiferidoCentavos", widget: "tarjeta", etiqueta: "Saldo diferido" },
+          { tono: "bueno", campo: "mensualidadCentavos", widget: "plan_de_pago", etiqueta: "Mensualidad del plan" },
+          { tono: "neutro", campo: "saldoInsolutoCentavos", widget: "credito", etiqueta: "Saldo del crédito" },
+        ],
+        sugerencias: ["¿Cuánto falta para terminar de pagar mi crédito de nómina?", "¿Cuáles son mis categorías con mayor gasto este mes?", "¿Cómo puedo mejorar mi puntaje de salud financiera?"],
+      },
+    };
+    const { consultor } = consultorFalso("usr_beto");
+    const r = await armarPantallaDeWidgets(pedida, consultor);
+    expect(r.ok, r.ok ? "" : r.errores.join("\n")).toBe(true);
+    if (!r.ok) return;
+    const datos = componentes(r.mensajes).get("conclusion")!.datos as Array<{ etiqueta: string }>;
+    expect(datos.map((d) => d.etiqueta)).toEqual(["Saldo del crédito"]);
+    // Las referencias que se guardan son solo las que quedaron: `recalcularConclusion` no puede
+    // resucitar despues una cifra que nunca se mostro.
+    expect(r.referencias).toEqual([{ etiqueta: "Saldo del crédito", widget: "credito", campo: "saldoInsolutoCentavos", tono: "neutro" }]);
+    expect(r.datosDescartados).toHaveLength(2);
+    expect(r.datosDescartados.join(" ")).toMatch(/no hay una tarjeta "plan_de_pago"/);
+  });
+
+  it("si ninguna cifra de apoyo se puede resolver, la conclusion sale sin cifras (el titular basta)", async () => {
+    const { consultor } = consultorFalso("usr_beto");
+    const r = await armarPantallaDeWidgets(
+      {
+        ...BUENA,
+        conclusion: {
+          ...BUENA.conclusion,
+          datos: [
+            { etiqueta: "Tu salud financiera", widget: "salud", campo: "puntajeSalud" },
+            { etiqueta: "Puntaje", widget: "tarjeta", campo: "puntajeSalud" },
+          ],
+        },
+      },
+      consultor,
+    );
+    expect(r.ok, r.ok ? "" : r.errores.join("\n")).toBe(true);
+    if (!r.ok) return;
+    const conclusion = componentes(r.mensajes).get("conclusion")!;
+    expect(conclusion.titular).toBe(BUENA.conclusion.titular);
+    expect(conclusion.datos).toBeUndefined();
+    expect(r.referencias).toEqual([]);
   });
 
   it("dos heroes o ids repetidos se rechazan antes de consultar nada", async () => {

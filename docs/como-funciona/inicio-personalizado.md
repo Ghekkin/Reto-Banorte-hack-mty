@@ -209,7 +209,8 @@ vuelo, el rearmado tras una acción) es igual:
   `credito` + `simulador_meta`; portafolio desviado ≥ 5 puntos → `portafolio` + `rebalanceo` (sin
   desviación, `portafolio` + `salud`); lo demás → `gasto_del_mes` + `salud`. El encargo le dice al
   modelo cuáles son y `forzarFuentes` (`lib/widgets/pintar.ts`) las impone aunque pida otras,
-  descartando las cifras de la conclusión que citen una tarjeta quitada. Por qué: la escalera ya
+  descartando las cifras de la conclusión que citen una tarjeta quitada (lo que siga sin poder
+  leerse, como un campo que la tarjeta no tiene, lo quita `armarConclusion`: issue #34). Por qué: la escalera ya
   estaba en el prompt y el modelo chico se la saltaba (a Ana le pintó el rebalanceo con «tu
   portafolio requiere…»), y los jueces ven esta portada primero, en el celular. Verificado con el
   modelo real: Beto `ResumenTarjeta` + `PlanDePago`, Ana `ProyeccionPagoCredito` + `SimuladorMeta`,

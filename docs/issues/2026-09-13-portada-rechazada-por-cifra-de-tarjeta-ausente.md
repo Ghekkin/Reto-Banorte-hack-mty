@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: media
 area: web
 encontrado: 2026-09-13 04:40
 github: 34
+resuelto-en:
 ---
 
 # 8 de cada 10 portadas con widgets vivos pagan dos peticiones: la primera cita una tarjeta que no pintó
@@ -63,5 +64,42 @@ misma causa: el modelo quiere citar la salud), `"faltanteCentavos"`/`"montoObjet
 llave (`nombre:`). Ojo: la base mezcla producción y servidores locales, así que parte de eso puede
 venir de código viejo.
 
-**Falta:** tratar «no tiene una cifra en» igual que la tarjeta ausente (descartar el dato de apoyo
+**Faltaba** (hecho abajo): tratar «no tiene una cifra en» igual que la tarjeta ausente (descartar el dato de apoyo
 en vez de rechazar la portada).
+
+## Resolución (2026-09-13)
+
+**Arreglo 1, completo.** `armarConclusion` (`apps/web/src/lib/widgets/armar.ts`) ya no rechaza:
+una cifra de apoyo que cita una tarjeta que no está **o un campo que la tarjeta no tiene** se
+descarta y la portada sale en la misma petición. Devuelve `{ componente, referencias, descartados }`:
+
+- `referencias` son solo las de las cifras que quedaron (antes `referenciasDe` guardaba también las
+  inválidas, y `recalcularConclusion` podía mostrarlas después si la tarjeta cambiaba de fuente).
+- `descartados` viaja como `datosDescartados` en `PantallaDeWidgets`, en el resultado de la tool
+  `pintar_widgets` (queda en `corrida_tools`) y en un `console.warn`.
+- Sin mínimo: si no queda ninguna cifra, la `Conclusion` sale sin `datos`; el titular basta.
+- Ninguna cifra inventada entra por aquí: el valor sigue saliendo solo de la tarjeta armada.
+
+`turno.ts` (preguntas por tarjeta) no llama `armarConclusion`; solo `recalcularConclusion`, que ya
+descartaba referencias que no se pueden leer. No hizo falta tocarlo.
+
+**Arreglo 2, no se hizo.** Listar en el encargo los campos citables de cada tarjeta exige armar las
+tarjetas (consultar y adaptar) antes de llamar al modelo; con el descarte ya no cuesta un
+reintento, así que no vale la complejidad.
+
+**Evidencia.**
+
+- Pruebas en `apps/web/src/lib/widgets/__tests__/pintar.spec.ts`: el caso real de
+  `corrida_tools` 2227 (Beto, campo ausente + tarjeta ausente), un campo ausente y una conclusión
+  sin ninguna cifra válida. Las tres fallaban con el código anterior (`ok: false` con los mismos
+  errores de producción) y pasan con el arreglo. `@maya/web`: 385 pruebas en verde, typecheck limpio.
+- Repetición de los **19 rechazos reales** de `pintar_widgets` posteriores a 05:13 (11:13 UTC), con
+  sus argumentos tal cual y las salidas capturadas del MCP:
+  - **10 eran solo de la conclusión** (`no tiene una cifra en` / `no hay una tarjeta`): 8 pasan a la
+    primera. Los otros 2 (2218, 2658) caen en la repetición en la verificación de texto por un
+    `74` que es el `puntajeSalud` de `panorama_inicial`: en producción ese dato llega en el prefetch
+    y la verificación pasa. Es decir, los **10 habrían salido en una sola petición**.
+  - **9 tienen otra causa y siguen fallando igual**: 4 `proyectar_ahorro` que falla en la portada de
+    Beto (sin capacidad de ahorro / sin objetivo), 2 cifras de texto sin respaldo (`"96%"`), 2 llaves
+    con typo en `parametros` (`nombre:`), 1 `parametros` con JSON cortado.
+
