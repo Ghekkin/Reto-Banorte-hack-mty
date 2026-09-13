@@ -23,8 +23,6 @@ import { analizarAhorro } from "./analizar-ahorro.js";
 import { ejecutarDecision } from "./ejecutar-decision.js";
 import { orientarConsultaNoValida } from "./orientar-consulta-no-valida.js";
 import { consultarSugerenciasInversion } from "./consultar-sugerencias-inversion.js";
-import { proyectarInversion } from "./proyectar-inversion.js";
-import { simularCredito } from "./simular-credito.js";
 
 /**
  * Las tools del servidor. El orden es el del viaje que la demo cuenta: primero saber
@@ -40,8 +38,7 @@ import { simularCredito } from "./simular-credito.js";
  *           simular_reestructura · consultar_plan · comparar_periodos · proyectar_ahorro ·
  *           diagnostico_salud_financiera · consultar_creditos · detectar_fugas ·
  *           consultar_inversiones · consultar_catalogo_inversiones · consultar_historico_inversion ·
- *           analizar_gasto · analizar_ahorro · orientar_consulta_no_valida ·
- *           consultar_sugerencias_inversion · proyectar_inversion · simular_credito
+ *           analizar_gasto · analizar_ahorro
  * Accion:   aplicar_plan_pago (fase 1) · crear_apartado (fase 3) ·
  *           cancelar_suscripcion (fase 2) · crear_tope_gasto (fase 2) · ejecutar_decision
  *
@@ -51,13 +48,6 @@ import { simularCredito } from "./simular-credito.js";
  * Paquete Inversiones: consultar_inversiones, consultar_catalogo_inversiones, consultar_historico_inversion.
  * Orquestadores (Bloque A, `docs/arquitectura/orquestadores.md`): analizar_gasto,
  * analizar_ahorro (O4, fachadas de lectura), ejecutar_decision (O2, orquestador de accion).
- *
- * Paquete "el modelo dejo de inventar" (2026-09-12): `proyectar_inversion` y `simular_credito`.
- * Las dos existen por la misma razon: habia componentes del catalogo cuyas cifras NINGUNA tool
- * calculaba (los siete numeros de `ProyeccionCrecimiento`, los tres escenarios de
- * `EscenariosInversion`, la mensualidad de un plazo distinto en `ProyeccionPagoCredito`), y lo
- * que no tiene tool el modelo lo escribe de memoria. La matematica ya estaba en `dominio/`;
- * faltaba exponerla.
  */
 export const TOOLS: DefinicionDeTool[] = [
   panoramaInicial,
@@ -83,8 +73,6 @@ export const TOOLS: DefinicionDeTool[] = [
   consultarHistoricoInversion,
   orientarConsultaNoValida,
   consultarSugerenciasInversion,
-  proyectarInversion,
-  simularCredito,
 ];
 
 export function registrarTools(server: McpServer): void {

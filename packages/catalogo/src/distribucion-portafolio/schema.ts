@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Ancho, Centavos, Heroe, Limite, PropsBase } from "../comunes";
+import { Ancho, Centavos, Heroe, PropsBase } from "../comunes";
 
 /**
  * `DistribucionPortafolio` — Muestra el desglose de activos del portafolio patrimonial
@@ -23,16 +23,6 @@ export const schemaDistribucionPortafolio = PropsBase.extend({
   rendimientoTotalPct: z.number().describe("Rendimiento ponderado acumulado como fracción (ej. 0.087 = +8.7%)"),
   desviacionModeloPct: z.number().optional().describe("Desviación absoluta respecto a la asignación objetivo"),
   clases: z.array(ClaseActivo).min(1).describe("Desglose ordenado de mayor a menor peso"),
-  orden: z
-    .enum(["peso", "desviacion", "nombre"])
-    .default("peso")
-    .describe(
-      "Como se ordena la lista de al lado de la dona. `peso`: de mayor a menor (el default). " +
-        "`desviacion`: primero las que mas se salieron del modelo, para 'que tengo que rebalancear'. " +
-        "`nombre`: alfabetico. Es una prop de VISTA: cambiarla con ajustar_pantalla reordena sin " +
-        "volver a pedir los datos",
-    ),
-  limite: Limite,
 });
 
 export type PropsDistribucionPortafolio = z.infer<typeof schemaDistribucionPortafolio>;
@@ -40,7 +30,7 @@ export type PropsDistribucionPortafolio = z.infer<typeof schemaDistribucionPorta
 export const entradaDistribucionPortafolio = {
   nombre: "DistribucionPortafolio",
   cuandoUsarlo:
-    "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio. Si después pide otro orden o solo las N principales, eso es `ajustar_pantalla` sobre `orden` o `limite`.",
+    "La persona pregunta '¿Cómo va mi portafolio?', '¿En qué está invertido mi dinero?' o se detecta que su asignación se desvió del modelo sugerido. Muestra clases de activo y pesos. Dispara rebalancear_portafolio.",
   schema: schemaDistribucionPortafolio,
   acciones: ["rebalancear_portafolio"],
 };

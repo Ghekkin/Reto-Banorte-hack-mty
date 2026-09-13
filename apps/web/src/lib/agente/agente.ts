@@ -8,7 +8,6 @@ import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "./pantalla";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
-import { esperarDisponibilidadTokens, registrarTokensDeSalida } from "./limitador";
 
 /**
  * El turno del agente: interpreta la intencion, llama tools del MCP, emite la interfaz
@@ -151,7 +150,6 @@ export async function* correrTurno(
     const cierre = crearCierre(pantallaActual);
     const nombresDeCierre = Object.keys(cierre.herramientas);
 
-    await esperarDisponibilidadTokens();
     const resultado = streamText({
       model: opciones.modelo ?? modelo(),
       // El system prompt va como PRIMER MENSAJE, no en `system`, para poder marcarlo
@@ -307,9 +305,6 @@ export async function* correrTurno(
     // quedo sin cuota sin que nadie supiera cuanto costaba un turno. Con estos dos
     // numeros, UNA llamada real dice si el caché pega y cuanto se reenvia por peticion.
     const consumo = await resultado.usage.catch(() => undefined);
-    if (consumo?.outputTokens) {
-      registrarTokensDeSalida(consumo.outputTokens);
-    }
     console.log(
       JSON.stringify({
         agente: nombreDelModelo(),

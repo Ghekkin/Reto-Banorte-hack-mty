@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { VERSION_A2UI, escribir, leer, type Componente, type MensajeA2UI } from "@maya/a2ui";
+import { VERSION_A2UI, leer, type Componente, type MensajeA2UI } from "@maya/a2ui";
 import { CATALOGO } from "@maya/catalogo";
 import { SUPERFICIE } from "./config";
 import { nombresPermitidos, revisarProps } from "./pantalla";
@@ -173,14 +173,9 @@ export function armarParches(entrada: EntradaAjustarPantalla, pantalla: Pantalla
   // El componente fusionado se valida entero contra el schema de su entrada del catalogo:
   // asi una prop nueva mal escrita se cacha aqui y no en el navegador. Sin `razonDelTurno`,
   // porque el componente ya trae la suya y la del ajuste habla de otra cosa.
-  //
-  // Se valida contra el data model YA PARCHEADO, no contra el que llego: un parche de datos
-  // y uno de props del mismo turno pueden depender entre si, y validar contra el modelo
-  // viejo reportaria un error que el turno ya arreglo.
-  const modeloResultante = conParchesAplicados(pantalla.dataModel, parchesDatos);
   const permitidos = nombresPermitidos();
   for (const componente of fusionados) {
-    errores.push(...revisarProps(componente, undefined, modeloResultante));
+    errores.push(...revisarProps(componente));
     if (!permitidos.has(componente.component)) {
       errores.push(`${componente.id}: "${componente.component}" no esta en el catalogo`);
     }
@@ -188,22 +183,6 @@ export function armarParches(entrada: EntradaAjustarPantalla, pantalla: Pantalla
 
   if (errores.length) return { ok: false, errores };
   return { ok: true, mensajes, parches: mensajes.length };
-}
-
-/**
- * El data model como quedaria despues de este turno.
- *
- * `escribir` es pura y devuelve un objeto nuevo, asi que esto no muta la pantalla que llego.
- * Un parche con path invalido ya se reporto arriba y aqui se ignora.
- */
-function conParchesAplicados(dataModel: Record<string, unknown>, parches: unknown[]): Record<string, unknown> {
-  let modelo = dataModel;
-  for (const parche of parches) {
-    const p = parche as { path?: unknown; value?: unknown };
-    if (typeof p.path !== "string" || !p.path.startsWith("/") || !("value" in p)) continue;
-    modelo = escribir(modelo, p.path, p.value as never);
-  }
-  return modelo;
 }
 
 /**

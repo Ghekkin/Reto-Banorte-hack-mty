@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { PropsComponente } from "@maya/a2ui";
-import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje, recortar, sumaDeMontos } from "../comunes";
+import { CLASES_BOTON_PIE, formatearMonto, formatearPorcentaje } from "../comunes";
 import { EsqueletoCuerpo, EsqueletoEncabezado, EsqueletoFilas, EsqueletoPie, EsqueletoTarjeta } from "../esqueletos";
 import { PieTarjeta, Tarjeta } from "../tarjeta";
 import { Grafica, SEPARADOR, SERIES, TooltipMonto, formatearMontoCorto } from "../graficas";
@@ -31,7 +31,7 @@ const COLORES = [SERIES.principal, SERIES.acento, SERIES.tercera, SERIES.resto, 
 const DESVIACION_MINIMA = 0.05;
 
 export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafolio> & Pick<PropsComponente, "alAccionar">) {
-  const { valorTotalCentavos, aportadoCentavos, rendimientoTotalPct, desviacionModeloPct, clases, orden = "peso", limite, heroe = false, razon, alAccionar } = props;
+  const { valorTotalCentavos, aportadoCentavos, rendimientoTotalPct, desviacionModeloPct, clases, heroe = false, razon, alAccionar } = props;
 
   if (typeof valorTotalCentavos !== "number" || typeof rendimientoTotalPct !== "number" || !clases || clases.length === 0) {
     return (
@@ -51,12 +51,6 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
   const positivo = rendimientoTotalPct >= 0;
   const datos = clases.map((c, i) => ({ nombre: c.nombre, monto: c.montoCentavos, color: heroe ? `rgb(255 255 255 / ${1 - i * 0.2})` : COLORES[i % COLORES.length]! }));
-  // El color se ata a la CLASE, no a su posicion: la lista de al lado se puede reordenar o
-  // recortar (`orden`, `limite`) y la dona sigue pintando el portafolio completo con los
-  // mismos colores. La dona nunca se recorta —un pedazo de dona no suma 100 %—, solo la lista.
-  const colorDe = new Map(clases.map((c, i) => [c.claseId, datos[i]!.color]));
-  const { visibles, fuera } = recortar(ordenar(clases, orden), limite);
-  const montoFuera = sumaDeMontos(fuera);
   const config = Object.fromEntries(datos.map((d) => [d.nombre, { label: d.nombre, color: d.color }]));
 
   return (
@@ -119,14 +113,14 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
         </div>
 
         <ul className="flex min-w-0 flex-1 flex-col">
-          {visibles.map((c) => {
+          {clases.map((c, i) => {
             const desviada = typeof c.pesoObjetivoPct === "number" && Math.abs(c.pesoPct - c.pesoObjetivoPct) >= 0.03;
             return (
               <li
                 key={c.claseId}
                 className={`flex items-center gap-3 border-b py-2 last:border-0 ${heroe ? "border-white/20" : "border-borde-sutil"}`}
               >
-                <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: colorDe.get(c.claseId) }} aria-hidden />
+                <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: datos[i]!.color }} aria-hidden />
                 <span className="min-w-0 flex-1 truncate text-sm font-medium">{c.nombre}</span>
                 <span className="flex shrink-0 flex-col items-end">
                   <span className="monto text-sm font-semibold">{formatearMonto(c.montoCentavos)}</span>
@@ -143,14 +137,6 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
               </li>
             );
           })}
-          {fuera.length > 0 ? (
-            <li className={`flex items-center justify-between py-2 text-sm ${suave}`}>
-              <span>
-                y {fuera.length} {fuera.length === 1 ? "clase mas" : "clases mas"}
-              </span>
-              <span className="monto">{formatearMonto(montoFuera)}</span>
-            </li>
-          ) : null}
         </ul>
       </CardContent>
 
@@ -167,31 +153,4 @@ export function DistribucionPortafolio(props: Partial<PropsDistribucionPortafoli
       </PieTarjeta>
     </Tarjeta>
   );
-}
-
-/**
- * El orden de la lista de clases.
- *
- * `desviacion` pone primero las que mas se salieron del modelo objetivo, que es la lectura
- * que lleva al rebalanceo. Una clase SIN `pesoObjetivoPct` no tiene desviacion que medir y
- * se va al final: no es lo mismo "no se desvio" que "no hay modelo con que compararla".
- */
-function ordenar(
-  clases: NonNullable<PropsDistribucionPortafolio["clases"]>,
-  orden: NonNullable<PropsDistribucionPortafolio["orden"]>,
-): NonNullable<PropsDistribucionPortafolio["clases"]> {
-  const copia = [...clases];
-  if (orden === "nombre") return copia.sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
-  if (orden === "desviacion") {
-    const desviacion = (c: (typeof copia)[number]) =>
-      typeof c.pesoObjetivoPct === "number" ? Math.abs(c.pesoPct - c.pesoObjetivoPct) : null;
-    return copia.sort((a, b) => {
-      const da = desviacion(a);
-      const db = desviacion(b);
-      if (da === null) return db === null ? 0 : 1;
-      if (db === null) return -1;
-      return db - da;
-    });
-  }
-  return copia.sort((a, b) => b.pesoPct - a.pesoPct);
 }

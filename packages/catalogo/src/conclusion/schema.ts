@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { Ancho, Centavos, PropsBase } from "../comunes";
+import { Ancho, PropsBase } from "../comunes";
 
 /**
  * `Conclusion` — lo que Maya te dice de frente, en grande.
@@ -15,55 +15,34 @@ import { Ancho, Centavos, PropsBase } from "../comunes";
  * el degradado esta reservado para la tarjeta que carga EL numero de la pantalla.
  */
 
-/**
- * Un dato que sostiene la conclusion. Es lo que evita que el texto suene a opinion.
- *
- * **El dinero va en `montoCentavos`, NUNCA en `valor`.** Esta era la unica prop del
- * catalogo donde el modelo escribia una cifra de dinero como texto, contra la regla de
- * todo el repo (los montos viajan en centavos enteros y formatea quien pinta), y el
- * 2026-09-12 llego a pantalla el resultado: el dato real eran 457095 centavos, el modelo
- * los agrupo como si fueran pesos (`457,095`) y le metio el punto decimal dentro del
- * numero ya agrupado, produciendo **`$457,09.50`** donde iban $4,570.95. El mismo destrozo
- * convirtio una mensualidad de $5,503.20 en `$504,78.50`.
- *
- * Con `montoCentavos` el error es imposible por construccion: el componente formatea con
- * `formatearMonto`, venga la prop enlazada o literal.
- */
-export const DatoDeApoyo = z
-  .object({
-    etiqueta: z.string().describe("Que es: 'Mensualidad', 'Retiros de efectivo', 'Salud financiera'"),
-    montoCentavos: Centavos.optional().describe(
-      "SI ES DINERO, va aqui: el entero en CENTAVOS tal como lo devolvio la tool (457095, no 4570.95 " +
-        "ni '$4,570.95'). La interfaz lo formatea. Nunca escribas un monto a mano en `valor`",
+/** Un dato que sostiene la conclusion. Es lo que evita que el texto suene a opinion. */
+export const DatoDeApoyo = z.object({
+  etiqueta: z.string().describe("Que es: 'Mensualidad', 'Retiros de efectivo', 'Salud financiera'"),
+  valor: z
+    .string()
+    .describe(
+      "Ya formateado y corto: '$3,193.35', '+74%', '39/100'. Si es dinero, va con centavos y EXACTAMENTE " +
+        "igual que en la tarjeta que lo reporta: dos cifras distintas para el mismo monto en la misma " +
+        "pantalla es lo que hace que nadie crea ninguna",
     ),
-    valor: z
-      .string()
-      .optional()
-      .describe(
-        "Solo para lo que NO es dinero: '+74%', '39/100', '15 meses', '5 de octubre'. Si empieza con " +
-          "`$` se rechaza la pantalla: eso va en `montoCentavos`",
-      ),
-    tono: z
-      .string()
-      .default("neutro")
-      // Texto libre y no un `enum`, a proposito, y es la unica prop del catalogo que lo es.
-      // El modelo alcanza otras palabras para esto (`positivo`, `negativo`, `exito`) y, desde
-      // que `Conclusion` es obligatoria en toda pantalla, ese error costaba un reintento y un
-      // paso del turno en 3 de cada 10 turnos del guion (medido el 2026-09-12). Con un `enum`
-      // no basta con ser tolerante en Zod: el catalogo publicado se genera de aqui y la capa
-      // de los JSON Schema oficiales rechazaria igual, asi que las dos capas tienen que decir
-      // lo mismo. El tono es DECORACION —el color de una cifra—: tumbar la pantalla por el
-      // nombre de un color, cuando la cifra viene bien, es un mal trato. Lo que no reconoce el
-      // componente se pinta neutro (`componente.tsx`).
-      .describe(
-        "Exactamente uno de estos tres: `neutro`, `bueno` o `alerta` (no `positivo` ni `negativo`, no " +
-          "se pintan). `bueno` lo pinta verde, `alerta` en ambar. Usa `neutro` salvo que el dato sea " +
-          "la buena o la mala noticia",
-      ),
-  })
-  .refine((d) => d.montoCentavos !== undefined || (d.valor !== undefined && d.valor.length > 0), {
-    message: "cada dato necesita `montoCentavos` (si es dinero) o `valor` (si no lo es)",
-  });
+  tono: z
+    .string()
+    .default("neutro")
+    // Texto libre y no un `enum`, a proposito, y es la unica prop del catalogo que lo es.
+    // El modelo alcanza otras palabras para esto (`positivo`, `negativo`, `exito`) y, desde
+    // que `Conclusion` es obligatoria en toda pantalla, ese error costaba un reintento y un
+    // paso del turno en 3 de cada 10 turnos del guion (medido el 2026-09-12). Con un `enum`
+    // no basta con ser tolerante en Zod: el catalogo publicado se genera de aqui y la capa
+    // de los JSON Schema oficiales rechazaria igual, asi que las dos capas tienen que decir
+    // lo mismo. El tono es DECORACION —el color de una cifra—: tumbar la pantalla por el
+    // nombre de un color, cuando la cifra viene bien, es un mal trato. Lo que no reconoce el
+    // componente se pinta neutro (`componente.tsx`).
+    .describe(
+      "Exactamente uno de estos tres: `neutro`, `bueno` o `alerta` (no `positivo` ni `negativo`, no " +
+        "se pintan). `bueno` lo pinta verde, `alerta` en ambar. Usa `neutro` salvo que el dato sea " +
+        "la buena o la mala noticia",
+    ),
+});
 
 export const schemaConclusion = PropsBase.extend({
   ancho: Ancho.default("amplio"),
@@ -87,10 +66,7 @@ export const schemaConclusion = PropsBase.extend({
     .array(DatoDeApoyo)
     .max(3)
     .optional()
-    .describe(
-      "Hasta 3 cifras que sostienen el titular. Son las MISMAS que ya estan en las tarjetas, no nuevas. " +
-        "El dinero va en `montoCentavos`, no en `valor`",
-    ),
+    .describe("Hasta 3 cifras que sostienen el titular. Son las MISMAS que ya estan en las tarjetas, no nuevas"),
   sugerencias: z
     .array(z.string())
     .max(3)

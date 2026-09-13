@@ -75,18 +75,10 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
   }
 
   const faltante = Math.max(0, metaCentavos - saldoInicialCentavos);
-  const minimo = Math.min(aportacionMinimaCentavos, aportacionMaximaCentavos);
-  // La aportacion se ACOTA a su propio rango antes de usarse. El 2026-09-12 llego a
-  // pantalla un slider de $500 a $6,629 con el valor en $477: por debajo de su propio
-  // piso, con el punto pegado al extremo izquierdo y una fecha de llegada calculada con un
-  // numero imposible. Zod valida prop por prop y nadie cruzaba las tres, asi que el
-  // componente es la ultima linea: aqui no hay forma de pintar un valor fuera del rango,
-  // venga la prop enlazada o literal. La validacion del host ademas se lo reporta al
-  // modelo (`revisarProps`), para que aprenda en vez de solo salir bien de milagro.
-  const aportacionUsada = Math.min(Math.max(aportacion, minimo), aportacionMaximaCentavos);
-  const porMes = frecuencia === "quincenal" ? aportacionUsada * 2 : aportacionUsada;
+  const porMes = frecuencia === "quincenal" ? aportacion * 2 : aportacion;
   const meses = porMes > 0 ? Math.max(1, Math.ceil(faltante / porMes)) : 0;
   const fecha = meses > 0 ? sumarMeses(fechaInicio ?? hoyISO(), meses) : undefined;
+  const minimo = Math.min(aportacionMinimaCentavos, aportacionMaximaCentavos);
   const avance = metaCentavos > 0 ? Math.min(1, saldoInicialCentavos / metaCentavos) : 0;
   /** Sobre el degradado, el gris de siempre no se lee: el texto secundario va en blanco al 80 %. */
   const suave = heroe ? "text-primary-foreground/80" : "text-muted-foreground";
@@ -140,15 +132,15 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         <div className="flex flex-col gap-3">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <span className="text-sm">Aportación {frecuencia === "quincenal" ? "quincenal" : "mensual"}</span>
-            <span className="monto text-xl font-semibold">{formatearMonto(aportacionUsada)}</span>
+            <span className="monto text-xl font-semibold">{formatearMonto(aportacion)}</span>
           </div>
           {/* `py-3` le da al slider los 48 px de alto tocable sin engordar la barra. */}
           <Slider
-            value={[aportacionUsada]}
+            value={[aportacion]}
             min={minimo}
             max={aportacionMaximaCentavos}
             step={PASO_CENTAVOS}
-            onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacionUsada) : valor)}
+            onValueChange={(valor) => setAportacion(Array.isArray(valor) ? (valor[0] ?? aportacion) : valor)}
             aria-label="Aportación"
             // En el heroe los controles van en blanco: el slider rojo de siempre seria rojo
             // sobre rojo y la persona no veria cuanto esta moviendo.
@@ -171,9 +163,9 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
           // sigue siendo LA accion de la pantalla, pero sin desaparecer en el degradado.
           className={`${CLASES_BOTON_PIE} ${heroe ? "bg-white/90 text-primary hover:bg-white" : ""}`}
           size="lg"
-          disabled={!alAccionar || aportacionUsada <= 0}
+          disabled={!alAccionar || aportacion <= 0}
           onClick={() =>
-            alAccionar?.({ nombre, montoObjetivoCentavos: metaCentavos, aportacionCentavos: aportacionUsada, frecuencia })
+            alAccionar?.({ nombre, montoObjetivoCentavos: metaCentavos, aportacionCentavos: aportacion, frecuencia })
           }
         >
           {etiquetaBoton} <ArrowRight />

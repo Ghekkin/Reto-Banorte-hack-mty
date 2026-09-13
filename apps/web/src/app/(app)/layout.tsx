@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { ProveedorAgente } from "@/components/maya/proveedor-agente";
 import { BarraPestanas } from "@/components/shell/barra-pestanas";
 import { BarraSuperior } from "@/components/shell/barra-superior";
 import { SidebarApp } from "@/components/shell/sidebar-app";
@@ -18,29 +17,23 @@ import { usuarioActivo } from "@/lib/usuario-activo";
  *
  * El `pb-24` de movil es el hueco de la barra de pestanas: sin el, la ultima tarjeta
  * queda debajo y no se puede leer.
- *
- * `ProveedorAgente` envuelve todo el grupo porque el layout NO se desmonta al navegar entre
- * pestanas: es lo que hace que la conversacion con Maya sobreviva a cambiar de seccion (ver
- * `components/maya/proveedor-agente.tsx`).
  */
 export default async function LayoutApp({ children }: { children: ReactNode }) {
   const usuario = await usuarioActivo();
 
   return (
-    <ProveedorAgente usuarioId={usuario.id}>
-      <SidebarProvider>
-        <SidebarApp usuario={usuario} />
-        {/* SidebarInset ya es un <main>: el contenido va en divs, no en otro <main>.
-            `min-w-0` es lo que impide que un hijo ancho (el filtro con scroll propio de
-            Movimientos) empuje el contenedor y desborde la pantalla 256 px. */}
-        <SidebarInset className="min-w-0 bg-lienzo">
-          <div className="flex min-h-svh min-w-0 flex-col gap-3 p-3 pb-24 md:gap-4 md:p-4 md:pb-4">
-            <BarraSuperior usuario={usuario} />
-            <div className="min-w-0 flex-1">{children}</div>
-          </div>
-        </SidebarInset>
-        <BarraPestanas />
-      </SidebarProvider>
-    </ProveedorAgente>
+    <SidebarProvider>
+      <SidebarApp usuario={usuario} />
+      {/* SidebarInset ya es un <main>: el contenido va en divs, no en otro <main>.
+          `min-w-0` es lo que impide que un hijo ancho (el filtro con scroll propio de
+          Movimientos) empuje el contenedor y desborde la pantalla 256 px. */}
+      <SidebarInset className="min-w-0 bg-lienzo">
+        <div className="flex min-h-svh min-w-0 flex-col gap-3 p-3 pb-24 md:gap-4 md:p-4 md:pb-4">
+          <BarraSuperior usuario={usuario} />
+          <div className="min-w-0 flex-1">{children}</div>
+        </div>
+      </SidebarInset>
+      <BarraPestanas />
+    </SidebarProvider>
   );
 }

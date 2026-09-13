@@ -110,14 +110,30 @@ describe("correrTurno", () => {
     expect(lineas.at(-1)).toMatchObject({ tipo: "fin", pasos: 2 });
   });
 
-  // Aqui vivia "responde cordialmente con responder_conversacion": una prueba que llamaba a
-  // una tool que ya no existe. Desde que el cierre son tres tools (`cierre.ts`), `responder`
-  // solo se registra cuando HAY pantalla, asi que un saludo del primer turno no puede
-  // cerrarse con ella. Los dos caminos quedaron cubiertos mejor y sin contradiccion:
-  //  - saludo sin pantalla, en prosa: la prueba de abajo.
-  //  - `responder` con pantalla: "responder no toca la pantalla" en "las tres salidas".
-  //  - y que en el primer turno NO exista: "en el primer turno no existen ajustar_pantalla
-  //    ni responder", que es justo lo que esta prueba contradecia.
+  it("responde cordialmente con responder_conversacion sin pantalla visual ni error", async () => {
+    const lineas = await recolectar(
+      correrTurno(peticion({ mensajes: [{ rol: "usuario", texto: "hola" }] }), {
+        modelo: modeloGuionizado([
+          pasoConTool("responder_conversacion", {
+            texto: "¡Hola Alberto! Qué gusto saludarte. Soy Maya, tu asesora de salud financiera en Banorte. ¿Qué te gustaría realizar hoy?",
+            sugerencias: ["Bajar intereses de mi tarjeta", "¿En qué se me fue el dinero?", "¿Cómo está mi salud financiera?"],
+          }),
+        ]),
+        herramientas: toolsDePrueba(),
+      }),
+    );
+
+    const tipos = lineas.map((l) => l.tipo);
+    expect(tipos).not.toContain("a2ui");
+    expect(tipos).not.toContain("error");
+    expect(lineas.find((l) => l.tipo === "texto")).toMatchObject({
+      valor: expect.stringContaining("¡Hola Alberto!"),
+    });
+    expect(lineas.find((l) => l.tipo === "sugerencias")).toMatchObject({
+      valores: ["Bajar intereses de mi tarjeta", "¿En qué se me fue el dinero?", "¿Cómo está mi salud financiera?"],
+    });
+    expect(lineas.at(-1)).toMatchObject({ tipo: "fin", pasos: 1 });
+  });
 
   it("responde en prosa conversacional directa sin error a2ui cuando no se intenta pintar", async () => {
     const lineas = await recolectar(
