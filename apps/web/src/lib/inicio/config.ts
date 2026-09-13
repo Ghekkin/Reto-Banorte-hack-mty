@@ -24,7 +24,7 @@ export const configInicio = {
   modeloWidgets: process.env.MODELO_WIDGETS ?? process.env.MODELO_INICIO ?? "gemini-3.5-flash-lite",
   /** Id del modelo chico. `gemini-*` o `claude-*`; la llave es la misma del agente. */
   modelo: process.env.MODELO_INICIO ?? "gemini-3.5-flash-lite",
-  /** Cada cuantos minutos el reloj revisa a los tres usuarios. */
+  /** Cada cuantos minutos el reloj revisa a los tres usuarios. Si el reloj corre: `decisionDelReloj()`. */
   cadaMinutos: minutosValidos(process.env.INICIO_CADA_MINUTOS, 10),
   /**
    * Pasos del bucle: uno para pedir lo que le falte (todas las tools en paralelo), uno
@@ -35,6 +35,29 @@ export const configInicio = {
   /** Tope por generacion. Corre en segundo plano: puede esperar mas que un turno. */
   timeoutMs: 45_000,
 };
+
+export type DecisionDelReloj = { prendido: boolean; motivo: string };
+
+/**
+ * Si este proceso arranca el reloj (`reloj.ts`). Por omision **solo en produccion**: un
+ * `next dev` conserva el reloj con los modulos de cuando arranco (el HMR no lo alcanza), y
+ * como la base es la misma que la de produccion, un servidor de desarrollo viejo rearmaba las
+ * portadas comunes con codigo que ya no esta en `main` (issue #38).
+ *
+ * `INICIO_RELOJ=1` lo prende en cualquier entorno (probar el reloj en local) y `INICIO_RELOJ=0`
+ * lo apaga en cualquiera (produccion incluida). Cualquier otro valor cuenta como vacio.
+ * Recibe el entorno para poder probarlo sin tocar `process.env`.
+ */
+export function decisionDelReloj(entorno: { NODE_ENV?: string; INICIO_RELOJ?: string } = process.env): DecisionDelReloj {
+  const pedido = entorno.INICIO_RELOJ?.trim();
+  if (pedido === "1") return { prendido: true, motivo: "INICIO_RELOJ=1" };
+  if (pedido === "0") return { prendido: false, motivo: "INICIO_RELOJ=0" };
+  if (entorno.NODE_ENV === "production") return { prendido: true, motivo: "produccion" };
+  return {
+    prendido: false,
+    motivo: `NODE_ENV=${entorno.NODE_ENV ?? "(vacio)"}: el reloj solo corre en produccion; INICIO_RELOJ=1 para prenderlo aqui`,
+  };
+}
 
 /** Un valor raro en `.env` no tumba el reloj: cae al default, y minimo un minuto. */
 function minutosValidos(crudo: string | undefined, porOmision: number): number {

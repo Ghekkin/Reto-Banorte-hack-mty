@@ -19,8 +19,10 @@ portafolio y qué tan desviado está. Arriba de las tarjetas, Maya dice en dos f
 hoy y qué recomienda, y deja tres preguntas listas para seguir la conversación.
 
 Lo hace un **modelo pequeño y barato**, no el que conversa, y lo hace **solo cuando hace
-falta**: cada diez minutos revisa si la cuenta se movió (una acción, movimientos nuevos) y
-si no se movió, no gasta nada. Cuando alguien aplica un plan o crea un apartado desde Maya,
+falta**: en producción, cada diez minutos revisa si la cuenta se movió (una acción,
+movimientos nuevos) y si no se movió, no gasta nada. Esa revisión periódica solo corre en el
+servidor publicado: una copia de desarrollo que se quedó prendida con código viejo ya no puede
+reescribir las portadas que ven los demás. Cuando alguien aplica un plan o crea un apartado desde Maya,
 la portada se rearma sola en segundo plano: al volver a Inicio, ya cambió. Y si la portada
 todavía no está lista, se ve la pantalla programada de siempre con un aviso de que Maya la
 está armando; en cuanto está, entra sola.
@@ -46,7 +48,7 @@ hasta que tus datos cambien de verdad.
 | Dónde se guarda la portada (`banorte.pantallas_inicio`) | `apps/web/src/lib/inicio/almacen.ts`, `db/migraciones/0002-pantallas-inicio.sql` |
 | El generador (datos → modelo → `pintar_pantalla`) | `apps/web/src/lib/inicio/generar.ts` |
 | El servicio (estado, rearmar si cambió, una generación en vuelo) | `apps/web/src/lib/inicio/servicio.ts` |
-| El reloj | `apps/web/src/lib/inicio/reloj.ts`, arrancado desde `apps/web/src/instrumentation.ts` |
+| El reloj | `apps/web/src/lib/inicio/reloj.ts`, arrancado desde `apps/web/src/instrumentation.ts`; si corre lo decide `decisionDelReloj()` en `config.ts` |
 | La ruta `GET`/`POST /api/inicio` | `apps/web/src/app/api/inicio/route.ts` |
 | La página | `apps/web/src/app/(app)/page.tsx` |
 | La portada pintada, y el aviso mientras se arma | `apps/web/src/components/inicio/inicio-de-maya.tsx`, `refresco-del-inicio.tsx` |
@@ -64,7 +66,7 @@ La portada se puede rearmar desde cuatro lugares, y los cuatro pasan por
 
 | Puerta | Cuándo | `motivo` en el log |
 |---|---|---|
-| El reloj | cada `INICIO_CADA_MINUTOS` (default 10), los tres usuarios uno tras otro | `reloj` |
+| El reloj | cada `INICIO_CADA_MINUTOS` (default 10), los tres usuarios uno tras otro. **Solo en producción** salvo `INICIO_RELOJ=1` | `reloj` |
 | Una acción | al cerrar un turno del agente en el que una tool de acción del MCP aplicó algo | `accion` |
 | Una visita | al abrir Inicio con la portada desactualizada (`after()`, después de responder) | `visita` |
 | La ruta | `GET /api/inicio` con la portada desactualizada (en segundo plano) o `POST` (espera) | `consulta` / `manual` |
@@ -283,9 +285,21 @@ huella cuenta las acciones **del dispositivo**. Detalle en `estado-por-dispositi
 | `FEATURE_INICIO_PERSONALIZADO` | `1` | Con `0`, Inicio es la pantalla programada y no corre ningún modelo ni reloj |
 | `MODELO_INICIO` | `gemini-3.5-flash-lite` | Id del modelo chico; `gemini-*` usa la llave de Google, `claude-*` la de Anthropic |
 | `INICIO_CADA_MINUTOS` | `10` | Ritmo del reloj; mínimo 1 |
+| `INICIO_RELOJ` | vacío | Vacío: el reloj corre solo con `NODE_ENV=production`. `1`: también en desarrollo. `0`: apagado en cualquier entorno |
 
 Sin llave del proveedor o sin `DATABASE_URL`, `inicioActivo()` es `false` y todo se apaga
 solo: la página no cambia, el reloj lo dice en el log y no arranca.
+
+**Por qué el reloj no corre en `next dev` (issue #38).** `instrumentation.ts` registra el
+intervalo una vez, con los módulos de ese momento, y el HMR actualiza las rutas pero no ese
+intervalo. Como la base de desarrollo es la de producción, un `next dev` que arrancó antes de un
+cambio en `lib/inicio/` seguía rearmando las portadas comunes con el prompt viejo cada 10 minutos
+(el 2026-09-13 le volvió a pintar el portafolio a Ana en producción). `decisionDelReloj()` lo
+arranca solo con `NODE_ENV=production`; en desarrollo las visitas, las acciones, la consulta y
+`POST /api/inicio` rearman exactamente igual, solo falta el tick. El arranque lo deja en el log:
+`{"inicio":"reloj","hecho":"apagado","motivo":"NODE_ENV=development: …"}` o
+`{"inicio":"reloj","hecho":"prendido","motivo":"produccion","cadaMinutos":10,…}`. Pruebas:
+`apps/web/src/lib/inicio/__tests__/reloj.spec.ts`.
 
 ### Lo medido (2026-09-12 15:20, local, modelo real, tras `reiniciar-estado`)
 
@@ -330,7 +344,8 @@ pnpm probar-inicio https://maya.157.173.204.174.sslip.io   # contra lo publicado
   tools, ni tiempos).
 
 **En producción (2026-09-12 16:25, commit `5b9fbae`)**: el contenedor arrancó con
-`{"inicio":"reloj","cadaMinutos":10,"modelo":"gemini-3.5-flash-lite"}`, la primera revisión
+`{"inicio":"reloj","cadaMinutos":10,"modelo":"gemini-3.5-flash-lite"}` (desde el issue #38 la línea
+lleva también `"hecho":"prendido","motivo":"produccion"`), la primera revisión
 pasó de largo por los tres (`sin-cambios`, cero tokens: las portadas ya estaban en la base
 compartida), y `GET /api/inicio?usuario=usr_beto` devolvió la portada de Beto rearmada por
 producción después de una acción (`ResumenTarjeta` con plan activo, gasto, termómetro).
@@ -348,9 +363,12 @@ volver. Sin errores de consola. Ver la bitácora de parlack.
   a los 90 s y la página queda como la de siempre.
 - **`pnpm reiniciar-estado`**: no toca `pantallas_inicio`; cambia la huella (se van las
   acciones) y las portadas quedan desactualizadas solas. **Abre Inicio de cada persona
-  después de reiniciar** o espera al reloj: es un paso del checklist.
+  después de reiniciar** o espera al reloj de producción (en local no hay reloj: abre Inicio o
+  usa `pnpm probar-inicio`): es un paso del checklist.
 - **Dos procesos contra la misma base** (local y producción): cada uno rearma cuando ve la
-  huella distinta; el que llegue último gana, y los dos guardan una portada válida. El
+  huella distinta; el que llegue último gana, y los dos guardan una portada válida. Desde el
+  issue #38 solo el de producción lo hace por su cuenta; el local solo rearma cuando alguien lo
+  usa (visita, acción, consulta). El
   modelo no forma parte de la huella a propósito: dos entornos con `MODELO_INICIO`
   distinto se rearmarían uno al otro sin parar.
 - **Cambiar el prompt de la portada o el catálogo**: sube `VERSION_DEL_GENERADOR` en
