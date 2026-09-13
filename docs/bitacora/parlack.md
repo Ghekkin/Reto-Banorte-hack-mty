@@ -1769,3 +1769,9 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   skills `diseno-banorte` y `ui-generativa`.
 - **Pendiente**: ver el deslizamiento de Inicio en producción tras el deploy; la hidratación
   de Inicio sigue trayendo cuadros largos (no es de animación).
+- **04:25 · incidente**: `a7f1e73` rompió `main`. El commit por rutas se llevó la versión a
+  medias de `proyeccion-pago-credito/componente.tsx` de la sesión de ajustes en vivo (importa
+  `transicion.ts`, sin commitear) y el CI tronó en "catalogo.json al dia". Arreglado en
+  `d156138` desde un `git worktree` limpio (el archivo vuelve a eafe535 + mis 4 clases),
+  verificado con `pnpm catalogo`, `pnpm typecheck` y `pnpm test` antes de subir. Issue #31
+  (cerrado) con la sugerencia de procedimiento. Avisé a las dos sesiones afectadas.
