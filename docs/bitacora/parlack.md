@@ -1840,3 +1840,21 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   así que ahí sale tarjeta + gasto; `pnpm reiniciar-estado` antes de la demo lo regresa a tarjeta + plan.
 - **Móvil**: sin trigger del sidebar en la barra superior (la navegación es la barra de abajo).
 - **En curso**: estado de carga de Inicio mientras Maya piensa (subagente), con Safari en mente.
+
+### 06:25 (dom 13) — Maya narra en vivo, portadas pisadas por un reloj viejo y Safari
+
+- **Chat de Maya en vivo** (`7d5f815`): pedido del usuario («se ve muy tieso»). Cada herramienta que
+  usa el agente entra como un renglón en palabras de cliente, con el dato de la persona
+  («Calculando tu crédito pagando $6,000.00 al mes»), spinner mientras corre y palomita al terminar;
+  «Pensando cómo mostrártelo» entre herramientas. Verificado con el modelo real en escritorio e
+  iPhone 13 (Chromium).
+- **El Inicio de Ana volvió a salir con el portafolio** a las 06:12: el reloj del `next dev`
+  compartido conservaba el código de las 04:05 (antes de `widgetsPorCuenta`) y pisó las portadas del
+  estado común en la base compartida. Reinicié el `next-server` y rearmé las tres (Beto tarjeta +
+  plan, Ana crédito + meta, Carmen portafolio + rebalanceo). Issue **#38**.
+- **El estado de carga de Inicio** (`PensandoMaya`, `lib/widgets/etapas.ts`) lo dejó el subagente
+  antes de caer por límite de uso; quedó en `main` en `31babb8`.
+- **Safari**: WebKit de Playwright no arranca en el VPS (faltan bibliotecas del sistema; instalarlas
+  con apt toca el host de producción, no se hizo). Revisión estática de lo que suele fallar en iOS
+  (`requestIdleCallback`, `100vh`, `randomUUID` en http, `AbortSignal.any`): nada en la ruta de la demo.
+- Error propio corregido: `601d733` subió la bitácora con marcadores de conflicto; `85e5060` los quitó.
