@@ -32,9 +32,10 @@ y las dos anteriores. No toca datos ni volúmenes.
 | Proveedor | VPS propio del equipo (no Vultr todavía; ver premios) |
 | IP pública | `157.173.204.174` |
 | Panel | Coolify 4.3.19, `https://panel.yolani.co` → proyecto **reto-banorte**, ambiente `production` |
-| Dominio | **`ghekkinxmaya.tech`** (desde 2026-09-13 03:10; registro A del apex → la IP). Los de `sslip.io` siguen vivos como alias |
+| Dominio | **`ghekkinxmaya.tech`** (desde 2026-09-13 03:10; registros A del apex, `mcp` y `docs` → la IP). Los de `sslip.io` siguen vivos como alias |
 | URL web | `https://ghekkinxmaya.tech` (alias: `https://maya.157.173.204.174.sslip.io`) |
-| URL MCP | `https://maya-mcp.157.173.204.174.sslip.io/mcp` (health en `/health`). `https://mcp.ghekkinxmaya.tech` ya está en Coolify; **falta su registro A** en el DNS del dominio |
+| URL MCP | `https://mcp.ghekkinxmaya.tech/mcp` (health en `/health`; alias: `https://maya-mcp.157.173.204.174.sslip.io`) |
+| `docs.ghekkinxmaya.tech` | El registro A ya existe, reservado para `apps/docs`; todavía no hay app en Coolify que lo sirva |
 | Commit desplegado | el último de `main` que haya pasado el workflow |
 | Último deploy | 2026-09-13 08:50 (web + mcp) |
 | Cómo entrar | SSH como `root` al VPS; secretos en `/opt/reto/.env` (fuera del repo) |
@@ -91,7 +92,7 @@ curl -s -H "Authorization: Bearer $COOLIFY_TOKEN" $COOLIFY_URL/api/v1/databases/
 | Dockerfile | `apps/web/Dockerfile` | `apps/mcp/Dockerfile` |
 | Puerto | 3000 | 3100 |
 | Health | `/api/health` | `/health` |
-| Dominio | `https://ghekkinxmaya.tech`, `https://maya.157.173.204.174.sslip.io` | `https://mcp.ghekkinxmaya.tech` (sin DNS aún), `https://maya-mcp.157.173.204.174.sslip.io` |
+| Dominio | `https://ghekkinxmaya.tech`, `https://maya.157.173.204.174.sslip.io` | `https://mcp.ghekkinxmaya.tech`, `https://maya-mcp.157.173.204.174.sslip.io` |
 
 Las dos se construyen **desde la raíz del repo** (`base_directory: /`): el Dockerfile
 copia los manifiestos del workspace primero y el código después, para que la capa de
@@ -318,8 +319,9 @@ nameservers `orderbox-dns.com` del registrador). Lo que se hizo, en orden:
 3. `URL_CATALOGO` de `maya-web` → `https://ghekkinxmaya.tech/catalogo/v1.json` (solo
    el registro `is_preview: false`) y `POST …/restart` para que llegue al contenedor.
 4. Variable del repo `URL_WEB_PUBLICA` → `https://ghekkinxmaya.tech`. `URL_MCP_PUBLICA`
-   se queda en sslip hasta que exista el registro `mcp`: cambiarla antes pondría el
-   deploy en rojo esperando un `/health` que no resuelve.
+   esperó al registro `mcp` (cambiarla antes pone el deploy en rojo esperando un
+   `/health` que no resuelve) y pasó a `https://mcp.ghekkinxmaya.tech` a las 03:20, con
+   el certificado ya emitido. Las dos también en `/opt/reto/.env`.
 
 Verificado desde fuera (resolviendo con 8.8.8.8):
 
@@ -332,15 +334,29 @@ certificado                                → Let's Encrypt, CN ghekkinxmaya.te
 https://maya.157.173.204.174.sslip.io     → sigue en 200
 ```
 
-Para terminar el MCP: agregar el registro A `mcp` → `157.173.204.174`, esperar a que
-resuelva, `POST /api/v1/applications/<uuid-mcp>/restart` (recrea el router y Traefik
-vuelve a pedir el certificado, en lugar de esperar a que lo reintente por su cuenta), comprobar `https://mcp.ghekkinxmaya.tech/health` y el 401 del
-`/mcp` sin token, y entonces cambiar `URL_MCP_PUBLICA`.
+El MCP (03:20), en cuanto existió el registro `mcp`:
+
+```
+https://mcp.ghekkinxmaya.tech/health             → 200, commit 6680fec, origenDatos postgres, 24 tools
+POST https://mcp.ghekkinxmaya.tech/mcp sin token → 401
+POST …/mcp con MCP_TOKEN (initialize)            → 200
+http://mcp.ghekkinxmaya.tech/health              → 302 a https
+certificado                                       → Let's Encrypt, CN mcp.ghekkinxmaya.tech, vence 12-dic
+```
+
+Mientras no había registro `mcp`, Traefik servía su certificado por defecto
+(`TRAEFIK DEFAULT CERT`) para ese nombre. El certificado bueno salió con el siguiente
+deploy, que recreó el contenedor; si no hay deploy en camino,
+`POST /api/v1/applications/<uuid>/restart` hace lo mismo.
+
+Para publicar `apps/docs` en `docs.ghekkinxmaya.tech`: crear la app en Coolify dentro de
+`reto-banorte`, darle ese dominio y comprobar el certificado igual que arriba.
 
 ### Pendiente
 
 - [x] Dominio `.tech` para la web: `https://ghekkinxmaya.tech` (arriba).
-- [ ] Registro A `mcp.ghekkinxmaya.tech` y el cierre del MCP descrito arriba.
+- [x] MCP en `https://mcp.ghekkinxmaya.tech` (arriba).
+- [ ] Publicar `apps/docs` en `docs.ghekkinxmaya.tech` (el registro A ya existe).
 - [ ] Llave de Gemini en las variables de `maya-web`
       (`GOOGLE_GENERATIVE_AI_API_KEY`): hoy está vacía y el agente publicado responde
       con la pantalla de ejemplo. Se pone en Coolify (app → Environment Variables);
