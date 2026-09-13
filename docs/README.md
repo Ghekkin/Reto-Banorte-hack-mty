@@ -73,6 +73,7 @@ quien.
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
+- [Ajustes en vivo](como-funciona/ajustes-en-vivo.md) — «¿y si pago $6,000 al mes?» cambia la tarjeta del crédito donde está (aunque esté arriba en el hilo), con antes → después; «Programar este pago» se aplica en la misma tarjeta. Qué falta: gastos fuera del banco, meta y plan de tarjeta
 - [El ciclo LIVE](como-funciona/ciclo-live.md) — las tres salidas del turno (aclarar, ajustar lo que ya se ve sin recrearlo, repintar), el tope de 3 tarjetas y por qué el motor A2UI ya lo soportaba
 - [Corridas, chat y registros en la base](como-funciona/corridas-en-db.md) — cada turno y cada portada quedan en PostgreSQL con modelo, tools, pasos, argumentos, resultados y lo que vio la persona; el chat y los logs de web y MCP también; `pnpm corridas` para leerlo
 - [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard
@@ -83,6 +84,7 @@ quien.
 - [Generación de los datos mock](algoritmos/generacion-de-datos.md) — patrones, estacionalidad, calibración del flujo, puntaje de salud financiera
 - [Amortización, CAT y reestructura](algoritmos/amortizacion.md) — mensualidad, tabla que cierra en cero, CAT por bisección, escenario de pago mínimo
 - [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
+- [Abono a capital](algoritmos/abono-a-capital.md) — «¿y si pago $6,000 al mes?» sobre un crédito a plazo: la simulación que reproduce la tabla del banco al centavo, la cuota para liquidar en N meses, qué no es posible (pagar menos, tardar más) y cuándo se avisa que aprieta
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto

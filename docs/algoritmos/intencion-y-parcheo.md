@@ -28,7 +28,10 @@ cliente reportó que hay pantalla.
    `toolChoice: "required"` y `activeTools` = solo esas salidas. Con una sola disponible equivale a
    forzarla; con tres, obliga a cerrar pero deja la elección al modelo.
 4. Una acción entrante que muta estado añade al contexto la instrucción de cerrar con
-   `pintar_pantalla`: hay que volver a pintar la tarjeta que cambió.
+   `pintar_pantalla`: hay que volver a pintar la tarjeta que cambió. **Excepción**: si la acción está
+   en `ACCIONES_EN_SU_LUGAR` (hoy `programar_abono_capital`), la instrucción es cerrar con
+   `ajustar_pantalla` sobre la tarjeta que la disparó (`instruccionDeAccion` en `historial.ts`,
+   `docs/como-funciona/ajustes-en-vivo.md`).
 5. El turno termina en cuanto una salida se ejecuta sin errores (`stopWhen`), o a los 2 intentos
    fallidos, o al tope de 8 pasos.
 
@@ -69,8 +72,14 @@ igual. La única regla de cardinalidad que se validaba era `heroe <= 1`.
 
 ## 3 · Validación de un parche
 
-**Entrada:** `parchesDatos: {path, value}[]`, `parchesComponentes: {id, props}[]`, y la pantalla
-actual. **Salida:** mensajes A2UI, o errores para el modelo.
+**Entrada:** `parchesDatos: {path, value}[]`, `parchesComponentes: {id, props}[]`, `pantalla?`, la
+pantalla actual y hasta 3 anteriores. **Salida:** mensajes A2UI (con el id de la pantalla si fue una
+de arriba), o errores para el modelo.
+
+Primero se elige **contra qué pantalla** se valida (`elegirPantalla`): sin `pantalla`, o con el id de
+la actual, es la actual; con el id de una anterior, esa; con un id que no viajó, error con la lista de
+las que sí. Todo lo de abajo se revisa contra el árbol y el data model de la elegida: dos pantallas
+pueden tener un `conclusion` cada una y no chocan.
 
 Un parche es aceptable cuando:
 

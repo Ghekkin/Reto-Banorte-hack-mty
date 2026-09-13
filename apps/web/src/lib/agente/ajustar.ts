@@ -70,6 +70,13 @@ export const entradaAjustarPantalla = z.object({
     .max(3)
     .optional()
     .describe("Hasta 3 siguientes preguntas que la persona podria querer hacer"),
+  pantalla: z
+    .string()
+    .optional()
+    .describe(
+      "SOLO si la tarjeta que cambias esta en una pantalla ANTERIOR del hilo: su id (p1, p2…), tal como " +
+        "aparece en `pantallas anteriores`. Omitelo para ajustar la pantalla actual",
+    ),
 });
 
 export type EntradaAjustarPantalla = z.infer<typeof entradaAjustarPantalla>;
@@ -78,17 +85,50 @@ export type EntradaAjustarPantalla = z.infer<typeof entradaAjustarPantalla>;
 export type PantallaActual = {
   arbol: Componente[];
   dataModel: Record<string, unknown>;
+  /** Su id en el hilo (`p3`). Sin id, es la unica que hay. */
+  pantalla?: string;
 };
 
 export type Ajustado =
-  | { ok: true; mensajes: MensajeA2UI[]; parches: number }
+  | { ok: true; mensajes: MensajeA2UI[]; parches: number; pantalla?: string }
   | { ok: false; errores: string[] };
 
 /** Las llaves que un parche de props NO puede tocar: cambiar el arbol es repintar. */
 const NO_PARCHEABLES = new Set(["id", "component", "children", "child", "action"]);
 
-export function armarParches(entrada: EntradaAjustarPantalla, pantalla: PantallaActual): Ajustado {
+/**
+ * A que pantalla va el parche: la actual, o una de arriba si el modelo la nombro.
+ *
+ * Nombrar la actual por su id es lo mismo que omitirlo. Nombrar una que no viajo en la
+ * peticion es un error con la lista de las que si: el modelo se equivoca de numero mas
+ * seguido de lo que se inventa pantallas, y con la lista corrige en el siguiente paso.
+ */
+export function elegirPantalla(
+  pedida: string | undefined,
+  actual: PantallaActual,
+  anteriores: PantallaActual[] = [],
+): { ok: true; pantalla: PantallaActual; esAnterior: boolean } | { ok: false; error: string } {
+  if (!pedida || pedida === actual.pantalla) return { ok: true, pantalla: actual, esAnterior: false };
+  const anterior = anteriores.find((p) => p.pantalla === pedida);
+  if (anterior) return { ok: true, pantalla: anterior, esAnterior: true };
+  const hay = [actual.pantalla ? `${actual.pantalla} (la actual)` : "la actual", ...anteriores.map((p) => p.pantalla)];
+  return {
+    ok: false,
+    error:
+      `no hay ninguna pantalla "${pedida}" que se pueda ajustar. Las que hay son: ${hay.join(", ")}. ` +
+      "Si la tarjeta ya no esta en ninguna, usa `pintar_pantalla`.",
+  };
+}
+
+export function armarParches(
+  entrada: EntradaAjustarPantalla,
+  actual: PantallaActual,
+  anteriores: PantallaActual[] = [],
+): Ajustado {
   const errores: string[] = [];
+  const elegida = elegirPantalla(entrada.pantalla, actual, anteriores);
+  if (!elegida.ok) return { ok: false, errores: [elegida.error] };
+  const pantalla = elegida.pantalla;
 
   const parchesDatos = parsearArreglo(entrada.parchesDatos, "parchesDatos", errores);
   const parchesComponentes =
@@ -182,7 +222,12 @@ export function armarParches(entrada: EntradaAjustarPantalla, pantalla: Pantalla
   }
 
   if (errores.length) return { ok: false, errores };
-  return { ok: true, mensajes, parches: mensajes.length };
+  return {
+    ok: true,
+    mensajes,
+    parches: mensajes.length,
+    ...(elegida.esAnterior && pantalla.pantalla ? { pantalla: pantalla.pantalla } : {}),
+  };
 }
 
 /**

@@ -44,8 +44,8 @@ de conformidad.
 
 **"¿Cómo sé que el modelo no inventa los números?"** Ninguna cifra en pantalla la escribe
 el modelo: viajan en el data model y salen de una tool del MCP. El prompt lo prohíbe y el
-catálogo lo hace difícil, porque las props son tipadas. La tira de progreso nombra las
-herramientas que se llamaron en ese turno, y el mismo MCP está público para que lo
+catálogo lo hace difícil, porque las props son tipadas. El stream de `/api/agente` nombra
+las herramientas que se llamaron en ese turno, y el mismo MCP está público para que lo
 compruebe con su propio cliente.
 
 **"¿La acción cambia algo de verdad?"** Sí, y se ve dos veces: la tarjeta que tocó vuelve

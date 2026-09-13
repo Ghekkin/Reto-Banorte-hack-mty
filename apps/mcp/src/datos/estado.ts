@@ -31,6 +31,8 @@ const OBJETO_DE: Record<string, string> = {
   rebalancear: "portafolio",
   rebalancear_portafolio: "portafolio",
   confirmar_rebalanceo: "portafolio",
+  // Migracion 0005: sin ella la base rechaza el insert por el CHECK de `accion`.
+  programar_abono_capital: "credito",
 };
 
 /**

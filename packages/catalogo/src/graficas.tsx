@@ -148,14 +148,15 @@ export function Leyenda({
   series,
   heroe = false,
 }: {
-  series: Array<{ nombre: string; color: string }>;
+  /** `nombre` admite marcado: un monto con `clasesResaltado` cuando el agente lo parchea. */
+  series: Array<{ nombre: ReactNode; color: string }>;
   /** Sobre el degradado de marca el gris no se lee: el texto va en blanco al 80 %. */
   heroe?: boolean;
 }) {
   return (
     <ul className={`flex flex-wrap gap-x-4 gap-y-1 text-xs ${heroe ? "text-primary-foreground/80" : "text-muted-foreground"}`}>
-      {series.map((s) => (
-        <li key={s.nombre} className="flex items-center gap-1.5">
+      {series.map((s, i) => (
+        <li key={i} className="flex items-center gap-1.5">
           <span className="size-2.5 shrink-0 rounded-[2px]" style={{ background: s.color }} aria-hidden />
           {s.nombre}
         </li>

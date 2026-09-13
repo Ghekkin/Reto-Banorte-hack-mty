@@ -2,11 +2,13 @@ import { z } from "zod";
 import { IdUsuario } from "../comunes.js";
 import { SalidaAplicarPlanPago } from "./aplicar-plan-pago.js";
 import { SalidaCancelarSuscripcion } from "./cancelar-suscripcion.js";
+import { SalidaConsultarCreditos } from "./consultar-creditos.js";
 import { SalidaConsultarInversiones } from "./consultar-inversiones.js";
 import { SalidaConsultarPlan } from "./consultar-plan.js";
 import { SalidaCrearApartado } from "./crear-apartado.js";
 import { SalidaCrearTopeGasto } from "./crear-tope-gasto.js";
 import { SalidaDetectarFugas } from "./detectar-fugas.js";
+import { SalidaProgramarAbonoCapital } from "./programar-abono-capital.js";
 import { SalidaProyectarAhorro } from "./proyectar-ahorro.js";
 import { SalidaRebalancearPortafolio } from "./rebalancear-portafolio.js";
 
@@ -29,6 +31,7 @@ export const AccionMutacion = z.enum([
   "crear_tope_gasto",
   "rebalancear_portafolio",
   "confirmar_rebalanceo",
+  "programar_abono_capital",
 ]);
 export type AccionMutacion = z.infer<typeof AccionMutacion>;
 
@@ -53,9 +56,10 @@ export const SalidaEjecutarDecision = z.object({
     SalidaCancelarSuscripcion,
     SalidaCrearTopeGasto,
     SalidaRebalancearPortafolio,
+    SalidaProgramarAbonoCapital,
   ]),
   estadoPosterior: z
-    .union([SalidaConsultarPlan, SalidaProyectarAhorro, SalidaDetectarFugas, SalidaConsultarInversiones])
+    .union([SalidaConsultarPlan, SalidaProyectarAhorro, SalidaDetectarFugas, SalidaConsultarInversiones, SalidaConsultarCreditos])
     .nullable()
     .describe(
       "La lectura que normalmente seguiria a la accion. `null` en `crear_tope_gasto`: su propio " +

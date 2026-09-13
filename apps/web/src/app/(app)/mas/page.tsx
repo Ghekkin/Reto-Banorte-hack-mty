@@ -47,13 +47,12 @@ export default async function PaginaMas() {
             <Dato etiqueta="Deuda total" valor={formatearMonto(resumen.deudaCentavos)} />
           </div>
           <p className="text-xs text-muted-foreground">
-            Cambiar de persona cambia la interfaz que Maya construye: es la prueba de que se
-            adapta al contexto.
+            Cambia de persona para ver cómo {MARCA.nombre} adapta lo que te muestra.
           </p>
         </CardContent>
       </Card>
 
-      {/* Qué es esto: contenido real, sirve al jurado */}
+      {/* Qué es esto: en palabras de la persona, sin siglas técnicas */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-medium text-muted-foreground">Qué es esto</CardTitle>
@@ -64,16 +63,9 @@ export default async function PaginaMas() {
             construye la pantalla que resuelve lo que pediste y ejecuta la operación.
           </p>
           <p className="text-muted-foreground">
-            Cada respuesta se arma con un catálogo de componentes financieros propio. El agente
-            elige qué componer; no puede inventar pantallas fuera del catálogo.
+            Cada respuesta se arma con tarjetas pensadas para tu dinero, y {MARCA.nombre} elige
+            las que necesitas para resolverlo.
           </p>
-          <div className="flex flex-wrap gap-2 pt-1">
-            {MARCA.piezas.split(" · ").map((pieza) => (
-              <Badge key={pieza} variant="outline" className="rounded-full">
-                {pieza}
-              </Badge>
-            ))}
-          </div>
           <Separator />
           <p className="text-xs leading-relaxed text-muted-foreground">{MARCA.aviso}</p>
         </CardContent>

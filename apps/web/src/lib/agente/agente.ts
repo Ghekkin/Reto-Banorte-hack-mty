@@ -118,6 +118,7 @@ async function* turno(
   /** Con cual de las tres salidas cerro. Viaja en el `fin` para que el cliente sepa si
    * actualizar la pantalla que ya estaba o apilar una nueva. */
   let cerroCon: CierreDelTurno | undefined;
+  let destinoDelAjuste: string | undefined;
 
   try {
     let herramientas = opciones.herramientas;
@@ -188,7 +189,11 @@ async function* turno(
     // que aclarar, y ofrecerlas invitaria al modelo a contestar con texto.
     const pantallaActual =
       peticion.superficie?.arbol?.length
-        ? { arbol: peticion.superficie.arbol, dataModel: peticion.superficie.dataModel ?? {} }
+        ? {
+            arbol: peticion.superficie.arbol,
+            dataModel: peticion.superficie.dataModel ?? {},
+            ...(peticion.superficie.pantalla ? { pantalla: peticion.superficie.pantalla } : {}),
+          }
         : undefined;
     const datosBase: Record<string, unknown> = {
       ...(peticion.superficie?.dataModel ?? {}),
@@ -199,6 +204,7 @@ async function* turno(
       {
         ...(config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {}),
         datosBase,
+        anteriores: peticion.superficie?.anteriores ?? [],
       },
     );
     const nombresDeCierre = Object.keys(cierre.herramientas);
@@ -358,6 +364,7 @@ async function* turno(
 
     const ultima = cierre.ultima();
     cerroCon = cierre.con();
+    destinoDelAjuste = cierre.destino();
     if (cierre.cerrado() && ultima) {
       yield { tipo: "texto", valor: ultima.texto };
       yield { tipo: "razon", valor: ultima.razon };
@@ -469,7 +476,14 @@ async function* turno(
     await cliente?.close().catch(() => undefined);
   }
 
-  yield { tipo: "fin", pasos, ms: Date.now() - inicio, ...(cerroCon ? { cierre: cerroCon } : {}), ...(await tokensDeCache(uso)) };
+  yield {
+    tipo: "fin",
+    pasos,
+    ms: Date.now() - inicio,
+    ...(cerroCon ? { cierre: cerroCon } : {}),
+    ...(destinoDelAjuste ? { pantalla: destinoDelAjuste } : {}),
+    ...(await tokensDeCache(uso)),
+  };
 }
 
 /**
@@ -525,7 +539,10 @@ async function* emitirCierre(
     yield { tipo: "error", codigo: "a2ui", mensaje: resultado.errores.join("; ") };
     return;
   }
+  // Un ajuste a una pantalla de arriba lleva su id en cada linea: el cliente lo aplica a esa
+  // pantalla congelada, no a la actual.
+  const pantalla = cierre.destino();
   for (const mensaje of cierre.tomarMensajes()) {
-    yield { tipo: "a2ui", mensaje };
+    yield { tipo: "a2ui", mensaje, ...(pantalla ? { pantalla } : {}) };
   }
 }

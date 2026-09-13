@@ -37,6 +37,8 @@ export type ComponenteDeGaleria = {
   props: Array<{ nombre: string; tipo: string; requerida: boolean; descripcion?: string }>;
   mensajes: MensajeA2UI[];
   fuente: string;
+  /** Otros estados del mismo componente (`ejemplos/variantes/`), p. ej. simulado y programado. */
+  variantes: Array<{ estado: string; mensajes: MensajeA2UI[] }>;
 };
 
 /**
@@ -231,6 +233,9 @@ function Ficha({
               </p>
             )}
           </div>
+          {componente.variantes.map((v) => (
+            <Variante key={v.estado} estado={v.estado} mensajes={v.mensajes} claseAncho={claseAncho} alAccionar={alAccionar} alFallar={alFallar} />
+          ))}
         </div>
         <div className="flex flex-col gap-2">
           <span className="text-xs font-medium text-muted-foreground">Estado de carga</span>
@@ -240,6 +245,32 @@ function Ficha({
         </div>
       </div>
     </section>
+  );
+}
+
+/** Otro estado del mismo componente, pintado igual que el ejemplo principal. */
+function Variante({
+  estado,
+  mensajes,
+  claseAncho,
+  alAccionar,
+  alFallar,
+}: {
+  estado: string;
+  mensajes: MensajeA2UI[];
+  claseAncho: string;
+  alAccionar: (accion: Accion) => void;
+  alFallar: (fallo: FalloDeRender) => void;
+}) {
+  const superficie = useMemo(() => superficieDe(mensajes), [mensajes]);
+  if (!superficie) return null;
+  return (
+    <>
+      <span className="pt-2 text-xs font-medium text-muted-foreground">Estado: {estado}</span>
+      <div className={`w-full ${claseAncho}`}>
+        <Lienzo superficie={superficie} conversacionId="c_galeria" alAccionar={alAccionar} alFallar={alFallar} ocultarSugerenciasEnTarjeta={false} />
+      </div>
+    </>
   );
 }
 

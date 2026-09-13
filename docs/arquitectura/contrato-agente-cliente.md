@@ -59,8 +59,13 @@ ajeno necesita saber antes de hablar. Lo arma `capacidadesDelServidor()` en `tip
       { "id": "root", "component": "Column", "children": ["resumen", "plan"] },
       { "id": "plan", "component": "PlanDePago", "opciones": { "path": "/opciones" }, "razon": "…" }
     ],
-    "dataModel": { "tarjeta": { "saldo": 1840000 }, "planElegido": 18 }
+    "dataModel": { "tarjeta": { "saldo": 1840000 }, "planElegido": 18 },
+    "pantalla": "p2",                   // opcional: el id de ESTA pantalla en el hilo (p1, p2…)
+    "anteriores": [                     // opcional: hasta 3 pantallas de arriba, las más recientes primero
+      { "pantalla": "p1", "arbol": [ … ], "dataModel": { … } }
+    ]
   },
+  "pantallaDeLaAccion": "p1",           // opcional: de qué pantalla del hilo salió `accion`, si no fue de la actual
   "clientCapabilities": {               // opcional: client_capabilities.json; qué catálogos pinta el cliente
     "v0.9": { "supportedCatalogIds": ["https://…/catalogo/v1.json"] }
   }
@@ -93,6 +98,11 @@ Reglas:
   está en pantalla y su única salida es `pintar_pantalla`. Van completos y no solo las props porque
   `updateComponents` reemplaza el componente por id: para parchear una prop hay que volver a mandar
   el resto. Tope: 60 componentes.
+- `superficie.pantalla` y `superficie.anteriores` habilitan **ajustar una tarjeta donde está**
+  aunque ya haya otra pantalla debajo (`docs/como-funciona/ajustes-en-vivo.md`). El id es
+  **posicional** (`p1` es la primera pantalla del hilo) y no cambia en toda la conversación. Tope:
+  `MAX_PANTALLAS_ANTERIORES = 3`, cada una con su árbol (≤ 60) y su data model. Los botones de las
+  pantallas de arriba siguen vivos: por eso una acción puede llegar con `pantallaDeLaAccion`.
 - El cuerpo se valida con `esquemaPeticion` (`apps/web/src/lib/agente/tipos.ts`); lo que
   no cumple devuelve **400** con `{ error, detalle[] }` antes de abrir el stream. Topes:
   40 mensajes, 4 000 caracteres por mensaje, `usuarioId` con el patrón `usr_…`.
@@ -126,7 +136,7 @@ manda ningún `a2ui`:
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |
-| `fin` | Métricas del turno: `pasos`, `ms`, `cacheLeido` (tokens que el proveedor sirvió desde su caché, **sumados en todos los pasos del turno**; ausente si no lo reporta), `cierre` (`pintar` \| `ajustar` \| `responder`) y `corridaId` (la fila de `banorte.corridas` con todo lo que pasó en el turno; ausente si la grabación está apagada, ver `docs/como-funciona/corridas-en-db.md`) | Log, transparencia, y **el cliente** para decidir si actualiza la pantalla del hilo o apila una nueva |
+| `fin` | Métricas del turno: `pasos`, `ms`, `cacheLeido` (tokens que el proveedor sirvió desde su caché, **sumados en todos los pasos del turno**; ausente si no lo reporta), `cierre` (`pintar` \| `ajustar` \| `responder`), `pantalla` (solo si el ajuste fue a una pantalla de arriba) y `corridaId` (la fila de `banorte.corridas` con todo lo que pasó en el turno; ausente si la grabación está apagada, ver `docs/como-funciona/corridas-en-db.md`) | Log, transparencia, y **el cliente** para decidir si actualiza la pantalla del hilo o apila una nueva |
 
 El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
 **siempre** termina en `fin`, pase lo que pase: la interfaz nunca se queda esperando.
@@ -152,6 +162,15 @@ turno no hay nada que ajustar ni que aclarar. Una acción que muta estado cierra
 detalle está en `docs/como-funciona/ciclo-live.md` y el algoritmo en
 `docs/algoritmos/intencion-y-parcheo.md`.
 
+Un ajuste a una pantalla de **arriba** lleva su id en cada línea `a2ui` y en el `fin`; el cliente
+aplica esos mensajes a esa pantalla congelada (`aplicarAPantallaAnterior`) y **no** a la actual, y la
+trae a la vista:
+
+```jsonl
+{"tipo":"a2ui","pantalla":"p1","mensaje":{"version":"v0.9.1","updateDataModel":{"surfaceId":"principal","path":"/credito/mensualidadCentavos","value":600000}}}
+{"tipo":"fin","pasos":2,"ms":2310,"cierre":"ajustar","pantalla":"p1"}
+```
+
 ### Superficies
 
 - Una superficie `principal` por conversación. `pintar_pantalla` la **rearma completa**:
@@ -172,6 +191,7 @@ detalle está en `docs/como-funciona/ciclo-live.md` y el algoritmo en
 | Si la acción… | Nombre | Qué hace el agente |
 |---|---|---|
 | **muta estado** | El **mismo nombre que la tool** MCP: `aplicar_plan_pago`, `crear_apartado`, `crear_tope_gasto` | Llama la tool con `context` como input, luego emite nueva UI con el resultado |
+| **muta estado y se ve en la misma tarjeta** | Igual, y además está en `ACCIONES_EN_SU_LUGAR` (`cierre.ts`): hoy `programar_abono_capital` | `ejecutar_decision` y cierra con `ajustar_pantalla` sobre la tarjeta que disparó la acción (con `pantalla` si está arriba), sin `Confirmacion` |
 | solo cambia la vista | Prefijo `ver_`: `ver_categoria`, `ver_detalle_plan` | Emite nueva UI sin tools de acción (puede usar tools de lectura) |
 | elige una opción sin confirmar | Prefijo `elegir_`: `elegir_plazo` | Actualiza el data model (`updateDataModel`) y, si aplica, resalta; no muta estado |
 
@@ -191,7 +211,9 @@ reinicia el estado del MCP (eso es `reiniciar-estado`, y solo antes de un ensayo
 ### Errores
 
 - Tool fallida: el agente la recibe como texto y decide; el stream emite `error` con
-  `codigo: "tool"` para el panel de transparencia y sigue.
+  `codigo: "tool"` y sigue. El cliente **no** pinta las líneas `error`: las manda a la
+  consola y la persona lee el `texto` que sigue, o "Algo falló de mi lado. Intenta de
+  nuevo." si no llegó ninguno (`usar-agente.ts`).
 - JSON A2UI inválido contra el catálogo: se reintenta una vez; si vuelve a fallar,
   `error { codigo: "a2ui" }` + `texto` con una respuesta en prosa. Nunca llega un
   mensaje inválido al renderer.

@@ -1,4 +1,4 @@
-import { readFileSync, existsSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { NOMBRES_DE_LAYOUT, nombres, validarMensaje, VERSION_A2UI, type MensajeA2UI } from "@maya/a2ui";
@@ -106,6 +106,34 @@ describe("cada componente del catalogo", () => {
           .flatMap((m) => m.updateComponents.components.map((c) => c.component));
         expect(usados).toContain(entrada.nombre);
       });
+    });
+  }
+});
+
+/**
+ * Los otros estados de un componente (`ejemplos/variantes/<componente>-<estado>.jsonl`): la
+ * galeria los pinta, asi que tienen que pasar la misma puerta que el ejemplo principal.
+ */
+describe("las variantes de ejemplo", () => {
+  const carpeta = join(RAIZ, "ejemplos", "variantes");
+  const archivos = existsSync(carpeta) ? readdirSync(carpeta).filter((a) => a.endsWith(".jsonl")) : [];
+  const nombres = new Map(CATALOGO.map((e) => [kebab(e.nombre), e.nombre]));
+
+  for (const archivo of archivos) {
+    it(`${archivo} es de un componente del catalogo y valida contra los schemas oficiales`, () => {
+      const componente = [...nombres.entries()].find(([k]) => archivo.startsWith(`${k}-`))?.[1];
+      expect(componente, `${archivo} no empieza con el nombre de un componente`).toBeTruthy();
+      const mensajes = leerJsonl(join(carpeta, archivo));
+      for (const mensaje of mensajes) {
+        const resultado = validarMensaje(mensaje, {
+          nombres: new Set(Object.keys(catalogo.components)),
+          esquema: validarConEsquema,
+          arbolCompleto: "updateComponents" in mensaje,
+        });
+        expect(resultado.ok ? [] : resultado.errores).toEqual([]);
+      }
+      const usados = mensajes.flatMap((m) => ("updateComponents" in m ? m.updateComponents.components.map((c) => c.component) : []));
+      expect(usados).toContain(componente);
     });
   }
 });

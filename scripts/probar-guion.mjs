@@ -4,6 +4,7 @@
  *
  *   node scripts/probar-guion.mjs                      # contra localhost:3000
  *   node scripts/probar-guion.mjs https://mi-dominio   # contra lo publicado
+ *   node scripts/probar-guion.mjs --solo "Ana ·"       # solo los casos cuyo nombre lo contiene
  *
  * Por que existe: las 300 pruebas del repo usan un modelo simulado. Prueban el cableado
  * —que un mensaje valide, que el reducer lo aplique, que el lienzo pinte— y no pueden
@@ -14,7 +15,10 @@
  * superficie anterior viaja en la peticion, igual que lo hace el navegador. Un turno que
  * no pinta, que pinta el componente equivocado o que tarda de mas, sale marcado.
  */
-const BASE = (process.argv[2] ?? "http://localhost:3000").replace(/\/$/, "");
+// `--solo <texto>` (repetible) corre solo los casos cuyo nombre lo contiene; lo demas es la URL.
+const argumentos = process.argv.slice(2);
+const SOLO = argumentos.flatMap((a, i) => (argumentos[i - 1] === "--solo" ? [a] : []));
+const BASE = (argumentos.find((a, i) => a !== "--solo" && argumentos[i - 1] !== "--solo") ?? "http://localhost:3000").replace(/\/$/, "");
 const LIMITE_MS = 15000;
 
 /**
@@ -84,6 +88,29 @@ const CASOS = [
     nuevaConversacion: true,
   },
   {
+    // Ajustes en vivo (docs/como-funciona/ajustes-en-vivo.md): otro numero sobre la MISMA
+    // tarjeta no pinta otra pantalla. Lo que se mide es que cierre con `ajustar`, que haya
+    // simulado con la tool (no de cabeza) y que la tarjeta ya diga la mensualidad nueva.
+    nombre: "Ana · ¿y si pago $6,000? (la tarjeta cambia en su lugar)",
+    usuario: "usr_ana",
+    texto: "¿Y si pago $6,000 al mes?",
+    cierre: "ajustar",
+    tools: ["simular_pago_credito"],
+    pantallaContiene: "600000",
+  },
+  {
+    nombre: "Ana · Programar este pago (accion real, en la misma tarjeta)",
+    usuario: "usr_ana",
+    accion: {
+      name: "programar_abono_capital",
+      sourceComponentId: "@ProyeccionPagoCredito",
+      context: { creditoId: "cred_ana_personal", mensualidadCentavos: 600000 },
+    },
+    cierre: "ajustar",
+    toolsAlternativas: ["ejecutar_decision", "programar_abono_capital"],
+    pantallaContiene: '"programado":true',
+  },
+  {
     nombre: "Ana · quiere empezar a ahorrar",
     usuario: "usr_ana",
     texto: "Quiero empezar a ahorrar",
@@ -110,6 +137,52 @@ const CASOS = [
 ];
 
 const id = () => `c_ensayo_${Math.random().toString(36).slice(2, 10)}`;
+
+/**
+ * La pantalla viva, como la lleva el navegador: componentes por id y data model. Hace falta
+ * para mandar `superficie.arbol`, sin el cual el agente no tiene `ajustar_pantalla` y los
+ * pasos de ajuste en vivo no se podrian ensayar.
+ */
+let componentesVivos = new Map();
+let dataModelVivo = {};
+
+function aplicarMensaje(m) {
+  if (m.createSurface) {
+    componentesVivos = new Map();
+    dataModelVivo = {};
+  }
+  if (m.updateComponents) for (const c of m.updateComponents.components) componentesVivos.set(c.id, c);
+  if (m.updateDataModel) {
+    const ruta = m.updateDataModel.path ?? "/";
+    if (ruta === "/") dataModelVivo = m.updateDataModel.value ?? {};
+    else escribir(dataModelVivo, ruta, m.updateDataModel.value);
+  }
+}
+
+function escribir(objeto, ruta, valor) {
+  const partes = ruta.split("/").slice(1).map((p) => p.replaceAll("~1", "/").replaceAll("~0", "~"));
+  let actual = objeto;
+  for (const parte of partes.slice(0, -1)) {
+    if (typeof actual[parte] !== "object" || actual[parte] === null) actual[parte] = {};
+    actual = actual[parte];
+  }
+  actual[partes.at(-1)] = valor;
+}
+
+/** Lo alcanzable desde `root`, como `componentesVisibles` del motor. */
+function arbolVisible() {
+  const vistos = new Set();
+  const cola = ["root"];
+  while (cola.length) {
+    const c = componentesVivos.get(cola.shift());
+    if (!c || vistos.has(c.id)) continue;
+    vistos.add(c.id);
+    if (Array.isArray(c.children)) cola.push(...c.children);
+    else if (c.children?.componentId) cola.push(c.children.componentId);
+    if (c.child) cola.push(c.child);
+  }
+  return [...vistos].map((i) => componentesVivos.get(i));
+}
 
 /** Lee el stream JSONL y lo resume: que paso en el turno. */
 async function turno({ usuario, conversacionId, mensajes, accion, superficie }) {
@@ -158,6 +231,7 @@ async function turno({ usuario, conversacionId, mensajes, accion, superficie }) 
   for (const l of lineas) {
     if (l.tipo === "a2ui") {
       const m = l.mensaje;
+      aplicarMensaje(m);
       if (m.updateComponents) {
         for (const c of m.updateComponents.components) {
           componentes.push(c.component);
@@ -192,26 +266,45 @@ let superficie;
 
 console.log(`\nEnsayo del guion contra ${BASE}\n${"=".repeat(60)}`);
 
-for (const caso of CASOS) {
-  if (caso.nuevaConversacion) {
+const ELEGIDOS = SOLO.length ? CASOS.filter((c) => SOLO.some((t) => c.nombre.includes(t))) : CASOS;
+
+for (const [i, caso] of ELEGIDOS.entries()) {
+  if (caso.nuevaConversacion || (SOLO.length && i === 0)) {
     conversacionId = id();
     mensajes = [];
     superficie = undefined;
+    componentesVivos = new Map();
+    dataModelVivo = {};
   }
 
   if (caso.texto) mensajes = [...mensajes, { rol: "usuario", texto: caso.texto }];
-  if (caso.accion) {
-    mensajes = [...mensajes, { rol: "accion", texto: `${caso.accion.name} ${JSON.stringify(caso.accion.context)}` }];
+  // `@Componente` = el id que tenga ese componente en la pantalla viva.
+  let accion = caso.accion;
+  if (accion?.sourceComponentId.startsWith("@")) {
+    const nombre = accion.sourceComponentId.slice(1);
+    const encontrado = arbolVisible().find((c) => c.component === nombre);
+    accion = { ...accion, sourceComponentId: encontrado?.id ?? nombre };
+  }
+  if (accion) {
+    mensajes = [...mensajes, { rol: "accion", texto: `${accion.name} ${JSON.stringify(accion.context)}` }];
   }
 
-  const r = await turno({ usuario: caso.usuario, conversacionId, mensajes, accion: caso.accion, superficie });
+  const r = await turno({ usuario: caso.usuario, conversacionId, mensajes, accion, superficie });
 
   const problemas = [];
   const avisos = [];
   if (!r.ok) {
     problemas.push(...r.errores);
   } else {
-    if (r.componentes.length === 0) problemas.push("no pinto ninguna pantalla");
+    const esAjuste = caso.cierre === "ajustar";
+    if (caso.cierre && r.fin?.cierre !== caso.cierre) {
+      problemas.push(`cerro con ${r.fin?.cierre ?? "nada"}, se esperaba ${caso.cierre}`);
+    }
+    if (!esAjuste && r.componentes.length === 0) problemas.push("no pinto ninguna pantalla");
+    if (caso.pantallaContiene) {
+      const vivo = JSON.stringify(arbolVisible()) + JSON.stringify(dataModelVivo);
+      if (!vivo.includes(caso.pantallaContiene)) problemas.push(`la pantalla no dice ${caso.pantallaContiene}`);
+    }
     for (const esperado of caso.componentes ?? []) {
       if (!r.componentes.includes(esperado)) problemas.push(`falta ${esperado}`);
     }
@@ -234,8 +327,9 @@ for (const caso of CASOS) {
     }
     // Un error del que el turno se recupero (reintento del contrato) no es un fallo: es
     // un aviso con su costo en segundos. Solo cuenta como fallo si no hubo pantalla.
+    const huboPantalla = r.componentes.length > 0 || (esAjuste && r.fin?.cierre === "ajustar");
     for (const e of r.errores) {
-      if (r.componentes.length > 0 && e.startsWith("a2ui:")) avisos.push(e);
+      if (huboPantalla && e.startsWith("a2ui:")) avisos.push(e);
       else problemas.push(e);
     }
     // Una tool que fallo y de la que el turno se recupero es un aviso con su costo en
@@ -244,7 +338,7 @@ for (const caso of CASOS) {
     const conError = r.tools.filter((t) => t.endsWith("!"));
     if (conError.length > 0) {
       const mensaje = `tool con error (reintentada): ${[...new Set(conError)].join(", ")}`;
-      if (r.componentes.length > 0) avisos.push(mensaje);
+      if (huboPantalla) avisos.push(mensaje);
       else problemas.push(mensaje);
     }
     if (!r.cierre) problemas.push("no dijo nada (texto vacio)");
@@ -255,7 +349,10 @@ for (const caso of CASOS) {
 
     // El historial se acumula para el siguiente turno, como en el navegador.
     if (r.cierre) mensajes = [...mensajes, { rol: "agente", texto: r.cierre }];
-    superficie = { surfaceId: "principal", componentes: [...new Set(r.componentes)], dataModel: r.dataModel };
+    const arbol = arbolVisible();
+    if (arbol.length) {
+      superficie = { surfaceId: "principal", componentes: [...new Set(arbol.map((c) => c.component))], arbol, dataModel: dataModelVivo };
+    }
   }
 
   const marca = problemas.length === 0 ? verde("PASA") : rojo("FALLA");
@@ -272,5 +369,5 @@ for (const caso of CASOS) {
 }
 
 console.log(`\n${"=".repeat(60)}`);
-console.log(fallos === 0 ? verde(`Los ${CASOS.length} pasos del guion pasan.`) : rojo(`${fallos} de ${CASOS.length} fallan.`));
+console.log(fallos === 0 ? verde(`Los ${ELEGIDOS.length} pasos del guion pasan.`) : rojo(`${fallos} de ${ELEGIDOS.length} fallan.`));
 process.exit(fallos === 0 ? 0 : 1);
