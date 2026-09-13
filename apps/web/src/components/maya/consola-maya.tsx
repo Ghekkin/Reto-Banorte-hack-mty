@@ -6,7 +6,8 @@ import { BarraConversacion } from "@/components/maya/barra-conversacion";
 import { Lienzo } from "@/components/maya/lienzo";
 import { ProgresoMaya } from "@/components/maya/progreso-maya";
 import type { AccionEntrante } from "@/lib/agente/tipos";
-import { numerarPantallas, usarAgente } from "@/lib/agente/usar-agente";
+import { ArrowUp } from "lucide-react";
+import { numerarPantallas, usarAgente, type TarjetaAjustada } from "@/lib/agente/usar-agente";
 import { MARCA } from "@/lib/marca";
 import { vozHabilitada } from "@/lib/voz/flag";
 import { usarConversacionVoz, type HerramientasVoz } from "@/lib/voz/usar-conversacion-voz";
@@ -42,14 +43,14 @@ export function ConsolaMaya({
   const { enviarTexto, enviarAccion } = agente;
   const idsDePantalla = useMemo(() => numerarPantallas(agente.hilo), [agente.hilo]);
 
-  // Un ajuste a una pantalla de ARRIBA cambia algo que la persona quiza ya no ve: se trae a la
-  // vista para que el cambio no pase en silencio fuera de la pantalla.
+  // Un ajuste cambia una tarjeta que la persona quiza ya no ve (esta arriba de su pregunta): se
+  // trae a la vista y se ilumina, para que el cambio no pase en silencio fuera de la pantalla.
   const ajustada = agente.pantallaAjustada;
   useEffect(() => {
     if (!ajustada) return;
-    document
-      .querySelector(`[data-pantalla="${ajustada.pantalla}"]`)
-      ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    // Un cuadro despues: primero entra la respuesta al hilo, luego se sube a la tarjeta.
+    const cuadro = requestAnimationFrame(() => mostrarTarjeta(ajustada));
+    return () => cancelAnimationFrame(cuadro);
   }, [ajustada]);
 
   // Una sola vez por intención: evita que cada render vuelva a disparar la pregunta
@@ -195,7 +196,7 @@ export function ConsolaMaya({
         <div className="flex flex-1 flex-col gap-2.5 pb-4 md:gap-3.5">
           {agente.hilo.map((entrada, i) =>
             entrada.tipo === "mensaje" ? (
-              <Mensaje key={i} rol={entrada.rol} texto={entrada.texto} />
+              <Mensaje key={i} rol={entrada.rol} texto={entrada.texto} ajuste={entrada.ajuste} />
             ) : (
               <div key={i} data-pantalla={idsDePantalla[i]} className="flex flex-col gap-2.5 md:gap-3.5">
                 <Lienzo
@@ -252,9 +253,26 @@ export function ConsolaMaya({
 }
 
 /**
- * Una línea del hilo de mensajes.
+ * Lleva la vista a la tarjeta que cambió y la ilumina un momento. Busca el componente dentro de
+ * su pantalla (`data-componente` lo pone el renderer); si no lo encuentra, la pantalla entera.
  */
-function Mensaje({ rol, texto }: { rol: "usuario" | "agente" | "accion"; texto: string }) {
+function mostrarTarjeta(ajuste: TarjetaAjustada) {
+  const pantalla = document.querySelector<HTMLElement>(`[data-pantalla="${ajuste.pantalla}"]`);
+  const tarjeta =
+    (ajuste.componente && pantalla?.querySelector<HTMLElement>(`[data-componente="${ajuste.componente}"]`)) || pantalla;
+  if (!tarjeta) return;
+  const quieto = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  tarjeta.scrollIntoView({ behavior: quieto ? "auto" : "smooth", block: "center" });
+  const clases = ["rounded-2xl", "ring-2", "ring-primary/40", "ring-offset-2", "ring-offset-lienzo"];
+  tarjeta.classList.add(...clases);
+  window.setTimeout(() => tarjeta.classList.remove(...clases), 1800);
+}
+
+/**
+ * Una línea del hilo de mensajes. Si la respuesta cambió una tarjeta en su lugar, ofrece volver a
+ * verla: la tarjeta queda arriba de la pregunta y la respuesta abajo.
+ */
+function Mensaje({ rol, texto, ajuste }: { rol: "usuario" | "agente" | "accion"; texto: string; ajuste?: TarjetaAjustada }) {
   if (rol === "accion") {
     return (
       <p className="self-end rounded-full bg-tinte px-2.5 py-0.5 text-[10px] sm:text-xs font-medium text-primary shadow-xs">
@@ -264,7 +282,7 @@ function Mensaje({ rol, texto }: { rol: "usuario" | "agente" | "accion"; texto: 
   }
 
   const esUsuario = rol === "usuario";
-  return (
+  const burbuja = (
     <p
       className={
         esUsuario
@@ -274,5 +292,19 @@ function Mensaje({ rol, texto }: { rol: "usuario" | "agente" | "accion"; texto: 
     >
       {texto}
     </p>
+  );
+  if (!ajuste) return burbuja;
+  return (
+    <div className="flex max-w-[85%] flex-col items-start gap-1 self-start">
+      {burbuja}
+      <button
+        type="button"
+        onClick={() => mostrarTarjeta(ajuste)}
+        className="inline-flex min-h-12 items-center gap-1.5 rounded-full px-3 text-sm font-medium text-primary transition-colors hover:bg-tinte md:min-h-9"
+      >
+        <ArrowUp className="size-4" aria-hidden />
+        Ver la tarjeta actualizada
+      </button>
+    </div>
   );
 }

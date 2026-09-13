@@ -91,6 +91,17 @@ después del paso 3.
    `resultadoAccion.capacidadAhorro.despuesCentavos`: el abono ya no está libre para ahorrar
    (`proyectar_ahorro` también lo descuenta).
 
+### Que la persona VEA el cambio
+
+La tarjeta que un ajuste cambia suele estar **arriba** de la pregunta, y el chat baja hasta la
+respuesta: el 2026-09-13 el usuario pidió «ahorrar 5k al mes», el simulador sí cambió y él solo vio
+el texto. Ahora, al cerrar un ajuste (a la pantalla actual o a una anterior), el cliente recuerda qué
+tarjeta cambió (`tarjetaDelAjuste`: la primera reemplazada que no sea la `Conclusion`), **lleva la
+vista hasta ella y la ilumina** 1.8 s (`mostrarTarjeta` en `consola-maya.tsx`), y la respuesta de
+Maya lleva **«Ver la tarjeta actualizada»** para volver a ella (`marcarRespuestaConAjuste`). Además,
+proyectar un ahorro ya no baja el tope del slider que tenía la tarjeta (antes quedaba en $5,000 con la
+aportación pegada al extremo). Verificado con el modelo real en iPhone 13 y a 1440 px.
+
 ### Las cifras de una tool no las copia el modelo
 
 `parchesDeterministas` (`apps/web/src/lib/agente/ajustar.ts`) escribe en la tarjeta, **lo haya

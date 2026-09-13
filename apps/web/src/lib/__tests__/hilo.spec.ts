@@ -6,8 +6,10 @@ import {
   colocarPantalla,
   numerarPantallas,
   pantallasAnteriores,
+  marcarRespuestaConAjuste,
   ponerEnPantalla,
   SUPERFICIE,
+  tarjetaDelAjuste,
   type EntradaDelHilo,
 } from "@/lib/agente/usar-agente";
 
@@ -195,5 +197,36 @@ describe("ponerEnPantalla", () => {
     const hilo = [congelada(uno)];
     expect(ponerEnPantalla(hilo, "p1", uno)).toBe(hilo);
     expect(ponerEnPantalla(hilo, "p4", pantalla("otra"))).toBe(hilo);
+  });
+});
+
+/**
+ * «Quiero ahorrar 5k al mes» cambio el simulador, pero estaba arriba de la pregunta y la persona
+ * solo vio el texto. El hook recuerda que tarjeta cambio para llevar la vista y ofrecer volver.
+ */
+describe("la tarjeta del ajuste", () => {
+  const a2ui = (components: Array<{ id: string; component: string }>) =>
+    ({ tipo: "a2ui", mensaje: { version: VERSION_A2UI, updateComponents: { surfaceId: SUPERFICIE, components } } }) as const;
+
+  it("es la primera reemplazada que no sea la conclusion", () => {
+    expect(tarjetaDelAjuste([a2ui([{ id: "conclusion", component: "Conclusion" }, { id: "simulador", component: "SimuladorMeta" }])])).toBe("simulador");
+  });
+
+  it("si solo cambio la conclusion, esa; sin updateComponents, ninguna", () => {
+    expect(tarjetaDelAjuste([a2ui([{ id: "conclusion", component: "Conclusion" }])])).toBe("conclusion");
+    expect(tarjetaDelAjuste([{ tipo: "a2ui", mensaje: { version: VERSION_A2UI, updateDataModel: { surfaceId: SUPERFICIE, path: "/x", value: 1 } } }])).toBeUndefined();
+  });
+
+  it("marca la ultima respuesta de Maya, no una de un turno anterior", () => {
+    const hilo: EntradaDelHilo[] = [
+      { tipo: "mensaje", rol: "agente", texto: "vieja" },
+      mensaje("quiero ahorrar 5k"),
+      { tipo: "mensaje", rol: "agente", texto: "Con $5,000 al mes llegas en 10 meses" },
+    ];
+    const salida = marcarRespuestaConAjuste(hilo, { pantalla: "p1", componente: "simulador" });
+    expect(salida[2]).toMatchObject({ ajuste: { pantalla: "p1", componente: "simulador" } });
+    expect(salida[0]).not.toHaveProperty("ajuste");
+    // Sin respuesta de Maya despues de la pregunta, no marca nada.
+    expect(marcarRespuestaConAjuste([hilo[0]!, hilo[1]!], { pantalla: "p1" })).toEqual([hilo[0], hilo[1]]);
   });
 });

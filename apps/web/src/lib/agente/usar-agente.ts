@@ -68,7 +68,13 @@ export function calcularSuperficieViva(
 
 /** Una entrada del hilo: una linea de conversacion, o una pantalla ya construida. */
 export type EntradaDelHilo =
-  | { tipo: "mensaje"; rol: MensajeHistorial["rol"]; texto: string }
+  | {
+      tipo: "mensaje";
+      rol: MensajeHistorial["rol"];
+      texto: string;
+      /** Si esta respuesta cambio una tarjeta en su lugar: cual, para ofrecer «Ver la tarjeta actualizada». */
+      ajuste?: TarjetaAjustada;
+    }
   | { tipo: "pantalla"; superficie: EstadoSuperficie; transparencia: LineaStream[] };
 
 /**
@@ -174,6 +180,38 @@ export function ponerEnPantalla(hilo: EntradaDelHilo[], id: string, superficie: 
   return copia;
 }
 
+/** Una tarjeta que un ajuste cambio: en que pantalla del hilo y con que id de componente. */
+export type TarjetaAjustada = { pantalla: string; componente?: string };
+
+/**
+ * Cual tarjeta cambio un ajuste, para llevar la vista hasta ella.
+ *
+ * El 2026-09-13 el usuario pidio «ahorrar 5k al mes» y vio solo el texto: la tarjeta del
+ * simulador SI cambio, pero estaba arriba, fuera de la vista, y el chat bajo hasta la respuesta.
+ * La tarjeta es la primera que el ajuste reemplazo que no sea la `Conclusion` (esa acompaña, no es
+ * lo que se pidio); si el ajuste solo toco la conclusion, esa.
+ */
+export function tarjetaDelAjuste(lineas: readonly LineaStream[]): string | undefined {
+  const cambiadas = lineas.flatMap((l) =>
+    l.tipo === "a2ui" && "updateComponents" in l.mensaje ? l.mensaje.updateComponents.components : [],
+  );
+  return (cambiadas.find((c) => c.component !== "Conclusion") ?? cambiadas[0])?.id;
+}
+
+/** Marca la ultima respuesta de Maya con la tarjeta que su ajuste cambio. */
+export function marcarRespuestaConAjuste(hilo: EntradaDelHilo[], ajuste: TarjetaAjustada): EntradaDelHilo[] {
+  for (let i = hilo.length - 1; i >= 0; i--) {
+    const entrada = hilo[i]!;
+    if (entrada.tipo === "mensaje" && entrada.rol === "agente") {
+      const copia = [...hilo];
+      copia[i] = { ...entrada, ajuste };
+      return copia;
+    }
+    if (entrada.tipo === "mensaje" && entrada.rol !== "agente") break;
+  }
+  return hilo;
+}
+
 /** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
 const TOPE_DE_FALLOS = 2;
 
@@ -185,7 +223,7 @@ export function usarAgente(usuarioId: string) {
   const [razon, setRazon] = useState<string>();
   const [transparencia, setTransparencia] = useState<LineaStream[]>([]);
   /** La ultima pantalla de ARRIBA que un ajuste cambio, para traerla a la vista. */
-  const [pantallaAjustada, setPantallaAjustada] = useState<{ pantalla: string; vez: number }>();
+  const [pantallaAjustada, setPantallaAjustada] = useState<TarjetaAjustada & { vez: number }>();
   const conversacionId = useRef(crearId());
   const peticionActiva = useRef<AbortController | null>(null);
   const ultimoUsuarioId = useRef(usuarioId);
@@ -344,10 +382,16 @@ export function usarAgente(usuarioId: string) {
               // La pantalla del turno se queda en el hilo, con su tira de transparencia.
               // Un turno que no pinto nada (prosa, error, `responder`) no congela nada: no
               // hay que dejar un hueco vacio en la conversacion.
+              // Un ajuste (a la pantalla actual o a una de arriba) cambio una tarjeta que la persona
+              // quiza no esta viendo: se lleva la vista hasta ella y la respuesta ofrece volver.
+              const pantallaDelAjuste = linea.cierre === "ajustar" ? (linea.pantalla ?? idActual) : undefined;
+              if (pantallaDelAjuste) {
+                const ajuste: TarjetaAjustada = { pantalla: pantallaDelAjuste, componente: tarjetaDelAjuste(lineas) };
+                setPantallaAjustada((p) => ({ ...ajuste, vez: (p?.vez ?? 0) + 1 }));
+                setHilo((h) => marcarRespuestaConAjuste(h, ajuste));
+              }
               if (linea.cierre === "ajustar" && linea.pantalla && linea.pantalla !== idActual) {
-                // Ya quedo aplicado arriba, linea por linea. Solo falta llevar la vista hasta alla.
-                const pantalla = linea.pantalla;
-                setPantallaAjustada((p) => ({ pantalla, vez: (p?.vez ?? 0) + 1 }));
+                // Ya quedo aplicado arriba, linea por linea.
                 break;
               }
               const emitioA2ui = lineas.some((l) => l.tipo === "a2ui" && !l.pantalla);

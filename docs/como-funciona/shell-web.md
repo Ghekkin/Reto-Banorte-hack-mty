@@ -224,6 +224,11 @@ La conversación de Maya es **una sola lista en orden** (`hilo`, en
 construyó. Al cerrar un turno (la línea `fin` del stream) la superficie se **congela** en
 esa lista (con las líneas del stream de ese turno, que no se pintan) y ahí se queda.
 
+**La barra de conversación queda fija abajo, como en cualquier chat** (`barra-conversacion.tsx`):
+`sticky bottom-0` con una banda del color del lienzo y un degradado arriba que tapa lo que se desplaza
+por detrás (antes flotaba sin fondo y la tarjeta de abajo se asomaba alrededor del input); en móvil la
+banda baja hasta la barra de pestañas (`pb-[calc(5rem+env(safe-area-inset-bottom))]`).
+
 **Lo que ve la persona mientras Maya trabaja** (`components/maya/progreso-maya.tsx`): una
 tarjeta «Maya está trabajando en tu respuesta» con **un renglón por cada cosa que el agente de
 verdad hace**, en palabras de cliente y en tiempo real: «Entendiendo lo que necesitas» →

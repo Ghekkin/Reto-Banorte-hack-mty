@@ -241,11 +241,15 @@ export function parchesDeterministas(
   if (proyeccion && typeof proyeccion.montoObjetivoCentavos === "number" && typeof proyeccion.aportacionCentavos === "number") {
     const capacidad = typeof proyeccion.capacidadMensualCentavos === "number" ? proyeccion.capacidadMensualCentavos : 0;
     for (const c of deTipo("SimuladorMeta")) {
+      // Proyectar no reduce el tope que ya tenia la tarjeta: «ahorrar 5k» dejaba el slider con
+      // tope de $5,000 y la aportacion pegada al extremo. Solo una accion que compromete dinero
+      // (abajo, `capacidadAhorro`) lo baja.
+      const topeActual = valorDe(c, "aportacionMaximaCentavos");
       agregar(c.id, {
         metaCentavos: proyeccion.montoObjetivoCentavos,
         ...(typeof proyeccion.saldoInicialCentavos === "number" ? { saldoInicialCentavos: proyeccion.saldoInicialCentavos } : {}),
         aportacionCentavos: proyeccion.aportacionCentavos,
-        aportacionMaximaCentavos: Math.max(capacidad, proyeccion.aportacionCentavos),
+        aportacionMaximaCentavos: Math.max(capacidad, proyeccion.aportacionCentavos, typeof topeActual === "number" ? topeActual : 0),
         ...(proyeccion.frecuencia === "mensual" || proyeccion.frecuencia === "quincenal" ? { frecuencia: proyeccion.frecuencia } : {}),
       });
     }

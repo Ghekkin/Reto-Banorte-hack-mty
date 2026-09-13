@@ -394,6 +394,12 @@ describe("parchesDeterministas: meta de ahorro", () => {
     ]);
   });
 
+  it("proyectar nunca baja el tope que ya tenia la tarjeta", () => {
+    const datos = { proyectar_ahorro: { montoObjetivoCentavos: 9600000, aportacionCentavos: 500000, capacidadMensualCentavos: 498617 } };
+    const conTopeAlto = { ...conMeta, arbol: [conMeta.arbol[0]!, { ...conMeta.arbol[1]!, aportacionMaximaCentavos: 662905 }] };
+    expect(parchesDeterministas(conTopeAlto, datos)[0]!.props.aportacionMaximaCentavos).toBe(662905);
+  });
+
   it("si la fecha pide mas de lo que cabe, el tope sube hasta la aportacion para que el slider la muestre", () => {
     const datos = { proyectar_ahorro: { montoObjetivoCentavos: 8000000, aportacionCentavos: 2000000, capacidadMensualCentavos: 498617 } };
     expect(parchesDeterministas(conMeta, datos)[0]!.props).toMatchObject({ aportacionCentavos: 2000000, aportacionMaximaCentavos: 2000000 });

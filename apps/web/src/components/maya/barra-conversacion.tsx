@@ -118,7 +118,10 @@ export function BarraConversacion({
   }
 
   return (
-    <div className="sticky bottom-20 z-30 flex w-full flex-col transition-all duration-500 ease-out md:bottom-4">
+    // Anclada abajo como en cualquier chat: una banda con el color del lienzo y un degradado arriba
+    // tapa lo que se desplaza por detras (antes la tarjeta de abajo se asomaba alrededor del input).
+    // En movil la banda baja hasta la barra de pestanas; en escritorio deja 16 px al borde.
+    <div className="sticky bottom-0 z-30 -mx-3 flex flex-col bg-[linear-gradient(to_top,var(--lienzo)_70%,transparent)] px-3 pt-6 pb-[calc(5rem+env(safe-area-inset-bottom))] md:-mx-4 md:px-4 md:pb-4">
       <form
         className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-borde-sutil bg-card/95 backdrop-blur-md p-1.5 sm:p-2 shadow-md focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20"
         onSubmit={(e) => {
