@@ -50,7 +50,9 @@ hasta que tus datos cambien de verdad.
 | La ruta `GET`/`POST /api/inicio` | `apps/web/src/app/api/inicio/route.ts` |
 | La página | `apps/web/src/app/(app)/page.tsx` |
 | La portada pintada, y el aviso mientras se arma | `apps/web/src/components/inicio/inicio-de-maya.tsx`, `refresco-del-inicio.tsx` |
+| La rejilla masonry en que caen las tarjetas | `apps/web/src/components/inicio/masonry.tsx` (`docs/algoritmos/masonry-del-inicio.md`) |
 | La consulta desde Inicio (la barra de abajo) | `components/inicio/tarjetas-inicio.tsx` (`BarraFlotanteMaya`) → `app/(app)/acciones.ts` (`preguntarEnInicio`) |
+| El ciclo visible al preguntar (salida → esqueleto → entrada) | `components/inicio/transicion-inicio.tsx`, `esqueleto-inicio.tsx` (`docs/como-funciona/transicion-del-inicio.md`) |
 | El gancho "acabo de aplicar una acción" | `lib/agente/agente.ts` (`alMutar`), conectado en `app/api/agente/route.ts` |
 | La entrada a Maya con un botón ya tocado | `app/(app)/maya/page.tsx` (`?accion=`), `components/maya/consola-maya.tsx` |
 | El ensayo con el modelo real | `scripts/probar-inicio.mjs` (`pnpm probar-inicio`) |
@@ -197,7 +199,7 @@ vuelo, el rearmado tras una acción) es igual:
 
 - **La portada se arma por fuentes**: `generarPortada` delega en `generarPortadaDeWidgets`, el
   modelo llama `pintar_widgets` y las cifras de cada tarjeta las pone un adaptador con lo que
-  devolvió el MCP. Se guardan `procedencias` y `referencias` (migración 0004).
+  devolvió el MCP. Se guardan `procedencias` y `referencias` (migración 0005).
 - **Una pregunta ya no borra el pizarrón**: la barra y el botón «Preguntar sobre esto» de cada
   tarjeta van a `POST /api/inicio/widget`, que cambia UNA tarjeta en su lugar o contesta con una
   nota. `preguntarEnInicio` no se usa.
@@ -220,6 +222,12 @@ Ahora llama a la server action `preguntarEnInicio(pregunta)`, que:
    único distinto es el encargo (`encargoDeConsulta` en vez de `encargoDePortada`);
 3. **reemplaza** la fila de `banorte.pantallas_inicio` con esa pantalla;
 4. `revalidatePath("/")`, y el servidor vuelve a renderizar Inicio con el dashboard nuevo.
+
+Y **se ve mientras pasa**: al dar Enter, las tarjetas que hay se van en cascada, un
+esqueleto ocupa su lugar los ~8 s que tarda el modelo, y la pantalla nueva entra con el
+mismo movimiento al revés. El estado ya no vive en la barra: lo publica
+`ProveedorDeInicio`, que envuelve la pantalla completa. Está en
+`docs/como-funciona/transicion-del-inicio.md`.
 
 Dos decisiones que vale la pena entender:
 
@@ -255,6 +263,10 @@ solo: la página no cambia, el reloj lo dice en el log y no arranca.
 | Beto | `ResumenTarjeta` (héroe) · `PlanDePago` · `GastoPorCategoria` · `TermometroSaludFinanciera` | 7 (`simular_reestructura` y `proyectar_ahorro` prefetched) | 21 954 / 16 326 / 1 023 | 7.7 s |
 | Ana | `ProyeccionPagoCredito` (héroe) · `DistribucionPortafolio` · `GastoPorCategoria` · `TermometroSaludFinanciera` | 4 | 23 985 / 16 329 / 1 768 | 11.6 s |
 | Carmen | `DistribucionPortafolio` (héroe) · `GastoPorCategoria` · `TermometroSaludFinanciera` | 5 | 22 676 / 16 347 / 1 142 | 11.0 s |
+
+> Estos números son **del último paso** de cada portada, no del total: hasta el 2026-09-13
+> `generar.ts` leía `resultado.usage` (issue #17). Desde entonces `entrada_tokens` y
+> `cache_tokens` guardan la suma de las 2-3 peticiones.
 
 El caché del proveedor sirve ~16 300 tokens en cada portada: es el system prompt, que las
 tres comparten. Lo que se paga por portada son ~6 000 tokens de entrada nuevos (los datos

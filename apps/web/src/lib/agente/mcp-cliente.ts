@@ -24,10 +24,17 @@ export async function llamarTool(
   cliente: Client,
   nombre: string,
   argumentos: Record<string, unknown>,
+  meta: { corridaId?: string } = {},
 ): Promise<{ resultado: unknown; ms: number; ok: boolean }> {
   const inicio = Date.now();
   try {
-    const respuesta = await cliente.callTool({ name: nombre, arguments: argumentos });
+    // `_meta.corridaId` viaja con la llamada: el MCP lo guarda en `banorte.registros` y asi
+    // su lado de la historia se une con la corrida del agente.
+    const respuesta = await cliente.callTool({
+      name: nombre,
+      arguments: argumentos,
+      ...(meta.corridaId ? { _meta: { corridaId: meta.corridaId } } : {}),
+    });
     const contenido = (respuesta.content as Array<{ type: string; text?: string }> | undefined)?.[0];
     const texto = contenido?.text ?? "null";
     const ok = !respuesta.isError;
@@ -57,6 +64,8 @@ export type OpcionesDeHerramientas = {
   idempotencyKey?: string;
   /** Se llama al terminar cada tool: alimenta la linea `tool` del stream. */
   alTerminar?: (llamada: LlamadaRegistrada) => void;
+  /** La corrida que esta llamando: viaja en `_meta` para que el MCP la registre. */
+  corridaId?: string;
 };
 
 /**
@@ -97,7 +106,7 @@ export async function herramientasDelMcp(cliente: Client, opciones: OpcionesDeHe
             (argumentos.context as Record<string, unknown>).idempotencyKey = opciones.idempotencyKey;
           }
         }
-        const { resultado, ms, ok } = await llamarTool(cliente, tool.name, argumentos);
+        const { resultado, ms, ok } = await llamarTool(cliente, tool.name, argumentos, { corridaId: opciones.corridaId });
         opciones.alTerminar?.({ nombre: tool.name, ms, ok, mutacion: !esLectura });
         return resultado;
       },

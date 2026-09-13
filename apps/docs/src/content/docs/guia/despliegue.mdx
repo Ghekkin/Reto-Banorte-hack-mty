@@ -1,0 +1,38 @@
+---
+title: Despliegue e Infraestructura
+description: Arquitectura cloud en Coolify, Dockerfiles multi-stage y dominios públicos.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="success" title="Despliegue Continuo (CI/CD)">
+  Cada push sobre la rama <code>main</code> activa un flujo en GitHub Actions que ejecuta pruebas y despliega automáticamente en un VPS dedicado mediante Coolify.
+</BanorteAlert>
+
+## Endpoints Públicos de Producción
+
+Los evaluadores pueden inspeccionar el sistema en vivo en los siguientes dominios:
+
+* **Aplicación Web Maya:** `https://maya.157.173.204.174.sslip.io`
+* **Catálogo A2UI JSON:** `https://maya.157.173.204.174.sslip.io/catalogo/v1.json`
+* **Healthcheck del Servidor MCP:** `https://maya-mcp.157.173.204.174.sslip.io/health`
+* **Documentación Técnica Astro:** `http://localhost:4321` (o desplegada con Astro Starlight)
+
+---
+
+## Contenedores Docker
+
+La raíz del monorepo contiene los archivos Docker optimizados:
+
+* `apps/web/Dockerfile`: Compilación multi-stage de Next.js 16 con standalone output y assets estáticos.
+* `apps/mcp/Dockerfile`: Imagen ligera Node.js con compilación TypeScript para el servidor MCP.
+* `apps/docs/`: Despliegue estático de Astro con salida HTML pre-renderizada de alto rendimiento y búsqueda por Pagefind.
+
+---
+
+## Script de Despliegue Manual
+
+```bash
+# Dispara el webhook de Coolify y aguarda la verificación de los endpoints /health
+scripts/deploy.sh
+```

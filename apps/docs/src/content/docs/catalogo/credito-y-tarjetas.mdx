@@ -1,0 +1,73 @@
+---
+title: Componentes de Crédito y Tarjetas
+description: Especificación de widgets para visualización de adeudos, comparativas de reestructura y amortización.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Dominio Financiero: Crédito">
+  Estos componentes atienden el Criterio 1 del reto: resolver problemas de sobreendeudamiento, altas tasas revolventes y morosidad mediante alternativas visuales directas.
+</BanorteAlert>
+
+## 1. `ResumenTarjeta`
+
+El componente héroe de la tarjeta de crédito. Sintetiza la relación entre el saldo dispuesto y la línea total aprobada.
+
+```typescript
+export const ResumenTarjetaPropsSchema = z.object({
+  tarjetaId: z.string(),
+  alias: z.string(),
+  ultimosCuatro: z.string().length(4),
+  saldoTotal: z.number().nonnegative(),
+  limiteCredito: z.number().positive(),
+  tasaInteresAnual: z.number().positive(),
+  cat: z.number().positive(),
+  diasAtraso: z.number().int().nonnegative(),
+  pagoMinimo: z.number().nonnegative(),
+  fechaCorte: z.string(),
+  planActivo: z.boolean().default(false),
+});
+```
+
+* **Comportamiento Reactivo:** Si `diasAtraso > 0`, despliega un badge rojo Banorte con el conteo de días en mora. Si `planActivo: true`, el saldo revolvente se dibuja en $0.00 con un badge verde de confirmación.
+
+---
+
+## 2. `PlanDePago`
+
+Visualizador de alternativas de reestructura a tasa preferencial (22.5% anual frente al 48.9% ordinario).
+
+```typescript
+export const OpcionPlazoSchema = z.object({
+  meses: z.number().int().positive(),
+  mensualidad: z.number().positive(),
+  tasaPactada: z.number().positive(),
+  ahorroEstimadoVsMinimo: z.number().positive(),
+  recomendada: z.boolean().default(false),
+});
+
+export const PlanDePagoPropsSchema = z.object({
+  tarjetaId: z.string(),
+  opciones: z.array(OpcionPlazoSchema).min(1),
+  mesSeleccionado: z.number().int().optional(),
+});
+```
+
+* **Acción Emitida:** Despacha el evento `action: "aplicar_plan_pago"` conteniendo el `plazoMeses` y el `tarjetaId` seleccionado.
+
+---
+
+## 3. `Calendario`
+
+Tabla de amortización y cronograma proyectado de pagos tras la formalización de la reestructura.
+
+```typescript
+export const AmortizacionItemSchema = z.object({
+  numeroPago: z.number().int().positive(),
+  fechaVencimiento: z.string(),
+  montoMensualidad: z.number().positive(),
+  capital: z.number().positive(),
+  intereses: z.number().positive(),
+  saldoInsoluto: z.number().nonnegative(),
+});
+```

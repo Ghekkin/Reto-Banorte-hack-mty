@@ -57,7 +57,7 @@ export function SidebarApp({ usuario }: { usuario: UsuarioDemo }) {
       </SidebarContent>
 
       <SidebarFooter>
-        <SelectorUsuario usuario={usuario} />
+        <SelectorUsuario usuario={usuario} variante="sidebar" />
       </SidebarFooter>
     </Sidebar>
   );

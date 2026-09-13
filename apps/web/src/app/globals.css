@@ -103,6 +103,10 @@
   --motion-rapida: 150ms;
   --motion-media: 200ms;
   --motion-salida: cubic-bezier(0.2, 0, 0, 1);
+  /* La curva de lo que SE VA: acelera y no frena, porque nada tiene que aterrizar.
+     Es la inversa de `--motion-salida` (Material 3: accelerate / decelerate) y es lo
+     que hace que la salida no se sienta como la entrada al reves. */
+  --motion-acelerada: cubic-bezier(0.3, 0, 1, 1);
   /* El escalon de la entrada en cascada. 4 escalones maximo (ver .animar-lista):
      4 x 25 + 150 = 225 ms de principio a fin, debajo del techo de 250. */
   --motion-escalon: 25ms;
@@ -302,7 +306,8 @@
      250 ms y, con 20 tarjetas, la ultima entraria medio segundo tarde. Del quinto
      en adelante entran junto con el cuarto.
 
-     Son DOS utilidades porque hay dos situaciones distintas:
+     Son dos utilidades de ENTRADA porque hay dos situaciones distintas (la de SALIDA,
+     `animar-salida-lista`, esta mas abajo y comparte estos mismos escalones):
 
      - `animar-lista`: los hijos NO se animan solos (las tarjetas de Inicio,
        Productos, Mas). El contenedor les pone la animacion y el retraso.
@@ -316,20 +321,62 @@
     animation: entrada-superficie var(--motion-rapida) var(--motion-salida) both;
   }
   .animar-lista > *:nth-child(2),
-  .animar-cascada > *:nth-child(2) {
+  .animar-cascada > *:nth-child(2),
+  .animar-salida-lista > *:nth-child(2) {
     animation-delay: var(--motion-escalon);
   }
   .animar-lista > *:nth-child(3),
-  .animar-cascada > *:nth-child(3) {
+  .animar-cascada > *:nth-child(3),
+  .animar-salida-lista > *:nth-child(3) {
     animation-delay: calc(var(--motion-escalon) * 2);
   }
   .animar-lista > *:nth-child(4),
-  .animar-cascada > *:nth-child(4) {
+  .animar-cascada > *:nth-child(4),
+  .animar-salida-lista > *:nth-child(4) {
     animation-delay: calc(var(--motion-escalon) * 3);
   }
   .animar-lista > *:nth-child(n + 5),
-  .animar-cascada > *:nth-child(n + 5) {
+  .animar-cascada > *:nth-child(n + 5),
+  .animar-salida-lista > *:nth-child(n + 5) {
     animation-delay: calc(var(--motion-escalon) * 4);
+  }
+
+  /* La SALIDA: el espejo exacto de `entrada-superficie`.
+     La entrada sube 4 px y aparece; la salida sigue subiendo, se encoge un 2 % y se
+     va. Leidas una tras otra (salida -> el modelo trabaja -> entrada) se ven como un
+     solo movimiento: las tarjetas de antes se deshacen y las nuevas se arman en su
+     lugar. Es lo que la persona pidio al escribir; sin la salida, la pantalla vieja se
+     queda congelada 8 segundos y despues cambia de golpe.
+
+     El `scale` es 0.98 y no menos a proposito: mas encogimiento se lee como "se cerro
+     un dialogo", no como "esto se esta rearmando". Y nada de `filter: blur`, que en el
+     proyector cuesta frames y no comunica nada.
+
+     `both` deja las tarjetas en el ultimo fotograma (invisibles) al terminar: es lo que
+     evita el parpadeo entre que la salida acaba y `ZonaInicio` pone el esqueleto. */
+  @keyframes salida-superficie {
+    from {
+      opacity: 1;
+      transform: none;
+    }
+    to {
+      opacity: 0;
+      transform: translateY(-0.25rem) scale(0.98);
+    }
+  }
+
+  /* En cascada, sobre los hijos: el mismo contrato que `animar-lista` y con los mismos
+     escalones (arriba). Nunca las dos clases a la vez en el mismo elemento: las dos
+     escriben el shorthand `animation` y quien gana depende del orden en que Tailwind
+     emita el CSS. Ver `masonry.tsx`, que elige una u otra segun la fase. */
+  .animar-salida-lista > * {
+    animation: salida-superficie var(--motion-rapida) var(--motion-acelerada) both;
+  }
+
+  /* Sobre un solo elemento, sin cascada: la conclusion y la linea de evidencia de
+     Inicio, que no son tarjetas de la rejilla pero se van con ellas. */
+  .animar-salida {
+    animation: salida-superficie var(--motion-rapida) var(--motion-acelerada) both;
   }
 
   /* NOTA para quien agregue una tarjeta que SI sea un enlace o un boton: aqui vivia

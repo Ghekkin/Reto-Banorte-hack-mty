@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-12 14:40
-implementado-en: apps/web/src/lib/rejilla.ts, apps/web/src/components/maya/lienzo.tsx, packages/a2ui/src/Superficie.tsx (prop `disponer`), packages/catalogo/src/tarjeta.tsx
+verificado: 2026-09-13 02:15
+implementado-en: apps/web/src/lib/rejilla.ts, apps/web/src/components/maya/lienzo.tsx (prop `acomodo`), packages/a2ui/src/Superficie.tsx (prop `disponer`), packages/catalogo/src/tarjeta.tsx
 lenguaje: typescript
 ---
 
@@ -44,6 +44,12 @@ Dos piezas, y las dos miden **contenedores**, no la ventana:
 El tamaño de cada pieza sale del **ancho natural del componente** (el valor por omisión de su
 prop `ancho` en el schema), no del `ancho` que mande el agente: el agente no sabe en qué
 pantalla se ve la tarjeta y, en la práctica, copiaba `ancho: "amplio"` de los ejemplos a todo.
+
+**Hay dos acomodos, y este es el de la conversación.** `<Lienzo acomodo="filas">` (por
+omisión) es lo que se describe aquí. `<Lienzo acomodo="masonry">` lo usa Inicio y reparte las
+mismas piezas, con los mismos tamaños naturales, en una rejilla sin huecos verticales
+(`docs/algoritmos/masonry-del-inicio.md`). El acomodo no cambia qué pinta el renderer ni qué
+tamaño natural tiene cada componente: solo el hueco donde cae cada pieza.
 
 ## Paso a paso
 
@@ -116,8 +122,12 @@ Sin el tope de 768 px (como en un tablero, a 1,440 px): héroe + crédito quedan
 
 ## Límites y supuestos
 
-- **No hay masonry**: una tarjeta corta junto a una larga deja lienzo gris debajo. Es a
-  propósito (ver `items-start`); CSS no tiene masonry estable.
+- **No hay masonry en este acomodo**: una tarjeta corta junto a una larga deja lienzo gris
+  debajo (ver `items-start`). Es el precio de que las tarjetas **crezcan para llenar la
+  fila**, que es lo que una rejilla de columnas fijas no puede hacer. En Inicio, donde los
+  altos son muy distintos y ese hueco se acumula, se usa el otro acomodo:
+  `<Lienzo acomodo="masonry">`, documentado en `docs/algoritmos/masonry-del-inicio.md`. La
+  conversación sigue con filas: ahí casi nunca hay más de dos tarjetas a la vez.
 - **El orden es el del agente.** No se reordena para llenar huecos: la persona lee en el orden
   en que el agente contó la historia.
 - Solo se reparte la **raíz**. Un `Column` o `Row` anidado se pinta tal cual dentro de su pieza.
@@ -133,6 +143,8 @@ Sin el tope de 768 px (como en un tablero, a 1,440 px): héroe + crédito quedan
   tarjetas, que el ancho natural sea exactamente el default del schema en los 18, y el
   **turno real** que se veía apilado (`fixtures/turno-beto-deudas.jsonl`) llegando a la
   rejilla como dos piezas sueltas, sin el `Column`.
+- `apps/web/src/lib/__tests__/masonry.spec.ts`: que el acomodo por omisión siga siendo el de
+  filas (la conversación no cambió) y que el de masonry traduzca los mismos tamaños.
 - `packages/a2ui/src/__tests__/disponer.test.tsx`: la raíz contenedor se entrega como piezas
   en orden, `ancho` se resuelve contra el data model, una raíz suelta es una pieza, un
   `Column` anidado no se reparte, y sin `disponer` todo sigue como antes.

@@ -18,6 +18,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-13
 
+- **dom 02:55 · hecho · infra** — **el filtro del prompt real del CI se saltaba cambios del
+  agente.** Comparaba contra el push anterior, y con `cancel-in-progress` un push de docs
+  encima cancelaba la corrida del agente: `7779049` (el arreglo de #21) se desplegó sin que el
+  prompt corriera. Ahora compara contra la etiqueta `prompt-verificado`, que el CI mueve solo
+  cuando el prompt pasa. Producción se verificó a mano: `cor_1c4ca4d4…` pinta con montos.
+
 - **dom 02:45 · decisión + hecho · aldair** — **Widgets vivos en Inicio: preguntarle a una
   tarjeta y que cambie en su lugar, con cifras que solo pone el MCP** (ADR 0011). Respuesta a la
   revisión con Banorte («cada pregunta se siente como cambiar de ppt»). El modelo elige la fuente
@@ -27,6 +33,42 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   entrada y una cuarta parte de los de salida (el modelo ya no copia datos), y la pregunta sobre
   una tarjeta cierra en 1–2.5 s. Pendiente: llevar la misma regla a
   `/maya` (issue registrado). Detalle: `docs/como-funciona/widgets-vivos.md`.
+
+- **dom 02:20 · decisión + hecho · contrato/demo** — **todo lo que pasa queda en PostgreSQL.**
+  Cada turno del chat y cada portada del Inicio es una fila de `banorte.corridas` con el
+  modelo exacto, la configuración, las tools ofrecidas, lo que se le mandó al modelo, cada
+  paso con sus tokens, cada tool con argumentos y resultado, y cada línea que salió al
+  navegador. El chat va a `conversaciones`/`mensajes_chat` y los logs de web, agente, Inicio y
+  MCP a `registros` (el MCP liga los suyos a la corrida por `_meta`). Se lee con
+  `pnpm corridas`; el `fin` del stream trae `corridaId`.
+
+  Decisiones: **la grabación nunca frena el turno** (se escribe en segundo plano, al
+  terminar, y un fallo solo se avisa); **ninguna prueba escribe en la base** (apagada en
+  vitest, ADR 0010); **el MCP no carga estas tablas a memoria** ni entran al volcado, porque
+  crecen con cada turno; y **`reiniciar-estado` no borra la historia**. Detalle en
+  `docs/como-funciona/corridas-en-db.md`. Encaja con quitar la tira técnica de la UI (01:48):
+  la evidencia para el jurado ya no está en la pantalla sino en la base.
+
+- **dom 01:45 · hecho + decisión · contrato/demo** — **el gasto de Gemini era casi todo
+  entrada, y un tercio era un bug.** El 12 el proyecto registró 9.4 M tokens de entrada contra
+  250 k de salida. Medido petición por petición: la primera petición de cada turno lleva
+  26,137 tokens (catálogo 6.9k + 21 ejemplos 8.3k + reglas 5k + 25 tools 5.5k), y un turno
+  hacía **3**, porque el prompt pedía `montoCentavos` en `Conclusion` —resto del commit
+  revertido— y cada pantalla se rechazaba una vez (#18). Corregido: **2 peticiones, ~55k de
+  entrada, ~45k desde caché, ~10k sin caché**, y `pnpm probar-guion` pasa 10 de 10.
+
+  **Decisión: el catálogo completo se queda por default.** Se construyó y midió la otra
+  opción —el catálogo como menú y `ver_componentes` para el detalle (`FEATURE_AGENTE_LIGERO=1`)—:
+  baja la entrada a ~31k por turno, pero Gemini cachea mucho peor ese prefijo (8–32k desde
+  caché contra 45k). Con el caché pegando no ahorra dinero; si
+  el caché vuelve a caer a cero como la mañana del 12, sí (~45 %). Queda detrás del flag.
+
+  **Decisión: el CI ya no manda un turno real en cada push**, solo si el push toca el agente,
+  el catálogo, el motor A2UI o el MCP. El 12 hubo 96 corridas, casi todas de bitácora.
+
+  El log decía ~29k por turno porque leía `usage`, que en el AI SDK 5 es solo el último paso
+  (#17); ahora suma todos. Queda abierto #19: `ProyeccionCrecimiento` nombra
+  `proyectar_inversion`, que se revirtió. Detalle en `docs/como-funciona/agente.md`.
 
 ## 2026-09-12
 

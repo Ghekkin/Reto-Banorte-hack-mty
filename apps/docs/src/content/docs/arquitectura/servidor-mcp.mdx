@@ -1,0 +1,53 @@
+---
+title: Servidor MCP (18 Tools)
+description: Catálogo completo de las 18 herramientas del Model Context Protocol, endpoint Streamable HTTP y contratos Zod.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Servidor MCP Público y Estandarizado">
+  Implementado con el SDK oficial <code>@modelcontextprotocol/sdk</code> sobre Express en <code>apps/mcp/</code> (puerto 3100).
+  Soporta transporte <strong>Streamable HTTP</strong> con endpoint <code>/health</code> público y <code>/mcp</code> autenticado por Bearer Token.
+</BanorteAlert>
+
+## Las 18 Tools del Servidor
+
+El servidor expone dos familias de herramientas: **14 de lectura analítica** y **4 de mutación transaccional**.
+
+### Tools de Lectura (14)
+
+| Tool | Propósito Financiero | Entradas Principales | Salida Zod |
+|---|---|---|---|
+| `panorama_inicial` | Obtiene el estado holístico del cliente: saldos, cuentas, créditos y alertas de mora. | `clienteId: string` | `PanoramaClienteSchema` |
+| `consultar_tarjeta` | Detalle específico de tarjeta: límite, saldo revolvente, tasa, CAT, días de atraso y pago mínimo. | `tarjetaId: string` | `TarjetaDetalleSchema` |
+| `consultar_creditos` | Lista de créditos simples, nómina o hipotecarios con saldo y amortizaciones. | `clienteId: string` | `CreditosListSchema` |
+| `comparar_periodos` | Comparativa mensual de egresos para identificar variaciones de consumo. | `clienteId, periodoActual, periodoAnterior` | `ComparativaGastoSchema` |
+| `desglose_por_categoria` | Egresos agrupados por las 6 categorías principales y cálculo porcentual. | `clienteId, mes: number` | `GastoPorCategoriaSchema` |
+| `detectar_gastos_atipicos` | Aplica la heurística estadística para detectar saltos atípicos en compras. | `clienteId: string` | `GastoAtipicoSchema` |
+| `consultar_suscripciones` | Detección de cargos recurrentes activos (fugas hormiga). | `clienteId: string` | `SuscripcionesListSchema` |
+| `simular_reestructura` | Cotiza opciones de congelamiento de deuda a 12, 18 y 24 meses a tasa 22.5%. | `tarjetaId: string` | `SimulacionReestructuraSchema` |
+| `proyectar_ahorro` | Proyecta escenarios de acumulación de capital en 3, 6, 12 y 24 meses. | `montoMensual, metaTotal` | `ProyeccionAhorroSchema` |
+| `calcular_salud_financiera` | Evalúa el índice de salud de 0 a 100 ponderando deuda sobre ingresos. | `clienteId: string` | `SaludFinancieraSchema` |
+| `consultar_portafolio` | Consulta tenencias de inversión en Cetes, pagarés y fondos Banorte. | `clienteId: string` | `PortafolioInversionSchema` |
+| `consultar_plan` | Inspecciona el estatus de un plan de pagos previamente formalizado. | `planId: string` | `PlanActivoSchema` |
+| `consultar_movimientos` | Historial de transacciones bancarias recientes. | `cuentaId, limite: number` | `MovimientosSchema` |
+| `consultar_metas_ahorro` | Lista de apartados y metas de ahorro vigentes. | `clienteId: string` | `MetasListSchema` |
+
+---
+
+### Tools de Acción Mutable (4)
+
+Estas son las herramientas que provocan cambios en PostgreSQL y cierran el ciclo de la demo:
+
+1. **`aplicar_plan_pago`**:
+   * *Acción:* Convierte el saldo revolvente de la tarjeta de crédito en un crédito amortizable a tasa fija.
+   * *Efecto:* En PostgreSQL, registra la reestructura en `banorte.acciones_aplicadas`, actualiza el saldo revolvente a $0 y programa los pagos en `banorte.amortizaciones_programadas`.
+2. **`crear_apartado`**:
+   * *Acción:* Genera una meta de ahorro recurrente debitando saldo disponible de la cuenta de cheques.
+   * *Efecto:* Inserta un nuevo registro en `banorte.metas_ahorro` y reduce el saldo líquido disponible.
+3. **`pausar_suscripcion`**:
+   * *Acción:* Bloquea temporalmente cargos recurrentes de proveedores detectados como fuga de capital.
+   * *Efecto:* Actualiza el estado de la suscripción a `pausada` en la base de datos.
+4. **`ejecutar_decision`**:
+   * *Acción:* Orquestador unificado de acciones complejas en dos pasos.
+   * *Efecto:* Aplica confirmaciones múltiples en una sola transacción atómica.

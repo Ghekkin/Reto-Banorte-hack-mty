@@ -1,0 +1,436 @@
+/* ==========================================================================
+   PALETA OFICIAL BANORTE · MAYA DOCS
+   Fondo Blanco y Gris Claro Institucional (Cero Azul, Cero Degradados)
+   - Fondo Principal: Blanco (#FFFFFF)
+   - Fondo Secundario / Sidebar: Gris muy claro (#F8F9FA / #F2F2F3)
+   - Rojo Banorte Primario: #EC0029
+   - Rojo Oscuro / Hover: #C00020
+   - Tinta Texto Principal: #171717
+   - Gris Texto: #4A5568 / #6A6867
+   - Bordes: #E2E8F0 / #E8E6E6
+   ========================================================================== */
+
+/* Variables para TODOS los modos (evitar cualquier azul o modo oscuro azulado) */
+:root,
+:root[data-theme='light'],
+:root[data-theme='dark'],
+::backdrop {
+  /* Rojo Banorte */
+  --sl-color-accent-low: #ffe8ec !important;
+  --sl-color-accent: #ec0029 !important;
+  --sl-color-accent-high: #960014 !important;
+
+  /* Fondos 100% blancos o gris suave que parece blanco */
+  --sl-color-bg: #ffffff !important;
+  --sl-color-bg-nav: #ffffff !important;
+  --sl-color-bg-sidebar: #f8f9fa !important;
+  --sl-color-bg-inline-code: #f1f2f4 !important;
+  --sl-color-bg-accent: #ec0029 !important;
+
+  /* Bordes limpios */
+  --sl-color-hairline: #e2e8f0 !important;
+  --sl-color-hairline-light: #f1f5f9 !important;
+  --sl-color-hairline-shade: #e2e8f0 !important;
+
+  /* Textos oscuros de alto contraste sobre fondo blanco */
+  --sl-color-text: #171717 !important;
+  --sl-color-text-accent: #ec0029 !important;
+  --sl-color-text-invert: #ffffff !important;
+
+  /* En Starlight light mode, white representa títulos y black representa fondo */
+  --sl-color-white: #171717 !important;
+  --sl-color-black: #ffffff !important;
+
+  /* Escala de grises neutrales (sin tintes azules) */
+  --sl-color-gray-1: #1f2937 !important;
+  --sl-color-gray-2: #374151 !important;
+  --sl-color-gray-3: #4b5563 !important;
+  --sl-color-gray-4: #6b7280 !important;
+  --sl-color-gray-5: #e2e8f0 !important;
+  --sl-color-gray-6: #f1f5f9 !important;
+  --sl-color-gray-7: #f8f9fa !important;
+
+  /* Anular acentos azules por defecto de Starlight */
+  --sl-hue-blue: 0 !important;
+  --sl-color-blue: #ec0029 !important;
+  --sl-color-blue-low: #ffe8ec !important;
+  --sl-color-blue-high: #960014 !important;
+
+  /* Tipografía */
+  --sl-font-system: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --sl-font-family: var(--sl-font-system);
+}
+
+/* ==========================================================================
+   ESTRUCTURA DE PÁGINA: FORZAR FONDO BLANCO / GRIS BLANQUEADO
+   ========================================================================== */
+html,
+body,
+.page,
+.main-frame,
+main,
+.content-panel,
+.sl-container,
+.main-pane {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+  background-image: none !important;
+}
+
+/* Anular absolutamente cualquier resplandor o gradiente */
+*,
+*::before,
+*::after {
+  --sl-color-backdrop-overlay: rgba(23, 23, 23, 0.4) !important;
+}
+
+.hero,
+.hero::before,
+.hero::after,
+.hero-glow,
+.stack::before,
+.stack::after {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+/* Selección de texto en tinte Banorte */
+::selection {
+  background-color: #ffe8ec !important;
+  color: #960014 !important;
+}
+
+/* ==========================================================================
+   HEADER (BARRA SUPERIOR)
+   ========================================================================== */
+header.header {
+  background-color: #ffffff !important;
+  border-bottom: 2px solid #ec0029 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+}
+
+.site-title {
+  color: #171717 !important;
+  font-weight: 800 !important;
+}
+
+.site-title::after {
+  content: 'BANORTE';
+  display: inline-block;
+  margin-left: 0.5rem;
+  background-color: #ec0029;
+  color: #ffffff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  vertical-align: middle;
+  letter-spacing: 0.06em;
+}
+
+/* Ocultar el selector de tema oscuro/azul para mantener la identidad Banorte pura */
+starlight-theme-select {
+  display: none !important;
+}
+
+/* Botón de búsqueda */
+button[data-open-modal] {
+  background-color: #f8f9fa !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #4b5563 !important;
+  border-radius: 0.5rem !important;
+}
+
+button[data-open-modal]:hover {
+  border-color: #ec0029 !important;
+  color: #171717 !important;
+}
+
+/* ==========================================================================
+   SIDEBAR (MENÚ LATERAL IZQUIERDO)
+   ========================================================================== */
+nav.sidebar,
+.sidebar-pane,
+.sidebar-content {
+  background-color: #f8f9fa !important; /* Gris muy claro que parece blanco */
+  border-right: 1px solid #e2e8f0 !important;
+}
+
+nav.sidebar .top-level > li > details > summary,
+nav.sidebar .top-level > li > .group-label {
+  color: #171717 !important;
+  font-weight: 700 !important;
+  font-size: 0.85rem !important;
+  letter-spacing: -0.01em;
+}
+
+nav.sidebar a {
+  color: #4b5563 !important;
+  font-size: 0.84rem !important;
+}
+
+nav.sidebar a:hover:not([aria-current='page']) {
+  color: #ec0029 !important;
+  background-color: #ffe8ec !important;
+}
+
+/* Enlace activo */
+nav.sidebar a[aria-current='page'],
+:where(.astro-xjg6ozxq)[aria-current='page'] {
+  color: #ec0029 !important;
+  background-color: #ffe8ec !important;
+  font-weight: 700 !important;
+  border-left: 3px solid #ec0029 !important;
+  border-radius: 0 0.5rem 0.5rem 0 !important;
+}
+
+/* ==========================================================================
+   HERO BANORTE Y ACCIONES
+   ========================================================================== */
+.hero {
+  padding: 2.5rem 0 1.5rem !important;
+}
+
+.hero h1,
+.copy h1 {
+  color: #171717 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.02em;
+}
+
+.hero .tagline,
+.copy .tagline {
+  color: #4b5563 !important;
+  font-size: 1.1rem !important;
+  line-height: 1.6 !important;
+}
+
+/* Botón Primario Rojo Banorte */
+.hero .action.primary,
+.sl-link-button.primary {
+  background-color: #ec0029 !important;
+  color: #ffffff !important;
+  border: 1px solid #c00020 !important;
+  border-radius: 0.5rem !important;
+  font-weight: 700 !important;
+  box-shadow: 0 2px 6px rgba(236, 0, 41, 0.2) !important;
+  transition: all 150ms ease-out !important;
+}
+
+.hero .action.primary:hover,
+.sl-link-button.primary:hover {
+  background-color: #c00020 !important;
+  color: #ffffff !important;
+  box-shadow: 0 4px 12px rgba(236, 0, 41, 0.3) !important;
+}
+
+/* Botones Secundarios */
+.hero .action.secondary,
+.hero .action.minimal,
+.sl-link-button.secondary,
+.sl-link-button.minimal {
+  background-color: #ffffff !important;
+  color: #171717 !important;
+  border: 1px solid #cbd5e1 !important;
+  border-radius: 0.5rem !important;
+  font-weight: 600 !important;
+  transition: all 150ms ease-out !important;
+}
+
+.hero .action.secondary:hover,
+.hero .action.minimal:hover,
+.sl-link-button.secondary:hover,
+.sl-link-button.minimal:hover {
+  border-color: #ec0029 !important;
+  color: #ec0029 !important;
+  background-color: #ffe8ec !important;
+}
+
+/* ==========================================================================
+   TARJETAS (<Card>)
+   ========================================================================== */
+article.card,
+.card {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04) !important;
+  transition: all 150ms ease-out !important;
+}
+
+article.card:hover,
+.card:hover {
+  border-color: #ec0029 !important;
+  box-shadow: 0 4px 12px rgba(236, 0, 41, 0.08) !important;
+}
+
+article.card .title,
+.card .title {
+  color: #171717 !important;
+  font-weight: 700 !important;
+}
+
+article.card .body,
+.card .body,
+article.card p,
+.card p {
+  color: #4b5563 !important;
+}
+
+article.card .icon,
+.card .icon {
+  background-color: #ffe8ec !important;
+  color: #ec0029 !important;
+  border: 1px solid #ffd1da !important;
+  border-radius: 0.5rem !important;
+  padding: 0.35rem !important;
+}
+
+/* ==========================================================================
+   CONTENIDO MARKDOWN Y ENLACES
+   ========================================================================== */
+.sl-markdown-content {
+  color: #171717 !important;
+}
+
+.sl-markdown-content h1,
+.sl-markdown-content h2,
+.sl-markdown-content h3,
+.sl-markdown-content h4,
+.sl-markdown-content h5,
+.sl-markdown-content h6 {
+  color: #171717 !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.015em;
+}
+
+.sl-markdown-content p,
+.sl-markdown-content li {
+  color: #334155 !important;
+  line-height: 1.7;
+}
+
+.sl-markdown-content a:not(.sl-badge):not([class*='action']):not([class*='sl-link-button']) {
+  color: #ec0029 !important;
+  text-decoration: underline;
+  text-decoration-color: #ffd1da;
+  text-underline-offset: 3px;
+  font-weight: 600;
+}
+
+.sl-markdown-content a:not(.sl-badge):not([class*='action']):not([class*='sl-link-button']):hover {
+  color: #c00020 !important;
+  text-decoration-color: #ec0029;
+}
+
+/* Separadores */
+.sl-markdown-content hr {
+  border-color: #e2e8f0 !important;
+  margin: 2rem 0 !important;
+}
+
+/* Tablas */
+.sl-markdown-content table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 1.5rem 0;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.sl-markdown-content th {
+  background-color: #f8f9fa !important;
+  color: #171717 !important;
+  font-weight: 700;
+  text-align: left;
+  padding: 0.75rem 1rem;
+  border-bottom: 2px solid #e2e8f0 !important;
+}
+
+.sl-markdown-content td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #e2e8f0 !important;
+  color: #334155 !important;
+}
+
+/* Bloques de código Expressive Code */
+.expressive-code {
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.65rem !important;
+  margin: 1.5rem 0;
+}
+
+/* ==========================================================================
+   TABLA DE CONTENIDOS DERECHA (TOC)
+   ========================================================================== */
+.right-sidebar,
+.right-sidebar-panel {
+  background-color: #ffffff !important;
+  border-left: 1px solid #e2e8f0 !important;
+}
+
+.right-sidebar-panel h2 {
+  color: #171717 !important;
+  font-weight: 700 !important;
+}
+
+starlight-toc a {
+  color: #64748b !important;
+}
+
+starlight-toc a:hover,
+starlight-toc a[aria-current='true'] {
+  color: #ec0029 !important;
+  font-weight: 600 !important;
+}
+
+/* ==========================================================================
+   PAGINACIÓN INFERIOR (ANTERIOR / SIGUIENTE)
+   ========================================================================== */
+.pagination-links a {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.65rem !important;
+  color: #64748b !important;
+  transition: all 150ms ease-out !important;
+}
+
+.pagination-links a:hover {
+  border-color: #ec0029 !important;
+  box-shadow: 0 2px 8px rgba(236, 0, 41, 0.08) !important;
+}
+
+.pagination-links .link-title {
+  color: #171717 !important;
+  font-weight: 700 !important;
+}
+
+.pagination-links a:hover .link-title {
+  color: #ec0029 !important;
+}
+
+/* ==========================================================================
+   MODAL DE BÚSQUEDA PAGEFIND
+   ========================================================================== */
+dialog[open] {
+  background-color: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 0.75rem !important;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1) !important;
+}
+
+#starlight__search .pagefind-ui__search-input {
+  background-color: #f8f9fa !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #171717 !important;
+}
+
+#starlight__search .pagefind-ui__result-link {
+  color: #ec0029 !important;
+}
+
+#starlight__search mark {
+  background-color: #ffe8ec !important;
+  color: #960014 !important;
+}

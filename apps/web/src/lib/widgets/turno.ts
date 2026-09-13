@@ -281,9 +281,12 @@ export function crearCierreDeWidgets(ctx: Contexto) {
 
         const nuevo: Componente = { ...armado.componente, ...(viejo.action ? { action: viejo.action } : {}) };
         completarAccion(nuevo);
-        const { razon: _r1, ...sinRazonNuevo } = nuevo;
-        const { razon: _r2, ...sinRazonViejo } = viejo;
-        if (canonico(sinRazonNuevo) === canonico(sinRazonViejo)) {
+        // Se compara solo lo que produce el widget (datos del MCP, variantes, heroe): el armado
+        // de la portada completa valores por omision del schema (`etiquetaBoton`) que el
+        // componente recien armado no trae, y eso no es un cambio que la persona vea.
+        const llaves = Object.keys(armado.componente).filter((k) => k !== "razon" && k !== "action");
+        const loQueCambia = (c: Componente) => canonico(Object.fromEntries(llaves.map((k) => [k, c[k]])));
+        if (loQueCambia(nuevo) === loQueCambia(viejo)) {
           return fallar([
             "con esos parametros la tarjeta queda exactamente igual. Si la persona pide otra cosa, cambia el parametro " +
               "que corresponde; si solo quiere entender lo que ve, usa `responder`.",

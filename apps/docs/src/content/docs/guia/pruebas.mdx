@@ -1,0 +1,46 @@
+---
+title: Pruebas y Verificación
+description: Batería de 288 pruebas automatizadas, pruebas de humo y validación de guión.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="success" title="288 Pruebas en Verde">
+  Todo el código cuenta con cobertura exhaustiva en vitest sin requerir conexión a internet ni llaves de pago activas.
+</BanorteAlert>
+
+## Comandos de Verificación Automatizada
+
+### 1. Comprobación Estática de Tipos (TypeScript)
+Verifica la consistencia estricta de contratos en los 5 paquetes:
+```bash
+pnpm typecheck
+```
+
+### 2. Pruebas Unitarias Automatizadas
+Ejecuta la suite completa de vitest:
+```bash
+pnpm test
+```
+
+Desglose de pruebas por paquete:
+* **`packages/a2ui`:** 112 pruebas (incluye los 76 casos oficiales de conformidad).
+* **`apps/mcp`:** 103 pruebas (validación de schemas Zod y simulación actuarial).
+* **`packages/catalogo`:** 47 pruebas de rendering y accesibilidad.
+* **`apps/web`:** 26 pruebas de integración y streaming JSONL.
+
+---
+
+### 3. Prueba de Humo del MCP
+Comprueba que el servidor MCP responde y permite invocar herramientas:
+```bash
+pnpm humo
+```
+
+---
+
+### 4. Ensayo del Guión con Modelo Real
+Ejecuta los prompts del guión contra la API de Gemini para verificar que las interfaces emitidas cumplen los criterios de aceptación:
+```bash
+pnpm probar-guion
+```

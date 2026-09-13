@@ -66,6 +66,9 @@ jobs:
       url: ${{ vars.URL_WEB_PUBLICA }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          # Historia completa: el paso del prompt real compara contra el commit anterior al push.
+          fetch-depth: 0
 
       - name: disparar el deploy y esperar los /health
         env:
@@ -90,11 +93,29 @@ jobs:
       # El 2026-09-12 el tope de gasto de Gemini (50 MXN al mes, issue #12) dejo este paso
       # en rojo en cada push: el deploy se publicaba igual y el rojo tapaba si algo mas se
       # rompia. Un CI que no sabe distinguir lo externo de lo propio deja de servir.
+      #
+      # Y solo corre si algo de lo que este paso prueba cambio desde el ultimo commit en que
+      # PASO. Un turno real son ~55k tokens de entrada, y con el commit automatico de cada
+      # turno de cuatro personas hubo 96 corridas del CI el 2026-09-12, casi todas de bitacora.
+      # Se compara contra la etiqueta `prompt-verificado` y no contra el push anterior: con
+      # `cancel-in-progress`, un push de docs encima de uno del agente cancela la corrida del
+      # agente, y comparando contra el anterior el prompt no se corria nunca (paso el 13 con
+      # 7779049). Sin etiqueta, o con `workflow_dispatch`, corre siempre.
       - name: un prompt del guion contra la URL publica
         if: vars.URL_WEB_PUBLICA != ''
         env:
           URL_WEB_PUBLICA: ${{ vars.URL_WEB_PUBLICA }}
         run: |
+          git fetch -q --force origin 'refs/tags/prompt-verificado:refs/tags/prompt-verificado' 2>/dev/null || true
+          verificado=$(git rev-parse -q --verify 'refs/tags/prompt-verificado^{commit}' 2>/dev/null || true)
+          if [ "$GITHUB_EVENT_NAME" = "push" ] && [ -n "$verificado" ]; then
+            if ! git diff --name-only "$verificado" "$GITHUB_SHA" \
+                | grep -qE '^(apps/web/src/lib/agente/|apps/web/src/app/api/agente/|packages/(catalogo|a2ui|schemas)/|apps/mcp/src/)'; then
+              echo "nada del agente, el catalogo, el motor A2UI ni el MCP cambio desde ${verificado:0:7} (ultimo prompt real que paso): se omite (~55k tokens de entrada)"
+              exit 0
+            fi
+          fi
+
           respuesta=$(curl -fsS --max-time 40 -X POST "$URL_WEB_PUBLICA/api/agente" \
             -H 'content-type: application/json' \
             -d '{"usuarioId":"usr_beto","conversacionId":"c_ci","mensajes":[{"rol":"usuario","texto":"Quiero pagar menos intereses de mi tarjeta"}]}') || {
@@ -113,6 +134,10 @@ jobs:
           if echo "$respuesta" | grep -q '"tipo":"a2ui"'; then
             componentes=$(echo "$respuesta" | grep -o '"component":"[^"]*"' | sort -u | tr '\n' ' ')
             echo "el agente publicado construyo una pantalla: $componentes"
+            # Este commit queda como el ultimo verificado. Si no se puede mover, el siguiente
+            # push vuelve a correr el prompt: es el lado seguro.
+            git tag -f prompt-verificado "$GITHUB_SHA" >/dev/null
+            git push -q -f origin refs/tags/prompt-verificado || echo "::warning::no se pudo mover la etiqueta prompt-verificado"
             exit 0
           fi
 

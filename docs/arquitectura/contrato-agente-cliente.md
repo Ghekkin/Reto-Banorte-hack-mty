@@ -126,7 +126,7 @@ manda ningún `a2ui`:
 | `texto` | La frase de cierre (una, corta) | Burbuja del chat |
 | `razon` | "¿Por qué veo esto?" | Pie de la superficie |
 | `error` | `{ codigo, mensaje }`; el stream sigue si puede | Toast; issue si se repite |
-| `fin` | Métricas del turno: `pasos`, `ms`, `cacheLeido` (tokens que el proveedor sirvió desde su caché; ausente si no lo reporta) y `cierre` (`pintar` \| `ajustar` \| `responder`) | Log, transparencia, y **el cliente** para decidir si actualiza la pantalla del hilo o apila una nueva |
+| `fin` | Métricas del turno: `pasos`, `ms`, `cacheLeido` (tokens que el proveedor sirvió desde su caché, **sumados en todos los pasos del turno**; ausente si no lo reporta), `cierre` (`pintar` \| `ajustar` \| `responder`) y `corridaId` (la fila de `banorte.corridas` con todo lo que pasó en el turno; ausente si la grabación está apagada, ver `docs/como-funciona/corridas-en-db.md`) | Log, transparencia, y **el cliente** para decidir si actualiza la pantalla del hilo o apila una nueva |
 
 El cliente ignora tipos que no conoce (para poder agregar sin romper). El stream
 **siempre** termina en `fin`, pase lo que pase: la interfaz nunca se queda esperando.

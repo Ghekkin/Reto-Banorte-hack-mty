@@ -1,0 +1,37 @@
+---
+title: Proyección Dinámica de Ahorro
+description: Modelado actuarial de metas financieras, capitalización con interés compuesto y cálculo de horizonte.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Ubicación en Código">
+  Implementado en <code>apps/mcp/src/lib/financiero/proyeccion-ahorro.ts</code>.
+</BanorteAlert>
+
+## Modelado de Acumulación con Interés Compuesto
+
+Para una meta financiera con objetivo `Objetivo` y una aportación mensual recurrente `A` invertida a una tasa efectiva anual `TEA` (tasa equivalente de Cetes Banorte):
+
+```text
+i_mes = (1 + TEA)^(1 / 12) - 1
+```
+
+El saldo acumulado en el mes `k` responde a una anualidad vencida:
+
+```text
+VF_k = A * [ (1 + i_mes)^k - 1 ] / i_mes
+```
+
+### Cálculo del Horizonte Objetivo
+El número de meses requeridos `n` para alcanzar el `Objetivo` se determina despejando `n`:
+
+```text
+n = ceil( ln( (Objetivo * i_mes / A) + 1 ) / ln(1 + i_mes) )
+```
+
+### Calibración en Tiempo Real para el Slider
+Cuando el usuario desplaza el control interactivo de `SimuladorMeta`, el componente recalcula en tiempo real:
+1. **Horizonte estimado:** Meses restantes para alcanzar la meta.
+2. **Intereses generados:** Ganancia neta frente a tener el dinero estancado en una cuenta a la vista con rendimiento cero.
+3. **Criterio de viabilidad:** Si la aportación elegida supera el 50% de la capacidad de ahorro libre del cliente, Maya emite una recomendación moderada para evitar comprometer su liquidez operativa.

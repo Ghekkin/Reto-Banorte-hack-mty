@@ -12,7 +12,7 @@ vez sin conflictos de git.
 
 | Rol | Quién | En qué | Desde |
 |---|---|---|---|
-| web | — | — | — |
+| web | sergio | Inicio: el ciclo de preguntar ahora se ve (salida en cascada → esqueleto → entrada, `transicion-inicio.tsx`) y las tarjetas se acomodan en masonry sin huecos (`masonry.tsx`, rejilla de 6 columnas y franjas de 4 px medidas; `Lienzo` con prop `acomodo`). 17 pruebas, verificado en navegador a 1,439 y 390 px | dom 02:20 |
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | **Widgets vivos** construidos (fases 0–7 de `equipo/plan-widgets-vivos.md`, ADR 0011): en Inicio cada tarjeta se pregunta y cambia en su lugar, con cifras que solo pone el MCP (adaptadores + verificador + auditor), detrás de `FEATURE_WIDGETS_VIVOS`. `pnpm probar-widgets`: 6/6 con modelo real, 1.1–2.4 s. Sigue: decidir si se enciende en producción y la fase 8 (`/maya`, issue `2026-09-13-cifras-escritas-por-el-modelo-en-maya.md`). Voz ElevenLabs sin cambios desde sáb 17:45 | dom 02:45 |
 | contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |

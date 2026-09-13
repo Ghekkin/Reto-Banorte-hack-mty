@@ -78,7 +78,7 @@ export function InicioVivo({ pantalla }: { pantalla: PantallaDeInicio }) {
 
   return (
     <div className="relative flex flex-col gap-3 pb-40 md:gap-4 md:pb-32">
-      <Lienzo superficie={superficie} conversacionId="inicio" alAccionar={alAccionar} decorar={decorar} ocultarSugerenciasEnTarjeta={false} />
+      <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={alAccionar} decorar={decorar} ocultarSugerenciasEnTarjeta={false} />
       {vivo.notaGeneral && (
         <PieDeWidget etiqueta="Inicio" nota={vivo.notaGeneral} alCerrarNota={() => cerrarNota("general")} />
       )}

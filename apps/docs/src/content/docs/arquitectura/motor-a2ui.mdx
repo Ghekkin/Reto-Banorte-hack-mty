@@ -1,0 +1,71 @@
+---
+title: El Motor A2UI v0.9.1 Propio
+description: Arquitectura interna de packages/a2ui, validación Ajv contra esquemas oficiales y pruebas de conformidad.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="ADR 0008 Implementado">
+  Desarrollamos nuestro propio motor A2UI en TypeScript (~1,310 líneas de código en <code>packages/a2ui/</code>) para evitar el acoplamiento con librerías ajenas como <code>@a2ui/react</code> o Web Components con Shadow DOM cerrado. Pasa el 100% de los 76 casos de conformidad oficiales.
+</BanorteAlert>
+
+## Los Cuatro Mensajes del Protocolo
+
+El motor A2UI procesa estrictamente el protocolo de la especificación v0.9.1:
+
+1. **`createSurface`**: Inicializa un contenedor visual de interfaz con un identificador único (`surfaceId`) y declara qué catálogo de componentes tiene permitido pintar (`catalogId`).
+2. **`updateComponents`**: Declara el árbol de componentes (nodos padre, hijos y propiedades declarativas).
+3. **`updateDataModel`**: Envía o actualiza el modelo reactivo de datos (números, strings, listas) accesible mediante JSON Pointers (ej. `"/tarjeta/saldo"`).
+4. **`action`**: El mensaje que emite el cliente hacia el agente cuando el usuario interactúa con un elemento de control.
+
+---
+
+## Fases de Procesamiento del Motor
+
+```
+Entrada: JSON de mensaje A2UI
+   ↓
+[1. Validación Ajv contra JSON Schema oficiales]
+   ↓ (Si es inválido: reporta error estructurado al LLM)
+[2. Construcción / Actualización del Árbol de Componentes]
+   ↓
+[3. Resolución Reactiva de Data Bindings (JSON Pointers)]
+   ↓
+[4. Inspección del Registro del Catálogo de Componentes]
+   ↓ (Si el componente no existe: fallback seguro sin romper la pantalla)
+[5. Renderizado React con Primitivas shadcn/ui]
+```
+
+### 1. Validación de Esquemas con Ajv
+El motor no inventa validaciones: carga directamente los JSON Schemas vendoreados de la especificación oficial v0.9.1 (`packages/a2ui/spec/`):
+* `server_to_client.json`
+* `client_to_server.json`
+* `data_model.json`
+
+Si el agente emite un payload con claves inexistentes o tipos incompatibles, Ajv genera un error detallado que regresa al agente en el stream para que se autocorriga antes de renderizar.
+
+### 2. Resolución de Bindings
+Los componentes declaran sus props apuntando al data model:
+```json
+{
+  "id": "card_resumen",
+  "type": "ResumenTarjeta",
+  "properties": {
+    "saldo": { "$bind": "/cuenta/saldo" },
+    "limite": { "$bind": "/cuenta/limite" }
+  }
+}
+```
+El motor resuelve reactivamente los bindings. Cuando llega un mensaje `updateDataModel`, solo se re-renderizan los nodos del árbol vinculados al fragmento de datos modificado.
+
+---
+
+## 76 Casos de Conformidad Oficiales
+
+En `packages/a2ui/tests/conformidad.test.ts`, ejecutamos los 76 casos de prueba publicados por el consorcio A2UI:
+* Creación concurrente de superficies.
+* Actualizaciones parciales de componentes sin perder estado local.
+* Fusión de modelos de datos complejos anidados.
+* Despacho de eventos de acción con payload enriquecido.
+
+**Resultado:** 112 pruebas totales pasando en verde en 180 ms.

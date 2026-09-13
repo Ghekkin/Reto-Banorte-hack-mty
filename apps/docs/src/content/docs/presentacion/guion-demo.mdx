@@ -1,0 +1,78 @@
+---
+title: Guión de la Demo en Vivo
+description: Corrida técnica cronometrada, datos numéricos de los perfiles y criterios de aceptación.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="warning" title="Protocolo antes de la Demo">
+  Antes de iniciar la presentación en vivo, ejecuta siempre en terminal:
+  <code>pnpm reiniciar-estado</code>
+  Esto vacía la tabla <code>banorte.acciones_aplicadas</code> para garantizar que los perfiles vuelvan a su estado original.
+</BanorteAlert>
+
+## Los Dos Perfiles de Prueba
+
+Los números son extraídos en tiempo real de PostgreSQL (esquema `banorte`) y son deterministas:
+
+| Métrica | **Beto** (Protagonista Deuda) | **Ana** (Adaptabilidad & Ahorro) |
+|---|---|---|
+| **Nombre** | Alberto Ramírez Solís, 41 años | Ana Sofía Treviño Cantú, 28 años |
+| **Rol** | Supervisor de logística | Diseñadora de producto |
+| **Ingreso** | $34,500 MXN / mes | $32,000 MXN / mes |
+| **Tarjeta Banorte** | Clásica •••• 4821 | Sin deuda revolvente |
+| **Límite y Saldo** | Límite **$49,000**, Saldo **$47,386** (**96.7%** uso) | — |
+| **Condiciones** | Tasa **48.9%**, CAT **62.1%**, Pago mín: **$2,950.73** | — |
+| **Estado Mora** | **12 días de atraso**, estado `vencido` | Al corriente |
+| **Otros Créditos** | Crédito de nómina: $29,540.65 (22/36 pagos) | Crédito Personal: $55,783 (27.9% anual) |
+| **Liquidez** | Apretada por pago mínimo revolvente | Capacidad de ahorro de **$6,629 / mes** |
+
+---
+
+## Flujo Paso a Paso
+
+### Paso 1: Intención a Interfaz Generada (Beto)
+* **Prompt**: `Quiero pagar menos intereses de mi tarjeta`
+* **Tools invocadas**: `panorama_inicial` → `simular_reestructura`
+* **Tiempo medido**: 10.5 s
+* **Componentes renderizados**:
+  * `ResumenTarjeta`: Límite $49,000, Saldo $47,386, badge rojo "12 días de atraso".
+  * `PlanDePago`: Plazos a 12, 18 y 24 meses. La opción de 18 meses resalta ahorro garantizado frente a seguir pagando el mínimo.
+  * "¿Por qué veo esto?": Desplegable con justificación transparente basada en los datos leídos.
+
+### Paso 2: Interacción a Acción Real (Beto)
+* **Acción**: Beto selecciona "18 meses" y toca **Aplicar plan**.
+* **Tools invocadas**: `aplicar_plan_pago` → `consultar_plan`
+* **Tiempo medido**: 5.8 s
+* **Resultado en vivo**:
+  * `Confirmacion`: Notificación de éxito con folio y recordatorio del primer pago (12 de octubre de 2026).
+  * `ResumenTarjeta`: **Vuelve modificada**: saldo revolvente en **$0**, badge verde "Plan activo" y el atraso desaparece.
+  * `Calendario`: 18 mensualidades calendarizadas.
+
+### Paso 3: Memoria Contextual en la Misma Sesión (Beto)
+* **Prompt**: `¿Y en qué se me está yendo el dinero?`
+* **Tools invocadas**: `comparar_periodos`
+* **Tiempo medido**: 3.6 s
+* **Componentes renderizados**:
+  * `GastoPorCategoria`: 6 barras con montos visibles. "Retiros de efectivo" resaltado en rojo como anomalía (+74.7%).
+  * `Conclusion`: Maya explica que gracias a los $1,442 liberados en el paso 2 con la reestructura, el cliente puede estabilizar sus retiros de cajero.
+
+### Paso 4: Prueba de Adaptabilidad (Ana)
+* **Prompt**: `Quiero pagar menos intereses de mi tarjeta` (¡Misma frase!)
+* **Tools invocadas**: `panorama_inicial` → `consultar_tarjeta` → `consultar_creditos` → `proyectar_ahorro`
+* **Tiempo medido**: 5.8 s
+* **Componentes renderizados**:
+  * `ProyeccionPagoCredito`: Desglose del crédito personal de $55,783 al 27.9% anual.
+  * `SimuladorMeta`: Control interactivo (slider) para destinar parte de sus $6,629 de liquidez a un fondo de ahorro.
+* **Segunda Acción**: Ana pulsa **Crear apartado** → Se invoca `crear_apartado` (2.9 s) y se despliega `MetaActiva` en tiempo real.
+
+---
+
+## Criterios de Aceptación Verificados
+
+- [x] Cada turno produce su interfaz en menos de 12 segundos.
+- [x] Cero errores en la consola del navegador durante toda la demo.
+- [x] Los saldos en pantalla coinciden exactamente con la base de datos PostgreSQL.
+- [x] Tras aplicar la reestructura, el saldo revolvente se actualiza a $0 en pantalla.
+- [x] El prompt 3 con Ana produce componentes radicalmente distintos al prompt 1 de Beto.
+- [x] Todas las mutaciones persisten ante reinicio de servicios.

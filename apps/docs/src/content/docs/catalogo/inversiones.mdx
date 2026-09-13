@@ -1,0 +1,50 @@
+---
+title: Inversiones y Portafolio
+description: Componentes de visualización patrimonial y distribución de activos financieros.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Dominio Financiero: Inversiones">
+  Diseñado para perfiles de alto patrimonio (como Carmen Lira) con presencia en la portada de Inicio y pantallas de gestión patrimonial.
+</BanorteAlert>
+
+## 1. `DistribucionPortafolio`
+
+Gráfica de dona construida con Recharts que ilustra la concentración de activos de inversión:
+
+```typescript
+export const ActivoInversionSchema = z.object({
+  claseActivo: z.string(), // Ej. "Cetes Banorte", "Fondo Renta Variable", "Pagaré a 91 días"
+  saldoActual: z.number().positive(),
+  porcentaje: z.number().min(0).max(100),
+  rendimientoAnualEstimado: z.number().positive(),
+});
+
+export const DistribucionPortafolioPropsSchema = z.object({
+  valorTotalMercado: z.number().positive(),
+  moneda: z.string().default('MXN'),
+  activos: z.array(ActivoInversionSchema),
+  fechaValuacion: z.string(),
+});
+```
+
+* **Accesibilidad:** Los segmentos del gráfico cuentan con etiquetas porcentuales claras y contraste verificado para personas con daltonismo.
+
+---
+
+## 2. `RendimientoHistorico`
+
+Muestra la curva de evolución del valor de los activos frente a la inflación y la tasa de referencia de Banco de México (Banxico).
+
+```typescript
+export const SerieRendimientoSchema = z.object({
+  puntos: z.array(
+    z.object({
+      fecha: z.string(),
+      valorPortafolio: z.number().positive(),
+      benchmarkTIIE: z.number().positive(),
+    })
+  ),
+});
+```

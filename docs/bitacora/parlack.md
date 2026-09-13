@@ -1574,3 +1574,63 @@ en realidad es un PNG de 1043×1043) y entró como `src/app/icon.png` y
 `src/app/apple-icon.png`, que es la convención de Next 16 para PNG; el `.ico` viejo
 se fue. Verificado en la web corriendo: `<link rel="icon">` y `apple-touch-icon`
 responden 200 con `image/png`.
+
+### 01:18 (dom 13) — El dev server del VPS se abre por Tailscale
+
+Web (3000) y MCP (3100) ya corrían en modo dev. Por la IP de Tailscale
+(`100.115.81.108`) la página cargaba, pero Next 16 respondía 403 al websocket de HMR y
+a los endpoints del overlay, porque solo confía en `localhost`. Se agregó
+`allowedDevOrigins` en `apps/web/next.config.ts` con esa IP y `**.ts.net`; Next se
+reinició solo y los assets con `Origin` de Tailscale ya responden 200. No afecta el
+build de producción.
+
+### 01:45 (dom 13) — Dónde se iba el input de Gemini
+
+Pedido del equipo: el panel de AI Studio marcaba 9.4 M tokens de entrada el día 12 y el
+tope de gasto se agotaba. Se interceptó el `fetch` a Gemini y se midió petición por
+petición (scripts de un solo uso, fuera del repo). Tres hallazgos y lo que se hizo:
+
+1. **Un tercio era un bug** (#18): `prompt.ts` pedía `montoCentavos` en `Conclusion.datos`
+   y nombraba `simular_credito` y `proyectar_inversion`, restos de lo revertido en `e7dda81`.
+   Cada pantalla se rechazaba una vez. Corregido: el turno baja de 3 a 2 peticiones.
+2. **El log mentía por omisión** (#17): `resultado.usage` es el último paso. Ahora
+   `totalUsage` en `agente.ts` y `inicio/generar.ts`.
+3. **El CI hacía un turno real en cada push**: ahora solo si cambia el agente, el catálogo,
+   el motor A2UI o el MCP (`ci-y-deploy.yml`).
+
+Construido y medido, **apagado por default**: `FEATURE_AGENTE_LIGERO=1` (catálogo como menú +
+`ver_componentes` + sin mutaciones directas). Baja la entrada ~45 %, pero Gemini cachea peor
+ese prefijo; A/B y razones en `docs/como-funciona/agente.md`. Typecheck en verde, 168 pruebas
+de web, guion 10/10 con el modelo real; `reiniciar-estado` antes y después del guion.
+Toque ajeno (contrato): `prompt.ts`, `agente.ts`, `cierre.ts`, `historial.ts`, `pantalla.ts`.
+
+### 02:20 (dom 13) — Corridas, chat y registros en la base
+
+Pedido: que la base guarde todo para poder depurar cualquier corrida. Migración
+`0004-corridas-chat-y-registros.sql` (aplicada con `pnpm datos:migrar`), grabadora en
+`apps/web/src/lib/corridas/` conectada a `correrTurno` y `generarPortada`, registros del MCP en
+`apps/mcp/src/datos/registros.ts`, y `pnpm corridas` para leerlo. Verificado con el modelo
+real: un turno de Beto (2 pasos, 3 tools, 12 líneas, 3 registros ligados), un segundo turno
+en la misma conversación (`responder`) y una portada forzada de Ana. Typecheck en verde;
+web 178, mcp 131, catálogo 124, a2ui 117 pruebas. Toque ajeno (contrato y mcp):
+`agente.ts`, `mcp-cliente.ts`, `tipos.ts`, `generar.ts`, `servicio.ts`, `registro.ts`,
+`postgres.ts`.
+
+### 02:27 (dom 13) — El selector de persona, rediseñado
+
+Pedido: "que se vea más bonito". Medido antes en el navegador: dos flechas juntas en el
+trigger (la del `SelectTrigger` y la nuestra), borde gris de campo de formulario, nombre y
+contexto cortados con puntos, y el menú abría 32 px más ancho que el trigger, saliéndose del
+sidebar por los dos lados, con la elegida en el degradado de marca (un segundo bloque rojo
+junto a Maya).
+
+Ahora (`components/shell/selector-usuario.tsx`, prop `variante`): tarjeta `bg-muted` con
+avatar **oscuro** (la persona es `bg-oscuro`, como sus burbujas; el rojo es de Maya), nombre
+completo, contexto en dos renglones y una sola flecha. El menú flota **a la derecha del
+sidebar** (patrón `NavUser` de shadcn), con encabezado "Cambiar de persona", contexto
+completo por persona y la elegida en tinte con palomita roja. Cambio optimista con
+`useOptimistic` + spinner. En móvil: avatar de 48 px en la barra y menú hacia arriba en el
+sheet. `SelectTrigger` ganó `icono={false}`. Verificado con Playwright a 1440 y 390 px
+(sidebar, sheet, barra y Más; teclado; acción retrasada 2 s; "Ana Sofía Treviño" ya no se
+corta). Typecheck y lint en verde, 178 pruebas de web. Doc: `shell-web.md`, sección "El
+selector de persona"; línea del sidebar en la skill `diseno-banorte`.

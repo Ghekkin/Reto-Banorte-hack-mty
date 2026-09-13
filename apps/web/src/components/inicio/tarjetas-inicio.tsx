@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { ArrowRight, ArrowUp, X } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
+import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
-import { preguntarEnInicio } from "@/app/(app)/acciones";
 import { formatearFecha, formatearMonto, formatearPorcentaje } from "@/lib/dinero";
 import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
 
@@ -20,6 +20,10 @@ import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
  * Reglas que cumplen todas (skill `diseno-banorte`): etiqueta pequena arriba, el monto
  * como el elemento mas grande, `tabular-nums` en toda cifra, y un solo heroe por
  * pantalla.
+ *
+ * **Cuanto ocupa cada una no se decide aqui**, se declara con `data-hueco` en la pagina:
+ * una tarjeta no sabe si la van a poner sola, en una rejilla de tres o en el chat
+ * (`components/inicio/masonry.tsx`).
  */
 
 /**
@@ -38,7 +42,6 @@ export function TarjetaSaldo({
 }) {
   return (
     <Card
-      data-ancho="amplio"
       className="border-0 bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground shadow-sm"
     >
       <CardContent className="flex flex-col gap-5 p-5">
@@ -148,7 +151,7 @@ export function ListaTarjetas({ tarjetas }: { tarjetas: Tarjeta[] }) {
 
 export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[] }) {
   return (
-    <Card data-ancho="amplio">
+    <Card>
       {/* `CardAction` no es opcional cuando hay una accion en el encabezado: el
           `CardHeader` de shadcn activa su segunda columna con
           `has-data-[slot=card-action]`, y un boton sin envolver no trae ese slot. Sin
@@ -212,15 +215,18 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
  * burbuja: el dashboard se borra y aparece otro, que es lo que la persona espera al
  * escribir en su pantalla de inicio.
  *
- * El envio va con `useTransition` y no con `useState` + `fetch` porque el trabajo lo hace
- * una server action que termina en `revalidatePath`: `isPending` cubre el turno completo
- * (los ~8 s del modelo) Y el re-render del servidor. Con un estado propio, la barra se
- * habilitaba en cuanto la accion resolvia y la pantalla vieja seguia ahi medio segundo.
+ * **El envio ya no vive aqui: vive en `ProveedorDeInicio`** (`transicion-inicio.tsx`).
+ * Tenia su propio `useTransition`, y con el estado encerrado en la barra la unica pieza de
+ * la pantalla que se enteraba de que habia una pregunta en curso era el spinner de este
+ * boton: las tarjetas se quedaban congeladas los ~8 s del turno y cambiaban de golpe.
+ * Ahora la barra publica la pregunta y lee la fase; la salida en cascada de las tarjetas y
+ * el esqueleto salen de ahi. El `useTransition` sigue siendo lo correcto (y no un `useState`
+ * + `fetch`) porque cubre el turno Y el re-render del servidor.
  */
 /**
  * El modo vivo de la barra (`FEATURE_WIDGETS_VIVOS`): quien la aloja decide que pasa con la
  * pregunta. La barra solo pinta el foco ("Sobre: Plan de pago"), la etapa de la consulta y
- * las preguntas sugeridas. Sin esto, la barra sigue como antes: `preguntarEnInicio`.
+ * las preguntas sugeridas. Sin esto, la barra usa la transicion de Inicio (`transicion-inicio.tsx`).
  */
 export type BarraViva = {
   enviar: (texto: string) => void;
@@ -235,25 +241,16 @@ export type BarraViva = {
 
 export function BarraFlotanteMaya({ vivo }: { vivo?: BarraViva } = {}) {
   const [texto, setTexto] = useState("");
-  const [falloPropio, setFalloPropio] = useState<string>();
-  const [enviandoPropio, iniciar] = useTransition();
-  const enviando = vivo ? vivo.ocupado : enviandoPropio;
-  const fallo = vivo ? vivo.fallo : falloPropio;
+  const transicion = useTransicionDeInicio();
+  const enviando = vivo ? vivo.ocupado : transicion.pensando;
+  const fallo = vivo ? vivo.fallo : transicion.fallo;
 
   function enviar(pregunta = texto) {
     const limpio = pregunta.trim();
     if (!limpio || enviando) return;
-    if (vivo) {
-      vivo.enviar(limpio);
-      setTexto("");
-      return;
-    }
-    setFalloPropio(undefined);
-    iniciar(async () => {
-      const r = await preguntarEnInicio(limpio);
-      if (r.ok) setTexto("");
-      else setFalloPropio(r.motivo);
-    });
+    if (vivo) vivo.enviar(limpio);
+    else transicion.preguntar(limpio);
+    setTexto("");
   }
 
   return (

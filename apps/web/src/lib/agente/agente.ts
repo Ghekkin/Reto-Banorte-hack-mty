@@ -1,12 +1,16 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { stepCountIs, streamText, type LanguageModel, type LanguageModelUsage, type ToolSet } from "ai";
+import { crearGrabadora, type Escritor, type Grabadora } from "@/lib/corridas/grabadora";
+import { escritorEnPostgres, registrar } from "@/lib/corridas/escritor";
 import { config } from "./config";
 import { crearCierre, esToolDeCierre, type CierreDelTurno, type ResultadoAjustar, type ResultadoResponder } from "./cierre";
+import { herramientaVerComponentes, MUTACIONES_DIRECTAS, VER_COMPONENTES } from "./componentes";
 import { mensajesDelTurno } from "./historial";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "./mcp-cliente";
 import { turnoDeEjemplo } from "./mock";
 import { hayLlave, modelo, nombreDelModelo, opcionesDelProveedor } from "./modelo";
 import { MAX_INTENTOS_DE_PANTALLA, type ResultadoPintar } from "./pantalla";
+import { detalleDeComponentes } from "./prompt";
 import { TIMEOUT_TURNO_MS, type LineaStream, type PeticionAgente } from "./tipos";
 
 /**
@@ -42,6 +46,8 @@ export type OpcionesDeTurno = {
    * aplicado o un apartado creado, sin que el agente sepa que existe el Inicio.
    */
   alMutar?: (usuarioId: string) => void;
+  /** Donde se guarda la corrida. Default: PostgreSQL (`lib/corridas/escritor.ts`). */
+  escritor?: Escritor;
 };
 
 /**
@@ -51,14 +57,50 @@ export type OpcionesDeTurno = {
  */
 const PASOS_RESERVADOS_PARA_PINTAR = 2;
 
+/**
+ * El turno, grabado. Todo lo que pasa adentro —modelo, tools ofrecidas, cada paso con su
+ * uso, cada tool con argumentos y resultado, cada linea que sale— queda en
+ * `banorte.corridas` y sus tablas hijas, y la conversacion en `banorte.mensajes_chat`
+ * (`docs/como-funciona/corridas-en-db.md`). El `fin` lleva `corridaId` para encontrarla.
+ *
+ * La grabacion nunca frena el stream: se escribe en segundo plano cuando el turno termina,
+ * incluso si la persona cerro la pestana a la mitad.
+ */
 export async function* correrTurno(
   peticion: PeticionAgente,
   opciones: OpcionesDeTurno = {},
+): AsyncGenerator<LineaStream> {
+  const grabadora = crearGrabadora(
+    {
+      tipo: "turno",
+      usuarioId: peticion.usuarioId,
+      conversacionId: peticion.conversacionId,
+      motivo: peticion.error ? "aviso_interfaz" : peticion.accion ? `accion:${peticion.accion.name}` : "mensaje",
+      peticion,
+    },
+    opciones.escritor ?? escritorEnPostgres,
+  );
+  try {
+    for await (const linea of turno(peticion, opciones, grabadora)) {
+      const salida: LineaStream = linea.tipo === "fin" && grabadora.activa ? { ...linea, corridaId: grabadora.id } : linea;
+      grabadora.linea(salida);
+      yield salida;
+    }
+  } finally {
+    void grabadora.terminar();
+  }
+}
+
+async function* turno(
+  peticion: PeticionAgente,
+  opciones: OpcionesDeTurno,
+  grabadora: Grabadora,
 ): AsyncGenerator<LineaStream> {
   const inicio = Date.now();
   yield { tipo: "estado", valor: "pensando" };
 
   if (!opciones.modelo && !hayLlave()) {
+    grabadora.resumir({ estado: "ok", texto: "turno de ejemplo: no hay llave del proveedor, no corrio ningun modelo" });
     yield* turnoDeEjemplo(peticion, inicio);
     return;
   }
@@ -86,15 +128,15 @@ export async function* correrTurno(
         cliente = await conectarMcp();
         herramientas = await herramientasDelMcp(cliente, {
           usuarioId: peticion.usuarioId,
+          corridaId: grabadora.id,
           idempotencyKey: peticion.accion?.context?.idempotencyKey as string | undefined,
           alTerminar: (llamada) => usadas.push(llamada),
         });
       } catch (error) {
-        yield {
-          tipo: "error",
-          codigo: "tool",
-          mensaje: `no pude conectar al MCP en ${config.urlMcp}: ${error instanceof Error ? error.message : String(error)}`,
-        };
+        const mensaje = `no pude conectar al MCP en ${config.urlMcp}: ${error instanceof Error ? error.message : String(error)}`;
+        grabadora.resumir({ estado: "error", pasos: 0, error: mensaje });
+        registrar({ fuente: "agente", nivel: "error", evento: "mcp_inalcanzable", corridaId: grabadora.id, usuarioId: peticion.usuarioId, datos: { mensaje } });
+        yield { tipo: "error", codigo: "tool", mensaje };
         yield { tipo: "texto", valor: "No alcanzo tus datos en este momento. Intenta de nuevo en un momento." };
         yield { tipo: "fin", pasos: 0, ms: Date.now() - inicio };
         return;
@@ -107,7 +149,8 @@ export async function* correrTurno(
     if (!peticion.superficie) {
       if (cliente) {
         try {
-          const res = await llamarTool(cliente, "panorama_inicial", { usuarioId: peticion.usuarioId });
+          const res = await llamarTool(cliente, "panorama_inicial", { usuarioId: peticion.usuarioId }, { corridaId: grabadora.id });
+          grabadora.toolDelHost({ nombre: "panorama_inicial", argumentos: { usuarioId: peticion.usuarioId }, resultado: res.resultado, ok: res.ok, ms: res.ms });
           if (res.ok && res.resultado && typeof res.resultado === "object" && !("error" in (res.resultado as Record<string, unknown>))) {
             panorama = res.resultado;
             usadas.push({ nombre: "panorama_inicial", ms: res.ms, ok: true });
@@ -147,22 +190,55 @@ export async function* correrTurno(
       peticion.superficie?.arbol?.length
         ? { arbol: peticion.superficie.arbol, dataModel: peticion.superficie.dataModel ?? {} }
         : undefined;
-    const cierre = crearCierre(pantallaActual);
+    const datosBase: Record<string, unknown> = {
+      ...(peticion.superficie?.dataModel ?? {}),
+      ...(panorama ? { panorama_inicial: panorama } : {}),
+    };
+    const cierre = crearCierre(
+      pantallaActual,
+      {
+        ...(config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {}),
+        datosBase,
+      },
+    );
     const nombresDeCierre = Object.keys(cierre.herramientas);
+    const toolsDelTurno: ToolSet = config.agenteLigero
+      ? { ...sinMutacionesDirectas(herramientas), [VER_COMPONENTES]: herramientaVerComponentes(), ...cierre.herramientas }
+      : { ...herramientas, ...cierre.herramientas };
+
+    const modeloDelTurno = opciones.modelo ?? modelo();
+    const mensajes = mensajesDelTurno(peticion, panorama);
+    const opcionesProveedor = opcionesDelProveedor();
+    grabadora.configurar({
+      modelo: modeloDelTurno,
+      opcionesProveedor,
+      config: {
+        agenteLigero: config.agenteLigero,
+        maxPasos: config.maxPasos,
+        pasosReservadosParaPintar: PASOS_RESERVADOS_PARA_PINTAR,
+        timeoutMs,
+        urlMcp: config.urlMcp,
+        conPanorama: panorama !== undefined,
+      },
+      promptSistema: typeof mensajes[0]?.content === "string" ? mensajes[0].content : JSON.stringify(mensajes[0]?.content),
+      mensajes,
+      tools: toolsDelTurno,
+      origenDe: (nombre) => (esToolDeCierre(nombre) ? "cierre" : nombre === VER_COMPONENTES ? "host" : "mcp"),
+    });
 
     const resultado = streamText({
-      model: opciones.modelo ?? modelo(),
+      model: modeloDelTurno,
       // El system prompt va como PRIMER MENSAJE, no en `system`, para poder marcarlo
       // como prefijo cacheable (ver `mensajesDelTurno`). En Gemini termina igual en
       // `systemInstruction`; en Claude lleva el `cache_control`.
-      messages: mensajesDelTurno(peticion, panorama),
+      messages: mensajes,
       // El SDK avisa de esto en cada turno y tiene razon en general: un mensaje `system`
       // dentro de `messages` es un vector de inyeccion SI puede venir de la persona. Aqui
       // no puede: lo arma `systemPrompt()`, es una constante nuestra, y lo que escribe la
       // persona entra como `user`. Va explicito para que la decision se lea en el codigo y
       // no como un warning que todos aprenden a ignorar.
       allowSystemInMessages: true,
-      tools: { ...herramientas, ...cierre.herramientas },
+      tools: toolsDelTurno,
       stopWhen: [
         stepCountIs(config.maxPasos),
         () => cierre.cerrado(),
@@ -181,21 +257,28 @@ export async function* correrTurno(
       // `required` en vez de forzar una tool concreta: con tres salidas, cual usar es la
       // decision del modelo (es la clasificacion de intencion), lo que no se negocia es
       // que cierre. Con una sola disponible —el primer turno— equivale a forzarla.
-      prepareStep: ({ stepNumber }) =>
-        stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR
-          ? { toolChoice: "required", activeTools: nombresDeCierre }
-          : undefined,
-      providerOptions: opcionesDelProveedor(),
+      prepareStep: ({ stepNumber }) => {
+        const forzarCierre = stepNumber >= config.maxPasos - PASOS_RESERVADOS_PARA_PINTAR;
+        grabadora.pasoPreparado(stepNumber, forzarCierre ? nombresDeCierre : Object.keys(toolsDelTurno), forzarCierre ? "required" : "auto");
+        return forzarCierre ? { toolChoice: "required", activeTools: nombresDeCierre } : undefined;
+      },
+      onStepFinish: (paso) => grabadora.paso(paso),
+      providerOptions: opcionesProveedor,
       abortSignal: senal,
     });
 
-    uso = resultado.usage;
+    // `totalUsage` y no `usage`: en el AI SDK 5 `usage` es SOLO el ultimo paso, y un turno
+    // hace 2-3 peticiones que reenvian el prompt completo. Con `usage` el log decia ~29k
+    // tokens por turno cuando eran ~83k (medido el 2026-09-13).
+    uso = resultado.totalUsage;
     let prosa = "";
+    let errorDelModelo: string | undefined;
 
     for await (const parte of resultado.fullStream) {
       switch (parte.type) {
         case "tool-call":
           enVuelo.set(parte.toolCallId, { nombre: parte.toolName, inicio: Date.now() });
+          grabadora.toolPedida(parte.toolCallId, parte.toolName, parte.input);
           // `responder` no pinta: decir "pintando" ahi seria mentirle a la persona.
           yield {
             tipo: "estado",
@@ -209,9 +292,20 @@ export async function* correrTurno(
           break;
 
         case "tool-result":
+          grabadora.toolTermino(parte.toolCallId, {
+            resultado: parte.output,
+            ok: esToolDeCierre(parte.toolName)
+              ? (parte.output as { ok?: boolean } | undefined)?.ok !== false
+              : !esResultadoConError(parte.output),
+          });
           if (esToolDeCierre(parte.toolName)) {
             yield* emitirCierre(parte.output as ResultadoPintar | ResultadoAjustar | ResultadoResponder, cierre);
+          } else if (parte.toolName === VER_COMPONENTES) {
+            // Es del host, no del MCP: no va a la tira de transparencia como consulta de datos.
           } else {
+            if (parte.output && typeof parte.output === "object" && !("error" in (parte.output as Record<string, unknown>))) {
+              datosBase[parte.toolName] = parte.output;
+            }
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.
             yield {
@@ -224,6 +318,10 @@ export async function* correrTurno(
           break;
 
         case "tool-error":
+          grabadora.toolTermino(parte.toolCallId, {
+            ok: false,
+            error: parte.error instanceof Error ? parte.error.message : String(parte.error),
+          });
           yield { tipo: "tool", nombre: parte.toolName, ms: transcurrido(enVuelo, parte.toolCallId), ok: false };
           yield {
             tipo: "error",
@@ -242,11 +340,8 @@ export async function* correrTurno(
 
         case "error":
           corte = "modelo";
-          yield {
-            tipo: "error",
-            codigo: "modelo",
-            mensaje: parte.error instanceof Error ? parte.error.message : String(parte.error),
-          };
+          errorDelModelo = parte.error instanceof Error ? parte.error.message : String(parte.error);
+          yield { tipo: "error", codigo: "modelo", mensaje: errorDelModelo };
           break;
 
         // El AI SDK no lanza cuando se dispara el abortSignal: emite esta parte y cierra
@@ -296,7 +391,14 @@ export async function* correrTurno(
       try {
         opciones.alMutar?.(peticion.usuarioId);
       } catch (error) {
-        console.warn(`[agente] alMutar fallo: ${error instanceof Error ? error.message : String(error)}`);
+        registrar({
+          fuente: "agente",
+          nivel: "warn",
+          evento: "al_mutar_fallo",
+          corridaId: grabadora.id,
+          usuarioId: peticion.usuarioId,
+          datos: { mensaje: error instanceof Error ? error.message : String(error) },
+        });
       }
     }
 
@@ -304,13 +406,36 @@ export async function* correrTurno(
     // funciona —el turno solo sale mas caro y mas lento—, y el 2026-09-12 el proyecto se
     // quedo sin cuota sin que nadie supiera cuanto costaba un turno. Con estos dos
     // numeros, UNA llamada real dice si el caché pega y cuanto se reenvia por peticion.
-    const consumo = await resultado.usage.catch(() => undefined);
-    console.log(
-      JSON.stringify({
+    const consumo = await resultado.totalUsage.catch(() => undefined);
+    grabadora.resumir({
+      estado: cierre.cerrado()
+        ? "ok"
+        : corte === "timeout"
+          ? "timeout"
+          : corte === "cliente"
+            ? "cortada"
+            : corte === "modelo"
+              ? "error"
+              : prosa.trim() && cierre.intentosFallidos() === 0
+                ? "ok"
+                : "sin_pantalla",
+      cierre: cierre.con() ?? null,
+      pasos,
+      uso: consumo,
+      texto: ultima?.texto ?? (prosa.trim() || null),
+      error: errorDelModelo ?? (cierre.intentosFallidos() ? `${cierre.intentosFallidos()} pantalla(s) rechazada(s)` : null),
+    });
+    registrar({
+      fuente: "agente",
+      evento: "turno",
+      corridaId: grabadora.activa ? grabadora.id : null,
+      usuarioId: peticion.usuarioId,
+      datos: {
         agente: nombreDelModelo(),
         usuario: peticion.usuarioId,
         pasos,
         tools: usadas.map((l) => `${l.nombre}${l.ok ? "" : "!"}`),
+        ligero: config.agenteLigero,
         pintada: cierre.cerrado(),
         cierre: cierre.con() ?? null,
         corte: corte ?? null,
@@ -319,12 +444,17 @@ export async function* correrTurno(
         // null = el proveedor no reporto nada; 0 = reporto que no cacheo nada.
         cache: consumo?.cachedInputTokens ?? null,
         ms: Date.now() - inicio,
-      }),
-    );
+      },
+    });
   } catch (error) {
     // Por si algun proveedor SI lanza al abortar (el contrato del SDK es emitir `abort`,
     // pero esto no cuesta nada y evita reportar un timeout como error del modelo).
     const abortado = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");
+    grabadora.resumir({
+      estado: abortado ? "timeout" : "error",
+      pasos,
+      error: error instanceof Error ? `${error.name}: ${error.message}` : String(error),
+    });
     yield {
       tipo: "error",
       codigo: abortado ? "timeout" : "modelo",
@@ -355,6 +485,19 @@ async function tokensDeCache(uso: Promise<LanguageModelUsage> | undefined): Prom
   } catch {
     return {};
   }
+}
+
+/** Las tools del MCP menos las de mutacion directa: el modelo muta solo con `ejecutar_decision`. */
+function sinMutacionesDirectas(herramientas: ToolSet): ToolSet {
+  const salida: ToolSet = { ...herramientas };
+  for (const nombre of MUTACIONES_DIRECTAS) delete salida[nombre];
+  return salida;
+}
+
+/** `"PlanDePago (plan): opciones.0 ..."` -> el detalle de `PlanDePago`, una vez por componente. */
+function detalleDeLosQueFallaron(errores: string[]): string | undefined {
+  const nombres = [...new Set(errores.map((e) => /^([A-Z][A-Za-z]+) \(/.exec(e)?.[1]).filter((n): n is string => Boolean(n)))];
+  return nombres.length ? detalleDeComponentes(nombres) : undefined;
 }
 
 /** Cuanto tardo una llamada; si no se registro el inicio, 0 en vez de un numero raro. */

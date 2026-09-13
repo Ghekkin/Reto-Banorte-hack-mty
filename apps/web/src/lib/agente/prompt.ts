@@ -2,7 +2,7 @@ import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { z } from "zod";
 import { NOMBRES_DE_LAYOUT, type MensajeA2UI } from "@maya/a2ui";
-import { CATALOGO } from "@maya/catalogo";
+import { CATALOGO, type EntradaCatalogo } from "@maya/catalogo";
 import { config } from "./config";
 
 /**
@@ -12,13 +12,23 @@ import { config } from "./config";
  *
  * Lo que el modelo tiene que entender, en orden:
  *  1. eres Maya: asesora financiera humana, empática y bancaria de Banorte;
- *  2. no necesariamente mandas un visual en cada respuesta: usa `responder_conversacion` para saludos y diálogo;
+ *  2. no necesariamente mandas un visual en cada respuesta: con pantalla previa, `responder` para aclarar;
  *  3. solo cuando se requiere interacción o datos financieros, construyes la pantalla con `pintar_pantalla`;
  *  4. averigua con quién hablas antes de decidir nada;
  *  5. toda superficie explica por qué existe (`razon`);
  *  6. cuando la persona toca algo, la acción se ejecuta de verdad y la pantalla cambia.
  */
-export function systemPrompt(): string {
+export type OpcionesDelPrompt = {
+  /**
+   * `completo`: el catalogo con todas sus props y un ejemplo de cada componente (~15k tokens).
+   * `menu`: solo para que sirve cada uno y como se llaman sus props; el detalle lo pide el
+   * modelo con `ver_componentes` para las 1-3 tarjetas que va a usar (`componentes.ts`).
+   */
+  catalogo?: "completo" | "menu";
+};
+
+export function systemPrompt(opciones: OpcionesDelPrompt = {}): string {
+  const menu = opciones.catalogo === "menu";
   return [
     "Eres Maya, la asesora inteligente y empática de salud financiera de Banorte. Hablas en",
     "español de México con un tono cálido, humano, profesional y cercano, como una auténtica",
@@ -108,9 +118,7 @@ export function systemPrompt(): string {
     "   **Esto vale sobre todo para lo que se calcula, no solo para lo que se lee.** Una mensualidad, un",
     "   plazo, unos intereses, una proyeccion o un valor futuro NO se hacen de cabeza: se piden. Cada",
     "   tarjeta que muestra cifras calculadas tiene su tool, y sin llamarla no la pintas:",
-    "     - `ProyeccionCrecimiento` y `EscenariosInversion` -> `proyectar_inversion`",
-    "     - `ProyeccionPagoCredito` y `ComparadorAntesDespues` de un credito -> `simular_credito`",
-    "       (otro plazo, un abono extra o una mensualidad objetivo) o `consultar_creditos` (lo pactado)",
+    "     - `ProyeccionPagoCredito` de un credito -> `consultar_creditos` (con `incluirAmortizacion: true`)",
     "     - `PlanDePago` y `ComparadorAntesDespues` de la TARJETA -> `simular_reestructura`",
     "     - `SimuladorMeta` y `MetaActiva` -> `proyectar_ahorro`",
     "     - `GastoPorCategoria` y `DetalleCategoria` -> `analizar_gasto` o `comparar_periodos`",
@@ -120,8 +128,8 @@ export function systemPrompt(): string {
     "     - `RendimientoHistorico` -> `consultar_historico_inversion`",
     "   Y en el texto libre (`titular`, `detalle`, tu respuesta) todo monto se escribe como lo formatea la",
     "   interfaz: `$5,503.20`. Los CENTAVOS NUNCA se escriben como pesos: 550320 centavos son $5,503.20,",
-    "   no $550,320. En `Conclusion.datos` el dinero va en `montoCentavos` (el entero, tal cual) y lo",
-    "   formatea la tarjeta; `valor` es solo para lo que no es dinero (`+74%`, `39/100`).",
+    "   no $550,320. En `Conclusion.datos` cada dato lleva `etiqueta` y `valor`, y `valor` es SIEMPRE",
+    "   texto ya formateado (`$3,193.35`, `+74%`, `39/100`), igual que en la tarjeta que lo reporta.",
     "3. **`panorama_inicial` ya te da casi todo**: perfil, la tarjeta (o `null` si no tiene), el puntaje",
     "   de salud, la deuda total, la capacidad de pago mensual y una clasificacion de la situacion. Si ya",
     "   la llamaste, NO vuelvas a pedir lo mismo con `consultar_perfil`, `consultar_tarjeta` o",
@@ -230,18 +238,7 @@ export function systemPrompt(): string {
     `Componentes de layout disponibles: ${NOMBRES_DE_LAYOUT.join(", ")}.`,
     "`Column` y `Row` agrupan (prop `separacion`: chica | normal | amplia). `Text` lleva `texto`.",
     "",
-    "## Catalogo de componentes propios",
-    "",
-    catalogoEnTexto(),
-    "",
-    `El catalogo completo, con el schema de cada componente, esta publicado en ${config.urlCatalogo}.`,
-    "",
-    "## Ejemplos de pantallas bien armadas",
-    "",
-    "Asi se ven `componentesJson` y `datosJson` de pantallas reales, una por componente. Copia la",
-    "forma (ids, `children`, enlaces `{ \"path\" }`, `action`), no los numeros: los tuyos salen de las tools.",
-    "",
-    ejemplosEnTexto(),
+    ...(menu ? seccionesDelMenu() : seccionesCompletas()),
     "",
     "## Reglas que no se negocian",
     "",
@@ -274,6 +271,74 @@ export function systemPrompt(): string {
   ].join("\n");
 }
 
+/** Lo de siempre: el catalogo con todas sus props y un ejemplo por componente. */
+function seccionesCompletas(): string[] {
+  return [
+    "## Catalogo de componentes propios",
+    "",
+    catalogoEnTexto(),
+    "",
+    `El catalogo completo, con el schema de cada componente, esta publicado en ${config.urlCatalogo}.`,
+    "",
+    "## Ejemplos de pantallas bien armadas",
+    "",
+    "Asi se ven `componentesJson` y `datosJson` de pantallas reales, una por componente. Copia la",
+    "forma (ids, `children`, enlaces `{ \"path\" }`, `action`), no los numeros: los tuyos salen de las tools.",
+    "",
+    ejemplosEnTexto(),
+  ];
+}
+
+/**
+ * El catalogo como MENU: para que sirve cada componente y como se llaman sus props, sin
+ * tipos, descripciones ni ejemplos. Es lo que el modelo necesita para ELEGIR; para ARMAR
+ * pide el detalle de las 1-3 tarjetas elegidas con `ver_componentes`, en el mismo paso que
+ * sus tools de datos. `Conclusion` va completa porque va en toda pantalla.
+ *
+ * Por que: el catalogo completo y los 21 ejemplos son ~15k de los ~26k tokens de CADA
+ * peticion, y un turno hace 2-3 peticiones. Medido el 2026-09-13, ver
+ * `docs/como-funciona/agente.md`.
+ */
+function seccionesDelMenu(): string[] {
+  const conclusion = CATALOGO.find((e) => e.nombre === "Conclusion");
+  return [
+    "## Catalogo de componentes propios (menu)",
+    "",
+    "Aqui esta PARA QUE sirve cada componente y como se llaman sus props (`?` = opcional). No trae",
+    "tipos ni ejemplos a proposito: **antes de `pintar_pantalla`, llama `ver_componentes` con los",
+    "nombres de las tarjetas que vas a usar, en el MISMO paso que tus tools de datos** (se ejecutan en",
+    "paralelo, no cuesta un paso extra). Te devuelve sus props exactas y un ejemplo real. No adivines",
+    "props de un componente que no has visto: la pantalla se rechaza y pierdes el turno.",
+    "",
+    menuEnTexto(),
+    "",
+    "## Conclusion, completa (va en toda pantalla)",
+    "",
+    ...(conclusion ? [detalleDeComponentes(["Conclusion"])] : []),
+  ];
+}
+
+type PropiedadDeSchema = { type?: string; enum?: unknown[]; description?: string };
+
+function propsDelSchema(entrada: EntradaCatalogo): { nombre: string; def: PropiedadDeSchema; requerida: boolean }[] {
+  const schema = z.toJSONSchema(entrada.schema, { io: "input" }) as {
+    properties?: Record<string, PropiedadDeSchema>;
+    required?: string[];
+  };
+  const requeridas = new Set(schema.required ?? []);
+  return Object.entries(schema.properties ?? {}).map(([nombre, def]) => ({ nombre, def, requerida: requeridas.has(nombre) }));
+}
+
+/** Un componente con todas sus props, tipos y descripciones: lo que hace falta para armarlo. */
+function entradaEnTexto(entrada: EntradaCatalogo): string {
+  const props = propsDelSchema(entrada).map(({ nombre, def, requerida }) => {
+    const tipo = def.enum ? def.enum.map((v) => JSON.stringify(v)).join(" | ") : (def.type ?? "any");
+    return `    - ${nombre}${requerida ? "" : "?"}: ${tipo}${def.description ? ` — ${def.description}` : ""}`;
+  });
+  const acciones = entrada.acciones?.length ? `  acciones que devuelve: ${entrada.acciones.join(", ")}\n` : "";
+  return `- **${entrada.nombre}** — ${entrada.cuandoUsarlo}\n${acciones}  props:\n${props.join("\n")}`;
+}
+
 /**
  * El catalogo tal como lo ve el modelo: para que elija bien necesita saber CUANDO usar
  * cada componente y que props acepta. Sale de los mismos schemas que `catalogo.json`,
@@ -281,21 +346,45 @@ export function systemPrompt(): string {
  */
 function catalogoEnTexto(): string {
   if (CATALOGO.length === 0) return "(el catalogo esta vacio: no puedes pintar nada todavia)";
+  return CATALOGO.map(entradaEnTexto).join("\n\n");
+}
 
+/** Una linea por componente: para que sirve, sus acciones y los NOMBRES de sus props. */
+function menuEnTexto(): string {
+  if (CATALOGO.length === 0) return "(el catalogo esta vacio: no puedes pintar nada todavia)";
   return CATALOGO.map((entrada) => {
-    const schema = z.toJSONSchema(entrada.schema, { io: "input" }) as {
-      properties?: Record<string, { type?: string; enum?: unknown[]; description?: string }>;
-      required?: string[];
-    };
-    const requeridas = new Set(schema.required ?? []);
-    const props = Object.entries(schema.properties ?? {}).map(([nombre, def]) => {
-      const tipo = def.enum ? def.enum.map((v) => JSON.stringify(v)).join(" | ") : (def.type ?? "any");
-      const marca = requeridas.has(nombre) ? "" : "?";
-      return `    - ${nombre}${marca}: ${tipo}${def.description ? ` — ${def.description}` : ""}`;
-    });
-    const acciones = entrada.acciones?.length ? `  acciones que devuelve: ${entrada.acciones.join(", ")}\n` : "";
-    return `- **${entrada.nombre}** — ${entrada.cuandoUsarlo}\n${acciones}  props:\n${props.join("\n")}`;
-  }).join("\n\n");
+    const props = propsDelSchema(entrada)
+      .filter(({ nombre }) => nombre !== "razon")
+      .map(({ nombre, requerida }) => `${nombre}${requerida ? "" : "?"}`);
+    const acciones = entrada.acciones?.length ? ` · acciones: ${entrada.acciones.join(", ")}` : "";
+    return `- **${entrada.nombre}** — ${entrada.cuandoUsarlo}\n  props: ${props.join(", ")}${acciones}`;
+  }).join("\n");
+}
+
+/**
+ * Lo que devuelve `ver_componentes`: cada componente pedido con sus props completas y el
+ * ejemplo real que lo contiene. Un nombre que no existe no truena: se dice cuales si.
+ */
+export function detalleDeComponentes(nombres: string[]): string {
+  const porNombre = new Map(CATALOGO.map((e) => [e.nombre, e]));
+  const ejemplos = ejemplosPorComponente();
+  const partes: string[] = [];
+  const desconocidos: string[] = [];
+  for (const nombre of [...new Set(nombres)]) {
+    const entrada = porNombre.get(nombre);
+    if (!entrada) {
+      desconocidos.push(nombre);
+      continue;
+    }
+    const ejemplo = ejemplos.get(nombre);
+    partes.push(ejemplo ? `${entradaEnTexto(entrada)}\n  ejemplo real:\n${ejemplo}` : entradaEnTexto(entrada));
+  }
+  if (desconocidos.length) {
+    partes.push(
+      `No existen en el catalogo: ${desconocidos.join(", ")}. Los que si: ${CATALOGO.map((e) => e.nombre).join(", ")}.`,
+    );
+  }
+  return partes.join("\n\n");
 }
 
 /**
@@ -317,22 +406,44 @@ function carpetaEjemplos(): string | undefined {
   return opciones.find((ruta) => existsSync(ruta));
 }
 
-let cacheEjemplos: string | undefined;
+type EjemploLeido = { nombre: string; componentes: string[]; bloque: string };
+
+let cacheEjemplos: EjemploLeido[] | undefined;
 
 function ejemplosEnTexto(): string {
+  const leidos = ejemplosLeidos();
+  return leidos.length ? leidos.map((e) => e.bloque).join("\n\n") : "(sin ejemplos disponibles)";
+}
+
+/**
+ * Para `ver_componentes`: el ejemplo de cada componente. Si varios lo traen, gana el
+ * archivo que se llama como el componente (`gasto-por-categoria.jsonl` para `GastoPorCategoria`).
+ */
+function ejemplosPorComponente(): Map<string, string> {
+  const mapa = new Map<string, string>();
+  for (const ejemplo of ejemplosLeidos()) {
+    for (const componente of ejemplo.componentes) {
+      const propio = ejemplo.nombre === componente.replace(/([a-z0-9])([A-Z])/g, "$1-$2").toLowerCase();
+      if (propio || !mapa.has(componente)) mapa.set(componente, ejemplo.bloque);
+    }
+  }
+  return mapa;
+}
+
+function ejemplosLeidos(): EjemploLeido[] {
   if (cacheEjemplos !== undefined) return cacheEjemplos;
   const permitidos = new Set<string>([...NOMBRES_DE_LAYOUT, ...CATALOGO.map((c) => c.nombre)]);
   const carpeta = carpetaEjemplos();
   if (!carpeta) {
-    cacheEjemplos = "(sin ejemplos disponibles)";
+    cacheEjemplos = [];
     return cacheEjemplos;
   }
-  const bloques: string[] = [];
+  const bloques: EjemploLeido[] = [];
   let archivos: string[] = [];
   try {
     archivos = readdirSync(carpeta).filter((a) => a.endsWith(".jsonl")).sort();
   } catch {
-    cacheEjemplos = "(sin ejemplos disponibles)";
+    cacheEjemplos = [];
     return cacheEjemplos;
   }
   for (const archivo of archivos) {
@@ -346,10 +457,12 @@ function ejemplosEnTexto(): string {
       ?.updateDataModel.value;
     if (!componentes || !componentes.every((c) => permitidos.has(c.component))) continue;
     const nombre = archivo.replace(/\.jsonl$/, "");
-    bloques.push(
-      `### ${nombre}\ncomponentesJson: ${JSON.stringify(componentes)}\ndatosJson: ${JSON.stringify(datos ?? {})}`,
-    );
+    bloques.push({
+      nombre,
+      componentes: componentes.map((c) => c.component).filter((c) => !(NOMBRES_DE_LAYOUT as readonly string[]).includes(c)),
+      bloque: `### ${nombre}\ncomponentesJson: ${JSON.stringify(componentes)}\ndatosJson: ${JSON.stringify(datos ?? {})}`,
+    });
   }
-  cacheEjemplos = bloques.length ? bloques.join("\n\n") : "(sin ejemplos disponibles)";
+  cacheEjemplos = bloques;
   return cacheEjemplos;
 }

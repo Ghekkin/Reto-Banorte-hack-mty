@@ -5,6 +5,7 @@ package-lock.json
 yarn.lock
 node_modules/
 .next/
+.astro/
 dist/
 .vercel/
 __pycache__/

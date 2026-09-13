@@ -2,13 +2,21 @@
 
 ## 2026-09-13
 
+- **03:20 · toque-ajeno** — El sync trajo 10 commits (sergio: masonry y transición de Inicio;
+  parlack: corridas en PostgreSQL, docs en Astro) y chocó en 10 archivos. Resuelto conservando
+  todo: `Lienzo` combina `acomodo="masonry"` con `decorar` (`PiezaDecorada` sirve a los dos),
+  `BarraFlotanteMaya` usa `useTransicionDeInicio` sin modo vivo, la portada de widgets graba su
+  corrida igual que la de parlack, y `InicioVivo` también va en masonry. **Mi migración pasó a
+  `0005-procedencia-widgets.sql`**: parlack ya tenía una `0004` (las dos son idempotentes; la base
+  ya las tiene). El `armarMensajes` nuevo completa defaults del schema, así que «la tarjeta queda
+  igual» ahora compara solo lo que produce el widget. 288 pruebas en web en verde.
 - **02:45 · hecho** — **Widgets vivos** construidos de punta a punta detrás de
   `FEATURE_WIDGETS_VIVOS` (plan en `docs/equipo/plan-widgets-vivos.md`, fases 0 a 7). Viene de
   la revisión con Banorte: preguntar en Inicio se sentía como cambiar de diapositiva, y el equipo
   pidió que las cifras tras un cambio salieran del MCP y no de Gemini. Quedó: `lib/widgets/`
   (13 fuentes con adaptador, consultor con lista blanca, `pintar_widgets`, turno con
   `modificar_widget`/`reemplazar_widget`/`responder`, verificador de cifras, auditor),
-  `POST /api/inicio/widget` en stream, migración 0004, y la UI (`InicioVivo`, pie por tarjeta,
+  `POST /api/inicio/widget` en stream, migración 0005, y la UI (`InicioVivo`, pie por tarjeta,
   velo solo en la tarjeta en foco). ADR 0011 y `docs/como-funciona/widgets-vivos.md`.
 - **02:40 · nota** — Medido: la portada por fuentes cuesta ~7–8.5 mil tokens de entrada y
   300–400 de salida en 2–6 s (antes ~22 mil / 1–1.7 mil en 7.7–11.6 s). `pnpm probar-widgets`

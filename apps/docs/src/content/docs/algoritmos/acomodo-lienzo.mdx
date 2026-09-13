@@ -1,0 +1,32 @@
+---
+title: Acomodo Inteligente del Lienzo
+description: Heurística de composición bento grid responsiva y container queries en packages/a2ui.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Ubicación en Código">
+  Implementado en <code>packages/a2ui/src/layout/</code> y descrito formalmente en <code>docs/algoritmos/acomodo-del-lienzo.md</code>.
+</BanorteAlert>
+
+## El Reto de la Composición Visual Libre
+
+En las interfaces generativas, el modelo LLM decide qué componentes pintar en tiempo de ejecución. Si los componentes se apilaran verticalmente sin criterio de layout, la experiencia en pantallas grandes se volvería kilométrica e ineficiente.
+
+Desarrollamos una heurística de **Bento Grid Adaptativo** que organiza dinámicamente las superficies generadas:
+
+### 1. Pesos y Columnas por Componente
+Cada widget del catálogo declara su span visual preferido:
+* `ResumenTarjeta`: Componente héroe (span completo: 2 o 3 columnas).
+* `PlanDePago`: Componente de decisión (2 columnas en escritorio).
+* `GastoPorCategoria`: Componente ancho analítico (2 columnas).
+* `SimuladorMeta`: Componente interactivo (1 o 2 columnas).
+* `Conclusion`: Tarjeta de resumen de cierre (span completo inferior).
+
+### 2. Heurística de Empaque y Límite de 3 Tarjetas
+Para evitar la sobrecarga cognitiva del usuario, el motor impone una restricción determinista:
+* **Máximo 3 componentes principales por turno conversacional**.
+* Si el modelo propone más de 3 widgets, el motor ejecuta una poda determinista priorizando el componente con acción ejecutable (`PlanDePago` o `SimuladorMeta`) y el héroe descriptivo, descartando tarjetas accesorias redundantes.
+
+### 3. Container Queries en los Widgets
+Cada componente no consulta el tamaño del viewport (`@media (min-width: ...)`), sino el ancho del contenedor en el que fue colocado (`@container (min-width: ...)`). Esto permite que el mismo componente `PlanDePago` funcione en una columna estrecha en móvil o a 2 columnas en una tablet o laptop sin desbordamientos.

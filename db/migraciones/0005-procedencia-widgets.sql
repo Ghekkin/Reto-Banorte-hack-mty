@@ -1,4 +1,4 @@
--- Migracion 0004 — widgets vivos (docs/como-funciona/widgets-vivos.md, ADR 0011)
+-- Migracion 0005 — widgets vivos (docs/como-funciona/widgets-vivos.md, ADR 0011)
 --
 -- Una portada armada por fuentes guarda DE DONDE salio cada tarjeta: la tool del MCP, los
 -- argumentos con que se llamo, los parametros y variantes que eligio el modelo y la huella

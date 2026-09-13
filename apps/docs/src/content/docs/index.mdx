@@ -1,0 +1,81 @@
+---
+title: Maya — Interfaces que la IA construye en tiempo real
+description: Documentación técnica y presentación de Maya para el Reto Banorte × Hack Monterrey 2026.
+template: splash
+hero:
+  tagline: "Un agente financiero que no responde con texto: interpreta tu necesidad, orquesta tools en un servidor MCP propio, describe la pantalla con A2UI v0.9.1 y la renderiza al instante. Cada acción del usuario muta la base de datos y transforma la experiencia."
+  actions:
+    - text: Ver Pitch & Demo en Vivo
+      link: /presentacion/pitch/
+      icon: right-arrow
+      variant: primary
+    - text: Explorar Arquitectura
+      link: /arquitectura/vision-general/
+      icon: external
+      variant: secondary
+    - text: Matriz de Rúbrica (100 Pts)
+      link: /presentacion/rubrica/
+      icon: document
+      variant: minimal
+---
+
+import { Card, CardGrid, Badge } from '@astrojs/starlight/components';
+import DemoFlowSimulator from '../../components/DemoFlowSimulator';
+import ArchitectureExplorer from '../../components/ArchitectureExplorer';
+import BanorteAlert from '../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Prototipo de Hackathon Oficial">
+  Construido para el <strong>Reto Banorte × Hack Monterrey 2026</strong>. Evoluciona la asistente <strong>Maya</strong> de Banorte de un chatbot de texto a un generador de interfaces táctiles adaptativas con ciclo de acción cerrado. Todos los datos son sintéticos y no representan clientes reales.
+</BanorteAlert>
+
+## Métricas Clave de Ingeniería
+
+<CardGrid stagger>
+  <Card title="18 Tools MCP Propias" icon="seti:graphql">
+    14 herramientas de lectura analítica y **4 tools de acción mutacional** sobre PostgreSQL (reestructurar, apartar, pausar fugas).
+  </Card>
+  <Card title="21 Componentes A2UI" icon="pencil">
+    Catálogo financiero propio basado en shadcn/ui y tokens Banorte (#EC0029). Tipado en Zod y validado con Ajv.
+  </Card>
+  <Card title="Motor A2UI v0.9.1 Propio" icon="setting">
+    ~1,310 líneas de TypeScript sin librerías externas de UI generativa. Pasa el 100% de los 76 casos de conformidad oficiales.
+  </Card>
+  <Card title="Cero Alucinaciones Numéricas" icon="approve-check">
+    El modelo nunca inventa tasas ni saldos. Los números viajan en el Data Model y provienen de PostgreSQL (22 tablas).
+  </Card>
+</CardGrid>
+
+---
+
+## Prueba Interactiva del Flujo de la Demo
+
+<DemoFlowSimulator client:load />
+
+---
+
+## La Arquitectura en 4 Capas
+
+<ArchitectureExplorer client:load />
+
+---
+
+## Estructura de la Documentación
+
+<CardGrid>
+  <Card title="Presentación & Pitch" icon="open-book">
+    Guión cronometrado de 5 minutos, diapositivas interactivas y rúbrica oficial evaluada punto por punto.
+    [Ver Pitch →](/presentacion/pitch/)
+  </Card>
+  <Card title="El Reto Banorte" icon="information">
+    Entregables oficiales, lectura estratégica de la rúbrica y demostración de adaptabilidad por perfil de usuario.
+    [Ver Reto →](/reto/contexto/)
+  </Card>
+  <Card title="Arquitectura Técnica" icon="laptop">
+    Detalle del motor A2UI, servidor MCP Streamable HTTP, esquema PostgreSQL y los 10 ADRs de diseño.
+    [Ver Arquitectura →](/arquitectura/vision-general/)
+  </Card>
+  <Card title="Catálogo de Componentes" icon="puzzle">
+    Especificación de los 21 widgets financieros del catálogo, schemas Zod, eventos y soporte táctil móvil.
+    [Ver Catálogo →](/catalogo/resumen/)
+  </Card>
+</CardGrid>

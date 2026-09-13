@@ -1,0 +1,67 @@
+---
+title: El Ciclo Cerrado de Acción
+description: Especificación técnica del protocolo de retorno táctil, idempotencia y mutación transaccional.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="success" title="Cierre del Ciclo (Regla 3 del Reto)">
+  Una interfaz generativa que sólo muestra información es un dashboard estático. En Maya, cuando el usuario presiona un botón o arrastra un slider, <strong>la acción retorna al agente como mensaje estructurado</strong>, disparando una herramienta MCP y provocando una actualización visual en tiempo real.
+</BanorteAlert>
+
+## Protocolo de Mensajería Cliente ↔ Servidor
+
+### 1. Servidor → Cliente: El Stream JSONL
+El endpoint `POST /api/agente` no bloquea esperando la respuesta completa: responde un flujo continuo **JSONL (Newline Delimited JSON)** donde cada línea representa una fase del procesamiento:
+
+```json
+{"tipo":"estado","valor":"pensando"}
+{"tipo":"tool","nombre":"panorama_inicial","params":{"clienteId":"beto"}}
+{"tipo":"tool","nombre":"simular_reestructura","params":{"tarjetaId":"tc_4821"}}
+{"tipo":"a2ui","payload":{"createSurface":{"surfaceId":"s1","catalogId":"/catalogo/v1.json"}}}
+{"tipo":"a2ui","payload":{"updateComponents":{"surfaceId":"s1","components":[...]}}}
+{"tipo":"a2ui","payload":{"updateDataModel":{"surfaceId":"s1","data":{...}}}}
+{"tipo":"razon","texto":"Detectamos que tu tarjeta tiene 12 días de mora. Te recomendamos reestructurar a 18 meses."}
+{"tipo":"fin"}
+```
+
+### 2. Cliente → Servidor: El Objeto de Acción
+Cuando el usuario interactúa con un botón primario (ej. "Aplicar plan"), el renderer A2UI emite un objeto conforme a la especificación oficial `client_to_server.json`:
+
+```json
+{
+  "action": {
+    "name": "aplicar_plan_pago",
+    "surfaceId": "s1",
+    "sourceComponentId": "btn_aplicar_18m",
+    "context": {
+      "tarjetaId": "tc_4821",
+      "plazoMeses": 18,
+      "tasaPactada": 22.5
+    },
+    "idempotencyKey": "idem_beto_reest_18m_20260912"
+  }
+}
+```
+
+### 3. Convención de Nombres Automática
+Para que el agente sepa interpretar el significado de la acción sin necesidad de cadenas de `if/else` complejas en el prompt:
+* **Si el nombre coincide con una tool MCP mutacional** (`aplicar_plan_pago`, `crear_apartado`): el agente invoca directamente la tool con los parámetros del `context`.
+* **Si empieza con `ver_*`**: es un cambio de navegación o tab local en la UI generada.
+* **Si empieza con `elegir_*`**: representa una selección intermedia (como seleccionar un plazo en un radio group) sin confirmar aún la transacción.
+
+### 4. Idempotencia en PostgreSQL
+En aplicaciones financieras, un doble clic o reintento de red no debe duplicar una reestructura ni un cargo. El MCP valida la tabla `banorte.acciones_aplicadas`:
+
+```sql
+CREATE TABLE IF NOT EXISTS banorte.acciones_aplicadas (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  idempotency_key VARCHAR(128) NOT NULL UNIQUE,
+  tipo_accion VARCHAR(64) NOT NULL,
+  cliente_id VARCHAR(64) NOT NULL,
+  payload JSONB NOT NULL,
+  creado_en TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+Si llega una petición con una `idempotency_key` ya registrada, el MCP no re-ejecuta la mutación: retorna el resultado previamente consolidado con código 200.

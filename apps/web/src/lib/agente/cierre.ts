@@ -95,7 +95,18 @@ export type Cierre = {
  * Cada turno crea el suyo: guarda los mensajes validados para que el turno los emita en
  * orden, y cuenta los intentos para no reintentar para siempre.
  */
-export function crearCierre(pantallaActual?: PantallaActual): Cierre {
+export type OpcionesDeCierre = {
+  /**
+   * Con el catalogo como menu, el modelo pudo armar un componente sin ver sus props. Si la
+   * pantalla se rechaza, esto le regresa el detalle de los que fallaron junto con el error,
+   * y el reintento sale bien sin gastar otro paso en `ver_componentes`.
+   */
+  ayudaParaErrores?: (errores: string[]) => string | undefined;
+  /** Datos precalculados o de tools MCP por si el modelo omitió datosJson */
+  datosBase?: Record<string, unknown>;
+};
+
+export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesDeCierre = {}): Cierre {
   let mensajes: MensajeA2UI[] = [];
   let ultima: { razon: string; texto: string; sugerencias: string[] } | undefined;
   let con: CierreDelTurno | undefined;
@@ -111,13 +122,17 @@ export function crearCierre(pantallaActual?: PantallaActual): Cierre {
       execute: (entrada: EntradaPintarPantalla): ResultadoPintar => {
         // En el ultimo intento se poda al tope en vez de rechazar: el modelo ya tuvo su
         // oportunidad de elegir, y una pantalla recortada es mejor que ninguna.
-        const armado = armarMensajes(entrada, { podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1 });
+        const armado = armarMensajes(entrada, {
+          podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1,
+          datosBase: opciones.datosBase,
+        });
         if (!armado.ok) {
           fallidos++;
-          return { ok: false, errores: armado.errores };
+          const ayuda = opciones.ayudaParaErrores?.(armado.errores);
+          return { ok: false, errores: armado.errores, ...(ayuda ? { ayuda } : {}) };
         }
         mensajes = armado.mensajes;
-        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada) };
+        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada, opciones.datosBase) };
         con = "pintar";
         return { ok: true, componentes: armado.componentes };
       },

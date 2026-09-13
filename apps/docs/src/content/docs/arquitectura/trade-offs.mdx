@@ -1,0 +1,38 @@
+---
+title: Trade-offs Técnicos y Decisiones
+description: Alternativas evaluadas y descartadas en modelo, protocolo e infraestructura (Entregable 04).
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="Entregable 04: Análisis de Decisiones">
+  Un proyecto maduro se define tanto por lo que construye como por lo que decide deliberadamente descartar.
+  A continuación se documentan los trade-offs analizados en el equipo.
+</BanorteAlert>
+
+## 1. Selección del Modelo Fundacional
+
+| Opción Evaluada | Decisión | Motivo Técnico |
+|---|---|---|
+| **Gemini 3.8 Flash** | ✅ **Seleccionado (Principal)** | Latencia de primer token ultra-rápida (sub-segundo), soporte de streaming JSONL fluido y costo sumamente bajo. Turno promedio: 3.5 a 5.8 segundos. |
+| **Claude Sonnet 3.5** | 🔀 **Respaldo (Fallback)** | Capacidad de razonamiento superior para orquestaciones complejas. Integrado mediante variable de entorno `MODEL_PROVIDER=anthropic`. |
+| **Modelos Locales (Ollama / Llama 3)** | ❌ **Descartado** | Latencia prohibitiva en máquinas de presentación sin GPU dedicada (>35 s por turno con tool calling estructurado). |
+
+---
+
+## 2. Protocolo de Interfaz: A2UI vs Generación Libre de Código
+
+| Enfoque | Decisión | Consecuencia en Seguridad y UX |
+|---|---|---|
+| **A2UI v0.9.1 (Catálogo Cerrado)** | ✅ **Seleccionado** | Cero alucinaciones visuales. La IA solo puede combinar componentes pre-aprobados por el equipo de diseño y validados por Ajv. |
+| **Generación Dinámica de JSX / HTML** | ❌ **Descartado** | Inseguro para banca (riesgo de inyección XSS), latencia alta al requerir compilación en el browser y fallos frecuentes de sintaxis que congelan la UI. |
+| **Librería `@a2ui/react` Oficial** | ❌ **Descartado (ADR 0008)** | Usa Web Components con Shadow DOM cerrado que impiden la inyección de temas de Tailwind v4 y primitivas de accesibilidad de shadcn/ui. |
+
+---
+
+## 3. Arquitectura del Monorepo: TypeScript Unificado vs Políglota
+
+| Decisión | Enfoque Adoptado | Alternativa Descartada |
+|---|---|---|
+| **Lenguaje Único** | TypeScript en los 5 paquetes (Next.js, Express, MCP, Motor A2UI, Schemas). | Python con FastAPI para la lógica del agente (ADR 0002). |
+| **Beneficio Obtenido** | Un solo desarrollador puede auditar un contrato Zod en `packages/schemas/` y verlo reflejado inmediatamente tanto en el MCP como en la UI con autocompletado en el editor. |

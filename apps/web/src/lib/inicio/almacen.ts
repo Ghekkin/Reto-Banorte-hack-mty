@@ -28,7 +28,7 @@ export type PantallaDeInicio = {
   /** ISO 8601, en UTC. */
   generadaEn: string;
   /**
-   * De donde salio cada tarjeta (modo widgets, migracion 0004). Vacio en una portada del
+   * De donde salio cada tarjeta (modo widgets, migracion 0005). Vacio en una portada del
    * modo anterior: esa no admite preguntas por tarjeta.
    */
   procedencias: Procedencias;

@@ -76,6 +76,7 @@ quien.
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
 - [El ciclo LIVE](como-funciona/ciclo-live.md) — las tres salidas del turno (aclarar, ajustar lo que ya se ve sin recrearlo, repintar), el tope de 3 tarjetas y por qué el motor A2UI ya lo soportaba
+- [Corridas, chat y registros en la base](como-funciona/corridas-en-db.md) — cada turno y cada portada quedan en PostgreSQL con modelo, tools, pasos, argumentos, resultados y lo que vio la persona; el chat y los logs de web y MCP también; `pnpm corridas` para leerlo
 - [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard (sin widgets vivos)
 - [Widgets vivos](como-funciona/widgets-vivos.md) — preguntarle a UNA tarjeta y que cambie en su lugar, con cifras que solo pone el MCP: fuentes, `modificar_widget` / `reemplazar_widget` / `responder`, y el auditor que re-consulta antes de mostrar (`FEATURE_WIDGETS_VIVOS`)
 - [El bug del gasto que no cuadraba](como-funciona/bug-gasto-total-no-cuadra.md) — un total contra seis de once categorías, por qué el culpable era el ejemplo del few-shot y no el código, y las pruebas que ahora lo cazan
@@ -95,6 +96,7 @@ quien.
 - [Intención y parcheo](algoritmos/intencion-y-parcheo.md) — cómo se clasifica una pregunta de seguimiento sin clasificador, el tope de tarjetas con su poda determinista, qué valida un parche y quién gana el slider cuando la persona y el agente no coinciden
 - [Adaptadores de widget](algoritmos/adaptadores-de-widget.md) — las 13 fuentes: qué tool llena qué tarjeta, qué parámetros acepta el modelo y las cuatro únicas cifras derivadas
 - [Verificación de cifras](algoritmos/verificacion-de-cifras.md) — cómo se comprueba que cada número de una frase de Maya existe en lo que devolvió el MCP, con el redondeo que muestra
+- [Agrupación por periodo](algoritmos/agrupacion-por-periodo.md) — cómo se decide si un movimiento es de "Ayer", de "Esta semana" o de "Mes pasado" cuando los periodos se traslapan, y por qué el "hoy" entra como parámetro
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

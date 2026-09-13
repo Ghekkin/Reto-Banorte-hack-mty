@@ -1,0 +1,51 @@
+---
+title: Base de Datos PostgreSQL (22 Tablas)
+description: Esquema banorte, persistencia de estado, relaciones y scripts de migración y fixtures.
+---
+
+import BanorteAlert from '../../../components/BanorteAlert';
+
+<BanorteAlert type="info" title="ADR 0010: PostgreSQL como Única Fuente de Verdad">
+  Descartamos archivos JSON locales o bases en memoria. Los datos residen en PostgreSQL en el esquema <code>banorte</code>.
+  Sin <code>DATABASE_URL</code> válida, el servidor MCP no arranca por diseño, asegurando integridad transaccional.
+</BanorteAlert>
+
+## Las 22 Tablas del Esquema Banorte
+
+El archivo `db/schema.sql` y las migraciones en `db/migraciones/` definen el modelo relacional bancario:
+
+### 1. Entidades Principales
+* `banorte.clientes`: Identidad del usuario (Beto, Ana, Carmen), RFC, segmento e ingresos netos mensuales.
+* `banorte.cuentas`: Cuentas de depósito y nómina vinculadas con saldo disponible y CLABE interbancaria.
+* `banorte.tarjetas_credito`: Tarjetas físicas y digitales, límite, saldo al corte, tasa ordinaria y días de atraso.
+* `banorte.creditos`: Préstamos personales, automotrices e hipotecarios con tasa fija y tabla de amortización.
+* `banorte.inversiones`: Fondos de inversión, pagarés y títulos de renta fija.
+
+### 2. Transaccionalidad y Categorización
+* `banorte.movimientos`: Historial detallado de cargos, abonos, transferencias SPEI y retiros en cajero automático.
+* `banorte.categorias_gasto`: Catálogo de 6 categorías canónicas (Supermercado, Alimentos, Servicios, Transporte, Retiros de Efectivo, Entretenimiento).
+* `banorte.suscripciones`: Detección de domiciliaciones y servicios de cobro periódico.
+
+### 3. Estado Mutable de la IA (Cierre de Ciclo)
+* `banorte.acciones_aplicadas`: **La tabla medular de la demo.** Almacena cada operación ejecutada por Maya con clave de idempotencia (`idempotency_key`), payload JSON de la decisión y marca temporal.
+* `banorte.planes_reestructura`: Planes de pago activos tras la aceptación de una propuesta a 12, 18 o 24 meses.
+* `banorte.amortizaciones_programadas`: Calendario de amortizaciones proyectadas de capital e intereses.
+* `banorte.metas_ahorro`: Apartados creados dinámicamente con aportaciones periódicas.
+
+---
+
+## Comandos de Gestión de Datos
+
+```bash
+# Aplica las migraciones incrementales en PostgreSQL
+pnpm datos:migrar
+
+# Genera el volcado de prueba (fixture) desde la base de datos
+pnpm datos:fixture
+
+# Restaura la base a su estado inicial desde el volcado seguro
+pnpm datos:restaurar
+
+# Vacía exclusivamente banorte.acciones_aplicadas antes de cada ensayo
+pnpm reiniciar-estado
+```

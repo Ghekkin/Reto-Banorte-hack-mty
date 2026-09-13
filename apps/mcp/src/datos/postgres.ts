@@ -57,13 +57,30 @@ function aTexto(valor: unknown): string {
   return String(valor);
 }
 
+/**
+ * Las tablas de HISTORIA (migracion 0004): corridas del modelo, chat y registros. No son
+ * datos del negocio, crecen con cada turno y ninguna tool las lee, asi que no se cargan a
+ * memoria ni entran al volcado de pruebas (`scripts/volcar-fixture.mjs` repite esta lista).
+ */
+export const TABLAS_DE_HISTORIA = [
+  "prompts",
+  "corridas",
+  "corrida_pasos",
+  "corrida_tools",
+  "conversaciones",
+  "mensajes_chat",
+  "registros",
+] as const;
+
 /** Los nombres de tabla del esquema, para no depender de una lista escrita a mano. */
 export async function nombresDeTablas(cliente: pg.Pool): Promise<string[]> {
   const { rows } = await cliente.query<{ table_name: string }>(
     "select table_name from information_schema.tables where table_schema = $1 order by table_name",
     [ESQUEMA],
   );
-  return rows.map((r: { table_name: string }) => r.table_name);
+  return rows
+    .map((r: { table_name: string }) => r.table_name)
+    .filter((nombre: string) => !(TABLAS_DE_HISTORIA as readonly string[]).includes(nombre));
 }
 
 /**

@@ -44,7 +44,7 @@ Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como a
 | Prompt propio (sin las reglas de `pintar_pantalla`) | `apps/web/src/lib/widgets/prompt.ts` |
 | Ruta en stream | `apps/web/src/app/api/inicio/widget/route.ts` (líneas en `lib/widgets/linea.ts`) |
 | Generador de la portada en modo widgets | `apps/web/src/lib/inicio/generar.ts` (`generarPortadaDeWidgets`, `encargoDeWidgets`) |
-| Procedencias en la base | `db/migraciones/0004-procedencia-widgets.sql`, `apps/web/src/lib/inicio/almacen.ts` (`ajustar`) |
+| Procedencias en la base | `db/migraciones/0005-procedencia-widgets.sql`, `apps/web/src/lib/inicio/almacen.ts` (`ajustar`) |
 | UI | `components/inicio/inicio-vivo.tsx`, `usar-widgets-vivos.ts`, `pie-de-widget.tsx`; `components/maya/lienzo.tsx` (`decorar`); `BarraFlotanteMaya` en modo `vivo` |
 | Etiquetas y sugerencias por tarjeta | `apps/web/src/lib/widgets/etiquetas.ts` |
 | MCP: `simular_rebalanceo` y `ahorroLiquidoCentavos` | `apps/mcp/src/tools/simular-rebalanceo.ts`, `apps/mcp/src/tools/diagnostico-salud-financiera.ts` |
@@ -85,7 +85,7 @@ Con el flag encendido, `generarPortada` delega en `generarPortadaDeWidgets`:
    referencia (`{etiqueta, widget, campo}` → valor formateado por el servidor), verifica el
    texto, y pasa todo por el **mismo** `armarMensajes` que `pintar_pantalla` (catálogo, árbol,
    tope de 3 tarjetas, JSON Schema oficial, `action` por omisión).
-4. Se guardan los tres mensajes **más** `procedencias` y `referencias` (migración 0004).
+4. Se guardan los tres mensajes **más** `procedencias` y `referencias` (migración 0005).
 
 ### Una pregunta: `POST /api/inicio/widget`
 

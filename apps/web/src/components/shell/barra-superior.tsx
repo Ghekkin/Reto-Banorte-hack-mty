@@ -29,7 +29,7 @@ export function BarraSuperior({ usuario }: { usuario: UsuarioDemo }) {
 
       {/* En escritorio el selector completo vive en el sidebar; aqui basta el avatar. */}
       <div className="shrink-0 md:hidden">
-        <SelectorUsuario usuario={usuario} compacto />
+        <SelectorUsuario usuario={usuario} variante="avatar" />
       </div>
     </header>
   );
