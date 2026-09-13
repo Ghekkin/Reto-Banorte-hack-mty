@@ -1841,6 +1841,18 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
 - **Móvil**: sin trigger del sidebar en la barra superior (la navegación es la barra de abajo).
 - **En curso**: estado de carga de Inicio mientras Maya piensa (subagente), con Safari en mente.
 
+### 06:09 (dom 13) — Qué quedó de la revisión de costos tras 36a1c09 y 6cefc30
+
+- **#33 cerrado** (resuelto en `6cefc30`, de Andrés; el commit no llevaba `Fixes`). Verificado
+  con una prueba temporal sobre `servicio.ts` en un worktree de `229fe35`: 100 visitantes nuevos
+  con la común con una acción, 0 llamadas al modelo; con el `servicio.ts` anterior, 100. La prueba
+  no se subió.
+- **#34 sigue abierto, a medias**: `36a1c09` bajó las portadas con reintento de 76 % a 39 % y la
+  tarjeta ausente de 160 a 1; queda «no tiene una cifra en» (`puntajeSalud` en `credito`/`meta`).
+- **#37 nuevo** (efecto secundario de `6cefc30`): con acciones en la común, el visitante nuevo ve
+  la portada común armada con esas acciones y la visita ya no la rearma. Hoy no se ve: la común
+  está en 0 acciones.
+
 ### 06:25 (dom 13) — Maya narra en vivo, portadas pisadas por un reloj viejo y Safari
 
 - **Chat de Maya en vivo** (`7d5f815`): pedido del usuario («se ve muy tieso»). Cada herramienta que

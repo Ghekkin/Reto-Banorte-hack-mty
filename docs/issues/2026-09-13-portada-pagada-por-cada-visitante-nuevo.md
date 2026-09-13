@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: alta
 area: web
 encontrado: 2026-09-13 04:40
 github: 33
+resuelto-en: 6cefc30
 ---
 
 # Si el estado común tiene una acción, cada visitante nuevo paga su propia portada de Inicio
@@ -54,3 +55,21 @@ registrado (≈ $1.14 de $2.93 entre 02:12 y 04:35).
    Ojo: `db/reiniciar.sql` trunca `acciones_aplicadas` completa y borra
    `pantallas_por_dispositivo`, así que también borra el estado de **todos** los visitantes; solo
    antes de un ensayo o de la demo, no con jueces usando la liga.
+
+## Resolución (2026-09-13 06:15)
+
+Resuelto en `6cefc30` (en producción desde el deploy de `229fe35`, 05:58). `vistaDe` manda al
+ámbito común a todo dispositivo cuya huella tenga `|a:0:0|`, aunque la común tenga acciones, y la
+página solo dispara la generación cuando no hay ninguna portada.
+
+**Verificado** con una prueba temporal sobre `servicio.ts` (dependencias inyectadas, sin base ni
+modelo), común con una acción y 100 dispositivos nuevos visitando:
+
+- código de `229fe35`: `generar` se llama **0** veces;
+- `servicio.ts` de antes de `6cefc30`: **100** veces.
+
+En producción no se puede confirmar con datos todavía: después del arreglo la común quedó en 0
+acciones (alguien corrió `reiniciar-estado`) y el caso no se presenta.
+
+**Efecto secundario** del arreglo, registrado aparte: el visitante nuevo ve la portada común aunque
+se haya armado con las acciones de otro (#37).

@@ -41,3 +41,27 @@ tarda 1–3 s más y cuesta el doble.
    titular ya están bien. Quita el paso extra de raíz.
 2. En el encargo, decir que `datos` solo puede citar las 2 tarjetas elegidas y listar sus campos
    citables; y no ofrecer `salud` como contexto si no se va a pintar.
+
+## Actualización (2026-09-13 06:15): arreglado a medias en `36a1c09`
+
+`forzarFuentes` (`apps/web/src/lib/widgets/pintar.ts`) descarta las cifras de la conclusión que
+citan una tarjeta que no está. Eso quitó la causa principal, pero **no** la otra mitad del mismo
+síntoma: una cifra que cita una tarjeta que sí está, con un campo que esa tarjeta no tiene, se sigue
+rechazando en `armar.ts:287`.
+
+Portadas en `banorte.corridas`, antes y después de que `36a1c09` llegara a producción (05:13):
+
+| Tramo | Portadas | Con reintento | «no hay una tarjeta» | «no tiene una cifra en» | Pasos promedio |
+|---|---|---|---|---|---|
+| 02:12–05:12 | 271 | 207 (76 %) | 160 | 20 | 1.81 |
+| 05:13–06:02 | 46 | 18 (39 %) | 1 | 7 | 1.43 |
+
+Los reintentos que quedan: `la tarjeta "credito"/"meta" no tiene una cifra en "puntajeSalud"` (la
+misma causa: el modelo quiere citar la salud), `"faltanteCentavos"`/`"montoObjetivoCentavos"` en
+`meta`, tools que fallan en la portada de Beto (`simular_reestructura` con plan activo,
+`proyectar_ahorro` sin capacidad), una cifra de texto que no sale del MCP (`"96%"`) y un typo de
+llave (`nombre:`). Ojo: la base mezcla producción y servidores locales, así que parte de eso puede
+venir de código viejo.
+
+**Falta:** tratar «no tiene una cifra en» igual que la tarjeta ausente (descartar el dato de apoyo
+en vez de rechazar la portada).
