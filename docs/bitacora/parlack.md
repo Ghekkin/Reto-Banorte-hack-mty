@@ -1769,6 +1769,15 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   skills `diseno-banorte` y `ui-generativa`.
 - **Pendiente**: ver el deslizamiento de Inicio en producción tras el deploy; la hidratación
   de Inicio sigue trayendo cuadros largos (no es de animación).
+
+### 04:22 (dom 13) — Fotos en los avatares del selector de persona
+
+- **Hecho**: Alberto, Ana y Carmen llevan foto en el avatar (pie del sidebar, menú, barra de
+  móvil y Más). Retratos de randomuser.me descargados a `apps/web/public/personas/`, campo
+  `foto` en `lib/usuarios.ts` y `AvatarImage` en `selector-usuario.tsx`; las iniciales quedan
+  de respaldo. Verificado con captura a 1440 px; typecheck de web en verde.
+- **Toque ajeno**: `apps/web/src/components/shell/selector-usuario.tsx` y `lib/usuarios.ts`
+  (web). Doc actualizado: `docs/como-funciona/shell-web.md`.
 - **04:25 · incidente**: `a7f1e73` rompió `main`. El commit por rutas se llevó la versión a
   medias de `proyeccion-pago-credito/componente.tsx` de la sesión de ajustes en vivo (importa
   `transicion.ts`, sin commitear) y el CI tronó en "catalogo.json al dia". Arreglado en
@@ -1776,6 +1785,7 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   verificado con `pnpm catalogo`, `pnpm typecheck` y `pnpm test` antes de subir. Issue #31
   (cerrado) con la sugerencia de procedimiento. Avisé a las dos sesiones afectadas.
 
+<<<<<<< ours
 ### 04:41 · Más, rehecha para los jueces
 
 - **Hecho** (`docs/como-funciona/pantalla-mas.md`): `/mas` pasó de perfil + texto + ocho renglones
@@ -1795,3 +1805,40 @@ ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También 
   `selector-usuario.tsx` y `usuarios.ts` (fotos de las personas).
 - **Pendiente**: cuando lleguen las fotos (`usuario.foto`), ponerlas en el avatar del héroe y de
   `CambiarPersona` con `AvatarImage`.
+=======
+### 04:38 (dom 13) — Revisión de costos de API desde las corridas en la base
+
+- **Hecho**: revisión de lo registrado en `banorte.corridas` de 02:12 a 04:35 (274 corridas,
+  ≈ $2.93 USD con los precios oficiales de Gemini del 13-sep). Tres bugs registrados, ninguno
+  arreglado: **#33** (cada visitante nuevo paga su portada si `comun` tiene acciones: 156
+  portadas idénticas de Ana en 4 min, 39 % del gasto), **#34** (183 de 222 portadas pagan un
+  segundo `pintar_widgets` por citar la tarjeta `salud` que no pintaron, 26 %), **#35** (las
+  preguntas a widgets vivos no graban corrida ni tokens).
+- **Visto, sin issue**: el primer paso del turno del chat pierde el caché de Gemini en 25 de 48
+  turnos: por huecos de más de ~5 min y porque el primer turno ofrece 30 tools y los siguientes
+  32 (`ajustar_pantalla`, `responder`), así que son dos prefijos que se cachean por separado.
+  Sobrecosto ≈ $0.46. Y a las 04:30:45 un turno murió con 429 de cuota durante una ráfaga de
+  5 turnos en 15 s (ensayo del guion).
+- **Mitigación sin código para #33**: `pnpm reiniciar-estado` después de cada ensayo (borra
+  también el estado de todos los visitantes: solo antes de ensayar o de la demo).
+
+### 04:58 (dom 13) — Ajustes en vivo: fases 3 y 4, transición de valores, Inicio por cuenta y móvil
+
+- **Fase 3** (`a1f0a11`): `proyectar_ahorro` con `fechaObjetivo`; «el fondo lo quiero para
+  diciembre» ajusta el `SimuladorMeta` en su lugar ($15,950.00 al mes, con aviso). Ana 4 de 4 con el
+  modelo real. De paso: `tsx watch` del MCP no recargó un cambio; se forzó tocando `server.ts`.
+- **Fase 4, recortada por decisión del usuario** (`a93e699`): «¿y si fueran 30 meses?» ajusta el
+  `PlanDePago` (el host funde las opciones de la tool con las que se veían); «Aplicar plan» sigue con
+  `Confirmacion` para no mover el paso ya ensayado. `probar-guion --aislado` usa un dispositivo nuevo
+  (ADR 0012). Beto 3 de 3.
+- **Transición de valores** (`e77e4a1`, subagente): números que cuentan, curva y barras que se
+  deslizan al ajustar; coordinado con la sesión de animaciones de entrada. Hubo una carrera: su
+  commit `a7f1e73` se llevó un componente a medias que importaba `transicion.ts` sin commitear;
+  lo arregló ella con `d156138` y yo subí lo demás desde worktrees limpios sobre `origin/main`.
+- **Inicio por cuenta** (`36a1c09`): las dos tarjetas las decide el código
+  (`widgets-por-cuenta.ts`); verificado con el modelo real para las tres personas. Rearmé las
+  portadas del estado común. Ojo: en el estado común Beto tiene el plan aplicado desde las 02:00,
+  así que ahí sale tarjeta + gasto; `pnpm reiniciar-estado` antes de la demo lo regresa a tarjeta + plan.
+- **Móvil**: sin trigger del sidebar en la barra superior (la navegación es la barra de abajo).
+- **En curso**: estado de carga de Inicio mientras Maya piensa (subagente), con Safari en mente.
+>>>>>>> theirs
