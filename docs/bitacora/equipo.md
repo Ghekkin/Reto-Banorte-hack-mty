@@ -18,6 +18,12 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-13
 
+- **dom 02:55 · hecho · infra** — **el filtro del prompt real del CI se saltaba cambios del
+  agente.** Comparaba contra el push anterior, y con `cancel-in-progress` un push de docs
+  encima cancelaba la corrida del agente: `7779049` (el arreglo de #21) se desplegó sin que el
+  prompt corriera. Ahora compara contra la etiqueta `prompt-verificado`, que el CI mueve solo
+  cuando el prompt pasa. Producción se verificó a mano: `cor_1c4ca4d4…` pinta con montos.
+
 - **dom 02:20 · decisión + hecho · contrato/demo** — **todo lo que pasa queda en PostgreSQL.**
   Cada turno del chat y cada portada del Inicio es una fila de `banorte.corridas` con el
   modelo exacto, la configuración, las tools ofrecidas, lo que se le mandó al modelo, cada

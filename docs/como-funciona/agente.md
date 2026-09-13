@@ -221,9 +221,13 @@ Para quien lo prenda y para quien lo quiera mejorar:
 
 El paso "un prompt del guion contra la URL publica" de `.github/workflows/ci-y-deploy.yml`
 hacía un turno real (~55k tokens) en **cada** deploy, y el 12 hubo 96 corridas del CI,
-casi todas por commits de bitácora. Ahora solo corre si el push tocó
+casi todas por commits de bitácora. Ahora solo corre si cambió
 `apps/web/src/lib/agente/`, `apps/web/src/app/api/agente/`, `packages/catalogo|a2ui|schemas/`
-o `apps/mcp/src/`; con `workflow_dispatch` corre siempre.
+o `apps/mcp/src/` **desde el último commit en que el prompt real pasó**, que el propio CI marca
+con la etiqueta `prompt-verificado`. No se compara contra el push anterior porque
+`cancel-in-progress` cancela la corrida de un push del agente si alguien empuja docs encima, y
+entonces el prompt no se corría nunca (pasó el 13 con `7779049`). Sin etiqueta, o con
+`workflow_dispatch`, corre siempre.
 
 ### El texto que acompaña la pantalla es un consejo, no una etiqueta
 
