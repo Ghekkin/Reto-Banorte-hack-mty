@@ -27,7 +27,8 @@ export const proyectarAhorro: DefinicionDeTool = {
   descripcion:
     "Calcula en cuanto tiempo la persona llega a una meta de ahorro: usa una meta que ya tenga " +
     "(`metaId`) o una nueva (`montoObjetivoCentavos`), con la aportacion que le pases o la que su flujo " +
-    "permite. Devuelve meses, fecha estimada y tres escenarios (conservador, sugerido, agresivo) para " +
+    "permite; un `montoObjetivoCentavos` igual al objetivo de una meta activa suya ES esa meta (cuenta lo que ya " +
+    "lleva ahorrado). Devuelve meses, fecha estimada y tres escenarios (conservador, sugerido, agresivo) para " +
     "que el simulador tenga de donde tirar. «Lo quiero para diciembre»: manda `fechaObjetivo` con el ULTIMO " +
     "dia de ese mes (diciembre de este anio = 2026-12-31) y la tool calcula cuanto tiene que apartar por " +
     "periodo para llegar, proyecta con eso y lo devuelve en `aportacionNecesariaCentavos`; si ademas mandas " +
@@ -42,9 +43,18 @@ export const proyectarAhorro: DefinicionDeTool = {
 
     // Un `montoObjetivoCentavos` sin `metaId` es una meta NUEVA: no hereda lo que la
     // persona ya lleva ahorrado en otra meta, o el slider del simulador arrancaria con
-    // avance que no le corresponde.
-    const esSimulacionNueva = entrada.montoObjetivoCentavos !== undefined && entrada.metaId === undefined;
-    const meta = esSimulacionNueva ? undefined : elegirMeta(entrada.usuarioId, entrada.metaId);
+    // avance que no le corresponde. SALVO que sea exactamente el objetivo de una meta activa
+    // suya: entonces ES esa meta. «El fondo de emergencia lo quiero para diciembre» con la
+    // tarjeta de $96,000 en pantalla llega asi (el modelo copia el objetivo y no el id), y
+    // tratarla como nueva le decia a Ana $32,000 al mes ignorando sus $48,150 ahorrados
+    // (issue #45).
+    const delMismoObjetivo =
+      entrada.metaId === undefined && entrada.montoObjetivoCentavos !== undefined
+        ? metaActivaConObjetivo(entrada.usuarioId, entrada.montoObjetivoCentavos)
+        : undefined;
+    const esSimulacionNueva =
+      entrada.montoObjetivoCentavos !== undefined && entrada.metaId === undefined && !delMismoObjetivo;
+    const meta = delMismoObjetivo ?? (esSimulacionNueva ? undefined : elegirMeta(entrada.usuarioId, entrada.metaId));
     const saldoInicial = meta ? aEntero(meta.monto_actual_centavos) : 0;
     const objetivo = entrada.montoObjetivoCentavos ?? (meta ? aEntero(meta.monto_objetivo_centavos) : 0);
     if (objetivo <= 0) {
@@ -106,6 +116,36 @@ export const proyectarAhorro: DefinicionDeTool = {
  * metas: por eso `crear_apartado` se ve reflejado en la siguiente proyeccion.
  */
 function elegirMeta(usuarioId: string, metaId?: string) {
+  const todas = metasDe(usuarioId);
+
+  if (metaId) {
+    const exacta = todas.find((m) => m.id === metaId);
+    if (!exacta) throw new Error(`no existe la meta ${metaId} para ${usuarioId}`);
+    return exacta;
+  }
+  return todas
+    .filter((m) => m.estatus === "activa")
+    .sort((a, b) => (a.fecha_objetivo ?? "").localeCompare(b.fecha_objetivo ?? ""))[0];
+}
+
+/**
+ * La meta activa cuyo objetivo es exactamente ese monto, o `undefined`. Si hay varias (un
+ * apartado que la demo creo con el mismo objetivo que una meta que ya traia avance), gana la
+ * que mas lleva ahorrado: es la que la persona reconoce como «su» meta; empate, la de fecha
+ * objetivo mas cercana, igual que `elegirMeta`.
+ */
+function metaActivaConObjetivo(usuarioId: string, objetivoCentavos: number) {
+  return metasDe(usuarioId)
+    .filter((m) => m.estatus === "activa" && aEntero(m.monto_objetivo_centavos) === objetivoCentavos)
+    .sort(
+      (a, b) =>
+        aEntero(b.monto_actual_centavos) - aEntero(a.monto_actual_centavos) ||
+        (a.fecha_objetivo ?? "").localeCompare(b.fecha_objetivo ?? ""),
+    )[0];
+}
+
+/** Las metas de la persona: las del dato y los apartados que creo la propia demo. */
+function metasDe(usuarioId: string) {
   const creadas = apartadosCreados(usuarioId).map((a) => ({
     id: a.id,
     nombre: a.nombre,
@@ -126,16 +166,7 @@ function elegirMeta(usuarioId: string, metaId?: string) {
     aportacion_sugerida_centavos: m.aportacion_sugerida_centavos ?? "0",
     fecha_objetivo: m.fecha_objetivo ?? "",
   }));
-  const todas = [...creadas, ...delCsv];
-
-  if (metaId) {
-    const exacta = todas.find((m) => m.id === metaId);
-    if (!exacta) throw new Error(`no existe la meta ${metaId} para ${usuarioId}`);
-    return exacta;
-  }
-  return todas
-    .filter((m) => m.estatus === "activa")
-    .sort((a, b) => (a.fecha_objetivo ?? "").localeCompare(b.fecha_objetivo ?? ""))[0];
+  return [...creadas, ...delCsv];
 }
 
 /**

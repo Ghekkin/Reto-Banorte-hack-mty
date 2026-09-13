@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 01:19 · 2026-09-13 04:20 (fecha objetivo)
+verificado: 2026-09-12 01:19 · 2026-09-13 04:20 (fecha objetivo) · 2026-09-13 07:20 (objetivo de una meta activa, #45)
 implementado-en: apps/mcp/src/tools/proyectar-ahorro.ts
 lenguaje: typescript
 ---
@@ -25,6 +25,11 @@ $15,950 al mes. Como solo le quedan $4,986.17 libres, la tarjeta se lo dice con 
 Si la fecha ya pasó o no deja ni un mes, no se inventa una aportación: se dice, y se proyecta
 con lo que sí le queda libre.
 
+Da igual si el modelo dice «su meta de siempre» con el identificador o solo con la cifra: si Ana
+habla de un objetivo de $96,000 y ya tiene un fondo de emergencia activo de **exactamente**
+$96,000, es ese fondo, y cuenta los $48,150 que ya lleva. Antes, con solo la cifra, se tomaba como
+una meta nueva desde cero y le decía que necesitaba $32,000 al mes: el doble, y falso para ella.
+
 Lo que este cálculo **no** hace es prometer rendimientos. Un apartado guarda dinero, no lo
 invierte. Inventar un interés compuesto haría la fecha más bonita y el producto menos
 honesto.
@@ -42,13 +47,24 @@ sabe lo que pasó en la fase 1.
 
 Un `montoObjetivoCentavos` sin `metaId` es una meta **nueva** y arranca en cero: si
 heredara lo que ya lleva ahorrado en otra meta, el simulador abriría con avance que no le
-corresponde.
+corresponde. **Salvo** que ese monto sea exactamente el objetivo de una meta activa suya:
+entonces no es otra meta, es esa, y hereda lo ahorrado. El modelo copia el objetivo de la
+tarjeta en pantalla y rara vez manda el `metaId`; la regla no depende de que lo haga.
+
+**Una sola aportación por fecha.** Con `fechaObjetivo`, `aportacionCentavos`,
+`aportacionNecesariaCentavos`, el escenario del medio y la cifra del `aviso` son el mismo número,
+y es el que el host escribe en el `SimuladorMeta` (`parchesDeterministas` en
+`apps/web/src/lib/agente/ajustar.ts`). Los otros dos escenarios son la mitad y vez y media: puntos
+del slider, no otra respuesta a la fecha.
 
 ## Paso a paso
 
-1. Elige la meta base: la que pidan por `metaId`, o —si no se está simulando una meta
-   nueva— la meta activa con la fecha objetivo más cercana. Los apartados que la propia
-   demo creó cuentan como metas.
+1. Elige la meta base (`metasDe` junta las del dato y los apartados que la propia demo creó):
+   1. con `metaId`, esa;
+   2. sin `metaId` y con `montoObjetivoCentavos`: la meta **activa** cuyo objetivo es exactamente
+      ese monto (`metaActivaConObjetivo`); si hay varias, la que más lleva ahorrado y, empate, la de
+      fecha objetivo más cercana. Si no hay ninguna, es una simulación nueva: sin meta, saldo 0;
+   3. sin ninguno de los dos: la meta activa con la fecha objetivo más cercana.
 2. `faltante = objetivo − lo que ya lleva`.
 3. Calcula la capacidad: promedio de `max(0, ingresos − gastos)` de los últimos tres meses,
    acotado por la capacidad de buró, menos la mensualidad del plan si hay uno (y los abonos a
@@ -126,6 +142,9 @@ corresponde.
   de días.
 - **La capacidad es histórica.** Si la persona acaba de cambiar de trabajo, los tres meses
   previos no la describen.
+- **El objetivo igual se reconoce por monto exacto, no por nombre.** Una meta nueva de
+  $96,000 que no sea el fondo de emergencia —poco probable con la misma cifra al centavo— se
+  tomaría como ese fondo. Con un peso de diferencia ya es otra meta y arranca en cero.
 - **Un apartado nace en cero.** El dinero que ya tenía sigue siendo saldo de su cuenta; el
   apartado no se lo "lleva" para que el avance del primer día sea honesto.
 
@@ -142,7 +161,11 @@ corresponde.
 `apps/mcp/src/__tests__/ahorro-por-fecha.spec.ts` (fecha objetivo):
 
 - Ana «para diciembre» (2026-12-31): $15,950 al mes, 3 meses, fecha estimada 2026-12-12 y aviso
-  exacto; la meta nueva de $96,000 desde cero pide $32,000;
+  exacto; con el objetivo de su meta y sin `metaId` (los argumentos reales del ensayo contra
+  producción del 13) sale lo mismo que con `metaId`: $15,950 y lo ahorrado; sin fecha, esa cifra
+  también toma su meta y su aportación sugerida ($2,650); una meta nueva de $90,000 desde cero pide
+  $30,000; y para cinco combinaciones, el aviso, `aportacionCentavos`, la necesaria y el escenario
+  del medio son el mismo número;
 - 2027-12-31: $3,190 al mes, 15 meses, sin aviso; para seis fechas, la estimada nunca pasa de la
   objetivo y un centavo menos ya no llegaría;
 - quincenal: $7,975 por quincena; con fecha y aportación a la vez gana la fecha;

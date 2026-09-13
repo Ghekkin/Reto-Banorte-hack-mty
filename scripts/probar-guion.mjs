@@ -156,7 +156,9 @@ const CASOS = [
   },
   {
     // La meta tambien se ajusta en su lugar: «para diciembre» es `fechaObjetivo` y la aportacion
-    // que hace falta (4785000 de faltante en 3 meses = 1595000) la pone el host desde la tool.
+    // que hace falta la pone el host desde la tool. Su fondo de emergencia: $96,000 con $48,150
+    // ahorrados, faltan 4785000 en 3 meses = 1595000. No depende de que el modelo mande `metaId`:
+    // un objetivo igual al de una meta activa ES esa meta (issue #45).
     nombre: "Ana · la meta para diciembre (el simulador cambia en su lugar)",
     usuario: "usr_ana",
     texto: "Y el fondo de emergencia lo quiero completar para diciembre",

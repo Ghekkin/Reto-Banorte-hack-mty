@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { SalidaProyectarAhorro } from "@maya/schemas";
 import { reiniciarEstado } from "../datos/index.js";
+import { pesos } from "../dominio/suscripciones.js";
 import { mesesHasta, proyectarAhorro } from "../tools/proyectar-ahorro.js";
 
 /**
@@ -44,12 +45,58 @@ describe("«lo quiero para diciembre»", () => {
     expect(salida.escenarios[1]!.cabeEnCapacidad).toBe(false);
   });
 
-  it("con la meta nueva de $96,000 desde cero: $32,000 al mes", () => {
-    const salida = proyectar({ montoObjetivoCentavos: 9600000, fechaObjetivo: "2026-12-31" });
+  it("el objetivo de su meta sin metaId (como lo manda el modelo) ES su meta: $15,950, no $32,000 (#45)", () => {
+    // Argumentos reales del ensayo contra produccion (2026-09-13 06:55): el modelo copio el
+    // objetivo de la tarjeta y no mando `metaId`. Antes salia `meta: null` y $32,000 al mes.
+    const salida = proyectar({ fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9600000 });
+    expect(salida.meta?.id).toBe("meta_base_ana_emergencia");
+    expect(salida.saldoInicialCentavos).toBe(4815000);
+    expect(salida.faltanteCentavos).toBe(4785000);
+    expect(salida.aportacionNecesariaCentavos).toBe(1595000);
+    expect(salida.aportacionCentavos).toBe(1595000);
+    expect(salida.aviso).toContain("$15,950.00 al mes");
+  });
+
+  it("con metaId y el mismo objetivo sale lo mismo que sin metaId", () => {
+    const conId = proyectar({ metaId: "meta_base_ana_emergencia", fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9600000 });
+    const sinId = proyectar({ fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9600000 });
+    expect(sinId).toEqual(conId);
+  });
+
+  it("una meta nueva de otro monto sigue arrancando en cero: $90,000 en 3 meses = $30,000", () => {
+    const salida = proyectar({ montoObjetivoCentavos: 9000000, fechaObjetivo: "2026-12-31" });
     expect(salida.meta).toBeNull();
-    expect(salida.aportacionNecesariaCentavos).toBe(3200000);
+    expect(salida.saldoInicialCentavos).toBe(0);
+    expect(salida.aportacionNecesariaCentavos).toBe(3000000);
     expect(salida.mesesEstimados).toBe(3);
-    expect(salida.aviso).toContain("$32,000.00");
+    expect(salida.aviso).toContain("$30,000.00");
+  });
+
+  it("sin fecha, el objetivo de su meta tambien toma lo ahorrado y la aportacion sugerida de la meta", () => {
+    // Argumentos reales de «Quiero empezar a ahorrar» (2026-09-13 06:55).
+    const salida = proyectar({ montoObjetivoCentavos: 9600000 });
+    expect(salida.meta?.id).toBe("meta_base_ana_emergencia");
+    expect(salida.saldoInicialCentavos).toBe(4815000);
+    expect(salida.aportacionCentavos).toBe(265000);
+    expect(salida.aportacionNecesariaCentavos).toBeNull();
+  });
+
+  it("una sola aportacion por fecha: el aviso, `aportacionCentavos`, la necesaria y el escenario sugerido coinciden", () => {
+    const casos = [
+      { fechaObjetivo: "2026-12-31" },
+      { fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9600000 },
+      { fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9600000, metaId: "meta_base_ana_emergencia" },
+      { fechaObjetivo: "2026-12-31", montoObjetivoCentavos: 9000000 },
+      { fechaObjetivo: "2027-03-31", montoObjetivoCentavos: 9600000, frecuencia: "quincenal" },
+    ];
+    for (const caso of casos) {
+      const salida = proyectar(caso);
+      const etiqueta = JSON.stringify(caso);
+      expect(salida.aportacionCentavos, etiqueta).toBe(salida.aportacionNecesariaCentavos);
+      // `escenarios` es [mitad, la aportacion, vez y media]: el del medio es el de la fecha.
+      expect(salida.escenarios[1]!.aportacionCentavos, etiqueta).toBe(salida.aportacionCentavos);
+      if (salida.aviso) expect(salida.aviso, etiqueta).toContain(pesos(salida.aportacionCentavos));
+    }
   });
 
   it("una fecha lejana cabe en lo libre: sin aviso y la fecha estimada no se pasa", () => {
