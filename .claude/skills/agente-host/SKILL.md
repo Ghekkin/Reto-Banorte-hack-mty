@@ -20,7 +20,7 @@ tipos de línea del stream, convención de acciones, errores) está en
 | `mcp-cliente.ts` | Conecta al servidor MCP por Streamable HTTP (`MCP_URL`, `MCP_TOKEN`) y convierte sus tools al formato del AI SDK. Una conexión por request. |
 | `catalogo.ts` | Carga el JSON del catálogo (`packages/catalogo`) y construye el schema de salida A2UI restringido a **nuestros** componentes. |
 | `prompt.ts` | El system prompt. Único lugar donde vive. |
-| `modelo.ts` | Proveedor/modelo por `MODELO`: `gemini` (default) → `google("gemini-3.8-flash")` con nivel de pensamiento `GEMINI_THINKING` (default `low`); `claude` → `anthropic("claude-sonnet-5")`. ADR 0005. Nada más en el código sabe cuál es. |
+| `modelo.ts` | Proveedor/modelo por `MODELO`: `gemini` (default) → `google("gemini-3.1-flash-lite")` con nivel de pensamiento `GEMINI_THINKING` (default `low`); `claude` → `anthropic("claude-sonnet-5")`. ADR 0005. Nada más en el código sabe cuál es. |
 | `agente.ts` | El loop: mensajes + acciones previas → tools MCP → mensajes A2UI. `stopWhen`/límite ≤ 8 pasos, timeout, log por paso. |
 | `a2ui.ts` | Helpers para emitir `createSurface`, `updateComponents`, `updateDataModel`, `deleteSurface` válidos (v0.9.1) y validar contra el schema del catálogo antes de mandarlos. |
 
