@@ -12,7 +12,7 @@ vez sin conflictos de git.
 
 | Rol | Quién | En qué | Desde |
 |---|---|---|---|
-| web | sergio | Inicio: el ciclo de preguntar ahora se ve (salida en cascada → esqueleto → entrada, `transicion-inicio.tsx`) y las tarjetas se acomodan en masonry sin huecos (`masonry.tsx`, rejilla de 6 columnas y franjas de 4 px medidas; `Lienzo` con prop `acomodo`). 17 pruebas, verificado en navegador a 1,439 y 390 px | dom 02:20 |
+| web | andres | Cambio de usuario siempre redirige a Inicio y limpia el chat (hilo, superficie, streaming, voz) | dom 05:46 |
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Voz ElevenLabs: Maya ya no habla antes de tiempo ni dice "tardó mucho" — `enviarTexto` resuelve en cuanto llega el `texto` del turno (no al `fin`), y `scripts/voz/agente-elevenlabs.json` + `pnpm voz:configurar` versionan y aplican `pre_tool_speech: off`, `response_timeout_secs: 45` y el prompt del agente. Aplicado en vivo contra la cuenta MLH. Falta probar un turno completo con micrófono real. Widgets vivos (ayer) sin cambios | dom 04:15 |
 | contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |
