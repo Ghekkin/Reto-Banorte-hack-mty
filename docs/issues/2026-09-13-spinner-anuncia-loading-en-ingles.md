@@ -1,9 +1,10 @@
 ---
-estado: abierto
+estado: resuelto
 severidad: baja
 area: web
 encontrado: 2026-09-13 02:29
 github: 20
+resuelto-en:
 ---
 
 # El `Spinner` anuncia "Loading" en inglés en los botones de enviar
@@ -31,3 +32,14 @@ Salió al rediseñar el selector de persona.
 
 **Arreglo sugerido:** `aria-label="Cargando"` por omisión en `spinner.tsx` (una línea en la
 primitiva), o `aria-hidden` en los tres botones de enviar.
+
+## Resolución (2026-09-13)
+
+`Spinner` (`apps/web/src/components/ui/spinner.tsx`) se anuncia `aria-label="Cargando"` por
+omisión. La API no cambia: las props van después, así que quien pase su propio `aria-label` o
+`aria-hidden` lo sigue controlando (`refresco-del-inicio.tsx`, `selector-usuario.tsx`,
+`cambiar-persona.tsx` quedan igual). Los tres botones de enviar (`barra-conversacion.tsx` ×2 y
+`tarjetas-inicio.tsx`) y `progreso-maya.tsx` ahora dicen «Cargando» a un lector de pantalla.
+
+Prueba: `apps/web/src/components/ui/__tests__/spinner.spec.ts`. Falla con `Loading` y pasa con
+el cambio; también comprueba que `aria-label` y `aria-hidden` se pueden sobrescribir.

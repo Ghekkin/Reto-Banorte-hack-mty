@@ -48,7 +48,7 @@ type Variante = "tarjeta" | "sidebar" | "avatar";
  *
  * Al tocar otra persona el trigger la muestra de inmediato (`useOptimistic`) con un spinner
  * mientras el servidor escribe la cookie y rearma la pantalla. El spinner va `aria-hidden`:
- * la espera la anuncia `aria-busy` en el trigger, y el `Spinner` de shadcn dice "Loading".
+ * la espera la anuncia `aria-busy` en el trigger, y dos anuncios ("Cargando") serian ruido.
  *
  * Base UI pide el `items` en la raiz del Select (no es Radix) y los `SelectItem` van
  * dentro de un `SelectGroup`.
