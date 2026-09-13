@@ -1,6 +1,6 @@
 ---
-verificado: 2026-09-13 07:40
-implementado-en: apps/web/src/lib/agente/pantalla.ts (entradaPintarPantalla, armarMensajes, normalizarListaDeComponentes, limpiarLlaves, inferirComponente, propsDelMcp, comparacionDelMcp, adoptarAlias, quitarPropsNoDeclaradas, nombresParecidos, completarAccion, accionParecida)
+verificado: 2026-09-13 07:55
+implementado-en: apps/web/src/lib/agente/pantalla.ts (entradaPintarPantalla, armarMensajes, normalizarListaDeComponentes, limpiarLlaves, inferirComponente, propsDelMcp, comparacionDelMcp, adoptarAlias, quitarPropsNoDeclaradas, nombresParecidos, tiposDeProp, valorCompatible, completarAccion, accionParecida)
 lenguaje: typescript
 ---
 
@@ -30,8 +30,12 @@ Por último, **lo que sobra se quita**. El validador del catálogo rechaza la pa
 sola prop que el componente no tiene. Si el modelo escribe `tasaAnual` en vez de `tasaAnualPct`, el
 host pone el dato donde va y borra el nombre viejo; si le pone `heroe` a un plan de pago (que no
 puede ser héroe) o un `portafolioId` a la dona, se quita porque nunca se pintaría. Lo que **no** se
-tira en silencio es un nombre que parece un error de dedo de una prop que falta (`datoClav` por
-`datoClave`): ese se deja para que la validación lo nombre y el modelo lo corrija (issue #42).
+tira en silencio es un nombre que parece un error de dedo de una prop que falta (issue #42): si es un
+texto con un solo destino posible (`salud: "Hola, Alberto"` por `saludo`, `datoClav` por `datoClave`),
+el texto pasa a su lugar; si es un número, una lista o un objeto, se deja para que la validación lo
+nombre y el modelo lo corrija, porque ahí un nombre parecido puede traer otra unidad (pesos por
+centavos). Y si el valor ni siquiera es del tipo de la prop parecida (un objeto donde va un texto), no
+es error de dedo: se quita como cualquier sobrante (issue #46).
 
 Y nada de eso sirve si la llamada no llega a la reparación. La puerta de `pintar_pantalla` (el
 schema que revisa la librería del modelo antes de entregarnos la llamada) exigía que cada tarjeta
@@ -113,10 +117,18 @@ tarjetas sin razón propia.
    texto): la validación la reporta como faltante.
 8. **`quitarPropsNoDeclaradas`**: toda prop que el catálogo publicado no le permite al componente
    (las de su schema más `id`, `component`, `accessibility` y `weight`; `propsDeclaradas()` las lee
-   de `catalogo.json`, lo mismo que mira el validador oficial) se quita, **salvo** que
-   `nombresParecidos` la empareje con una prop declarada que falta. Esa se deja para que la
-   validación diga «la propiedad "X" no existe». `children` y `child` nunca se tocan (las revisa la
-   validación del árbol). El layout no pasa por aquí.
+   de `catalogo.json`, lo mismo que mira el validador oficial) se quita, **salvo** que parezca un
+   nombre mal escrito de una prop declarada. Las **candidatas** son las props declaradas que faltan,
+   que `nombresParecidos` empareja con ella y cuyo tipo acepta el valor (`valorCompatible`: los tipos
+   JSON que `tiposDeProp()` lee del schema publicado; un enlace `{path}` o un tipo que no se puede
+   leer cuentan como compatibles) (#46):
+   - **una** candidata, valor de **texto** y la candidata acepta texto: se **adopta** (el valor pasa
+     a la prop real y el nombre mal escrito se borra);
+   - una o más candidatas en cualquier otro caso (número, arreglo, objeto, enlace, o varias): se
+     deja para que la validación diga «la propiedad "X" no existe»;
+   - ninguna candidata (no se parece a nada que falte, o el valor es de otro tipo): se quita.
+   `children` y `child` nunca se tocan (las revisa la validación del árbol). El layout no pasa por
+   aquí.
 9. Arma la raíz `Column` con todas las tarjetas.
 
 En `Conclusion`, además, las `sugerencias` se recortan a 3, el máximo de su schema (#43).
@@ -154,6 +166,10 @@ componente sin `acciones` ya la quitó el paso 8, porque su schema no declara `a
   del otro con el más corto de **4** letras o más (`tipo`/`tipoInvalidez`); o a **2** ediciones o
   menos con el más corto de **5** o más (`metaCentavo`/`metaCentavos`). Solo se compara contra
   props declaradas que **faltan**: si la real ya está, el parecido sobra y se quita.
+- Compatibilidad de tipo (`tiposDeSchema`): `type` (con `integer` como número), los valores de
+  `enum` y `const`, y las ramas de `anyOf`/`oneOf`/`allOf`; las ramas que solo son `$ref` (el enlace
+  y la llamada a función de A2UI) no suman tipo. Solo se **adopta** texto: los números, arreglos y
+  objetos parecidos siempre vuelven al modelo con su nombre.
 - `inferirComponente`: **2** props propias como mínimo; el ganador declara al menos el **60 %** de
   ellas y le saca **2** o más al segundo. Con esos umbrales, en las 23 llamadas reales infiere
   `ResumenTarjeta` (×2), `DistribucionPortafolio`, `ProyeccionPagoCredito` y una tarjeta con
@@ -173,6 +189,9 @@ componente sin `acciones` ya la quitó el paso 8, porque su schema no declara `a
   primer nivel y los de los escenarios del comparador.
 - El paso 8 solo mira el primer nivel del componente: una llave de más dentro de una opción o de
   una fila la sigue reportando la validación.
+- Adoptar un texto parecido puede poner el texto en una prop que el modelo no quería si su nombre
+  cae a 1-2 letras de otra declarada que falta y es la única candidata; el daño se limita a un texto
+  en otro renglón de la misma tarjeta, nunca a una cifra.
 - Quitar una prop de sobra puede esconder una intención del modelo que no se parece a ningún
   nombre declarado (un `heroe` en `PlanDePago` no se pinta como héroe). Es el costo aceptado:
   antes esa pantalla se rechazaba completa y el turno pagaba otra petición.
@@ -207,7 +226,8 @@ componente sin `acciones` ya la quitó el paso 8, porque su schema no declara `a
   pasa `armarMensajes` (con el validador oficial); un alias enlazado no reaparece; `antes` sigue
   en `GastoPorCategoria`; los dos rechazos reales por prop inexistente de hoy (`portafolioId` en
   `DistribucionPortafolio`, `heroe` en `PlanDePago`) pasan; un nombre mal escrito de una opcional
-  sigue rechazado con su nombre, y el de una obligatoria sigue saliendo como faltante. Contra el
+  numérica sigue rechazado con su nombre (desde #46 el de una opcional de texto se adopta), y el de
+  una obligatoria sigue saliendo como faltante. Contra el
   `pantalla.ts` de `8060918` fallan 26 de las 33 que no dependen de `nombresParecidos`.
 - Repetición de las 164 llamadas a `pintar_pantalla` grabadas el 2026-09-13 desde las 00:00: pasan
   141 contra 135 del código anterior. Las 6 que se arreglan son por prop de sobra (`portafolioId`
@@ -227,3 +247,14 @@ componente sin `acciones` ya la quitó el paso 8, porque su schema no declara `a
 - Repetición de las **170** llamadas a `pintar_pantalla` del 13 desde las 00:00: pasan **153**
   contra 137 del código anterior (15 del SDK y el aviso con acción no permitida). Ninguna que pasaba
   se rechaza ahora.
+- `apps/web/src/lib/agente/__tests__/prop-parecida.spec.ts` (5 pruebas, #46), con la llamada real del
+  ensayo del guion contra producción (`fixtures/pintar-salud-46.json`, `corrida_tools` 3042, «Beto ·
+  simulador de ahorro»): `salud: "Hola, Alberto"` pasa a `saludo` y la pantalla se arma a la primera;
+  `salud` con un objeto o un número se quita sin tocar `saludo`; con `saludo` ya puesto el parecido
+  se quita sin pisarlo; un enlace en el nombre parecido sigue saliendo como error con su nombre. Contra
+  el `pantalla.ts` de `108e722` fallan 3 de las 5, y también la de `datoClav` modificada en
+  `normalizacion-alias.spec.ts`.
+- Repetición de las **191** llamadas a `pintar_pantalla` del 13: pasan **173** contra 172 de
+  `108e722` (la 3042). Ninguna que pasaba se rechaza ahora; las 18 que siguen fallando son por otras
+  causas (cifras de apoyo sin `valor`, hitos sin `periodo`, textos de relleno, árbol con hijos
+  inexistentes, props obligatorias sin tool en el turno).

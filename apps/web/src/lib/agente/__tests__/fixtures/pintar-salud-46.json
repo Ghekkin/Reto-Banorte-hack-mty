@@ -1,0 +1,377 @@
+{
+ "corridaTool": 3042,
+ "que": "ensayo del guion contra produccion (108e722), 2026-09-13 07:28, Beto · simulador de ahorro: Conclusion con salud por saludo",
+ "argumentos": {
+  "razon": "Alberto quiere simular su fondo de emergencia teniendo ya activo su plan de pagos de tarjeta.",
+  "texto": "Alberto, teniendo activo tu plan de pagos de tarjeta, lo más prudente es fijar una meta inicial de $60,000 (alrededor de dos meses de gastos esenciales). Con una aportación de $1,500 al mes llegarías en 40 meses; para lograrlo sin presionarte, conviene recortar un poco los retiros en efectivo que se dispararon este mes.",
+  "datosJson": {},
+  "sugerencias": [
+   "¿Cómo recortar mis retiros de efectivo?",
+   "¿Cómo va mi plan de tarjeta?",
+   "Ver mis gastos de agosto"
+  ],
+  "componentesJson": [
+   {
+    "id": "conclusion",
+    "datos": [
+     {
+      "tono": "neutro",
+      "valor": "$60,000.00",
+      "etiqueta": "Meta sugerida (2 meses)"
+     },
+     {
+      "tono": "neutro",
+      "valor": "$1,500.00/mes",
+      "etiqueta": "Aportación simulada"
+     },
+     {
+      "tono": "neutro",
+      "valor": "40 meses",
+      "etiqueta": "Plazo estimado"
+     }
+    ],
+    "razon": "Tienes tu tarjeta en plan de pago y tu capacidad de ahorro actual es limitada, por lo que una meta escalonada es el camino más viable.",
+    "salud": "Hola, Alberto",
+    "detalle": "Con tu plan de pagos activo pagas $3,193.35 al mes y tu flujo actual está muy ajustado. Si logras recortar gastos variables (como retiros o conveniencia) para apartar $1,500 al mes, alcanzarás un fondo inicial de $60,000 en 40 meses sin descuidar tus compromisos.",
+    "titular": "Armar tu fondo de emergencia es posible iniciando con $1,500 al mes",
+    "sugerencias": [
+     "¿Cómo recortar mis retiros de efectivo?",
+     "¿Cómo va mi plan de tarjeta?",
+     "Ver mis gastos de agosto"
+    ]
+   },
+   {
+    "id": "simulador",
+    "heroe": true,
+    "razon": "Simulamos una meta de $60,000 (casi 2 meses de gastos esenciales) con una aportación accesible de $1,500 al mes.",
+    "nombre": "Fondo de emergencia",
+    "frecuencia": "mensual",
+    "fechaInicio": "2026-09-12",
+    "metaCentavos": 6000000,
+    "etiquetaBoton": "Crear apartado",
+    "aportacionCentavos": 150000,
+    "saldoInicialCentavos": 0,
+    "aportacionMaximaCentavos": 461371,
+    "aportacionMinimaCentavos": 50000
+   }
+  ]
+ },
+ "datos": {
+  "panorama_inicial": {
+   "deuda": {
+    "totalCentavos": 7692665,
+    "ratioDeudaIngreso": 0.1653,
+    "mensualidadTotalCentavos": 570391
+   },
+   "salud": {
+    "periodo": "2026-08",
+    "tendencia": "estable",
+    "calificacion": "critica",
+    "puntajeSalud": 39
+   },
+   "perfil": {
+    "id": "usr_beto",
+    "edad": 41,
+    "ciudad": "Guadalupe",
+    "nombre": "Alberto Ramírez Solís",
+    "segmento": "nomina",
+    "ocupacion": "Supervisor de logística",
+    "ingresoMensualCentavos": 3450000
+   },
+   "porQue": "Ya difirio su saldo a 18 meses de $3,193.35",
+   "tarjeta": {
+    "id": "tar_beto_clasica",
+    "diasMora": 0,
+    "usoDelLimite": 0,
+    "saldoCentavos": 4738600,
+    "limiteCentavos": 4900000,
+    "tienePlanActivo": true
+   },
+   "situacion": "plan_activo",
+   "capacidadPagoMensualCentavos": 461371
+  },
+  "analizar_gasto": {
+   "fugas": {
+    "pctDelIngreso": 0.0092,
+    "suscripciones": [
+     {
+      "id": "sus_beto_netflix",
+      "giro": "streaming",
+      "desde": "2021-03-08",
+      "comercio": "Netflix",
+      "concepto": "Netflix Básico",
+      "diaCargo": 8,
+      "mesesActiva": 66,
+      "periodicidad": "mensual",
+      "montoCentavos": 17900,
+      "sinUsoReciente": false,
+      "ultimoCargoFecha": "2026-09-08"
+     },
+     {
+      "id": "sus_beto_disney",
+      "giro": "streaming",
+      "desde": "2024-08-16",
+      "comercio": "Disney+",
+      "concepto": "Disney+ con anuncios",
+      "diaCargo": 16,
+      "mesesActiva": 24,
+      "periodicidad": "mensual",
+      "montoCentavos": 13900,
+      "sinUsoReciente": false,
+      "ultimoCargoFecha": "2026-08-16"
+     }
+    ],
+    "totalAnualCentavos": 381600,
+    "totalMensualCentavos": 31800,
+    "recurrentesNoSuscritos": [
+     {
+      "comercio": "Naturgy",
+      "categoriaId": "cat_servicios",
+      "ultimaFecha": "2026-09-11",
+      "montoCentavos": 34350
+     },
+     {
+      "comercio": "Telmex",
+      "categoriaId": "cat_servicios",
+      "ultimaFecha": "2026-09-09",
+      "montoCentavos": 62900
+     },
+     {
+      "comercio": "CFE",
+      "categoriaId": "cat_servicios",
+      "ultimaFecha": "2026-09-07",
+      "montoCentavos": 86250
+     },
+     {
+      "comercio": "Banorte — Intereses",
+      "categoriaId": "cat_financiero",
+      "ultimaFecha": "2026-09-05",
+      "montoCentavos": 205350
+     },
+     {
+      "comercio": "Colegio Inglés Cumbres",
+      "categoriaId": "cat_educacion",
+      "ultimaFecha": "2026-09-03",
+      "montoCentavos": 480000
+     },
+     {
+      "comercio": "Telcel",
+      "categoriaId": "cat_servicios",
+      "ultimaFecha": "2026-08-14",
+      "montoCentavos": 74900
+     }
+    ]
+   },
+   "gasto": {
+    "periodo": "2026-08",
+    "categorias": [
+     {
+      "color": "#8C4A2F",
+      "grupo": "vivienda",
+      "nombre": "Vivienda",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_vivienda",
+      "variacionPct": 0,
+      "montoCentavos": 720000,
+      "participacionPct": 0.2037,
+      "montoAnteriorCentavos": 720000
+     },
+     {
+      "color": "#8B1A1A",
+      "grupo": "financiero",
+      "nombre": "Intereses y comisiones",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_financiero",
+      "variacionPct": 0.1455,
+      "montoCentavos": 532600,
+      "participacionPct": 0.1507,
+      "montoAnteriorCentavos": 464950
+     },
+     {
+      "color": "#3D7EA6",
+      "grupo": "otros",
+      "nombre": "Educación",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_educacion",
+      "variacionPct": 0,
+      "montoCentavos": 480000,
+      "participacionPct": 0.1358,
+      "montoAnteriorCentavos": 480000
+     },
+     {
+      "color": "#9CA3AF",
+      "grupo": "otros",
+      "nombre": "Retiros de efectivo",
+      "esAtipica": true,
+      "esEsencial": false,
+      "categoriaId": "cat_retiros",
+      "variacionPct": 0.747,
+      "montoCentavos": 460150,
+      "participacionPct": 0.1302,
+      "montoAnteriorCentavos": 263400
+     },
+     {
+      "color": "#C77D2E",
+      "grupo": "alimentacion",
+      "nombre": "Supermercado",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_super",
+      "variacionPct": -0.0902,
+      "montoCentavos": 370200,
+      "participacionPct": 0.1047,
+      "montoAnteriorCentavos": 406900
+     },
+     {
+      "color": "#4A6FA5",
+      "grupo": "transporte",
+      "nombre": "Transporte",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_transporte",
+      "variacionPct": -0.0716,
+      "montoCentavos": 240450,
+      "participacionPct": 0.068,
+      "montoAnteriorCentavos": 259000
+     },
+     {
+      "color": "#5B6C7F",
+      "grupo": "servicios",
+      "nombre": "Servicios del hogar",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_servicios",
+      "variacionPct": -0.1487,
+      "montoCentavos": 235800,
+      "participacionPct": 0.0667,
+      "montoAnteriorCentavos": 277000
+     },
+     {
+      "color": "#6B7280",
+      "grupo": "fuera_del_banco",
+      "nombre": "Apoyo a mi mamá",
+      "esAtipica": false,
+      "esEsencial": false,
+      "frecuencia": "mensual",
+      "categoriaId": "ext_apoyo_a_mi_mama",
+      "variacionPct": 0,
+      "fueraDelBanco": true,
+      "montoCentavos": 200000,
+      "participacionPct": 0.0566,
+      "montoAnteriorCentavos": 0
+     },
+     {
+      "color": "#E0A458",
+      "grupo": "alimentacion",
+      "nombre": "Conveniencia",
+      "esAtipica": false,
+      "esEsencial": false,
+      "categoriaId": "cat_conveniencia",
+      "variacionPct": 0.2242,
+      "montoCentavos": 135150,
+      "participacionPct": 0.0382,
+      "montoAnteriorCentavos": 110400
+     },
+     {
+      "color": "#D9534F",
+      "grupo": "alimentacion",
+      "nombre": "Restaurantes",
+      "esAtipica": false,
+      "esEsencial": false,
+      "categoriaId": "cat_restaurantes",
+      "variacionPct": 0.486,
+      "montoCentavos": 103500,
+      "participacionPct": 0.0293,
+      "montoAnteriorCentavos": 69650
+     },
+     {
+      "color": "#7B5EA7",
+      "grupo": "entretenimiento",
+      "nombre": "Suscripciones",
+      "esAtipica": false,
+      "esEsencial": false,
+      "categoriaId": "cat_suscripciones",
+      "variacionPct": 0,
+      "montoCentavos": 31800,
+      "participacionPct": 0.009,
+      "montoAnteriorCentavos": 31800
+     },
+     {
+      "color": "#2E8B9B",
+      "grupo": "salud",
+      "nombre": "Salud",
+      "esAtipica": false,
+      "esEsencial": true,
+      "categoriaId": "cat_salud",
+      "variacionPct": 0.0412,
+      "montoCentavos": 25300,
+      "participacionPct": 0.0072,
+      "montoAnteriorCentavos": 24300
+     }
+    ],
+    "variacionPct": 0.1376,
+    "efectoDelPlan": {
+     "mensualidadDelPlanCentavos": 319335,
+     "interesesDelPeriodoCentavos": 532600,
+     "interesesEvitadosPorMesCentavos": 223994
+    },
+    "gastoCentavos": 3534950,
+    "ingresoCentavos": 3450000,
+    "periodoAnterior": "2026-07",
+    "categoriaAtipicaId": "cat_retiros",
+    "gastoAnteriorCentavos": 3107400
+   },
+   "porQue": "Ya paso su tope de Conveniencia",
+   "patronGasto": "tope_excedido",
+   "topesExcedidos": [
+    {
+     "pctUsado": 1.1262,
+     "categoria": "Conveniencia",
+     "categoriaId": "cat_conveniencia",
+     "montoLimiteCentavos": 120000,
+     "gastadoActualCentavos": 135150
+    }
+   ]
+  },
+  "proyectar_ahorro": {
+   "meta": null,
+   "aviso": null,
+   "escenarios": [
+    {
+     "frecuencia": "mensual",
+     "fechaEstimada": "2033-05-12",
+     "mesesEstimados": 80,
+     "cabeEnCapacidad": false,
+     "aportacionCentavos": 75000
+    },
+    {
+     "frecuencia": "mensual",
+     "fechaEstimada": "2030-01-12",
+     "mesesEstimados": 40,
+     "cabeEnCapacidad": false,
+     "aportacionCentavos": 150000
+    },
+    {
+     "frecuencia": "mensual",
+     "fechaEstimada": "2028-12-12",
+     "mesesEstimados": 27,
+     "cabeEnCapacidad": false,
+     "aportacionCentavos": 225000
+    }
+   ],
+   "frecuencia": "mensual",
+   "fechaEstimada": "2030-01-12",
+   "cuentaOrigenId": "cta_beto_ahorro",
+   "mesesEstimados": 40,
+   "faltanteCentavos": 6000000,
+   "aportacionCentavos": 150000,
+   "saldoInicialCentavos": 0,
+   "montoObjetivoCentavos": 6000000,
+   "capacidadMensualCentavos": 0,
+   "aportacionNecesariaCentavos": null
+  }
+ }
+}

@@ -1359,20 +1359,94 @@ function quitarAlias(comp: Record<string, unknown>, alias: readonly string[], qu
 /**
  * El ultimo paso de la normalizacion: una prop que el schema del componente no declara no se pinta
  * nunca, y el validador oficial rechaza la pantalla entera por ella (hoy: `portafolioId` en
- * `DistribucionPortafolio`, `heroe` en `PlanDePago`). Se quita, **salvo** que se parezca a una prop
- * declarada que falta: eso es un nombre mal escrito que el modelo tiene que corregir, y se deja
- * para que la validacion lo nombre («la propiedad "tasaAnual" no existe») en vez de desaparecerlo
- * en silencio. Una obligatoria mal escrita se reporta igual como faltante (#42).
+ * `DistribucionPortafolio`, `heroe` en `PlanDePago`). Se quita, **salvo** que parezca un nombre mal
+ * escrito de una prop declarada que falta y su valor sea del tipo de esa prop (#42, #46):
+ *
+ * - Si es un **texto** y solo hay una prop asi, se adopta: el valor pasa a la prop real y el nombre
+ *   mal escrito se borra (`salud: "Hola, Alberto"` -> `saludo`). Un texto en su lugar no miente.
+ * - Si es un numero, arreglo u objeto (o hay mas de una candidata), se deja para que la validacion
+ *   lo nombre («la propiedad "metaCentavo" no existe»): ahi un nombre parecido puede traer otra
+ *   unidad (pesos por centavos) y el modelo lo tiene que corregir.
+ * - Un valor de otro tipo que el de la prop parecida no es un error de dedo: se quita como cualquier
+ *   prop de sobra. Un enlace `{path}` cuenta como de cualquier tipo.
+ *
+ * Una obligatoria mal escrita que no se adopta se reporta igual como faltante.
  */
 function quitarPropsNoDeclaradas(comp: Record<string, unknown>): void {
   const declaradas = propsDeclaradas(comp.component);
   if (!declaradas) return;
-  const faltantes = [...declaradas].filter((prop) => comp[prop] === undefined);
   for (const prop of Object.keys(comp)) {
     if (declaradas.has(prop) || PROPS_DE_ESTRUCTURA.has(prop)) continue;
-    if (faltantes.some((faltante) => nombresParecidos(prop, faltante))) continue;
+    const valor = comp[prop];
+    const candidatas = [...declaradas].filter(
+      (faltante) => comp[faltante] === undefined && nombresParecidos(prop, faltante) && valorCompatible(comp.component, faltante, valor),
+    );
+    const [unica] = candidatas;
+    if (candidatas.length === 1 && typeof valor === "string" && tiposDeProp(comp.component, unica)?.has("string")) {
+      comp[unica] = valor;
+      delete comp[prop];
+      continue;
+    }
+    if (candidatas.length > 0) continue;
     delete comp[prop];
   }
+}
+
+type TipoJson = "string" | "number" | "boolean" | "array" | "object";
+
+function tipoDeValor(valor: unknown): TipoJson | undefined {
+  if (Array.isArray(valor)) return "array";
+  if (valor === null) return undefined;
+  const tipo = typeof valor;
+  return tipo === "string" || tipo === "number" || tipo === "boolean" || tipo === "object" ? tipo : undefined;
+}
+
+/**
+ * Los tipos JSON que acepta un nodo de JSON Schema del catalogo. `undefined` si no se sabe (solo un
+ * `$ref` a los tipos dinamicos de A2UI, como la `action`): en ese caso cualquier valor es compatible.
+ * Las ramas `$ref` de un `anyOf` (el enlace o la llamada a funcion) no suman tipo: el enlace se
+ * revisa aparte con `esBinding`.
+ */
+function tiposDeSchema(nodo: unknown): Set<TipoJson> | undefined {
+  if (!nodo || typeof nodo !== "object") return undefined;
+  const n = nodo as Record<string, unknown>;
+  const tipos = new Set<TipoJson>();
+  const agregar = (tipo: unknown) => {
+    if (tipo === "integer" || tipo === "number") tipos.add("number");
+    else if (tipo === "string" || tipo === "boolean" || tipo === "array" || tipo === "object") tipos.add(tipo);
+  };
+  if (Array.isArray(n.type)) n.type.forEach(agregar);
+  else agregar(n.type);
+  if (Array.isArray(n.enum)) n.enum.forEach((v) => agregar(tipoDeValor(v)));
+  if ("const" in n) agregar(tipoDeValor(n.const));
+  for (const clave of ["anyOf", "oneOf", "allOf"]) {
+    const ramas = n[clave];
+    if (Array.isArray(ramas)) for (const rama of ramas) tiposDeSchema(rama)?.forEach((t) => tipos.add(t));
+  }
+  return tipos.size > 0 ? tipos : undefined;
+}
+
+const tiposPorProp = new Map<string, Set<TipoJson> | undefined>();
+
+/** Los tipos que el catalogo publicado acepta en una prop de un componente. */
+function tiposDeProp(componente: unknown, prop: string): Set<TipoJson> | undefined {
+  if (typeof componente !== "string") return undefined;
+  const clave = `${componente}.${prop}`;
+  if (!tiposPorProp.has(clave)) {
+    const componentes = catalogoPublicado.components as unknown as Record<string, { allOf?: Array<{ properties?: Record<string, unknown> }> }>;
+    const schema = componentes[componente]?.allOf?.map((rama) => rama.properties?.[prop]).find((p) => p !== undefined);
+    tiposPorProp.set(clave, tiposDeSchema(schema));
+  }
+  return tiposPorProp.get(clave);
+}
+
+/** Si un valor podria ir en esa prop: un enlace siempre; si no se sabe el tipo, tambien. */
+function valorCompatible(componente: unknown, prop: string, valor: unknown): boolean {
+  if (esBinding(valor)) return true;
+  const tipos = tiposDeProp(componente, prop);
+  if (!tipos) return true;
+  const tipo = tipoDeValor(valor);
+  return tipo !== undefined && tipos.has(tipo);
 }
 
 /**

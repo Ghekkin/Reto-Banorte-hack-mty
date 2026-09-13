@@ -266,7 +266,7 @@ describe("#42: props que el componente no declara", () => {
     expect(comp.plazoElegido).toBe(18);
   });
 
-  it("un nombre mal escrito de una prop OPCIONAL que falta no se tira en silencio: la validacion lo nombra", () => {
+  it("un nombre mal escrito de una prop OPCIONAL de texto que falta no se tira en silencio: su texto pasa a la prop real (#46)", () => {
     const aviso = {
       id: "aviso",
       component: "AvisoConsultaNoValida",
@@ -277,9 +277,25 @@ describe("#42: props que el componente no declara", () => {
       alternativasSugeridas: ["Quiero pagar menos intereses de mi tarjeta"],
       datoClav: "62.1% CAT en tarjeta",
     };
+    const comp = componenteArmado(armarMensajes({ ...entrada, componentesJson: JSON.stringify([aviso]) }), "AvisoConsultaNoValida");
+    expect(comp.datoClave).toBe("62.1% CAT en tarjeta");
+    expect(comp).not.toHaveProperty("datoClav");
+  });
+
+  it("un nombre mal escrito de una prop OPCIONAL numerica que falta no se adopta: la validacion lo nombra (#42, #46)", () => {
+    const aviso = {
+      id: "aviso",
+      component: "AvisoConsultaNoValida",
+      razon: "Invertir mientras pagas intereses del 60% en tu tarjeta resulta contraproducente para tu dinero.",
+      tipoInvalidez: "deuda_prioritaria",
+      titulo: "Te conviene atender tu tarjeta antes de invertir",
+      explicacion: "Tu tarjeta cobra mas intereses de lo que rinde cualquier inversion formal.",
+      alternativasSugeridas: ["Quiero pagar menos intereses de mi tarjeta"],
+      montoReferenciaCentavo: 4738600,
+    };
     const r = armarMensajes({ ...entrada, componentesJson: JSON.stringify([aviso]) });
     expect(r.ok).toBe(false);
-    if (!r.ok) expect(r.errores.join(" ")).toContain('la propiedad "datoClav" no existe');
+    if (!r.ok) expect(r.errores.join(" ")).toContain('la propiedad "montoReferenciaCentavo" no existe');
   });
 
   it("un nombre mal escrito de una prop OBLIGATORIA se sigue reportando como faltante", () => {
