@@ -14,6 +14,7 @@
     "humo": "scripts/humo.sh",
     "catalogo": "pnpm --filter @maya/catalogo generar",
     "reiniciar-estado": "pnpm --filter @maya/mcp reiniciar-estado",
+    "corridas": "node scripts/corridas.mjs",
     "datos:migrar": "node scripts/migrar.mjs",
     "datos:fixture": "node scripts/volcar-fixture.mjs",
     "datos:restaurar": "node scripts/restaurar.mjs",

@@ -122,8 +122,8 @@ el campo nuevo es opcional.
 | `docs/tablero.md` | Quién está en qué, bloqueos, siguiente | existe |
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
-| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010) | existe |
-| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
+| `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010). La 0004 agrega las tablas de historia: corridas del modelo, chat y registros (`docs/como-funciona/corridas-en-db.md`) | existe |
+| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `corridas.mjs` (lee corridas, chat y registros), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
 | `apps/*/Dockerfile` | Imágenes de web y mcp; se construyen desde la raíz del repo | existe |
@@ -152,6 +152,7 @@ pnpm probar-inicio             # rearma las 3 portadas de Inicio con el modelo c
 pnpm catalogo                  # regenera packages/catalogo/catalogo.json desde los schemas
 pnpm reiniciar-estado          # vacia banorte.acciones_aplicadas: ANTES de cada ensayo
 pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)
+pnpm corridas                  # las ultimas corridas del modelo; `pnpm corridas cor_xxx` una completa, --chat, --registros
 pnpm datos:fixture             # regenera el volcado que usan las pruebas, desde la base
 pnpm datos:restaurar           # repuebla la base desde el volcado (--recrear la vacia antes)
 

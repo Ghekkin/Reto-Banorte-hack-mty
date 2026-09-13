@@ -32,7 +32,10 @@ const { rows: tablas } = await cliente.query(
   "select table_name from information_schema.tables where table_schema = 'banorte' order by table_name",
 );
 const salida = {};
-for (const { table_name: t } of tablas) {
+// Las tablas de historia (corridas, chat, registros) no son datos de negocio y crecen con
+// cada turno: no entran al volcado. Misma lista que TABLAS_DE_HISTORIA en apps/mcp/src/datos/postgres.ts.
+const HISTORIA = new Set(['prompts', 'corridas', 'corrida_pasos', 'corrida_tools', 'conversaciones', 'mensajes_chat', 'registros']);
+for (const { table_name: t } of tablas.filter(({ table_name }) => !HISTORIA.has(table_name))) {
   const { rows } = await cliente.query(`select * from banorte."${t}"`);
   salida[t] = rows.map((fila) => {
     const limpia = {};

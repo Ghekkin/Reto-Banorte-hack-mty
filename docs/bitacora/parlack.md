@@ -1603,3 +1603,15 @@ Construido y medido, **apagado por default**: `FEATURE_AGENTE_LIGERO=1` (catálo
 ese prefijo; A/B y razones en `docs/como-funciona/agente.md`. Typecheck en verde, 168 pruebas
 de web, guion 10/10 con el modelo real; `reiniciar-estado` antes y después del guion.
 Toque ajeno (contrato): `prompt.ts`, `agente.ts`, `cierre.ts`, `historial.ts`, `pantalla.ts`.
+
+### 02:20 (dom 13) — Corridas, chat y registros en la base
+
+Pedido: que la base guarde todo para poder depurar cualquier corrida. Migración
+`0004-corridas-chat-y-registros.sql` (aplicada con `pnpm datos:migrar`), grabadora en
+`apps/web/src/lib/corridas/` conectada a `correrTurno` y `generarPortada`, registros del MCP en
+`apps/mcp/src/datos/registros.ts`, y `pnpm corridas` para leerlo. Verificado con el modelo
+real: un turno de Beto (2 pasos, 3 tools, 12 líneas, 3 registros ligados), un segundo turno
+en la misma conversación (`responder`) y una portada forzada de Ana. Typecheck en verde;
+web 178, mcp 131, catálogo 124, a2ui 117 pruebas. Toque ajeno (contrato y mcp):
+`agente.ts`, `mcp-cliente.ts`, `tipos.ts`, `generar.ts`, `servicio.ts`, `registro.ts`,
+`postgres.ts`.

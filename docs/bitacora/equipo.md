@@ -18,6 +18,21 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
 
 ## 2026-09-13
 
+- **dom 02:20 · decisión + hecho · contrato/demo** — **todo lo que pasa queda en PostgreSQL.**
+  Cada turno del chat y cada portada del Inicio es una fila de `banorte.corridas` con el
+  modelo exacto, la configuración, las tools ofrecidas, lo que se le mandó al modelo, cada
+  paso con sus tokens, cada tool con argumentos y resultado, y cada línea que salió al
+  navegador. El chat va a `conversaciones`/`mensajes_chat` y los logs de web, agente, Inicio y
+  MCP a `registros` (el MCP liga los suyos a la corrida por `_meta`). Se lee con
+  `pnpm corridas`; el `fin` del stream trae `corridaId`.
+
+  Decisiones: **la grabación nunca frena el turno** (se escribe en segundo plano, al
+  terminar, y un fallo solo se avisa); **ninguna prueba escribe en la base** (apagada en
+  vitest, ADR 0010); **el MCP no carga estas tablas a memoria** ni entran al volcado, porque
+  crecen con cada turno; y **`reiniciar-estado` no borra la historia**. Detalle en
+  `docs/como-funciona/corridas-en-db.md`. Encaja con quitar la tira técnica de la UI (01:48):
+  la evidencia para el jurado ya no está en la pantalla sino en la base.
+
 - **dom 01:45 · hecho + decisión · contrato/demo** — **el gasto de Gemini era casi todo
   entrada, y un tercio era un bug.** El 12 el proyecto registró 9.4 M tokens de entrada contra
   250 k de salida. Medido petición por petición: la primera petición de cada turno lleva
@@ -29,7 +44,7 @@ Esta bitácora es la fuente para el pitch: "esto lo decidimos a la hora 4 porque
   **Decisión: el catálogo completo se queda por default.** Se construyó y midió la otra
   opción —el catálogo como menú y `ver_componentes` para el detalle (`FEATURE_AGENTE_LIGERO=1`)—:
   baja la entrada a ~31k por turno, pero Gemini cachea mucho peor ese prefijo (8–32k desde
-  caché contra 45k) y en 6 turnos tuvo un JSON roto. Con el caché pegando no ahorra dinero; si
+  caché contra 45k). Con el caché pegando no ahorra dinero; si
   el caché vuelve a caer a cero como la mañana del 12, sí (~45 %). Queda detrás del flag.
 
   **Decisión: el CI ya no manda un turno real en cada push**, solo si el push toca el agente,

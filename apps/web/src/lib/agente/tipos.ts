@@ -156,6 +156,8 @@ export type LineaStream =
        * apilar otra debajo, que es lo que hace que el cambio se vea live y no como un chat
        * con tarjetas pegadas.
        */
-      cierre?: "pintar" | "ajustar" | "responder" };
+      cierre?: "pintar" | "ajustar" | "responder";
+      /** La fila de `banorte.corridas` con todo lo que paso en este turno. Solo si se grabo. */
+      corridaId?: string };
 
 export const TIMEOUT_TURNO_MS = 30_000;
