@@ -12,6 +12,7 @@ import { consultaHecha, crearConsultor, type Consulta, type Llamar } from "@/lib
 import { crearCierreDePortada } from "@/lib/widgets/pintar";
 import { promptDeWidgets } from "@/lib/widgets/prompt";
 import { configInicio } from "./config";
+import { widgetsPorCuenta, type EleccionDePortada } from "./widgets-por-cuenta";
 import { modeloDelInicio, opcionesDeWidgets, opcionesDelInicio } from "./modelo";
 
 /**
@@ -563,7 +564,10 @@ async function generarPortadaDeWidgets(usuarioId: string, opciones: OpcionesDeGe
     }
 
     const consultor = crearConsultor({ usuarioId, llamar, sembradas, alTerminar: (l) => usadas.push(l) });
-    const cierre = crearCierreDePortada(consultor);
+    // Las dos tarjetas las decide el codigo con los datos de la cuenta; el modelo escribe la
+    // conclusion y los parametros (`widgets-por-cuenta.ts`).
+    const eleccion = widgetsPorCuenta(datos);
+    const cierre = crearCierreDePortada(consultor, [], eleccion);
     let errores: string[] = [];
     let corte: "timeout" | undefined;
 
@@ -571,7 +575,7 @@ async function generarPortadaDeWidgets(usuarioId: string, opciones: OpcionesDeGe
     const promptSistema = promptDeWidgets();
     const mensajes: ModelMessage[] = [
       { role: "system", content: promptSistema, providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } },
-      { role: "user", content: encargoDeWidgets(usuarioId, datos, sembradas) },
+      { role: "user", content: encargoDeWidgets(usuarioId, datos, sembradas, eleccion) },
     ];
     // Elegir fuentes no necesita razonar; las cifras no las calcula el modelo.
     const opcionesProveedor = opciones.modelo ? {} : opcionesDeWidgets(modeloNombre);
@@ -672,7 +676,12 @@ async function generarPortadaDeWidgets(usuarioId: string, opciones: OpcionesDeGe
  * `encargoDePortada` —el orden ES la urgencia—, pero cada escalon nombra FUENTES y no
  * componentes con props.
  */
-export function encargoDeWidgets(usuarioId: string, datos: DatosDeLaPortada, sembradas: readonly Consulta[] = []): string {
+export function encargoDeWidgets(
+  usuarioId: string,
+  datos: DatosDeLaPortada,
+  sembradas: readonly Consulta[] = [],
+  eleccion?: EleccionDePortada,
+): string {
   const lineasDeDatos = Object.entries(datos).map(([tool, valor]) => `${tool}: ${JSON.stringify(valor)}`);
   const simulacion = sembradas.find((c) => c.tool === "proyectar_ahorro" && c.ok);
   const objetivo = simulacion?.argumentos.montoObjetivoCentavos;
@@ -687,6 +696,15 @@ export function encargoDeWidgets(usuarioId: string, datos: DatosDeLaPortada, sem
     "   `saludo` «Hola, <primer nombre>» (el nombre está en `panorama_inicial.perfil.nombre`), 3 preguntas de",
     "   seguimiento (`sugerencias`) y hasta 3 cifras de apoyo en `datos`, cada una por REFERENCIA:",
     '   {"etiqueta":"Uso de tu línea","widget":"tarjeta","campo":"saldoCentavos","tono":"alerta"}.',
+    ...(eleccion
+      ? [
+          `2. \`widgets\`: YA ESTÁN DECIDIDAS para esta cuenta y no se cambian: \`${eleccion.fuentes[0]}\` (id \`${eleccion.ids[0]}\`, heroe) y`,
+          `   \`${eleccion.fuentes[1]}\` (id \`${eleccion.ids[1]}\`), en ese orden (${eleccion.motivo}). Tú pones la \`razon\` de cada`,
+          "   una y sus `parametros` si hacen falta. Las cifras de `conclusion.datos` SOLO citan esos dos ids,",
+          "   y el titular habla de lo que esas dos tarjetas muestran.",
+          "3. (la tarjeta héroe ya está decidida)",
+        ]
+      : [
     "2. `widgets`: EXACTAMENTE 2 tarjetas. Recorre esta escalera DE ARRIBA A ABAJO y quédate con el PRIMER caso",
     "   que aplique; no la saltes porque otro caso te parezca más interesante:",
     "   a) tarjeta de crédito al límite (`usoDelLimite` >= 0.5) o con mora -> `tarjeta` (heroe) y `plan_de_pago`;",
@@ -698,6 +716,7 @@ export function encargoDeWidgets(usuarioId: string, datos: DatosDeLaPortada, sem
     "   e) meta activa -> `meta_activa`; sin meta y con capacidad de ahorro -> `simulador_meta`.",
     "   Si el caso solo da una tarjeta, la otra es contexto: `gasto_del_mes` o `salud`.",
     "3. Una sola tarjeta con `heroe: true`: la primera de la escalera.",
+        ]),
     objetivo !== undefined
       ? `4. \`proyectar_ahorro\` ya se consultó con montoObjetivoCentavos=${String(objetivo)} (tres meses de su gasto): si usas \`simulador_meta\`, pasa {"montoObjetivoCentavos":${String(objetivo)},"nombre":"Fondo de emergencia"}.`
       : "4. Si usas `simulador_meta` y no tiene meta, propón como objetivo tres meses de su gasto (`analizar_gasto.gasto.gastoCentavos` x 3).",

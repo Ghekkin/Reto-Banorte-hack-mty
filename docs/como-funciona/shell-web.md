@@ -93,7 +93,7 @@ apps/web/src/
     shell/
       navegacion.ts             LAS 5 SECCIONES, fuente unica
       sidebar-app.tsx           escritorio
-      barra-superior.tsx        titulo, subtitulo, trigger y avatar en movil
+      barra-superior.tsx        titulo, subtitulo y avatar en movil (sin trigger del sidebar: la navegacion es la barra de abajo)
       barra-pestanas.tsx        movil: 4 pestanas + FAB de Maya
       selector-usuario.tsx      cambia de persona demo (pie del sidebar, avatar en movil, Mas)
     inicio/tarjetas-inicio.tsx  heroe, cuentas, tarjetas, movimientos, atajo a Maya

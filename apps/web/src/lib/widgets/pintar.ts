@@ -9,6 +9,7 @@ import {
   pedidoDeWidget,
   raizDe,
   referenciasDe,
+  type PedidoDeWidget,
   type Procedencias,
   type ReferenciaDeDato,
   type WidgetArmado,
@@ -138,7 +139,37 @@ export type CierreDePortada = {
 };
 
 /** La tool de cierre de la portada, con sus reintentos contados. */
-export function crearCierreDePortada(consultor: Consultor, extras: string[] = []): CierreDePortada {
+/**
+ * Deja la portada con EXACTAMENTE las fuentes que decidio el codigo para esta cuenta
+ * (`lib/inicio/widgets-por-cuenta.ts`), en ese orden y con la primera de heroe.
+ *
+ * Lo que el modelo mando para esas fuentes (id, parametros, variantes, razon) se respeta; una
+ * fuente que no pidio se agrega con el id por defecto; una que pidio y no toca, se quita. Y las
+ * cifras de la conclusion que citaban una tarjeta quitada se descartan, en vez de rechazar la
+ * portada entera: es la misma causa del issue #34 (la conclusion cita `salud` sin pintarla).
+ */
+export function forzarFuentes(
+  entrada: EntradaPintarWidgets,
+  eleccion: { fuentes: readonly string[]; ids: readonly string[] },
+): EntradaPintarWidgets {
+  const widgets = eleccion.fuentes.map((fuente, i) => {
+    const delModelo = entrada.widgets.find((w) => w.fuente === fuente);
+    const base = delModelo ?? { id: eleccion.ids[i] ?? fuente, fuente: fuente as PedidoDeWidget["fuente"], razon: entrada.razon };
+    return { ...base, heroe: i === 0 };
+  });
+  const ids = new Set(widgets.map((w) => w.id));
+  const citaPorFuente = new Map(entrada.widgets.map((w) => [w.id, widgets.find((x) => x.fuente === w.fuente)?.id]));
+  const datos = entrada.conclusion.datos
+    ?.map((d) => (ids.has(d.widget) ? d : citaPorFuente.get(d.widget) ? { ...d, widget: citaPorFuente.get(d.widget)! } : undefined))
+    .filter((d): d is NonNullable<typeof d> => d !== undefined);
+  return { ...entrada, widgets, conclusion: { ...entrada.conclusion, ...(datos ? { datos } : {}) } };
+}
+
+export function crearCierreDePortada(
+  consultor: Consultor,
+  extras: string[] = [],
+  eleccion?: { fuentes: readonly string[]; ids: readonly string[] },
+): CierreDePortada {
   let resultado: PantallaDeWidgets | undefined;
   let fallidos = 0;
 
@@ -149,7 +180,8 @@ export function crearCierreDePortada(consultor: Consultor, extras: string[] = []
         "el MCP y llena las cifras de cada tarjeta; tu no escribes ningun monto. Si algo viene mal, te devuelvo " +
         "los errores y la vuelves a llamar corregida.",
       inputSchema: entradaPintarWidgets,
-      execute: async (entrada: EntradaPintarWidgets) => {
+      execute: async (pedida: EntradaPintarWidgets) => {
+        const entrada = eleccion ? forzarFuentes(pedida, eleccion) : pedida;
         const armado = await armarPantallaDeWidgets(entrada, consultor, {
           ultimoIntento: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1,
           extras,

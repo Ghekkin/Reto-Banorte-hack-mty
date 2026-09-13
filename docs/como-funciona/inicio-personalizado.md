@@ -203,6 +203,17 @@ vuelo, el rearmado tras una acción) es igual:
 - **La portada se arma por fuentes**: `generarPortada` delega en `generarPortadaDeWidgets`, el
   modelo llama `pintar_widgets` y las cifras de cada tarjeta las pone un adaptador con lo que
   devolvió el MCP. Se guardan `procedencias` y `referencias` (migración 0005).
+- **Las dos tarjetas las decide el código, no el modelo** (`lib/inicio/widgets-por-cuenta.ts`,
+  2026-09-13 05:00): tarjeta al límite o con mora → `tarjeta` + `plan_de_pago` (con plan ya
+  aplicado, `tarjeta` + `gasto_del_mes`); deuda cara a plazo (personal, nómina o tasa ≥ 20 %) →
+  `credito` + `simulador_meta`; portafolio desviado ≥ 5 puntos → `portafolio` + `rebalanceo` (sin
+  desviación, `portafolio` + `salud`); lo demás → `gasto_del_mes` + `salud`. El encargo le dice al
+  modelo cuáles son y `forzarFuentes` (`lib/widgets/pintar.ts`) las impone aunque pida otras,
+  descartando las cifras de la conclusión que citen una tarjeta quitada. Por qué: la escalera ya
+  estaba en el prompt y el modelo chico se la saltaba (a Ana le pintó el rebalanceo con «tu
+  portafolio requiere…»), y los jueces ven esta portada primero, en el celular. Verificado con el
+  modelo real: Beto `ResumenTarjeta` + `PlanDePago`, Ana `ProyeccionPagoCredito` + `SimuladorMeta`,
+  Carmen `DistribucionPortafolio` + `OrdenRebalanceo`; pruebas en `widgets-por-cuenta.spec.ts`.
 - **Una pregunta ya no borra el pizarrón**: la barra y el botón «Preguntar sobre esto» de cada
   tarjeta van a `POST /api/inicio/widget`, que cambia UNA tarjeta en su lugar o contesta con una
   nota. `preguntarEnInicio` no se usa.

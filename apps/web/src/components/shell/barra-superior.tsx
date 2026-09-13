@@ -1,7 +1,6 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { SidebarTrigger } from "@/components/ui/sidebar";
 import { SelectorUsuario } from "@/components/shell/selector-usuario";
 import { seccionActiva } from "@/components/shell/navegacion";
 import type { UsuarioDemo } from "@/lib/usuarios";
@@ -19,9 +18,10 @@ export function BarraSuperior({ usuario }: { usuario: UsuarioDemo }) {
 
   return (
     <header className="flex items-center gap-3 px-1 py-1 md:py-2">
-      {/* El trigger del sidebar solo existe en movil: ahi el sidebar es un sheet. */}
-      <SidebarTrigger className="size-11 shrink-0 md:hidden" />
-
+      {/* Sin trigger del sidebar en movil (2026-09-13): ahi la navegacion es la barra de abajo
+          (Inicio, Productos, Maya, Movimientos, Mas) y el sheet lateral repetia lo mismo. El
+          usuario lo vio «de relleno» en el celular, que es donde el jurado ve la demo. La persona
+          se cambia con el avatar de la derecha. */}
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-semibold md:text-xl">{activa?.etiqueta ?? "Maya"}</h1>
         <p className="truncate text-xs text-muted-foreground md:text-sm">{activa?.descripcion}</p>
