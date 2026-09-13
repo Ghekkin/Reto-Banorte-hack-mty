@@ -75,7 +75,7 @@ export type ResultadoResponder = { ok: true };
  * componente sabe pintar el estado "ya aplicado" (una prop como `programado`); las demas siguen
  * repintando como siempre.
  */
-export const ACCIONES_EN_SU_LUGAR: ReadonlySet<string> = new Set(["programar_abono_capital"]);
+export const ACCIONES_EN_SU_LUGAR: ReadonlySet<string> = new Set(["programar_abono_capital", "registrar_gasto_externo"]);
 
 /** Con que cerro el modelo el turno. */
 export type CierreDelTurno = "pintar" | "ajustar" | "responder";
@@ -118,6 +118,8 @@ export type OpcionesDeCierre = {
   ayudaParaErrores?: (errores: string[]) => string | undefined;
   /** Datos precalculados o de tools MCP por si el modelo omitió datosJson */
   datosBase?: Record<string, unknown>;
+  /** Lo que devolvieron las tools del MCP en este turno, y nada mas (ver `parchesDeterministas`). */
+  datosDelTurno?: Record<string, unknown>;
   /** Las pantallas de arriba en el hilo: `ajustar_pantalla` tambien las puede parchear. */
   anteriores?: PantallaActual[];
 };
@@ -167,7 +169,7 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
         "agregar, quitar ni cambiar tarjetas: para eso es `pintar_pantalla`.",
       inputSchema: entradaAjustarPantalla,
       execute: (entrada: EntradaAjustarPantalla): ResultadoAjustar => {
-        const armado = armarParches(entrada, pantallaActual, opciones.anteriores, opciones.datosBase);
+        const armado = armarParches(entrada, pantallaActual, opciones.anteriores, opciones.datosDelTurno);
         if (!armado.ok) {
           fallidos++;
           return { ok: false, errores: armado.errores };

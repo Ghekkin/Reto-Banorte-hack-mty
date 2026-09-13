@@ -77,6 +77,15 @@ en importancia aparece al fondo de la primera columna.
 8. Las columnas se deciden contra el ancho de la **rejilla** (`@container/rejilla`), no de la
    pantalla: con la sidebar de 16rem puesta, la pantalla en `md` (768 px) deja un área de
    contenido de ~490 px, y dos columnas ahí medirían 235 px cada una.
+9. **Si la rejilla llegó pintada desde el servidor, las tarjetas se deslizan a su lugar**
+   (`deslizarAlMedir`, desde 2026-09-13). Antes de la primera medición se anota dónde está
+   cada `[data-medida]` (`posicionesDe`); cuando `medido` pasa a `true`, en el mismo commit y
+   antes de pintar, cada tarjeta que se movió 3 px o más vuelve visualmente a su lugar viejo
+   con `transform: translate(dx, dy)`, y una transición de `transform` (350 ms,
+   `--motion-enfatizada`) la lleva al nuevo. Es FLIP: solo `transform`, compuesto en la GPU,
+   sin layout. Se decide con `usarEsHidratacion` (`useSyncExternalStore` con dos
+   instantáneas): en un montaje del cliente la medición corre antes del primer pintado y no
+   hay nada que la persona haya visto moverse. Con "reducir movimiento" no se desliza.
 
 ## Entradas y salidas
 
@@ -127,8 +136,11 @@ agente. Por eso la marca es `data-hueco` y no `data-ancho`: el motor A2UI ya pin
   precio del ancho común. No es un problema porque cada tarjeta se acomoda contra su propio
   ancho (`@container/tarjeta`), así que usa el espacio en vez de estirarse vacía.
 - **Sin JS es la rejilla de filas de antes.** No hay masonry en el HTML del servidor: el
-  primer pintado sale con `gap` normal y las franjas se aplican en el mismo fotograma
-  (`useLayoutEffect`), así que no se ve el salto.
+  primer pintado sale con `gap` normal. En un montaje del cliente las franjas se aplican en el
+  mismo fotograma (`useLayoutEffect`) y no se ve el salto; **al hidratar sí se veía**: la
+  persona ya tenía enfrente la rejilla de filas y, al medir, las tarjetas brincaban (medido en
+  https://ghekkinxmaya.tech el 2026-09-13 a 1,440 px: la tarjeta del gasto pasaba de la columna
+  izquierda a la derecha). Desde entonces se deslizan (paso 9).
 - **Una tarjeta cuyo contenido cambia de alto sin cambiar de tamaño observable** (por
   ejemplo, un `position: absolute` que crece) no dispara al observador. No pasa con ningún
   componente del catálogo.

@@ -29,6 +29,11 @@ export const GastoDeCategoria = z.object({
   variacionPct: z.number().describe("Fraccion: 0.42 = 42 % mas que el periodo anterior; 0 si antes era cero"),
   participacionPct: z.number().describe("Fraccion del gasto total del periodo"),
   esAtipica: z.boolean(),
+  fueraDelBanco: z
+    .boolean()
+    .optional()
+    .describe("true: un gasto que la persona dijo y guardo (`registrar_gasto_externo`), no un movimiento del banco"),
+  frecuencia: z.enum(["mensual", "unico"]).optional().describe("Solo en las de fuera del banco"),
 });
 export type GastoDeCategoria = z.infer<typeof GastoDeCategoria>;
 

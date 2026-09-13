@@ -37,7 +37,7 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
     <Tarjeta>
       <CardHeader>
         <CardTitle className="flex items-start gap-2">
-          <Icono className={`mt-0.5 size-4 shrink-0 ${tono === "exito" ? "text-exito" : "text-muted-foreground"}`} />
+          <Icono className={`animar-icono mt-0.5 size-4 shrink-0 ${tono === "exito" ? "text-exito" : "text-muted-foreground"}`} />
           {titulo}
         </CardTitle>
         {tono === "exito" ? (
@@ -52,7 +52,7 @@ export function Confirmacion(props: Partial<PropsConfirmacion>) {
       <CardContent className="flex flex-col gap-2">
         {etiquetaMonto ? <span className="text-xs text-muted-foreground">{etiquetaMonto}</span> : null}
         {typeof montoCentavos === "number" ? (
-          <span className="monto text-3xl font-semibold">{formatearMonto(montoCentavos)}</span>
+          <span className="cifra monto text-3xl font-semibold">{formatearMonto(montoCentavos)}</span>
         ) : null}
         {detalle ? <p className="text-sm text-muted-foreground">{detalle}</p> : null}
         {siguientePaso ? <p className="text-sm">{siguientePaso}</p> : null}

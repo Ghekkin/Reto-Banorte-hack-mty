@@ -150,7 +150,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
             </Badge>
           </div>
         </div>
-        <span className="monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(saldoInsolutoCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           de saldo · pagas{" "}
           <span className={`monto font-medium ${clasesResaltado(cambioMensualidad, heroe)}`}>{formatearMonto(mensualidadCentavos)}</span> al
@@ -239,7 +239,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
         <div className="flex flex-col gap-3">
           {/* Dos columnas en angosto, cuatro cuando la tarjeta es ancha, y otra vez dos
               cuando comparten la tarjeta con la curva. */}
-          <div className="grid grid-cols-2 gap-3 @xl/tarjeta:grid-cols-4 @3xl/tarjeta:grid-cols-2">
+          <div className="animar-filas grid grid-cols-2 gap-3 @xl/tarjeta:grid-cols-4 @3xl/tarjeta:grid-cols-2">
             {hitos.slice(0, 4).map((h, i) => (
               <FichaDePago
                 key={h.numeroPago}
@@ -257,7 +257,7 @@ export function ProyeccionPagoCredito(props: Partial<PropsProyeccionPagoCredito>
 
           {/* Lo que falta pagar, partido en capital e intereses: dos segmentos, una barra. */}
           <div className={`flex flex-col gap-2 border-t pt-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
-            <div className="flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
+            <div className="animar-barra flex h-2 w-full gap-0.5 overflow-hidden rounded-full">
               <div className="h-full rounded-l-full" style={{ width: `${pctCapital}%`, background: colores.capital }} />
               <div className="h-full flex-1 rounded-r-full" style={{ background: colores.intereses }} />
             </div>
@@ -387,7 +387,7 @@ function FichaDePago({
       <span className={`truncate text-xs ${suave}`}>{etiqueta}</span>
       <span className={`monto truncate text-sm ${fuerte} ${acento ? "font-semibold" : "font-medium"}`}>{formatearMonto(saldoCentavos)}</span>
       <div
-        className="flex h-1.5 w-full gap-px overflow-hidden rounded-full"
+        className="animar-barra flex h-1.5 w-full gap-px overflow-hidden rounded-full"
         role="img"
         aria-label={`Del pago, ${pctInteres} % es interés`}
       >

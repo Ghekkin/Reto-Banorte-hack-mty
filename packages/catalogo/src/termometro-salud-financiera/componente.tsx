@@ -1,5 +1,6 @@
 "use client";
 
+import type { CSSProperties } from "react";
 import { ArrowRight, TrendingDown, TrendingUp } from "lucide-react";
 import { PolarAngleAxis, RadialBar, RadialBarChart } from "recharts";
 import { Badge } from "@/components/ui/badge";
@@ -36,7 +37,21 @@ const REFERENCIAS = {
   fondoMinimoMeses: 3,
 } as const;
 
-const ETIQUETA_CALIFICACION: Record<string, string> = { critica: "Crítica", fragil: "Frágil", estable: "Estable", sana: "Sana" };
+/**
+ * El medio arco, idéntico en sus dos capas (riel y arco): si una difiriera en un solo radio,
+ * el arco se saldría del riel.
+ */
+const GEOMETRIA_MEDIDOR = {
+  startAngle: 180,
+  endAngle: 0,
+  innerRadius: "82%",
+  outerRadius: "100%",
+  cx: "50%",
+  cy: "50%",
+  margin: { top: 0, right: 0, bottom: 0, left: 0 },
+} as const;
+
+const ETIQUETA_CALIFICACION: Record<string, string> ={ critica: "Crítica", fragil: "Frágil", estable: "Estable", sana: "Sana" };
 
 export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFinanciera> & Pick<PropsComponente, "alAccionar">) {
   const {
@@ -139,25 +154,35 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
         <div className="flex flex-col items-center gap-3 @md/tarjeta:flex-row @md/tarjeta:gap-6">
           {/* El medio arco: el puntaje sobre 100, con el número adentro. Recharts limita el
               radio a la mitad del lado menor, así que la gráfica es un cuadrado de 192 px y
-              la caja recorta la mitad de abajo. */}
+              la caja recorta la mitad de abajo.
+
+              Son DOS gráficas encimadas con la misma geometría: abajo el riel (solo el fondo) y
+              arriba el arco, en su propia capa (`animar-arco`, `globals.css`). Al entrar, esa
+              capa gira sobre el centro desde `--barrido` —el ángulo del puntaje en negativo, o
+              sea escondido debajo del horizonte— hasta su lugar, y lo que asoma por el recorte
+              se lee como un relleno que avanza. Gira un `div` y no un elemento del SVG, así que
+              lo compone la GPU. */}
           <div className="relative h-24 w-48 shrink-0 overflow-hidden">
-            <Grafica config={{ valor: { label: "Puntaje", color: colorArco } }} className="h-48 w-48" etiqueta={`Puntaje ${puntajeSalud} de 100`}>
-              <RadialBarChart
-                data={[{ valor: puntajeSalud }]}
-                startAngle={180}
-                endAngle={0}
-                innerRadius="82%"
-                outerRadius="100%"
-                cx="50%"
-                cy="50%"
-                margin={{ top: 0, right: 0, bottom: 0, left: 0 }}
-              >
+            <Grafica config={{ valor: { label: "Puntaje", color: colorArco } }} className="h-48 w-48" entrada="ninguna" etiqueta={`Puntaje ${puntajeSalud} de 100`}>
+              <RadialBarChart {...GEOMETRIA_MEDIDOR} data={[{ valor: puntajeSalud }]}>
                 <PolarAngleAxis type="number" domain={[0, 100]} tick={false} axisLine={false} />
-                <RadialBar dataKey="valor" fill={colorArco} background={{ fill: colorFondo }} cornerRadius={8} isAnimationActive={false} />
+                <RadialBar dataKey="valor" fill="transparent" background={{ fill: colorFondo }} cornerRadius={8} isAnimationActive={false} />
               </RadialBarChart>
             </Grafica>
+            <div
+              aria-hidden
+              className="animar-arco absolute left-0 top-0 size-48"
+              style={{ "--barrido": `${-Math.round((Math.min(100, Math.max(0, puntajeSalud)) / 100) * 180)}deg` } as CSSProperties}
+            >
+              <Grafica config={{ valor: { label: "Puntaje", color: colorArco } }} className="h-48 w-48" entrada="ninguna" etiqueta={`Puntaje ${puntajeSalud} de 100`}>
+                <RadialBarChart {...GEOMETRIA_MEDIDOR} data={[{ valor: puntajeSalud }]}>
+                  <PolarAngleAxis type="number" domain={[0, 100]} tick={false} axisLine={false} />
+                  <RadialBar dataKey="valor" fill={colorArco} cornerRadius={8} isAnimationActive={false} />
+                </RadialBarChart>
+              </Grafica>
+            </div>
             <div className="pointer-events-none absolute inset-x-0 bottom-0 flex items-baseline justify-center gap-1">
-              <span className="monto-heroe text-4xl font-semibold leading-none">{puntajeSalud}</span>
+              <span className="cifra monto-heroe text-4xl font-semibold leading-none">{puntajeSalud}</span>
               <span className={`text-sm ${suave}`}>/ 100</span>
             </div>
           </div>
@@ -180,7 +205,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
 
         {/* A 360 px tres columnas recortan "Fondo de emergencia"; en móvil cada pilar es
             una fila con su valor a la derecha, y en escritorio son tres columnas. */}
-        <div className={`grid grid-cols-1 gap-3 border-t pt-3 @md/tarjeta:grid-cols-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
+        <div className={`animar-filas grid grid-cols-1 gap-3 border-t pt-3 @md/tarjeta:grid-cols-3 ${heroe ? "border-white/20" : "border-borde-sutil"}`}>
           {pilares.map((p) => (
             <div key={p.nombre} className="flex min-w-0 flex-col gap-1">
               <div className="flex items-baseline justify-between gap-2 @md/tarjeta:flex-col @md/tarjeta:items-start @md/tarjeta:gap-0">
@@ -189,7 +214,7 @@ export function TermometroSaludFinanciera(props: Partial<PropsTermometroSaludFin
               </div>
               <div className={`h-1.5 w-full overflow-hidden rounded-full ${heroe ? "bg-white/25" : "bg-muted"}`}>
                 <div
-                  className="h-full rounded-full"
+                  className="animar-barra h-full rounded-full"
                   style={{
                     width: `${Math.min(100, Math.round(p.avance * 100))}%`,
                     background: heroe ? "var(--primary-foreground)" : p.fuera ? SERIES.acento : SERIES.principal,

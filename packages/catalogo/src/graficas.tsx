@@ -28,6 +28,9 @@ import { formatearMonto } from "./comunes";
  *  - **Altura fija, no proporción.** `aspect-video` de shadcn da 170 px de alto a 300 px
  *    de ancho y 400 px a 720: la tarjeta amplia se volvía el doble de alta que sus
  *    vecinas. 160 px en una tarjeta angosta y 192 px desde 28rem de TARJETA (no de pantalla).
+ *  - **Se dibuja al entrar, de izquierda a derecha** (`entrada="trazo"`, el valor por
+ *    omisión): la curva, sus puntos y sus etiquetas aparecen conforme la ventana llega a
+ *    ellos. Ver `Grafica` y `docs/como-funciona/animacion-de-widgets.md`.
  */
 
 /** Los colores de serie en el orden en que se asignan. Fijos por entidad, nunca rotan. */
@@ -96,26 +99,47 @@ export const CURSOR = { stroke: "var(--border)", strokeWidth: 1 } as const;
 /**
  * El contenedor de shadcn con la configuración del catálogo. `config` da nombre y color
  * a cada serie para el tooltip; `children` es la gráfica de Recharts.
+ *
+ * **La entrada.** Con `entrada="trazo"` la gráfica va dentro de una ventana (`animar-trazo`)
+ * que se abre de izquierda a derecha: la ventana se desliza desde la izquierda y su contenido,
+ * a la vez, en sentido contrario, así que la gráfica no se mueve y lo que avanza es el borde.
+ * Son dos `transform` HTML que compone la GPU. La versión anterior recortaba el SVG con
+ * `clip-path`, que el navegador no puede componer: medido en Chromium, esas animaciones
+ * ponían trabajo de estilo y pintura en 42 de ~51 cuadros de la entrada.
+ *
+ * La dona y el medidor pasan `entrada="ninguna"`: tienen su propio movimiento (`animar-dona`,
+ * `animar-arco`) y una ventana horizontal no les dice nada.
  */
 export function Grafica({
   config,
   children,
   className = "",
   etiqueta,
+  entrada = "trazo",
 }: {
   config: ChartConfig;
   children: React.ComponentProps<typeof ChartContainer>["children"];
   className?: string;
   /** Qué muestra la gráfica, para lectores de pantalla. */
   etiqueta: string;
+  /** `trazo`: se dibuja de izquierda a derecha al entrar. `ninguna`: la anima quien la usa. */
+  entrada?: "trazo" | "ninguna";
 }) {
   // Con un tamaño propio (dona, medidor) no se hereda `@md/tarjeta:h-48`: tailwind-merge no lo
   // quita porque lleva variante, y el contenedor crecía a 192 px en escritorio.
   const tamano = className ? `aspect-auto ${className}` : CLASES_GRAFICA;
-  return (
+  const grafica = (
     <ChartContainer config={config} className={tamano} role="img" aria-label={etiqueta}>
       {children}
     </ChartContainer>
+  );
+  if (entrada === "ninguna") return grafica;
+  // `min-w-0`: la ventana es ahora la que ocupa el hueco de la rejilla, y sin él el ancho del
+  // SVG ya pintado le impedía encogerse al angostar la tarjeta.
+  return (
+    <div className="animar-trazo min-w-0">
+      <div>{grafica}</div>
+    </div>
   );
 }
 

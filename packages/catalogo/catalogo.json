@@ -765,7 +765,7 @@
     },
     "GastoPorCategoria": {
       "type": "object",
-      "description": "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }. Si despues pide otro orden, las N mas grandes o resaltar una, eso es `ajustar_pantalla` sobre `orden`, `limite` o `categoriaAtipica`: no vuelvas a pintar la tarjeta.",
+      "description": "La persona pregunta en que se le va el dinero o por que gasto mas. Ya llamaste comparar_periodos: pasa TODAS las categorias que devolvio (su suma tiene que dar el total) y cual es la atipica. Tocar una fila dispara ver_categoria con { categoriaId, categoria }. Si despues pide otro orden, las N mas grandes o resaltar una, eso es `ajustar_pantalla` sobre `orden`, `limite` o `categoriaAtipica`: no vuelvas a pintar la tarjeta. Si con la tarjeta YA en pantalla dice un gasto que el banco no ve ('tambien pago $3,500 de renta en efectivo', 'le doy $2,000 al mes a mi mama'): llama `simular_gasto_externo` y usa `ajustar_pantalla` sobre ESTA tarjeta: `totalCentavos` y `categorias` con los de `despues` (la suma sigue dando el total), `antes` con `antes`, y `aviso` si no es null. La fila nueva sale «Fuera del banco · sin guardar» y el boton «Guardar gasto» dispara `registrar_gasto_externo` con { gastos, periodo } en el context. Cuando la tool responda `aplicado`, vuelve a ajustar la misma tarjeta con su `despues` (ya `guardado: true`) y su `antes`: el boton desaparece.",
       "allOf": [
         {
           "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/ComponentCommon"
@@ -831,7 +831,7 @@
               ]
             },
             "totalCentavos": {
-              "description": "El gasto total del periodo",
+              "description": "El gasto total del periodo. Con un gasto de fuera: `despues.totalCentavos`",
               "anyOf": [
                 {
                   "type": "integer",
@@ -855,7 +855,7 @@
               ]
             },
             "categorias": {
-              "description": "TODAS las categorias del periodo que devolvio la tool, de mayor a menor. La suma de montoCentavos TIENE que dar exactamente totalCentavos: si recortas la lista, la tarjeta muestra un total que no cuadra con lo que lista. No la recortes; la tarjeta se encarga de acotar su alto y dejar el resto scrollable.",
+              "description": "TODAS las categorias del periodo que devolvio la tool, de mayor a menor, las de fuera del banco incluidas (con un gasto de fuera: `despues.categorias` tal cual). La suma de montoCentavos TIENE que dar exactamente totalCentavos: si recortas la lista, la tarjeta muestra un total que no cuadra con lo que lista. No la recortes; la tarjeta se encarga de acotar su alto y dejar el resto scrollable.",
               "anyOf": [
                 {
                   "minItems": 1,
@@ -880,6 +880,22 @@
                       "variacionPct": {
                         "description": "Fraccion contra el periodo anterior: 0.42 = +42 %",
                         "type": "number"
+                      },
+                      "fueraDelBanco": {
+                        "description": "true: no sale de los movimientos, lo dijo la persona. Tal cual lo manda la tool",
+                        "type": "boolean"
+                      },
+                      "guardado": {
+                        "description": "Solo en las de fuera del banco. false: simulado, todavia sin guardar (enciende «Guardar gasto»)",
+                        "type": "boolean"
+                      },
+                      "frecuencia": {
+                        "description": "Solo en las de fuera del banco: mensual o unico",
+                        "type": "string",
+                        "enum": [
+                          "mensual",
+                          "unico"
+                        ]
                       }
                     },
                     "required": [
@@ -934,8 +950,53 @@
                 }
               ]
             },
+            "antes": {
+              "description": "Como iba ANTES de sumar gastos de fuera: el `antes` de `simular_gasto_externo` o de `registrar_gasto_externo`. Presente = la tarjeta dice «$45,200.00 → $47,200.00». Dejalo fuera al pintar la tarjeta por primera vez",
+              "anyOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "totalCentavos": {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991,
+                      "description": "El total del periodo antes del cambio"
+                    }
+                  },
+                  "required": [
+                    "totalCentavos"
+                  ]
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "aviso": {
+              "description": "El `aviso` de `simular_gasto_externo` tal cual, si no es null (ya no le queda nada libre al mes). Si es null, dejalo fuera; para quitar uno que ya estaba en un ajuste posterior, mandalo como cadena vacia",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
+            "etiquetaBoton": {
+              "description": "Texto del boton que guarda los gastos de fuera sin guardar",
+              "default": "Guardar gasto",
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/DataBinding"
+                }
+              ]
+            },
             "action": {
-              "description": "La accion que este componente devuelve al agente. Nombres validos: ver_categoria.",
+              "description": "La accion que este componente devuelve al agente. Nombres validos: ver_categoria, registrar_gasto_externo.",
               "allOf": [
                 {
                   "$ref": "https://a2ui.org/specification/v0_9/common_types.json#/$defs/Action"
@@ -948,7 +1009,8 @@
                       "properties": {
                         "name": {
                           "enum": [
-                            "ver_categoria"
+                            "ver_categoria",
+                            "registrar_gasto_externo"
                           ]
                         }
                       }

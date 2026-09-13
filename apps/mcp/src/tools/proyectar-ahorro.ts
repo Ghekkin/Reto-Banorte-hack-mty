@@ -2,6 +2,8 @@ import { EntradaProyectarAhorro, SalidaProyectarAhorro } from "@maya/schemas";
 import { aEntero, filtrar } from "../datos/index.js";
 import { apartadosCreados, capacidadPagoMensual, cuentaDe, planAplicado } from "../dominio/consultas.js";
 import { creditosAPlazo } from "../dominio/creditos.js";
+import { mensualExternoDe } from "../dominio/gastos-externos.js";
+import { pesos } from "../dominio/suscripciones.js";
 import { hoy, periodoAnterior, periodoDe, sumarMeses } from "../dominio/tiempo.js";
 import type { DefinicionDeTool } from "./registro.js";
 
@@ -26,7 +28,12 @@ export const proyectarAhorro: DefinicionDeTool = {
     "Calcula en cuanto tiempo la persona llega a una meta de ahorro: usa una meta que ya tenga " +
     "(`metaId`) o una nueva (`montoObjetivoCentavos`), con la aportacion que le pases o la que su flujo " +
     "permite. Devuelve meses, fecha estimada y tres escenarios (conservador, sugerido, agresivo) para " +
-    "que el simulador tenga de donde tirar. NO crea nada: para eso es `crear_apartado`.",
+    "que el simulador tenga de donde tirar. «Lo quiero para diciembre»: manda `fechaObjetivo` con el ULTIMO " +
+    "dia de ese mes (diciembre de este anio = 2026-12-31) y la tool calcula cuanto tiene que apartar por " +
+    "periodo para llegar, proyecta con eso y lo devuelve en `aportacionNecesariaCentavos`; si ademas mandas " +
+    "`aportacionCentavos`, GANA LA FECHA. «Que sean $80,000»: manda `montoObjetivoCentavos`. Si trae `aviso` " +
+    "(no le alcanza lo libre, o la fecha ya paso), ponlo en la tarjeta tal cual. NO crea nada: para eso es " +
+    "`crear_apartado`.",
   clase: "lectura",
   entrada: EntradaProyectarAhorro.shape,
   manejar: (argumentos) => {
@@ -51,15 +58,29 @@ export const proyectarAhorro: DefinicionDeTool = {
     // Tratarlo como "no me dijiste nada" y usar la capacidad calculada es mas util que
     // tumbar la pantalla: quien pregunta cuanto tarda en juntar algo no quiere un error.
     const pedida = entrada.aportacionCentavos && entrada.aportacionCentavos > 0 ? entrada.aportacionCentavos : undefined;
-    const aportacion = pedida ?? sugerida;
+    const faltante = Math.max(0, objetivo - saldoInicial);
+
+    // «Lo quiero para diciembre»: la fecha manda sobre la aportacion que venga.
+    const porFecha = entrada.fechaObjetivo
+      ? aportacionParaFecha(faltante, entrada.fechaObjetivo, frecuencia, capacidad)
+      : null;
+    // Con fecha, la aportacion es la que hace falta. Si la fecha no deja ni un mes, no se
+    // inventa una: se proyecta con lo libre. Sin fecha (o sin faltante), como siempre.
+    const aportacion = porFecha?.aportacionCentavos
+      ? porFecha.aportacionCentavos
+      : porFecha?.sinPeriodos && capacidad > 0
+        ? capacidad
+        : (pedida ?? sugerida);
     if (aportacion <= 0) {
       throw new Error(
         "no hay con que proyectar: la capacidad de ahorro calculada es cero, pasa aportacionCentavos mayor que cero",
       );
     }
 
-    const faltante = Math.max(0, objetivo - saldoInicial);
     const proyeccion = proyectar(faltante, aportacion, frecuencia);
+    const aviso = porFecha?.sinPeriodos
+      ? avisoSinPeriodos(entrada.fechaObjetivo!, capacidad, proyeccion.fecha)
+      : (porFecha?.aviso ?? null);
 
     return SalidaProyectarAhorro.parse({
       meta: meta ? { id: meta.id, nombre: meta.nombre, estatus: meta.estatus } : null,
@@ -73,6 +94,8 @@ export const proyectarAhorro: DefinicionDeTool = {
       mesesEstimados: proyeccion.meses,
       fechaEstimada: proyeccion.fecha,
       escenarios: escenarios(faltante, aportacion, frecuencia, capacidad),
+      aportacionNecesariaCentavos: porFecha ? porFecha.aportacionCentavos : null,
+      aviso,
     });
   },
 };
@@ -123,8 +146,14 @@ function elegirMeta(usuarioId: string, metaId?: string) {
  * capital que haya programado (`programar_abono_capital`): son dinero que ya sale cada mes, y
  * sin descontarlos el simulador de Ana le ofreceria ahorrar lo mismo que acaba de mandar al
  * credito (`docs/como-funciona/ajustes-en-vivo.md`).
+ *
+ * Los gastos MENSUALES de fuera del banco (`registrar_gasto_externo`) salen de los dos lados:
+ * del flujo, porque ningun movimiento los muestra, y de la capacidad de buro, que ya los trae
+ * restados (`capacidadPagoMensual`). `mensualExternoExtraCentavos` es lo que una simulacion
+ * agregaria encima sin guardarlo (`simular_gasto_externo`); negativo si quita uno guardado.
+ * `docs/algoritmos/gastos-fuera-del-banco.md`.
  */
-export function capacidadDeAhorro(usuarioId: string): number {
+export function capacidadDeAhorro(usuarioId: string, mensualExternoExtraCentavos = 0): number {
   const movimientos = filtrar("movimientos", "usuario_id", usuarioId);
   let periodo = periodoDe(hoy());
   let libre = 0;
@@ -144,7 +173,81 @@ export function capacidadDeAhorro(usuarioId: string): number {
   const plan = planAplicado(usuarioId);
   const abonos = creditosAPlazo(usuarioId).reduce((suma, c) => suma + (c.abonoMensualCentavos ?? 0), 0);
   const comprometido = (plan?.mensualidadCentavos ?? 0) + abonos;
-  return Math.max(0, Math.min(delFlujo, capacidadPagoMensual(usuarioId)) - comprometido);
+  const externo = mensualExternoDe(usuarioId) + mensualExternoExtraCentavos;
+  const deBuro = capacidadPagoMensual(usuarioId) - mensualExternoExtraCentavos;
+  return Math.max(0, Math.min(delFlujo - externo, deBuro) - comprometido);
+}
+
+/**
+ * Cuantos meses caben de hoy a la fecha: el mayor `M` con `hoy + M meses <= fecha`. Es la
+ * misma cuenta con la que `proyectar` pone la fecha estimada, asi que proyectar con la
+ * aportacion que sale de aqui nunca cae despues de la fecha objetivo.
+ */
+export function mesesHasta(fechaObjetivo: string): number {
+  const inicio = hoy();
+  let meses = 0;
+  while (meses < MESES_MAXIMOS && sumarMeses(inicio, meses + 1) <= fechaObjetivo) meses++;
+  return meses;
+}
+
+type PorFecha = {
+  /** Por periodo (quincena o mes). null si la fecha no deja ni un periodo. */
+  aportacionCentavos: number | null;
+  sinPeriodos: boolean;
+  aviso: string | null;
+};
+
+/**
+ * La aportacion que cubre el faltante en los periodos que caben hasta la fecha (la quincenal
+ * cuenta dos por mes, igual que en `proyectar`), redondeada hacia arriba al centavo para que
+ * alcance. Si por mes rebasa lo libre, se avisa pero se proyecta con ella: la persona pidio
+ * esa fecha. Si la fecha no deja ni un mes, no se inventa una aportacion.
+ */
+function aportacionParaFecha(
+  faltante: number,
+  fechaObjetivo: string,
+  frecuencia: "mensual" | "quincenal",
+  capacidad: number,
+): PorFecha {
+  const meses = mesesHasta(fechaObjetivo);
+  if (meses === 0) return { aportacionCentavos: null, sinPeriodos: true, aviso: null };
+
+  const periodosPorMes = frecuencia === "quincenal" ? 2 : 1;
+  const necesaria = Math.ceil(faltante / (meses * periodosPorMes));
+  const porMes = necesaria * periodosPorMes;
+  if (porMes <= capacidad) return { aportacionCentavos: necesaria, sinPeriodos: false, aviso: null };
+
+  const cuanto =
+    frecuencia === "quincenal"
+      ? `${pesos(necesaria)} cada quincena (${pesos(porMes)} al mes)`
+      : `${pesos(necesaria)} al mes`;
+  const libre =
+    capacidad > 0 ? `más de los ${pesos(capacidad)} que te quedan libres al mes` : "y hoy no te queda nada libre para ahorrar";
+  return {
+    aportacionCentavos: necesaria,
+    sinPeriodos: false,
+    aviso: `Para llegar al ${enPalabras(fechaObjetivo)} necesitas apartar ${cuanto}, ${libre}.`,
+  };
+}
+
+/** La fecha ya paso o no deja ni un mes: se dice, con lo mas cerca que se puede llegar. */
+function avisoSinPeriodos(fechaObjetivo: string, capacidad: number, fechaConCapacidad: string): string {
+  const inicio = hoy();
+  const motivo = fechaObjetivo <= inicio ? "ya pasó" : "no deja ni un mes para ahorrar";
+  const conLoLibre =
+    capacidad > 0 ? `; con los ${pesos(capacidad)} que te quedan libres al mes llegarías el ${enPalabras(fechaConCapacidad)}` : "";
+  return (
+    `El ${enPalabras(fechaObjetivo)} ${motivo}. La fecha más cercana posible es el ` +
+    `${enPalabras(sumarMeses(inicio, 1))}${conLoLibre}.`
+  );
+}
+
+/** «31 de diciembre», con el año solo si no es el de hoy: «30 de junio de 2027». */
+function enPalabras(fechaISO: string): string {
+  const texto = new Intl.DateTimeFormat("es-MX", { day: "numeric", month: "long", timeZone: "UTC" }).format(
+    new Date(`${fechaISO}T12:00:00Z`),
+  );
+  return fechaISO.slice(0, 4) === hoy().slice(0, 4) ? texto : `${texto} de ${fechaISO.slice(0, 4)}`;
 }
 
 /**

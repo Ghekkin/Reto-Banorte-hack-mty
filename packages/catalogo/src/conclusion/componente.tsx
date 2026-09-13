@@ -86,7 +86,7 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
         </div>
 
         {hayDatos ? (
-          <ul className="flex flex-col gap-2 @2xl/tarjeta:border-l @2xl/tarjeta:border-borde-sutil @2xl/tarjeta:pl-6">
+          <ul className="animar-filas flex flex-col gap-2 @2xl/tarjeta:border-l @2xl/tarjeta:border-borde-sutil @2xl/tarjeta:pl-6">
             {datos.map((d) => (
               <li key={d.etiqueta} className="flex flex-col">
                 <span className="text-xs text-muted-foreground">{d.etiqueta}</span>
@@ -100,7 +100,7 @@ export function Conclusion(props: Partial<PropsConclusion> & Pick<PropsComponent
       </CardContent>
 
       {debeMostrarSugerencias ? (
-        <CardContent className="flex flex-wrap gap-2 pt-0">
+        <CardContent className="animar-filas flex flex-wrap gap-2 pt-0">
           {sugerencias!.map((s) => (
             // Sin `alAccionar` no son botones: en un lienzo de solo lectura (la galeria,
             // una portada sin host que atienda la accion) un boton que no hace nada al

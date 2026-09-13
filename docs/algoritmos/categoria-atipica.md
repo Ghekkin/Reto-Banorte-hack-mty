@@ -50,6 +50,10 @@ completo: es, literalmente, gasto nuevo.
    un mes normal no tiene por qué tener una anomalía inventada.
 6. Ordena las categorías de mayor a menor gasto y calcula la participación de cada una
    sobre el total del periodo.
+7. Si la persona guardó gastos **fuera del banco** (`registrar_gasto_externo`), se agregan
+   después de elegir la atípica, como categorías `ext_…` con `fueraDelBanco: true`: suman al
+   total y a la participación, pero nunca son la atípica. Sin gastos guardados, nada cambia.
+   Detalle en [gastos-fuera-del-banco.md](gastos-fuera-del-banco.md).
 
 ## Entradas y salidas
 

@@ -43,7 +43,7 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
           {categoria}
           {titulo ? ` · ${titulo}` : ""}
         </span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(totalCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(totalCentavos)}</span>
       </CardHeader>
 
       <CardContent>
@@ -55,7 +55,7 @@ export function DetalleCategoria(props: Partial<PropsDetalleCategoria>) {
           // desborda y se pinta encima del "… y N movimientos mas" y del pie.
           <ScrollArea className="max-h-80 overflow-hidden">
             <Table>
-              <TableBody>
+              <TableBody className="animar-filas">
                 {movimientos.map((m, i) => (
                   <TableRow key={`${m.fecha}-${i}`}>
                     <TableCell className="py-3 align-middle">

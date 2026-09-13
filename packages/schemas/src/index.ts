@@ -40,3 +40,5 @@ export * from "./tools/rebalancear-portafolio.js";
 export * from "./tools/simular-rebalanceo.js";
 export * from "./tools/simular-pago-credito.js";
 export * from "./tools/programar-abono-capital.js";
+export * from "./tools/simular-gasto-externo.js";
+export * from "./tools/registrar-gasto-externo.js";

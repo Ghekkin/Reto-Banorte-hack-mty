@@ -1,6 +1,6 @@
 "use client";
 
-import { Children, isValidElement, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { Children, isValidElement, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
 import { cn } from "@/lib/utils";
 
@@ -106,6 +106,76 @@ function anchoComun(huecos: HuecoDeTarjeta[]): HuecoDeTarjeta {
   return huecos.some((h) => h === "amplio") ? "amplio" : "normal";
 }
 
+/**
+ * `true` solo en el render de HIDRATACION: la rejilla que la persona esta viendo la pinto el
+ * servidor. En un montaje del cliente (navegar a Inicio, una portada nueva) es `false`.
+ * Es el patron de `useSyncExternalStore` con dos instantaneas: React usa la del servidor
+ * mientras hidrata y la del cliente en todo lo demas.
+ */
+const sinSuscripcion = () => () => {};
+function usarEsHidratacion(): boolean {
+  return useSyncExternalStore(
+    sinSuscripcion,
+    () => false,
+    () => true,
+  );
+}
+
+function pideMenosMovimiento(): boolean {
+  return typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches);
+}
+
+/** Donde esta cada tarjeta ahora mismo (el div que se mide, no la celda). */
+function posicionesDe(raiz: HTMLElement): Map<HTMLElement, DOMRect> {
+  const posiciones = new Map<HTMLElement, DOMRect>();
+  for (const celda of Array.from(raiz.children)) {
+    const contenido = celda.firstElementChild;
+    if (contenido instanceof HTMLElement) posiciones.set(contenido, contenido.getBoundingClientRect());
+  }
+  return posiciones;
+}
+
+/**
+ * Las tarjetas se DESLIZAN a su lugar de masonry en vez de brincar.
+ *
+ * **El problema** (medido en https://ghekkinxmaya.tech el 2026-09-13, 1,440 px): el servidor
+ * pinta la rejilla de filas (`sin-medir`) y la persona la ve; React hidrata despues, mide, y
+ * las tarjetas cambian de lugar de golpe (la del gasto saltaba de la columna izquierda a la
+ * derecha entre la captura de 500 ms y la de 1,500 ms). Con la hidratacion trayendo cuadros de
+ * 130-240 ms, eso se sentia como que la pantalla "se traba".
+ *
+ * **La tecnica** es FLIP: se anota donde estaba cada tarjeta antes de medir (`posicionesDe`),
+ * se mide, y en el mismo commit —antes de pintar— cada tarjeta que se movio vuelve
+ * visualmente a su lugar viejo con un `transform`; en el siguiente estilo se quita, y una
+ * transicion de `transform` (compuesta en la GPU, sin layout) la lleva al nuevo. Se aplica al
+ * div que se mide y no a la celda, porque la celda ya anima su entrada (`animar-lista`) y
+ * una animacion CSS le gana a un estilo en linea.
+ *
+ * Solo en la primera medicion y solo si venia del servidor: en un montaje del cliente la
+ * medicion corre antes del primer pintado y no hay nada que la persona haya visto moverse.
+ */
+function deslizarAlMedir(antes: Map<HTMLElement, DOMRect>): void {
+  const movidas: Array<[HTMLElement, number, number]> = [];
+  // Primero todas las lecturas, despues todas las escrituras: intercalarlas forzaria un
+  // recalculo por tarjeta.
+  for (const [tarjeta, caja] of antes) {
+    if (!tarjeta.isConnected) continue;
+    const ahora = tarjeta.getBoundingClientRect();
+    const dx = caja.left - ahora.left;
+    const dy = caja.top - ahora.top;
+    // Menos de 3 px es el redondeo de pasar de filas con `gap` a filas de 4 px: no se ve.
+    if (Math.abs(dx) >= 3 || Math.abs(dy) >= 3) movidas.push([tarjeta, dx, dy]);
+  }
+  if (movidas.length === 0) return;
+  for (const [tarjeta, dx, dy] of movidas) tarjeta.style.transform = `translate(${dx}px, ${dy}px)`;
+  void movidas[0]![0].offsetWidth; // fija el punto de partida antes de poner la transicion
+  for (const [tarjeta] of movidas) {
+    tarjeta.style.transition = "transform var(--widget-entrada) var(--motion-enfatizada)";
+    tarjeta.style.transform = "";
+    tarjeta.addEventListener("transitionend", () => (tarjeta.style.transition = ""), { once: true });
+  }
+}
+
 export function Masonry({
   children,
   className,
@@ -116,6 +186,12 @@ export function Masonry({
   const contenedor = useRef<HTMLDivElement>(null);
   const [medido, setMedido] = useState(false);
   const { saliendo } = useTransicionDeInicio();
+  // Ver `deslizarAlMedir`: solo se desliza lo que la persona ya vio pintado por el servidor.
+  // Se congela el valor del primer render: despues de hidratar el hook ya dice `false`.
+  const esHidratacion = usarEsHidratacion();
+  const [vieneDelServidor] = useState(esHidratacion);
+  const primeraMedicion = useRef(true);
+  const posicionesAntes = useRef<Map<HTMLElement, DOMRect> | null>(null);
 
   const celdas = Children.toArray(children);
   const huecos = celdas.map(huecoDe);
@@ -160,6 +236,11 @@ export function Masonry({
       if (algunaMedida) setMedido(true);
     };
 
+    if (primeraMedicion.current) {
+      primeraMedicion.current = false;
+      if (vieneDelServidor && !pideMenosMovimiento()) posicionesAntes.current = posicionesDe(raiz);
+    }
+
     medir();
 
     // Un solo observador para el contenedor (cambio de ancho, cambio de columnas) y para
@@ -190,6 +271,14 @@ export function Masonry({
       if (pendiente) cancelAnimationFrame(pendiente);
     };
   }, [firma]);
+
+  // Corre en el mismo commit en que `medido` pasa a `true`, antes de que el navegador pinte.
+  useEfectoDeMedicion(() => {
+    const antes = posicionesAntes.current;
+    if (!medido || !antes) return;
+    posicionesAntes.current = null;
+    deslizarAlMedir(antes);
+  }, [medido]);
 
   return (
     // El contenedor de consulta. Existe para que las columnas se decidan contra el ancho de

@@ -584,7 +584,7 @@ La **única** tabla que el agente escribe. Índice `ix_acciones_usuario (usuario
 |---|---|---|
 | `id` | `BIGSERIAL` | PK. La genera Postgres |
 | `usuario_id` | `TEXT` | FK → `usuarios(id)` |
-| `accion` | `TEXT` | `aplicar_plan_pago` \| `crear_tope_gasto` \| `crear_apartado` \| `rebalancear` \| `cancelar_suscripcion` (0001) \| `rebalancear_portafolio` \| `confirmar_rebalanceo` (0003) \| `programar_abono_capital` (0005). `schema.sql` trae solo los cuatro primeros; las migraciones rehacen el `CHECK` completo |
+| `accion` | `TEXT` | `aplicar_plan_pago` \| `crear_tope_gasto` \| `crear_apartado` \| `rebalancear` \| `cancelar_suscripcion` (0001) \| `rebalancear_portafolio` \| `confirmar_rebalanceo` (0003) \| `programar_abono_capital` (0005) \| `registrar_gasto_externo` (0006). `schema.sql` trae solo los cuatro primeros; las migraciones rehacen el `CHECK` completo |
 | `objeto_tipo` | `TEXT` | `tarjeta` \| `credito` \| `categoria` \| `meta` \| `portafolio` \| `suscripcion` (0001) |
 | `objeto_id` | `TEXT` | **Sin FK**: apunta a cinco tablas distintas según `objeto_tipo`. Una FK polimórfica no se puede declarar en SQL; la integridad la garantiza la tool que escribe |
 | `contexto` | `JSONB` | `NOT NULL`. El `context` que llegó en el mensaje `action` de A2UI, tal cual (ADR 0003) |
@@ -609,6 +609,18 @@ reiniciar cambia la `huella` y la portada queda desactualizada sola.
 | `sugerencias`, `tools` | `JSONB` | Arreglos de texto |
 | `modelo`, `entrada_tokens`, `salida_tokens`, `cache_tokens`, `ms` | | Trazabilidad de la generación |
 | `generada_en` | `TIMESTAMPTZ` | `DEFAULT now()` |
+
+### Estado por dispositivo (migración 0007, ADR 0012)
+
+Cada visitante de la demo tiene su propio estado (`docs/como-funciona/estado-por-dispositivo.md`):
+
+| Cambio | Notas |
+|---|---|
+| `acciones_aplicadas.dispositivo_id` | `TEXT NOT NULL DEFAULT 'comun'`. El MCP filtra por el dispositivo de la llamada. En un dispositivo, `idempotency_key` se guarda como `<dispositivo>:<llave>` para que el índice único no choque entre visitantes. Índice `(dispositivo_id, usuario_id, id)` para la huella |
+| `pantallas_por_dispositivo` | PK `(dispositivo_id, usuario_id)`, FK `usuario_id` → `usuarios(id)`. `huella TEXT`, `pantalla JSONB` (la portada completa, sin lo que va en columnas), `generada_en`, `ajustada_en`. La portada de un dispositivo que ya se apartó de la común; la común sigue en `pantallas_inicio`. `pnpm reiniciar-estado` la vacía |
+| `corridas.dispositivo_id`, `conversaciones.dispositivo_id` | `TEXT`, `null` = estado común. Quién hizo qué |
+
+Todo aditivo: el código anterior sigue funcionando contra la misma base.
 
 ## Historia (migración 0004)
 

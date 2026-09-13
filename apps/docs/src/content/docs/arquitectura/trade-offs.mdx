@@ -24,7 +24,7 @@ import BanorteAlert from '../../../components/BanorteAlert';
 
 | Enfoque | Decisión | Consecuencia en Seguridad y UX |
 |---|---|---|
-| **A2UI v0.9.1 (Catálogo Cerrado)** | ✅ **Seleccionado** | Cero alucinaciones visuales. La IA solo puede combinar componentes pre-aprobados por el equipo de diseño y validados por Ajv. |
+| **A2UI v0.9.1 (Catálogo Cerrado)** | ✅ **Seleccionado** | Renderizado determinista y seguro. La IA solo puede combinar componentes pre-aprobados por el equipo de diseño y validados por Ajv. |
 | **Generación Dinámica de JSX / HTML** | ❌ **Descartado** | Inseguro para banca (riesgo de inyección XSS), latencia alta al requerir compilación en el browser y fallos frecuentes de sintaxis que congelan la UI. |
 | **Librería `@a2ui/react` Oficial** | ❌ **Descartado (ADR 0008)** | Usa Web Components con Shadow DOM cerrado que impiden la inyección de temas de Tailwind v4 y primitivas de accesibilidad de shadcn/ui. |
 

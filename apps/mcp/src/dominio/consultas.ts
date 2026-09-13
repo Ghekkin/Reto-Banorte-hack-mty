@@ -1,5 +1,6 @@
 import { aBooleano, aDecimal, aEntero, accionesDe, buscar, filtrar, tabla, type Fila } from "../datos/index.js";
 import { interesesMensualesRevolventes, tasaDelPlan } from "./finanzas.js";
+import { mensualExternoDe } from "./gastos-externos.js";
 import { sumarMeses } from "./tiempo.js";
 
 /**
@@ -51,8 +52,19 @@ export function nombreDeComercio(comercioId: string): string {
   return buscar("comercios", "id", comercioId)?.nombre ?? "";
 }
 
-/** Lo que buro dice que la persona puede pagar al mes sin apretarse. */
+/**
+ * Lo que buro dice que la persona puede pagar al mes sin apretarse, **menos lo que ya paga
+ * cada mes fuera del banco** (`registrar_gasto_externo`, solo lo mensual): la renta en
+ * efectivo que buro no ve compite por el mismo dinero. Puede quedar negativa, como la
+ * columna de buro en alguien sobreendeudado (`docs/como-funciona/base-de-datos.md`).
+ * Sin gastos guardados, es exactamente la de buro.
+ */
 export function capacidadPagoMensual(usuarioId: string): number {
+  return capacidadPagoDeBuro(usuarioId) - mensualExternoDe(usuarioId);
+}
+
+/** La capacidad tal cual la reporta buro, sin gastos de fuera del banco. */
+function capacidadPagoDeBuro(usuarioId: string): number {
   const fila = buscar("buro", "usuario_id", usuarioId);
   if (fila) return aEntero(fila.capacidad_pago_mensual_centavos);
   // Sin buro: 30 % del ingreso, el limite prudencial de siempre.

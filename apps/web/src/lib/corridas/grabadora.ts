@@ -1,6 +1,7 @@
 import { createHash, randomUUID } from "node:crypto";
 import { asSchema, type LanguageModel, type LanguageModelUsage, type ModelMessage, type StepResult, type ToolSet } from "ai";
 import type { LineaStream, PeticionAgente } from "@/lib/agente/tipos";
+import { dispositivoParaRegistro } from "@/lib/dispositivo";
 
 /**
  * La grabadora de una corrida: TODO lo que pasa cuando un modelo trabaja, para poder
@@ -21,6 +22,8 @@ export type FilaCorrida = {
   tipo: "turno" | "portada";
   usuarioId: string | null;
   conversacionId: string | null;
+  /** De que visitante fue (migracion 0007, ADR 0012). `null` es el estado comun. */
+  dispositivoId: string | null;
   motivo: string | null;
   estado: string;
   proveedor: string | null;
@@ -88,7 +91,7 @@ export type CorridaTerminada = {
   pasos: FilaPaso[];
   tools: FilaTool[];
   /** Solo en un turno con `conversacionId`: lo que dijo la persona y lo que contesto Maya. */
-  chat?: { conversacionId: string; usuarioId: string; mensajes: FilaMensajeChat[] };
+  chat?: { conversacionId: string; usuarioId: string; dispositivoId: string | null; mensajes: FilaMensajeChat[] };
 };
 
 export type Escritor = {
@@ -206,7 +209,14 @@ function salidaDelTurno(lineas: LineaStream[], corridaCierre: string | null): Fi
 }
 
 export function crearGrabadora(
-  inicio: { tipo: "turno" | "portada"; usuarioId: string; conversacionId?: string; motivo?: string; peticion?: unknown },
+  inicio: {
+    tipo: "turno" | "portada";
+    usuarioId: string;
+    conversacionId?: string;
+    motivo?: string;
+    peticion?: unknown;
+    dispositivoId?: string;
+  },
   escritor: Escritor,
 ): Grabadora {
   const id = `cor_${randomUUID().replaceAll("-", "").slice(0, 24)}`;
@@ -220,6 +230,7 @@ export function crearGrabadora(
     tipo: inicio.tipo,
     usuarioId: inicio.usuarioId,
     conversacionId: inicio.conversacionId ?? null,
+    dispositivoId: dispositivoParaRegistro(inicio.dispositivoId),
     motivo: inicio.motivo ?? null,
     estado: "corriendo",
     proveedor: null,
@@ -412,6 +423,7 @@ export function crearGrabadora(
               chat: {
                 conversacionId: inicio.conversacionId,
                 usuarioId: inicio.usuarioId,
+                dispositivoId: dispositivoParaRegistro(inicio.dispositivoId),
                 mensajes: [...(entrada ? [entrada] : []), salidaDelTurno(corrida.lineas, corrida.cierre)],
               },
             }

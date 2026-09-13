@@ -97,7 +97,7 @@ export function SimuladorMeta(props: Partial<PropsSimuladorMeta> & Pick<PropsCom
         </span>
         {meses > 0 && fecha ? (
           <>
-            <span className="monto text-3xl font-semibold">{formatearFecha(fecha, true)}</span>
+            <span className="cifra monto text-3xl font-semibold">{formatearFecha(fecha, true)}</span>
             <span className={`text-sm ${suave}`}>
               llegas en {meses} {meses === 1 ? "mes" : "meses"}
             </span>

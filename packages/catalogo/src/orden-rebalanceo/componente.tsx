@@ -44,7 +44,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
             {movimientos.length} {movimientos.length === 1 ? "operación" : "operaciones"}
           </Badge>
         </div>
-        <span className="monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(valorTotalCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           en el portafolio ·{" "}
           {comisionTotalCentavos === 0 ? (
@@ -58,7 +58,7 @@ export function OrdenRebalanceo(props: Partial<PropsOrdenRebalanceo> & Pick<Prop
       </CardHeader>
 
       <CardContent>
-        <ul className="flex flex-col">
+        <ul className="animar-filas flex flex-col">
           {movimientos.map((m, i) => {
             const compra = m.tipo === "compra";
             return (

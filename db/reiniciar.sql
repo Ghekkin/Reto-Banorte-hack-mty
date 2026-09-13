@@ -10,8 +10,14 @@ SET search_path TO banorte;
 
 BEGIN;
 
--- 1. Todo lo que aplicaron las acciones durante el ensayo.
+-- 1. Todo lo que aplicaron las acciones durante el ensayo, en TODOS los dispositivos, y las
+--    portadas de Inicio que esos dispositivos armaron con ellas (migracion 0007, ADR 0012).
 TRUNCATE acciones_aplicadas RESTART IDENTITY;
+DO $$ BEGIN
+  IF to_regclass('banorte.pantallas_por_dispositivo') IS NOT NULL THEN
+    DELETE FROM banorte.pantallas_por_dispositivo;
+  END IF;
+END $$;
 
 -- 2. Los planes de reestructura vuelven a ser ofertas, no planes aplicados.
 UPDATE creditos

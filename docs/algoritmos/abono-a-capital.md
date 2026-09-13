@@ -141,7 +141,7 @@ Cifras de referencia (volcado de pruebas):
 | IVA sobre intereses | 0.16 | Ley; el mismo `IVA` de `finanzas.ts` |
 | Hitos | 4 (1, n/3, 2n/3, n) | Lo que cabe en `ProyeccionPagoCredito` sin volverse tabla |
 | Tope de simulación | 1,200 meses | Seguridad contra una cuota que apenas cubre el interés |
-| Techo de deuda | comprometido + libre de buró | `capacidad_pago_mensual_centavos` es lo **libre** (35 % del ingreso menos lo comprometido, ver `docs/como-funciona/base-de-datos.md`); compararla contra el total avisaría siempre a Carmen. Sin fila de buró, 35 % del ingreso |
+| Techo de deuda | comprometido + libre de buró | `capacidad_pago_mensual_centavos` es lo **libre** (35 % del ingreso menos lo comprometido, ver `docs/como-funciona/base-de-datos.md`); compararla contra el total avisaría siempre a Carmen. Sin fila de buró, 35 % del ingreso. Los gastos mensuales fuera del banco lo bajan ([gastos-fuera-del-banco.md](gastos-fuera-del-banco.md)) |
 
 ## Límites y supuestos
 

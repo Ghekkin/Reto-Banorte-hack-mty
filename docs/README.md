@@ -52,6 +52,7 @@ quien.
 - [0009 — El agente se llama Maya](decisiones/0009-maya-como-marca-del-agente.md)
 - [0010 — PostgreSQL es la única fuente de datos](decisiones/0010-postgres-unica-fuente-de-datos.md)
 - [0011 — En Inicio, las cifras de una tarjeta solo las pone el MCP](decisiones/0011-cifras-solo-del-mcp.md) — el modelo elige qué consultar; adaptadores, verificador y auditor
+- [0012 — Lo que muta en la demo se guarda por dispositivo](decisiones/0012-estado-aislado-por-dispositivo.md) — cookie por navegador, cabecera en la conexión MCP, acciones y portada de Inicio de cada visitante
 
 ### Arquitectura
 - [Visión general](arquitectura/vision-general.md) — las piezas y cómo se hablan
@@ -72,6 +73,7 @@ quien.
 - [Datos mock](como-funciona/datos-mock.md) — los perfiles demo, las 22 tablas de `banorte` y las invariantes que sostienen la demo
 - [Las 12 tools del MCP](como-funciona/tools-mcp.md) — qué contesta cada una, el estado mutable que cierra el ciclo, idempotencia y casos límite
 - [El catálogo](como-funciona/catalogo.md) — los 8 componentes A2UI originales: qué tool llena cada uno, qué acción devuelve, cómo se prueban
+- [La animación de los widgets](como-funciona/animacion-de-widgets.md) — la coreografía de entrada de toda tarjeta (cifra, filas, barras, curvas que se dibujan), por qué todo corre en la GPU, la espera al scroll en celular y el deslizamiento de Inicio
 - [Componentes de inversión, crédito y diagnóstico](como-funciona/componentes-inversion-y-credito.md) — los otros 10 componentes del catálogo (18 en total), con sus gráficas de Recharts sobre los tokens del sistema
 - [`Conclusion`](como-funciona/componente-conclusion.md) — la conclusión de Maya como tarjeta del catálogo y no como párrafo de chat: por qué el consejo era lo menos visible de la pantalla y quién la pinta
 - [El agente](como-funciona/agente.md) — el turno con el AI SDK, el puente al MCP, `pintar_pantalla` y las cuatro validaciones antes de que A2UI salga
@@ -79,6 +81,7 @@ quien.
 - [El ciclo LIVE](como-funciona/ciclo-live.md) — las tres salidas del turno (aclarar, ajustar lo que ya se ve sin recrearlo, repintar), el tope de 3 tarjetas y por qué el motor A2UI ya lo soportaba
 - [Corridas, chat y registros en la base](como-funciona/corridas-en-db.md) — cada turno y cada portada quedan en PostgreSQL con modelo, tools, pasos, argumentos, resultados y lo que vio la persona; el chat y los logs de web y MCP también; `pnpm corridas` para leerlo
 - [El Inicio que arma Maya](como-funciona/inicio-personalizado.md) — la portada de cada persona con un modelo chico, el reloj que solo corre cuando la cuenta se movió, el rearmado tras cada acción, la conclusión como tarjeta y la consulta que reemplaza el dashboard (sin widgets vivos)
+- [Estado por dispositivo](como-funciona/estado-por-dispositivo.md) — cada visitante tiene su propio estado: lo que aplica o pregunta se guarda en la base con su dispositivo y no le cambia la demo a nadie más
 - [Widgets vivos](como-funciona/widgets-vivos.md) — preguntarle a UNA tarjeta y que cambie en su lugar, con cifras que solo pone el MCP: fuentes, `modificar_widget` / `reemplazar_widget` / `responder`, y el auditor que re-consulta antes de mostrar (`FEATURE_WIDGETS_VIVOS`)
 - [El bug del gasto que no cuadraba](como-funciona/bug-gasto-total-no-cuadra.md) — un total contra seis de once categorías, por qué el culpable era el ejemplo del few-shot y no el código, y las pruebas que ahora lo cazan
 
@@ -88,12 +91,14 @@ quien.
 - [Amortización, CAT y reestructura](algoritmos/amortizacion.md) — mensualidad, tabla que cierra en cero, CAT por bisección, escenario de pago mínimo
 - [Oferta de reestructura](algoritmos/oferta-de-reestructura.md) — qué plazos se cotizan, con qué tasa y cuál se recomienda
 - [Abono a capital](algoritmos/abono-a-capital.md) — «¿y si pago $6,000 al mes?» sobre un crédito a plazo: la simulación que reproduce la tabla del banco al centavo, la cuota para liquidar en N meses, qué no es posible (pagar menos, tardar más) y cuándo se avisa que aprieta
+- [Gastos fuera del banco](algoritmos/gastos-fuera-del-banco.md) — «también pago $3,500 de renta en efectivo»: cómo un gasto que el banco no ve entra al gasto del mes, qué le resta a la capacidad de pago y de ahorro, cuándo se avisa, y por qué el efectivo del cajero puede contarse dos veces
 - [Categoría atípica](algoritmos/categoria-atipica.md) — qué cuenta como gasto y cuál categoría se resalta (la que se salió de su patrón, no la más grande)
 - [Proyección de ahorro](algoritmos/proyeccion-de-ahorro.md) — capacidad real de ahorro, fecha estimada y los tres escenarios del slider
 - [Puntaje de salud financiera](algoritmos/puntaje-de-salud.md) — calificación, tendencia con banda muerta, y cuándo el hábito detectado deja de ser cierto
 - [Acomodo del lienzo](algoritmos/acomodo-del-lienzo.md) — cómo se reparten las tarjetas lado a lado según el ancho del lienzo y el ancho natural de cada componente, y por qué los widgets miden su propio ancho (container queries)
 - [Gráficas del catálogo](algoritmos/graficas-del-catalogo.md) — qué forma para cada dato, el orden de colores que pasa el validador de daltonismo, la serie calibrada del slider y las referencias de los pilares
 - [La portada de Maya](algoritmos/portada-de-maya.md) — la huella que decide cuándo rearmar y la escalera de urgencia con la que se eligen las tarjetas
+- [Portada por dispositivo](algoritmos/portada-por-dispositivo.md) — qué portada de Inicio ve cada visitante (la común mientras no haya hecho nada, la suya después) y cuál se rearma sin pagar una por visitante
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 - [Intención y parcheo](algoritmos/intencion-y-parcheo.md) — cómo se clasifica una pregunta de seguimiento sin clasificador, el tope de tarjetas con su poda determinista, qué valida un parche y quién gana el slider cuando la persona y el agente no coinciden
 - [Adaptadores de widget](algoritmos/adaptadores-de-widget.md) — las 13 fuentes: qué tool llena qué tarjeta, qué parámetros acepta el modelo y las cuatro únicas cifras derivadas

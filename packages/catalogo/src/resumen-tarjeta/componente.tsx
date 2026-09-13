@@ -49,7 +49,7 @@ export function ResumenTarjeta(props: Partial<PropsResumenTarjeta>) {
     <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>{planActivo ? "Saldo diferido de tu tarjeta" : "Saldo de tu tarjeta"}</span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(saldoCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(saldoCentavos)}</span>
         <span className={`text-sm ${suave}`}>{mascara}</span>
         <CardAction>
           {planActivo ? (

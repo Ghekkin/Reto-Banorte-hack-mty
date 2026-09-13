@@ -44,6 +44,6 @@ import BanorteAlert from '../../../components/BanorteAlert';
 ## Reglas Innegociables de Desarrollo
 
 1. **Todo se documenta en dos niveles:** Nivel "para cualquiera" (ejecutivo y funcional) y nivel "técnico" (archivos, contratos y schemas).
-2. **Cero alucinaciones numéricas:** Ningún dato monetario o tasa de interés es inventado por el modelo; todo proviene de una tool MCP.
+2. **Determinismo numérico estricto:** Ningún dato monetario o tasa de interés es inventado por el modelo; todo proviene de una tool MCP.
 3. **Persistencia real:** Las acciones del usuario mutan PostgreSQL con clave de idempotencia única; ningún cambio vive solo en la memoria del front.
 4. **Main siempre verde:** Todo commit pasa validación de tipos (`pnpm typecheck`) y pruebas unitarias (`pnpm test`).

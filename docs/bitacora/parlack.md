@@ -1682,3 +1682,96 @@ contrato, `ciclo-live.md`, `intencion-y-parcheo.md`, guion. En paralelo, dos sub
 (dominio del abono, dos tools, migración 0005, pruebas) y catálogo (`ProyeccionPagoCredito` con
 antes/después, botón, programado y resaltado). Toque ajeno: `apps/web/src/components/maya/`
 (web), `apps/mcp` y `packages/catalogo` vía subagentes.
+
+### 03:58 (dom 13) — Cada visitante tiene su propio estado (ADR 0012)
+
+Pedido: con muchos visitantes probando la demo a la vez, lo que uno modifica le cambia la
+demo a todos. Confirmado en la base: a las 03:40 había un plan de Beto y un apartado de Ana
+aplicados en el estado compartido, y `preguntarEnInicio` y el ajuste de widgets reescribían
+`pantallas_inicio` para todos. Lo que se pidió: modificaciones aisladas por dispositivo,
+guardadas en la base, que sigan ahí al volver.
+
+Hecho: cookie `maya_dispositivo` que pone `apps/web/src/proxy.ts`; `conectarMcp({ dispositivoId })`
+manda `x-maya-dispositivo` y `registro.ts` del MCP abre un `AsyncLocalStorage` por tool, así
+que ninguna tool cambió su schema; `acciones_aplicadas.dispositivo_id` con la llave de
+idempotencia prefijada; `pantallas_por_dispositivo` para la portada de quien ya se apartó de la
+común (la común se sigue sirviendo a quien no ha hecho nada, sin pagar modelo); `dispositivo_id`
+en `corridas` y `conversaciones`. Migración 0007 aditiva, **ya aplicada a la base compartida**.
+Pruebas: 5 del MCP (`dispositivos.spec.ts`), 5 de servicio y 4 de proxy/id en web; suites
+completas en verde (a2ui 120, mcp 178, catálogo 151, web 321). Verificado en vivo con dos
+dispositivos contra la base real (filas de la prueba borradas).
+
+Trabajé en un worktree aparte (`/root/reto-dispositivo`) sobre `origin/main`, porque la carpeta
+compartida iba 6 commits atrás y tiene trabajo sin commitear de otras sesiones (fase 2 de ajustes
+en vivo) en `agente.ts` y `estado.ts`, que también toqué: en líneas distintas.
+
+Toque ajeno: `apps/mcp` (mcp), `lib/inicio` y `app/api/inicio/widget` (web/contrato de aldair).
+De paso, issue #27: `preguntarEnInicio` guardaba sin `procedencias` y con widgets vivos la
+respuesta se tiraba al siguiente render; arreglado en el mismo commit.
+
+Queda: al recargar `/maya` la conversación no se restaura (ya se guarda con su dispositivo).
+Antes de abrir la liga al público, `pnpm reiniciar-estado`: con acciones en `comun`, cada
+dispositivo nuevo arma su propia portada.
+
+
+### 04:20 (dom 13) — Ajustes en vivo: fase 2, el «se recarga todo», Inicio vivo e integración
+
+- **Fase 2 en `main`** (`e3ab640`): gastos fuera del banco. Beto con el modelo real, 3 de 3:
+  «también le doy $2,000 al mes a mi mamá» cambia la misma tarjeta de gasto ($33,349.50 →
+  $35,349.50) y «Guardar gasto» la registra (segunda acción declarada en el catálogo). Migración
+  0006 aplicada. `parchesDeterministas`: las cifras de las tools del turno las escribe el host
+  (Gemini inventó `aportacionMaximaCentavos: 520000` en un ensayo), leyendo solo las tools de ESE
+  turno. `null` en un parche = quitar la prop.
+- **El usuario vio «se recarga toda la página»** al ajustar el crédito: cada parche sin
+  `createSurface` hacía que la consola pintara la pantalla completa otra vez debajo durante el
+  turno. Arreglado con `ponerEnPantalla` (`cdfda32`); verificado con Playwright: nunca más de una
+  tarjeta ni pantalla. «Liquidarlo en 12 meses» también funciona ($5,503.21, $2,525.82 de ahorro;
+  una corrida tardó 15.2 s por el proveedor).
+- **Integración** con lo que subió aldair (widgets vivos, ADR 0011, 6.6k líneas): un solo
+  conflicto (`tools/index.ts`), dos migraciones 0005 que conviven (idempotentes). 808 pruebas en
+  verde con el árbol integrado; la fase 2 se verificó aislada sobre `HEAD` (worktree temporal) para
+  no subir las animaciones a medias de otra sesión.
+- **Inicio**: el usuario pidió que no borre todo. Prendí `FEATURE_WIDGETS_VIVOS=1` en local (reinicio
+  del next-server tocando `next.config.ts`) y en producción (Coolify env + restart, verificado
+  dentro del contenedor) tras `probar-widgets` 6 de 6. Transición de valores al ajustar: en curso
+  (subagente), coordinado con la sesión que hace las animaciones de entrada.
+- Limpieza: borré de la base las filas de ensayo (abono de Ana, gasto de Beto) y rearmé sus portadas.
+
+### 04:15 (dom 13) — Los widgets entran animados, en la GPU
+
+El usuario pidió que los widgets siempre tengan una animación («que las gráficas se muestren con
+algo»), lo más fluida posible sin afectar rendimiento ni identidad, con la taste-skill; a media
+sesión aclaró que le importan los widgets y no el sidebar ni el chat, y reportó que en
+ghekkinxmaya.tech los widgets «salen con delays y se traba un poco». También apareció la skill
+`financial-animations` del equipo y se siguieron sus bandas de tiempo.
+
+- **Hecho**: coreografía de entrada de toda tarjeta del catálogo (`animar-tarjeta` en
+  `CLASES_TARJETA`): superficie, cifra, filas en cascada, barras desde cero, curvas que se abren
+  de izquierda a derecha (ventana CSS en `Grafica`), dona que gira 30°, medidor en dos capas cuyo
+  arco barre. Tarjetas fuera de la pantalla esperan a verse (`animacion.ts`, dos
+  `IntersectionObserver`). En Inicio, las tarjetas se deslizan a su lugar al medir en vez de
+  brincar (`deslizarAlMedir` en `masonry.tsx`). Doc: `docs/como-funciona/animacion-de-widgets.md`.
+- **Medido** (Chromium sin GPU, máquina con carga 23): la primera versión animaba `clip-path` y
+  elementos del SVG; la traza (`compositeFailed`) mostró 6 animaciones en el hilo principal. Se
+  rehízo: las 56 de una pantalla de 4 widgets corren en el compositor. En producción, lo que se
+  sentía trabado era la hidratación (cuadros de 130–240 ms) más el salto del masonry, y las
+  gráficas de Recharts que se dibujan tras hidratar (la animación terminaba sobre un contenedor
+  vacío): ahora esperan a su SVG con `:has(.recharts-surface)`.
+- **Descartado**: animación propia de Recharts (re-render de React por fotograma y se redispara
+  con el slider); conteo de cifras al montar (los dígitos bailan); cascada de segmentos SVG en
+  la dona.
+- **Bugs registrados, no arreglados**: #26 (dona héroe con clases invisibles desde la sexta) y
+  #28 (`ÔÇóÔÇóÔÇóÔÇó 4821` en la tarjeta de Inicio).
+- **Coordinación**: la otra sesión (ajustes en vivo) hace la transición de valores al ajustar en
+  `transicion.ts`; acordado que Recharts no anima al montar y que no se tocan los ganchos
+  `animar-*`/`cifra`.
+- **Toque ajeno**: `apps/web/src/components/inicio/masonry.tsx` (web), `globals.css` (web),
+  skills `diseno-banorte` y `ui-generativa`.
+- **Pendiente**: ver el deslizamiento de Inicio en producción tras el deploy; la hidratación
+  de Inicio sigue trayendo cuadros largos (no es de animación).
+- **04:25 · incidente**: `a7f1e73` rompió `main`. El commit por rutas se llevó la versión a
+  medias de `proyeccion-pago-credito/componente.tsx` de la sesión de ajustes en vivo (importa
+  `transicion.ts`, sin commitear) y el CI tronó en "catalogo.json al dia". Arreglado en
+  `d156138` desde un `git worktree` limpio (el archivo vuelve a eafe535 + mis 4 clases),
+  verificado con `pnpm catalogo`, `pnpm typecheck` y `pnpm test` antes de subir. Issue #31
+  (cerrado) con la sugerencia de procedimiento. Avisé a las dos sesiones afectadas.

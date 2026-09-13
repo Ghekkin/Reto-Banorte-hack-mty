@@ -25,7 +25,9 @@ la nota lo dice: «Cifras verificadas con el banco». Si Maya escribe un número
 ese número también se revisa contra lo que el banco contestó; uno inventado no llega a tu
 pantalla.
 
-Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como antes.
+Se enciende con `FEATURE_WIDGETS_VIVOS=1`. Apagado, Inicio es exactamente como antes. **Está
+prendido en local y en producción desde el 2026-09-13 04:10** (a pedido del usuario: «no me gusta que
+borre todo en el inicio»); `pnpm probar-widgets` pasó 6 de 6 con el modelo real antes de prenderlo.
 
 ## Técnico
 
@@ -108,6 +110,11 @@ pasa, se emiten los mensajes y `almacen.ajustar` funde el cambio en la fila de
 `pantallas_inicio` con un candado sobre `generada_en` (si el reloj rearmó la portada mientras,
 no se pisa). La huella no cambia: recargar conserva lo que la persona pidió.
 
+
+**De quién es el ajuste** (ADR 0012): la ruta lee la portada que la página le pintó a ESTE
+dispositivo (`estadoDelInicio(persona, { dispositivoId })`) y abre el MCP con su cabecera. Si
+estaba viendo la común, `almacen.ajustar` no la toca: copia la común con la tarjeta cambiada a
+`pantallas_por_dispositivo`, con la misma `generada_en`, y ese dispositivo sigue desde ahí.
 ### El cliente
 
 `InicioVivo` guarda la superficie en estado y aplica cada `a2ui` con `procesar` (el reducer puro

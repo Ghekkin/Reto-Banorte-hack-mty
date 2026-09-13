@@ -95,7 +95,8 @@
 :root {
   --radius: 0.625rem;
 
-  /* Motion (skill diseno-banorte: 150-200 ms, ease-out, nada sobre 250 ms).
+  /* Motion (skill diseno-banorte: 150-200 ms, ease-out, nada sobre 250 ms en controles;
+     los widgets del catalogo tienen su propia banda, abajo).
      Viven en tokens y no sueltos en cada componente para que "que se sienta mas
      rapido" sea cambiar dos numeros aqui, no cazar duration-150 por el repo.
      `salida` es la curva de Material 3 para lo que ENTRA o se mueve por decision
@@ -110,6 +111,32 @@
   /* El escalon de la entrada en cascada. 4 escalones maximo (ver .animar-lista):
      4 x 25 + 150 = 225 ms de principio a fin, debajo del techo de 250. */
   --motion-escalon: 25ms;
+
+  /* La coreografia de los WIDGETS del catalogo (`.animar-tarjeta`, mas abajo, y
+     docs/como-funciona/animacion-de-widgets.md). Es una banda aparte de la de arriba a
+     proposito: un control responde en 150-200 ms porque la persona espera el resultado de
+     SU toque; una tarjeta que el agente acaba de construir puede tardar medio segundo en
+     asentarse y su grafica casi uno en dibujarse, porque ahi el movimiento ES informacion
+     ("esto se armo para ti, y la curva va de aqui a aca"). Una tarjeta se asienta completa
+     en ~800 ms, contando el trazo de su grafica; la quinta de la pantalla, 200 ms despues.
+     Lo que se lee (la cifra, el encabezado) ya esta a los ~450 ms. La primera version
+     duraba el doble y en produccion se sentia "con delays". */
+  --widget-entrada: 350ms;
+  /* Lo que muestra un dato (curvas, barras, arcos): la banda "animaciones de datos" de la
+     skill financial-animations, 400-800 ms. */
+  --widget-dato: 650ms;
+  /* Entre tarjetas de la misma pantalla, y entre filas de una lista. */
+  --widget-escalon: 50ms;
+  --widget-escalon-fila: 30ms;
+  /* Material 3 "emphasized decelerate": lo que ENTRA. Llega rapido y se asienta largo, sin
+     rebote: en una cifra de dinero un rebote es un instante en que la barra dice un monto
+     que no es. */
+  --motion-enfatizada: cubic-bezier(0.05, 0.7, 0.1, 1);
+  /* Lo que se DIBUJA (curvas, barras, arcos): entre el "standard" de Material 3 y su
+     "fast out, slow in": lleva la mitad del trazo al 27 % del tiempo y el 94 % al 66 %. Con
+     la de Material 1 (0.4, 0, 0.2, 1), que arranca mas despacio, en los cuadros de
+     /catalogo el trazo se veia tarde. */
+  --motion-trazo: cubic-bezier(0.3, 0, 0.1, 1);
 
   --background: oklch(1 0 89.88);
   --foreground: oklch(0.2046 0 89.88);
@@ -341,6 +368,23 @@
     animation-delay: calc(var(--motion-escalon) * 4);
   }
 
+  /* El lugar de cada pieza en la pantalla, para la coreografia de los widgets
+     (`.animar-tarjeta`, abajo). Es una variable y no un retraso: la hereda todo lo que
+     hay dentro de la tarjeta, asi que su encabezado, su grafica y sus filas se recorren
+     juntos cuando la tarjeta es la tercera de la pantalla. Mismo tope de 4 que arriba. */
+  .animar-lista > *:nth-child(2) {
+    --orden: 1;
+  }
+  .animar-lista > *:nth-child(3) {
+    --orden: 2;
+  }
+  .animar-lista > *:nth-child(4) {
+    --orden: 3;
+  }
+  .animar-lista > *:nth-child(n + 5) {
+    --orden: 4;
+  }
+
   /* La SALIDA: el espejo exacto de `entrada-superficie`.
      La entrada sube 4 px y aparece; la salida sigue subiendo, se encoge un 2 % y se
      va. Leidas una tras otra (salida -> el modelo trabaja -> entrada) se ven como un
@@ -387,6 +431,253 @@
      existe, que en una app bancaria se paga en confianza. Si algun dia hay una
      tarjeta-enlace, esa utilidad es lo correcto: dos lineas de `transition` sobre
      `box-shadow` y `transform`, y nada mas. */
+}
+
+/* Los WIDGETS del catalogo: toda tarjeta que pinta el agente entra con esta coreografia,
+   y entra sola. `Tarjeta` (packages/catalogo/src/tarjeta.tsx) le pone `animar-tarjeta` a
+   la superficie y lo demas se engancha a los `data-slot` de shadcn, asi que un componente
+   nuevo la hereda sin escribir nada. Lo que no tiene gancho propio se marca a mano: `cifra`
+   (EL numero de la tarjeta), `animar-filas` (una lista), `animar-barra` (una barra hecha con
+   divs), `animar-trazo` (la ventana de una grafica, la pone `Grafica`), `animar-dona`,
+   `animar-arco` y `animar-icono`. Doc completo: docs/como-funciona/animacion-de-widgets.md.
+
+   El pedido (2026-09-13): que los widgets siempre tengan una animacion y que las graficas
+   "se muestren con algo", lo mas fluido posible sin afectar el rendimiento ni la
+   identidad. El orden cuenta la historia de la tarjeta; en ms desde que monta:
+
+       0   la superficie sube 10 px y aparece
+      30   el encabezado
+      50   la cifra, que sube desde abajo
+      60   el cuerpo
+      90   las filas, una cada 30 ms (tope: la novena)
+     100   la dona gira un poco mientras aparece
+     120   el trazo: la grafica se abre de izquierda a derecha y sus puntos y etiquetas
+           aparecen cuando el borde llega a ellos; el arco del medidor barre; las barras
+           crecen desde cero
+     140   el pie con la accion
+
+   Las graficas (trazo, dona, arco) empiezan cuando su SVG EXISTE (`:has(.recharts-surface)`),
+   no cuando monta la tarjeta: Recharts las dibuja en el navegador despues de medir, asi que
+   en una pagina que llega pintada desde el servidor (Inicio) la animacion terminaba sobre
+   un contenedor vacio y la grafica aparecia de golpe. Era el "a veces no se ve".
+
+   El contenido sale casi junto con la superficie a proposito: con mas distancia, la
+   tarjeta heroe se veia un instante como un bloque rojo vacio. A todo se le suma
+   `--orden` x 50 ms (ver `.animar-lista`): la segunda tarjeta de la pantalla va 50 ms
+   detras de la primera.
+
+   Rendimiento, que es la otra mitad del pedido:
+   - TODO es `transform` y `opacity` sobre elementos HTML, que el navegador compone en la
+     GPU: medido con la traza de Chromium, ninguna animacion de la entrada cae al hilo
+     principal. Las primeras versiones animaban `clip-path` (la curva y la cifra) y
+     elementos del SVG; esas no se pueden componer y ponian trabajo de estilo y pintura en
+     casi todos los cuadros de la entrada.
+   - Cero JavaScript por fotograma. Recharts sigue con `isAnimationActive={false}` a
+     proposito: su animacion re-renderiza el SVG en React en cada fotograma y, en los
+     simuladores, se volveria a disparar con cada paso del slider.
+   - `backwards` y nunca `both`: al terminar, la animacion deja de existir y el elemento
+     vuelve a su estilo normal, sin transformaciones vivas.
+   - Se anima UNA vez, al montar. Arrastrar un slider o parchear una prop no la vuelve a
+     disparar: el trazo no persigue al dedo.
+   - Una tarjeta que monta fuera de la pantalla (en el celular, casi todas) espera a
+     verse: `data-en-espera`, que pone y quita `usarEntradaAlVerse` (animacion.ts).
+   - Sin rebotes ni resortes: una barra que se pasa de su valor dice, por un instante, un
+     monto que no es. */
+@layer utilities {
+  @keyframes widget-sube {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.99);
+    }
+  }
+
+  @keyframes widget-contenido {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* La cifra sube un tercio de su alto mientras aparece. Antes salia de detras de su linea
+     base con un recorte (`clip-path`), que se veia bien y costaba un cuadro de pintura por
+     fotograma: un numero que sube y aparece dice lo mismo sin tocar el hilo principal. */
+  @keyframes widget-cifra {
+    from {
+      opacity: 0;
+      transform: translateY(35%);
+    }
+  }
+
+  @keyframes widget-barra {
+    from {
+      transform: scaleX(0);
+    }
+  }
+
+  /* La ventana de una grafica: se desliza desde la izquierda mientras su contenido se
+     desliza, con la misma curva y el mismo reloj, en sentido contrario. Las dos se cancelan
+     y la grafica se queda quieta; lo unico que avanza es el borde de la ventana. Arranca
+     con `--eje` a la vista para que la escala del eje Y ya este cuando empieza la curva. */
+  @keyframes widget-ventana {
+    from {
+      transform: translateX(calc(-100% + var(--eje)));
+    }
+  }
+  @keyframes widget-contraventana {
+    from {
+      transform: translateX(calc(100% - var(--eje)));
+    }
+  }
+
+  @keyframes widget-punto {
+    from {
+      opacity: 0;
+      transform: scale(0);
+    }
+  }
+
+  /* Un giro corto y no un cuarto de vuelta: la skill financial-animations pide "evitar
+     rotaciones exageradas" en las donas. */
+  @keyframes widget-dona {
+    from {
+      opacity: 0;
+      transform: rotate(-30deg) scale(0.94);
+    }
+  }
+
+  /* La capa del arco del medidor gira sobre su centro desde `--barrido` (el angulo del
+     puntaje, en negativo) hasta su lugar. La caja del medidor solo deja ver la mitad de
+     arriba, asi que la parte que todavia va debajo del horizonte no se ve: se lee como un
+     relleno que avanza de izquierda a derecha, y es UNA rotacion. */
+  @keyframes widget-arco {
+    from {
+      transform: rotate(var(--barrido, -180deg));
+    }
+  }
+
+  /* --- La superficie y sus tres partes --- */
+
+  .animar-tarjeta {
+    --t0: calc(var(--orden, 0) * var(--widget-escalon));
+    animation: widget-sube var(--widget-entrada) var(--motion-enfatizada) var(--t0) backwards;
+  }
+  .animar-tarjeta [data-slot="card-header"] {
+    animation: widget-contenido var(--widget-entrada) var(--motion-enfatizada) calc(var(--t0) + 30ms) backwards;
+  }
+  .animar-tarjeta [data-slot="card-content"] {
+    animation: widget-contenido var(--widget-entrada) var(--motion-enfatizada) calc(var(--t0) + 60ms) backwards;
+  }
+  .animar-tarjeta [data-slot="card-footer"] {
+    animation: widget-contenido var(--widget-entrada) var(--motion-enfatizada) calc(var(--t0) + 140ms) backwards;
+  }
+
+  /* EL numero de la tarjeta (skill diseno-banorte: "¿cual es el numero de esta pantalla?").
+     Tiene que ser caja: un `span` en linea ignora `transform`. */
+  .animar-tarjeta .cifra {
+    animation: widget-cifra 450ms var(--motion-enfatizada) calc(var(--t0) + 50ms) backwards;
+  }
+
+  /* Un icono que confirma algo (la palomita de `Confirmacion`): es la retroalimentacion
+     de que la accion se aplico, el tercer paso del reto. */
+  .animar-tarjeta .animar-icono {
+    animation: widget-punto 380ms var(--motion-enfatizada) calc(var(--t0) + 120ms) backwards;
+  }
+
+  /* --- Listas: cada hijo entra 30 ms detras del anterior. `--fila` lo hereda lo que va
+     adentro de la fila, asi que la barra de la tercera categoria crece con su fila. --- */
+
+  .animar-tarjeta .animar-filas > * {
+    --fila: 0;
+    animation: widget-contenido var(--widget-entrada) var(--motion-enfatizada)
+      calc(var(--t0) + 90ms + var(--fila) * var(--widget-escalon-fila)) backwards;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(2) {
+    --fila: 1;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(3) {
+    --fila: 2;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(4) {
+    --fila: 3;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(5) {
+    --fila: 4;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(6) {
+    --fila: 5;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(7) {
+    --fila: 6;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(8) {
+    --fila: 7;
+  }
+  .animar-tarjeta .animar-filas > :nth-child(n + 9) {
+    --fila: 8;
+  }
+
+  /* --- Barras: crecen desde su inicio. Las de shadcn (`Progress`) sin marcar nada. --- */
+
+  .animar-tarjeta [data-slot="progress-indicator"],
+  .animar-tarjeta .animar-barra {
+    transform-origin: left center;
+    animation: widget-barra var(--widget-dato) var(--motion-trazo)
+      calc(var(--t0) + 120ms + var(--fila, 0) * var(--widget-escalon-fila)) backwards;
+  }
+
+  /* --- Graficas --- */
+
+  /* La ventana (`Grafica`, `entrada="trazo"`) y su contenido, con el mismo reloj. `--eje` es
+     el ancho del eje Y de las graficas del catalogo (`width={60}`). Las tres reglas de
+     graficas esperan a que exista el SVG (ver arriba): las dos mitades de la ventana
+     arrancan en el mismo recalculo de estilo, asi que nunca se desfasan. */
+  .animar-tarjeta .animar-trazo {
+    --eje: 60px;
+    overflow: hidden;
+  }
+  .animar-tarjeta .animar-trazo:has(.recharts-surface) {
+    animation: widget-ventana var(--widget-dato) var(--motion-trazo) calc(var(--t0) + 120ms) backwards;
+  }
+  .animar-tarjeta .animar-trazo:has(.recharts-surface) > * {
+    animation: widget-contraventana var(--widget-dato) var(--motion-trazo) calc(var(--t0) + 120ms) backwards;
+  }
+
+  /* La dona gira un poco mientras aparece. Se gira el contenedor HTML de la grafica y no el
+     SVG: asi lo compone la GPU. */
+  .animar-tarjeta .animar-dona:has(.recharts-surface) {
+    animation: widget-dona var(--widget-dato) var(--motion-enfatizada) calc(var(--t0) + 100ms) backwards;
+  }
+
+  /* El arco del medidor (ver `widget-arco`). `--barrido` lo pone el componente. */
+  .animar-tarjeta .animar-arco:has(.recharts-surface) {
+    animation: widget-arco var(--widget-dato) var(--motion-trazo) calc(var(--t0) + 120ms) backwards;
+  }
+
+  /* --- Tarjetas fuera de la pantalla (`usarEntradaAlVerse`) --- */
+
+  /* Un fotograma sin animaciones para que vuelvan a crearse desde cero: la tarjeta pudo
+     llegar pintada desde el servidor y haber animado ya donde nadie la veia. */
+  [data-reinicio] .animar-tarjeta,
+  [data-reinicio] .animar-tarjeta * {
+    animation-name: none !important;
+  }
+  /* En pausa en su primer fotograma (invisible) hasta que la tarjeta se ve. */
+  [data-en-espera] .animar-tarjeta,
+  [data-en-espera] .animar-tarjeta * {
+    animation-play-state: paused !important;
+  }
+
+  /* Para quien pide menos movimiento, los widgets no se animan: aparecen. Es `none` y no
+     los 0.01 ms del bloque de abajo porque aqui hay retrasos, y con `backwards` el primer
+     fotograma (invisible) se sostendria durante el retraso. Ninguna de estas animaciones
+     tiene a nadie esperando su `animationend`. (Un `!important` dentro de una capa le gana
+     al `!important` sin capa de abajo.) */
+  @media (prefers-reduced-motion: reduce) {
+    .animar-tarjeta,
+    .animar-tarjeta * {
+      animation: none !important;
+    }
+  }
 }
 
 /* Accesibilidad, y no es opcional: para quien tiene activado "reducir movimiento"

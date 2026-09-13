@@ -65,6 +65,15 @@ historia. **El MCP no las carga a memoria** (`TABLAS_DE_HISTORIA` en
 `apps/mcp/src/datos/postgres.ts`) y **no entran al volcado de pruebas**
 (`scripts/volcar-fixture.mjs`): crecen con cada turno y ninguna tool las lee.
 
+Desde la migración 0007, `corridas` y `conversaciones` llevan también `dispositivo_id`: de qué
+visitante fue (`null` = estado común, un script o el reloj). Ver `estado-por-dispositivo.md`.
+
+```sql
+select dispositivo_id, count(*) as turnos, max(iniciada_en) as ultimo
+  from banorte.corridas where dispositivo_id is not null
+ group by 1 order by ultimo desc;
+```
+
 ### Cómo se graba
 
 `crearGrabadora()` junta todo **en memoria** y se lo entrega a un `Escritor`. La separación

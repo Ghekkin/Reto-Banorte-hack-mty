@@ -52,11 +52,11 @@ export default function DemoFlowSimulator() {
           <div
             style={{
               backgroundColor: '#ffffff',
-              border: '2px solid #EC0029',
+              border: '1px solid #fecdd3',
               borderRadius: '0.75rem',
               padding: '1.25rem',
               color: '#171717',
-              boxShadow: '0 2px 8px rgba(236, 0, 41, 0.08)',
+              boxShadow: '0 2px 8px rgba(236, 0, 41, 0.04)',
             }}
           >
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
@@ -105,46 +105,60 @@ export default function DemoFlowSimulator() {
             <div style={{ fontWeight: 700, fontSize: '0.95rem', marginBottom: '0.75rem' }}>
               Alternativas de Reestructura a Tasa Preferencial (22.5%)
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem', marginBottom: '1rem' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.6rem', marginBottom: '1rem' }}>
               {[
                 { m: 12, pago: '$4,640.10', ahorro: '$8,240' },
                 { m: 18, pago: '$3,193.35', ahorro: '$14,650', rec: true },
                 { m: 24, pago: '$2,510.40', ahorro: '$11,100' },
-              ].map((opt) => (
-                <div
-                  key={opt.m}
-                  onClick={() => setSelectedMonths(opt.m)}
-                  style={{
-                    border: selectedMonths === opt.m ? '2px solid #EC0029' : '1px solid #cbd5e1',
-                    borderRadius: '0.5rem',
-                    padding: '0.6rem',
-                    cursor: 'pointer',
-                    backgroundColor: selectedMonths === opt.m ? '#fff5f6' : '#ffffff',
-                    position: 'relative',
-                  }}
-                >
-                  {opt.rec && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: '-8px',
-                        right: '6px',
-                        backgroundColor: '#EC0029',
-                        color: '#fff',
-                        fontSize: '0.65rem',
-                        fontWeight: 700,
-                        padding: '0.1rem 0.4rem',
-                        borderRadius: '999px',
-                      }}
-                    >
-                      RECOMENDADO
-                    </span>
-                  )}
-                  <div style={{ fontWeight: 700, fontSize: '0.85rem' }}>{opt.m} meses</div>
-                  <div style={{ fontSize: '1rem', fontWeight: 800, color: '#EC0029' }}>{opt.pago}</div>
-                  <div style={{ fontSize: '0.7rem', color: '#16a34a' }}>Ahorras {opt.ahorro}</div>
-                </div>
-              ))}
+              ].map((opt) => {
+                const isSel = selectedMonths === opt.m;
+                return (
+                  <div
+                    key={opt.m}
+                    onClick={() => setSelectedMonths(opt.m)}
+                    style={{
+                      border: isSel ? '1.5px solid #EC0029' : '1px solid #e2e8f0',
+                      borderRadius: '0.65rem',
+                      padding: '0.75rem 0.65rem',
+                      cursor: 'pointer',
+                      backgroundColor: isSel ? '#fff5f6' : '#ffffff',
+                      boxShadow: isSel ? '0 0 0 1px #EC0029, 0 2px 6px rgba(236, 0, 41, 0.08)' : 'none',
+                      transition: 'all 0.15s ease-out',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      justifyContent: 'space-between',
+                      minHeight: '84px',
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontWeight: 700, fontSize: '0.85rem', color: isSel ? '#960014' : '#1e293b' }}>
+                        {opt.m} meses
+                      </span>
+                      {opt.rec && (
+                        <span
+                          style={{
+                            backgroundColor: '#EC0029',
+                            color: '#fff',
+                            fontSize: '0.6rem',
+                            fontWeight: 800,
+                            padding: '0.1rem 0.35rem',
+                            borderRadius: '4px',
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          TOP
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '1.05rem', fontWeight: 900, color: isSel ? '#EC0029' : '#171717', fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', margin: '0.2rem 0' }}>
+                      {opt.pago}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#15803d', fontWeight: 600 }}>
+                      Ahorras {opt.ahorro}
+                    </div>
+                  </div>
+                );
+              })}
             </div>
             <button
               onClick={() => setCurrentStep(2)}
@@ -258,17 +272,17 @@ export default function DemoFlowSimulator() {
               fontSize: '0.85rem',
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.65rem' }}>
               <Calendar size={16} color="#EC0029" />
-              <span>Próximas amortizaciones</span>
+              <span>Próximas amortizaciones fijas</span>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0', borderBottom: '1px solid #eee' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0', borderBottom: '1px solid #e2e8f0' }}>
               <span>Pago 1 de 18 (12 Oct 2026)</span>
-              <strong>$3,193.35</strong>
+              <strong style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontSize: '0.92rem' }}>$3,193.35</strong>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.45rem 0' }}>
               <span>Pago 2 de 18 (12 Nov 2026)</span>
-              <strong>$3,193.35</strong>
+              <strong style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontSize: '0.92rem' }}>$3,193.35</strong>
             </div>
           </div>
         </div>
@@ -288,33 +302,191 @@ export default function DemoFlowSimulator() {
         'No es un dashboard frío: es una conversación adaptativa donde cada pantalla sabe qué ocurrió en la anterior.',
       renderedMock: (
         <div style={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '0.75rem', padding: '1.25rem', color: '#171717' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.75rem' }}>
-            <PieChart size={18} color="#EC0029" />
-            <span>Desglose Mensual por Categoría ($28,450.00)</span>
+          {/* Encabezado oficial GastoPorCategoria */}
+          <div style={{ marginBottom: '1.25rem', borderBottom: '1px solid #f1f5f9', paddingBottom: '0.95rem' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+              <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Gasto Total de Agosto 2026
+              </span>
+              <span style={{ fontSize: '0.74rem', fontWeight: 700, color: '#b91c1c', backgroundColor: '#fee2e2', border: '1px solid #fecdd3', padding: '0.2rem 0.55rem', borderRadius: '999px' }}>
+                +7.2% vs. mes anterior
+              </span>
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+              <span style={{ fontSize: '2rem', fontWeight: 900, color: '#171717', fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', letterSpacing: '-0.03em', lineHeight: 1 }}>
+                $28,450.00
+              </span>
+              <span style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600 }}>
+                Periodo 2026-08 · 4 categorías
+              </span>
+            </div>
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '1rem' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff5f6', padding: '0.4rem 0.6rem', borderRadius: '0.4rem', borderLeft: '3px solid #EC0029' }}>
-              <div>
-                <span style={{ fontWeight: 700, color: '#991b1b' }}>Retiros de efectivo (Atípico +74.7%)</span>
-                <div style={{ fontSize: '0.7rem', color: '#666' }}>Mayor fuga detectada respecto a tu promedio</div>
+
+          {/* Lista estructurada con números perfectamente tabulados y barras de progreso */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.65rem', marginBottom: '1rem' }}>
+            {/* Categoría 1: Retiros de efectivo (Atípica) */}
+            <div
+              style={{
+                backgroundColor: '#fff5f6',
+                border: '1px solid #fecdd3',
+                borderRadius: '0.65rem',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#991b1b' }}>
+                      Retiros de efectivo
+                    </span>
+                    <span style={{ backgroundColor: '#EC0029', color: '#ffffff', fontSize: '0.62rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '999px', letterSpacing: '0.03em' }}>
+                      ATÍPICO +74.7%
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#7f1d1d' }}>
+                    Mayor fuga detectada vs. promedio histórico ($2,634.00)
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 900, fontSize: '1.05rem', color: '#991b1b', lineHeight: 1.1 }}>
+                    $9,500.00
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#991b1b', fontWeight: 600, marginTop: '0.15rem' }}>
+                    33.4% del gasto
+                  </div>
+                </div>
               </div>
-              <strong style={{ color: '#991b1b' }}>$9,500.00</strong>
+              <div style={{ width: '100%', height: '5px', backgroundColor: '#fed7d7', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '33.4%', height: '100%', backgroundColor: '#EC0029', borderRadius: '999px' }}></div>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0.6rem' }}>
-              <span>Alimentos y supermercado</span>
-              <strong>$7,200.00</strong>
+
+            {/* Categoría 2: Intereses financieros (Pactados en paso anterior) */}
+            <div
+              style={{
+                backgroundColor: '#f0fdf4',
+                border: '1px solid #bbf7d0',
+                borderRadius: '0.65rem',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 800, fontSize: '0.88rem', color: '#166534' }}>
+                      Intereses financieros
+                    </span>
+                    <span style={{ backgroundColor: '#dcfce7', color: '#15803d', border: '1px solid #86efac', fontSize: '0.62rem', fontWeight: 800, padding: '0.1rem 0.45rem', borderRadius: '999px', letterSpacing: '0.03em' }}>
+                      CONGELADO
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#166534' }}>
+                    Tasa bajó a 22.5% por el plan pactado en paso 2 (-$14,650)
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 900, fontSize: '1.05rem', color: '#15803d', lineHeight: 1.1 }}>
+                    $0.00
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                    Antes <span style={{ textDecoration: 'line-through' }}>$7,400.00</span>
+                  </div>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '5px', backgroundColor: '#dcfce7', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '26%', height: '100%', backgroundColor: '#16a34a', borderRadius: '999px' }}></div>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0.6rem' }}>
-              <span>Servicios y suscripciones</span>
-              <strong>$4,350.00</strong>
+
+            {/* Categoría 3: Alimentos y supermercado */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '0.65rem',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>
+                      Alimentos y despensa
+                    </span>
+                    <span style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontSize: '0.62rem', fontWeight: 700, padding: '0.1rem 0.45rem', borderRadius: '999px' }}>
+                      RECURRENTE
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Supermercado, tiendas y abarrotes (+3.1% vs mes previo)
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 900, fontSize: '1.05rem', color: '#1e293b', lineHeight: 1.1 }}>
+                    $7,200.00
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                    25.3% del gasto
+                  </div>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '5px', backgroundColor: '#f1f5f9', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '25.3%', height: '100%', backgroundColor: '#94a3b8', borderRadius: '999px' }}></div>
+              </div>
             </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', padding: '0.3rem 0.6rem', color: '#16a34a' }}>
-              <span>Intereses financieros</span>
-              <span>Bajando por tu plan activo ✓</span>
+
+            {/* Categoría 4: Servicios y suscripciones */}
+            <div
+              style={{
+                backgroundColor: '#ffffff',
+                border: '1px solid #e2e8f0',
+                borderRadius: '0.65rem',
+                padding: '0.75rem 0.9rem',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.45rem',
+              }}
+            >
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.45rem', marginBottom: '0.2rem' }}>
+                    <span style={{ fontWeight: 700, fontSize: '0.88rem', color: '#1e293b' }}>
+                      Servicios y suscripciones
+                    </span>
+                    <span style={{ backgroundColor: '#f1f5f9', color: '#475569', border: '1px solid #e2e8f0', fontSize: '0.62rem', fontWeight: 700, padding: '0.1rem 0.45rem', borderRadius: '999px' }}>
+                      FIJO
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                    Luz, agua, internet y streaming (-1.4% vs mes previo)
+                  </div>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <div style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 900, fontSize: '1.05rem', color: '#1e293b', lineHeight: 1.1 }}>
+                    $4,350.00
+                  </div>
+                  <div style={{ fontSize: '0.7rem', color: '#64748b', marginTop: '0.15rem' }}>
+                    15.3% del gasto
+                  </div>
+                </div>
+              </div>
+              <div style={{ width: '100%', height: '5px', backgroundColor: '#f1f5f9', borderRadius: '999px', overflow: 'hidden' }}>
+                <div style={{ width: '15.3%', height: '100%', backgroundColor: '#94a3b8', borderRadius: '999px' }}></div>
+              </div>
             </div>
           </div>
-          <div style={{ fontSize: '0.82rem', backgroundColor: '#f8fafc', padding: '0.75rem', borderRadius: '0.5rem', color: '#334155' }}>
-            <strong>Conclusión de Maya:</strong> "El 33% de tus egresos fueron retiros de cajero. Al haber congelado tu deuda a 18 meses en el paso anterior, liberaste <strong>$1,442 al mes</strong> que puedes destinar a amortiguar estos imprevistos."
+
+          <div style={{ fontSize: '0.82rem', backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.75rem 0.9rem', borderRadius: '0.5rem', color: '#334155', lineHeight: 1.5 }}>
+            <strong style={{ color: '#0f172a' }}>Conclusión de Maya:</strong> "El 33% de tus egresos fueron retiros de cajero. Al haber congelado tu deuda a 18 meses en el paso anterior, liberaste <strong>$1,442 al mes</strong> que puedes destinar a amortiguar estos imprevistos."
           </div>
         </div>
       ),
@@ -344,15 +516,17 @@ export default function DemoFlowSimulator() {
           </div>
 
           {/* Simulador Meta con Slider */}
-          <div style={{ backgroundColor: '#ffffff', border: '2px solid #EC0029', borderRadius: '0.75rem', padding: '1.25rem', color: '#171717' }}>
+          <div style={{ backgroundColor: '#ffffff', border: '1px solid #fecdd3', borderRadius: '0.75rem', padding: '1.25rem', color: '#171717', boxShadow: '0 2px 8px rgba(236, 0, 41, 0.04)' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
               <Target size={18} color="#EC0029" />
               <span>Simulador de Meta de Ahorro / Fondo de Emergencia</span>
             </div>
             <div style={{ margin: '1rem 0' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
-                <span>Aportación mensual recomendada:</span>
-                <strong style={{ color: '#EC0029', fontSize: '1.1rem' }}>${savingsAmount.toLocaleString()} MXN</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', fontSize: '0.85rem', marginBottom: '0.35rem' }}>
+                <span style={{ color: '#475569', fontWeight: 600 }}>Aportación mensual seleccionada:</span>
+                <strong style={{ color: '#EC0029', fontSize: '1.25rem', fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums', fontWeight: 900 }}>
+                  ${savingsAmount.toLocaleString()}.00 <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>MXN</span>
+                </strong>
               </div>
               <input
                 type="range"
@@ -397,6 +571,7 @@ export default function DemoFlowSimulator() {
 
   return (
     <div
+      className="not-content"
       style={{
         border: '1px solid #e2e8f0',
         borderRadius: '1rem',
@@ -420,28 +595,75 @@ export default function DemoFlowSimulator() {
           </p>
         </div>
 
-        {/* Selector de pasos */}
-        <div style={{ display: 'flex', gap: '0.4rem' }}>
-          {[1, 2, 3, 4].map((stepNum) => (
-            <button
-              key={stepNum}
-              onClick={() => setCurrentStep(stepNum)}
-              style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '0.5rem',
-                border: currentStep === stepNum ? '2px solid #EC0029' : '1px solid #e2e8f0',
-                backgroundColor: currentStep === stepNum ? '#EC0029' : '#f8f9fa',
-                color: currentStep === stepNum ? '#ffffff' : '#171717',
-                fontWeight: 700,
-                fontSize: '0.9rem',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-              }}
-            >
-              {stepNum}
-            </button>
-          ))}
+        {/* Selector de pasos tipo Segmented Control / Tabs */}
+        <div
+          className="not-content"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            backgroundColor: '#f1f5f9',
+            padding: '0.25rem',
+            borderRadius: '0.65rem',
+            border: '1px solid #e2e8f0',
+            gap: '0.2rem',
+          }}
+        >
+          {[
+            { num: 1, label: 'Paso 1' },
+            { num: 2, label: 'Paso 2' },
+            { num: 3, label: 'Paso 3' },
+            { num: 4, label: 'Paso 4' },
+          ].map((step) => {
+            const isActive = currentStep === step.num;
+            return (
+              <button
+                key={step.num}
+                type="button"
+                onClick={() => setCurrentStep(step.num)}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.35rem',
+                  padding: '0.45rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  border: 'none',
+                  margin: 0,
+                  marginTop: 0,
+                  marginBottom: 0,
+                  backgroundColor: isActive ? '#EC0029' : 'transparent',
+                  color: isActive ? '#ffffff' : '#64748b',
+                  fontWeight: isActive ? 800 : 600,
+                  fontSize: '0.82rem',
+                  lineHeight: 1,
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease-out',
+                  boxShadow: isActive ? '0 1px 4px rgba(236, 0, 41, 0.25)' : 'none',
+                  verticalAlign: 'middle',
+                }}
+              >
+                <span
+                  style={{
+                    width: '18px',
+                    height: '18px',
+                    borderRadius: '50%',
+                    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.25)' : '#e2e8f0',
+                    color: isActive ? '#ffffff' : '#475569',
+                    fontSize: '0.72rem',
+                    fontWeight: 800,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontFamily: 'monospace',
+                    lineHeight: 1,
+                  }}
+                >
+                  {step.num}
+                </span>
+                <span style={{ lineHeight: 1 }}>{step.label}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -481,90 +703,112 @@ export default function DemoFlowSimulator() {
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', color: '#b45309', fontWeight: 700 }}>
-          <Clock size={14} />
-          <span>{current.duration}</span>
+        <div
+          style={{
+            backgroundColor: '#ffffff',
+            border: '1px solid #fed7aa',
+            padding: '0.25rem 0.65rem',
+            borderRadius: '999px',
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '0.4rem',
+            color: '#b45309',
+            fontWeight: 700,
+            fontSize: '0.78rem',
+            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.03)',
+          }}
+        >
+          <Clock size={13} color="#b45309" />
+          <span style={{ fontFamily: 'ui-monospace, monospace', fontVariantNumeric: 'tabular-nums' }}>
+            {current.duration}
+          </span>
         </div>
       </div>
 
       {/* Contenido principal en 2 columnas */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', alignItems: 'start' }}>
         {/* Columna Izquierda: Prompt y Explicación Técnica */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-          {/* Prompt del usuario */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid var(--sl-color-gray-2)', padding: '1rem', color: '#171717' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#888', marginBottom: '0.3rem' }}>
-              Perfil & Entrada del Usuario
-            </div>
-            <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#555', marginBottom: '0.5rem' }}>
-              👤 {current.user}
-            </div>
-            <div
-              style={{
-                backgroundColor: '#f1f5f9',
-                padding: '0.6rem 0.85rem',
-                borderRadius: '0.5rem',
-                fontFamily: 'monospace',
-                fontSize: '0.88rem',
-                color: '#0f172a',
-                borderLeft: '3px solid #EC0029',
-              }}
-            >
-              "{current.userPrompt}"
-            </div>
+        <div>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.03em', lineHeight: 1.2 }}>
+            Entrada & Razonamiento del Agente
           </div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {/* Prompt del usuario */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)', padding: '1.25rem', color: '#171717' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.3rem' }}>
+                Perfil & Entrada del Usuario
+              </div>
+              <div style={{ fontWeight: 600, fontSize: '0.88rem', color: '#334155', marginBottom: '0.5rem' }}>
+                👤 {current.user}
+              </div>
+              <div
+                style={{
+                  backgroundColor: '#f8f9fa',
+                  padding: '0.65rem 0.85rem',
+                  borderRadius: '0.5rem',
+                  fontFamily: 'monospace',
+                  fontSize: '0.88rem',
+                  color: '#0f172a',
+                  border: '1px solid #e2e8f0',
+                }}
+              >
+                "{current.userPrompt}"
+              </div>
+            </div>
 
-          {/* Explicación de la decisión de IA */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid var(--sl-color-gray-2)', padding: '1rem', color: '#171717' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#888', marginBottom: '0.3rem' }}>
-              Lógica del Agente & MCP
+            {/* Explicación de la decisión de IA */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)', padding: '1.25rem', color: '#171717' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.3rem' }}>
+                Lógica del Agente & MCP
+              </div>
+              <p style={{ margin: '0 0 0.75rem', fontSize: '0.88rem', lineHeight: '1.5', color: '#334155' }}>
+                {current.explanation}
+              </p>
+              <div
+                style={{
+                  backgroundColor: '#fff5f6',
+                  border: '1px solid #fed7d7',
+                  borderRadius: '0.5rem',
+                  padding: '0.6rem 0.8rem',
+                  fontSize: '0.82rem',
+                  color: '#991b1b',
+                  fontWeight: 500,
+                }}
+              >
+                💡 {current.highlight}
+              </div>
             </div>
-            <p style={{ margin: '0 0 0.75rem', fontSize: '0.88rem', lineHeight: '1.5', color: '#333' }}>
-              {current.explanation}
-            </p>
-            <div
-              style={{
-                backgroundColor: '#fff5f6',
-                border: '1px solid #fed7d7',
-                borderRadius: '0.5rem',
-                padding: '0.6rem 0.8rem',
-                fontSize: '0.82rem',
-                color: '#991b1b',
-                fontWeight: 500,
-              }}
-            >
-              💡 {current.highlight}
-            </div>
-          </div>
 
-          {/* Componentes A2UI emitidos */}
-          <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid var(--sl-color-gray-2)', padding: '1rem', color: '#171717' }}>
-            <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#888', marginBottom: '0.5rem' }}>
-              Componentes del Catálogo Emitidos
-            </div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
-              {current.uiEmitted.map((comp, idx) => (
-                <span
-                  key={idx}
-                  style={{
-                    backgroundColor: '#e2e8f0',
-                    color: '#334155',
-                    fontSize: '0.75rem',
-                    fontWeight: 600,
-                    padding: '0.2rem 0.5rem',
-                    borderRadius: '4px',
-                  }}
-                >
-                  {comp}
-                </span>
-              ))}
+            {/* Componentes A2UI emitidos */}
+            <div style={{ backgroundColor: '#ffffff', borderRadius: '0.75rem', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.02)', padding: '1.25rem', color: '#171717' }}>
+              <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem' }}>
+                Componentes del Catálogo Emitidos
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                {current.uiEmitted.map((comp, idx) => (
+                  <span
+                    key={idx}
+                    style={{
+                      backgroundColor: '#f1f5f9',
+                      border: '1px solid #e2e8f0',
+                      color: '#334155',
+                      fontSize: '0.75rem',
+                      fontWeight: 600,
+                      padding: '0.2rem 0.5rem',
+                      borderRadius: '4px',
+                    }}
+                  >
+                    {comp}
+                  </span>
+                ))}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Columna Derecha: Vista previa de la UI generada */}
         <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: 'var(--sl-color-gray-4)', marginBottom: '0.5rem' }}>
+          <div style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', marginBottom: '0.5rem', letterSpacing: '0.03em', lineHeight: 1.2 }}>
             Superficie A2UI Renderizada en Tiempo Real
           </div>
           {current.renderedMock}
@@ -579,7 +823,7 @@ export default function DemoFlowSimulator() {
           alignItems: 'center',
           marginTop: '1.5rem',
           paddingTop: '1rem',
-          borderTop: '1px solid var(--sl-color-gray-2)',
+          borderTop: '1px solid #e2e8f0',
         }}
       >
         <button
@@ -587,19 +831,20 @@ export default function DemoFlowSimulator() {
           disabled={currentStep === 1}
           style={{
             backgroundColor: currentStep === 1 ? 'transparent' : '#ffffff',
-            border: '1px solid var(--sl-color-gray-2)',
+            border: '1px solid #cbd5e1',
             borderRadius: '0.5rem',
             padding: '0.5rem 1rem',
             fontSize: '0.85rem',
             fontWeight: 600,
             cursor: currentStep === 1 ? 'not-allowed' : 'pointer',
             opacity: currentStep === 1 ? 0.4 : 1,
+            color: '#171717',
           }}
         >
           ← Paso anterior
         </button>
 
-        <span style={{ fontSize: '0.82rem', color: 'var(--sl-color-gray-4)', fontWeight: 600 }}>
+        <span style={{ fontSize: '0.82rem', color: '#64748b', fontWeight: 700 }}>
           Paso {currentStep} de 4
         </span>
 
@@ -608,14 +853,15 @@ export default function DemoFlowSimulator() {
           disabled={currentStep === 4}
           style={{
             backgroundColor: currentStep === 4 ? 'transparent' : '#EC0029',
-            color: currentStep === 4 ? 'inherit' : '#ffffff',
-            border: currentStep === 4 ? '1px solid var(--sl-color-gray-2)' : 'none',
+            color: currentStep === 4 ? '#94a3b8' : '#ffffff',
+            border: currentStep === 4 ? '1px solid #e2e8f0' : 'none',
             borderRadius: '0.5rem',
             padding: '0.5rem 1rem',
             fontSize: '0.85rem',
             fontWeight: 700,
             cursor: currentStep === 4 ? 'not-allowed' : 'pointer',
             opacity: currentStep === 4 ? 0.4 : 1,
+            boxShadow: currentStep === 4 ? 'none' : '0 2px 6px rgba(236, 0, 41, 0.2)',
           }}
         >
           Siguiente paso →

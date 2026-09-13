@@ -52,7 +52,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
             </Badge>
           ) : null}
         </div>
-        <span className="monto text-3xl font-semibold">{formatearMonto(totalAnualCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(totalAnualCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           al año · <span className="monto">{formatearMonto(totalMensualCentavos)}</span> al mes
           {typeof pctDelIngreso === "number" ? (
@@ -67,7 +67,7 @@ export function AlertaFugas(props: Partial<PropsAlertaFugas> & Pick<PropsCompone
         {fugas.length === 0 ? (
           <p className={`text-sm ${suave}`}>No encontré cargos recurrentes en tus movimientos.</p>
         ) : (
-          <ul className="flex flex-col">
+          <ul className="animar-filas flex flex-col">
             {fugas.map((f) => (
               <li
                 key={f.id}

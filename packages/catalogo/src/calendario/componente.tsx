@@ -64,7 +64,7 @@ export function Calendario(props: Partial<PropsCalendario>) {
           // nada —su viewport es `size-full` de una raiz sin `overflow-hidden`—, asi que
           // la tabla se desbordaba y se pintaba ENCIMA del "… y N mas" y del pie.
           <Table>
-              <TableBody>
+              <TableBody className="animar-filas">
                 {visibles.map((e, i) => {
                   const esProximo = e.estado === "proximo" || i === indiceProximo;
                   const hecho = HECHO.has(e.estado ?? "pendiente");

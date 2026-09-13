@@ -151,6 +151,29 @@ export function aplicarAPantallaAnterior(hilo: EntradaDelHilo[], pantalla: strin
   return copia;
 }
 
+/**
+ * Pone una superficie ya procesada en la pantalla `id` del hilo, conservando su tira de
+ * transparencia. Es como un ajuste a la pantalla ACTUAL se ve en su lugar mientras llega.
+ *
+ * ## Por que existe
+ *
+ * Un ajuste no manda `createSurface`, pero cada `updateDataModel` produce una superficie nueva
+ * (`procesar` nunca muta). Si solo se guardaba en el estado vivo, `calcularSuperficieViva` la
+ * veia distinta de la congelada y la consola pintaba **la pantalla completa otra vez debajo**
+ * durante el turno, montada desde cero (sin animacion de cambio), y al `fin` la quitaba y
+ * cambiaba la de arriba. Para la persona: «se recargo todo». El 2026-09-13 lo reporto asi el
+ * usuario probando «¿y si pago $6,000?». Poniendo la superficie en su pantalla en cada parche, la
+ * viva y la congelada son la misma referencia, no hay copia, y la tarjeta cambia donde esta.
+ */
+export function ponerEnPantalla(hilo: EntradaDelHilo[], id: string, superficie: EstadoSuperficie): EntradaDelHilo[] {
+  const i = numerarPantallas(hilo).indexOf(id);
+  const entrada = hilo[i];
+  if (i < 0 || entrada?.tipo !== "pantalla" || entrada.superficie === superficie) return hilo;
+  const copia = [...hilo];
+  copia[i] = { ...entrada, superficie };
+  return copia;
+}
+
 /** Dos intentos de avisar y ya: mas que eso no es un componente roto, es el registro. */
 const TOPE_DE_FALLOS = 2;
 
@@ -251,6 +274,7 @@ export function usarAgente(usuarioId: string) {
         // Copia local del estado y de las lineas: al llegar `fin` hace falta el valor
         // final de la superficie para congelarla, y `setEstado` no lo devuelve.
         let actual = estado;
+        let huboCreateSurface = false;
         const lineas: LineaStream[] = [];
 
         for await (const linea of leerJSONL(respuesta.body)) {
@@ -264,8 +288,15 @@ export function usarAgente(usuarioId: string) {
                 setHilo((h) => aplicarAPantallaAnterior(h, pantalla, mensaje as MensajeA2UI));
                 break;
               }
+              if ("createSurface" in linea.mensaje) huboCreateSurface = true;
               actual = procesar(actual, linea.mensaje as MensajeA2UI).estado;
               setEstado(actual);
+              // Sin `createSurface` es un ajuste a la pantalla que YA esta en el hilo: se aplica
+              // ahi mismo, para que no aparezca una copia completa debajo (`ponerEnPantalla`).
+              if (!huboCreateSurface && idActual) {
+                const nueva = actual.get(SUPERFICIE);
+                if (nueva) setHilo((h) => ponerEnPantalla(h, idActual, nueva));
+              }
               break;
             case "texto":
               respuestaHablada = respuestaHablada ? `${respuestaHablada} ${linea.valor}` : linea.valor;

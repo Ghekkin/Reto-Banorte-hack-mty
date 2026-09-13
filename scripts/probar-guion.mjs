@@ -61,6 +61,27 @@ const CASOS = [
     componentes: ["GastoPorCategoria"],
   },
   {
+    // Un gasto que el banco no ve cambia la MISMA tarjeta de gasto (ajustes-en-vivo.md).
+    nombre: "Beto · le da $2,000 a su mama (la tarjeta de gasto cambia en su lugar)",
+    usuario: "usr_beto",
+    texto: "También le doy $2,000 al mes a mi mamá en efectivo",
+    cierre: "ajustar",
+    tools: ["simular_gasto_externo"],
+    pantallaContiene: '"fueraDelBanco":true',
+  },
+  {
+    nombre: "Beto · Guardar gasto (accion real, en la misma tarjeta)",
+    usuario: "usr_beto",
+    accion: {
+      name: "registrar_gasto_externo",
+      sourceComponentId: "@GastoPorCategoria",
+      context: { gastos: [{ nombre: "Apoyo a mi mamá", montoCentavos: 200000, frecuencia: "mensual" }] },
+    },
+    cierre: "ajustar",
+    toolsAlternativas: ["ejecutar_decision", "registrar_gasto_externo"],
+    pantallaContiene: '"guardado":true',
+  },
+  {
     nombre: "Beto · detalle de una categoria",
     usuario: "usr_beto",
     texto: "¿Que movimientos hubo en retiros de efectivo?",
@@ -99,6 +120,15 @@ const CASOS = [
     pantallaContiene: "600000",
   },
   {
+    // El otro parametro de la tarjeta: en cuantos meses terminar de pagar.
+    nombre: "Ana · liquidarlo en 12 meses (el plazo tambien es parametro)",
+    usuario: "usr_ana",
+    texto: "Mejor quiero liquidarlo en 12 meses",
+    cierre: "ajustar",
+    tools: ["simular_pago_credito"],
+    pantallaContiene: '"plazoRestanteMeses":12',
+  },
+  {
     nombre: "Ana · Programar este pago (accion real, en la misma tarjeta)",
     usuario: "usr_ana",
     accion: {
@@ -109,6 +139,16 @@ const CASOS = [
     cierre: "ajustar",
     toolsAlternativas: ["ejecutar_decision", "programar_abono_capital"],
     pantallaContiene: '"programado":true',
+  },
+  {
+    // La meta tambien se ajusta en su lugar: «para diciembre» es `fechaObjetivo` y la aportacion
+    // que hace falta (4785000 de faltante en 3 meses = 1595000) la pone el host desde la tool.
+    nombre: "Ana · la meta para diciembre (el simulador cambia en su lugar)",
+    usuario: "usr_ana",
+    texto: "Y el fondo de emergencia lo quiero completar para diciembre",
+    cierre: "ajustar",
+    tools: ["proyectar_ahorro"],
+    pantallaContiene: '"aportacionCentavos":1595000',
   },
   {
     nombre: "Ana · quiere empezar a ahorrar",

@@ -65,7 +65,7 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
     <Tarjeta>
       <CardHeader>
         <span className="text-xs text-muted-foreground">Te ahorras con este plan</span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(elegida.ahorroCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(elegida.ahorroCentavos)}</span>
         <span className="text-sm text-muted-foreground">
           frente a seguir pagando el mínimo, en {elegida.plazoMeses} meses
         </span>
@@ -76,7 +76,7 @@ export function PlanDePago(props: Partial<PropsPlanDePago> & Pick<PropsComponent
           value={String(seleccion ?? "")}
           onValueChange={(valor) => setSeleccion(Number(valor))}
           aria-label="Plazo del plan de pago"
-          className="gap-2 @2xl/tarjeta:grid-cols-2"
+          className="animar-filas gap-2 @2xl/tarjeta:grid-cols-2"
         >
           {opciones.map((o) => {
             const activa = o.plazoMeses === seleccion;

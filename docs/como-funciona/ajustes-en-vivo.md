@@ -34,8 +34,10 @@ confirmación: la tarjeta que cambió es la confirmación.
 | Crédito a plazo: simular mensualidad o plazo y ajustar `ProyeccionPagoCredito` | construido |
 | Crédito a plazo: «Programar este pago» (abono a capital mensual) en la misma tarjeta | construido |
 | Ajustar una tarjeta de una pantalla **anterior** del hilo | construido |
-| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | pendiente |
-| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | pendiente |
+| Gastos fuera del banco (simular en la tarjeta de gasto, botón «Guardar gasto», restan capacidad de pago) | construido |
+| Inicio: una pregunta cambia una tarjeta en su lugar | construido por aldair (widgets vivos, ADR 0011); `FEATURE_WIDGETS_VIVOS=1` en local y producción desde 2026-09-13 04:10 |
+| Transición de valores al ajustar (números que cuentan, curvas y barras que se deslizan) | en progreso |
+| Meta de ahorro (`SimuladorMeta`: «para diciembre», «que sean $80,000») | construido: `proyectar_ahorro` con `fechaObjetivo`/`montoObjetivoCentavos`; el host pone meta, aportación y tope. Ensayado: Ana «para diciembre» → $15,950.00 al mes con aviso (7.3 s) |
 | Plan de la tarjeta con cualquier plazo o mensualidad objetivo, y «Aplicar plan» en su lugar | pendiente |
 
 Decisiones que no se vuelven a discutir: los números los calcula una tool MCP (no el componente);
@@ -73,14 +75,50 @@ después del paso 3.
    `totalInteresesEstimadosCentavos` y `amortizacionResumen` con `simulado`; `antes` con `actual`;
    `aviso`, `mensualidadContratoCentavos`, `programado: false`; y el `titular` de la `Conclusion` si
    decía el plazo viejo. Si la tarjeta está en una pantalla de arriba, con `pantalla: "p1"`.
-5. El stream manda `updateDataModel`/`updateComponents` **sin `createSurface`**; la tarjeta no se
-   remonta, re-resuelve sus props, y `usarCambio` resalta lo que cambió.
+5. El stream manda `updateDataModel`/`updateComponents` **sin `createSurface`**; el cliente aplica
+   cada parche directo a la pantalla que ya está en el hilo (`ponerEnPantalla`), la tarjeta no se
+   remonta, re-resuelve sus props, y `usarCambio` resalta lo que cambió. Antes del arreglo del
+   2026-09-13 04:10 el parche solo vivía en el estado, la consola lo veía como «pantalla en curso»
+   y pintaba **la pantalla completa otra vez debajo** durante el turno: para la persona, «se
+   recargó todo». Verificado en navegador (Playwright, Ana): durante el ajuste nunca hay más de una
+   tarjeta de crédito ni más de una pantalla.
 6. Ana toca «Programar este pago» → acción `programar_abono_capital { creditoId, mensualidadCentavos,
    idempotencyKey }`. El contexto del turno le dice al modelo que es *en su lugar*: `ejecutar_decision`
    y `ajustar_pantalla` sobre la misma tarjeta con `programado: true` y `resultadoAccion.despues`. Si
    en esa pantalla está `SimuladorMeta`, en la misma llamada baja su `aportacionMaximaCentavos` a
    `resultadoAccion.capacidadAhorro.despuesCentavos`: el abono ya no está libre para ahorrar
    (`proyectar_ahorro` también lo descuenta).
+
+### Las cifras de una tool no las copia el modelo
+
+`parchesDeterministas` (`apps/web/src/lib/agente/ajustar.ts`) escribe en la tarjeta, **lo haya
+parcheado el modelo o no**, las props que salen de una tool llamada en el mismo turno: el escenario
+de `simular_pago_credito` o de `programar_abono_capital` en `ProyeccionPagoCredito` (del mismo
+crédito), `despues` de `simular_gasto_externo` o `registrar_gasto_externo` en `GastoPorCategoria`,
+y el tope de `SimuladorMeta` desde `capacidadAhorro`. El modelo sigue decidiendo **qué** tarjeta
+tocar y escribe los textos (`razon`, la `Conclusion`); los números los pone el host.
+
+Por qué: en el ensayo real del 2026-09-13 03:30 el modelo bajó bien la aportación del simulador pero
+puso de tope `520000`, un número que ninguna tool dijo. Y las listas largas (`categorias`,
+`amortizacionResumen`) son lo que un modelo recorta al copiar
+(`docs/como-funciona/bug-gasto-total-no-cuadra.md`). La tabla completa está en el comentario de la
+función; las pruebas, en `ajustes-en-vivo.spec.ts`.
+
+### Flujo paso a paso: «también le doy $2,000 al mes a mi mamá en efectivo»
+
+1. Beto tiene en pantalla `GastoPorCategoria` (agosto, $33,349.50).
+2. El modelo llama `simular_gasto_externo { gastos: [{ nombre: "Apoyo a mi mamá", montoCentavos: 200000,
+   frecuencia: "mensual" }] }` y cierra con `ajustar_pantalla` sobre esa tarjeta. El host escribe
+   `categorias`, `totalCentavos` ($35,349.50) y `antes` desde la tool; la fila nueva sale arriba con
+   «Fuera del banco · sin guardar» y aparece «Guardar gasto».
+3. «Guardar gasto» es la **segunda acción** de la tarjeta (`registrar_gasto_externo`, declarada en su
+   catálogo; `definirAcciones` en `packages/a2ui/src/registro.ts`). Se atiende en su lugar: la fila
+   queda guardada, el botón se va, y lo mensual resta capacidad de pago y de ahorro desde ahí.
+4. Un `null` en un parche de props **quita** esa prop (el modelo lo usa para esconder el botón).
+
+Ensayado con el modelo real (2026-09-13 04:15): 3 de 3 (9.1 s, 6.7 s, 12.1 s). Algoritmo y límites
+(el efectivo que ya salió del cajero se cuenta dos veces, a propósito):
+`docs/algoritmos/gastos-fuera-del-banco.md`.
 
 ### Entradas y salidas
 

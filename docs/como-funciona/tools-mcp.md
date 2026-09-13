@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores) · 2026-09-13 03:05 (abono a capital)
+verificado: 2026-09-12 09:40 (tools originales) · 2026-09-12 11:15 (orquestadores) · 2026-09-13 03:05 (abono a capital) · 2026-09-13 03:35 (gastos fuera del banco) · 2026-09-13 04:20 (meta por fecha)
 estado: construido
 ---
 
@@ -40,6 +40,7 @@ nada.
 | Diagnóstico de hábitos | `apps/mcp/src/dominio/salud.ts` |
 | Deuda a plazo fijo | `apps/mcp/src/dominio/creditos.ts` |
 | Abono a capital (simulación con cuota, pedido, hitos) | `apps/mcp/src/dominio/abonos.ts` |
+| Gastos fuera del banco (vigentes, periodos, categorías `ext_…`) | `apps/mcp/src/dominio/gastos-externos.ts` |
 | Matemática de crédito | `apps/mcp/src/dominio/finanzas.ts` |
 | El tiempo del dominio | `apps/mcp/src/dominio/tiempo.ts` |
 | Datos | PostgreSQL, esquema `banorte`: 22 tablas + `acciones_aplicadas` (lo mutable) |
@@ -55,7 +56,7 @@ nada.
 | `consultar_plan` | lectura | el plan aplicado y su calendario de pagos | después de la acción, y en "¿cómo va mi plan?" |
 | `aplicar_plan_pago` | **acción** | el plan, el efecto (antes/después) y un mensaje | solo cuando llega la acción A2UI del mismo nombre |
 | `comparar_periodos` | lectura | gasto por categoría de dos meses, categoría atípica, efecto del plan | "¿en qué se me va el dinero?" |
-| `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios | cuando no hay deuda que resolver |
+| `proyectar_ahorro` | lectura | meses y fecha para llegar a una meta, con tres escenarios; con `fechaObjetivo`, la aportación que hace falta (`aportacionNecesariaCentavos`) y `aviso` si no le alcanza o la fecha ya pasó | cuando no hay deuda que resolver; «lo quiero para diciembre» / «que sean $80,000» sobre el `SimuladorMeta` en pantalla |
 | `crear_apartado` | **acción** | la meta creada con su fecha objetivo | solo cuando llega la acción A2UI del mismo nombre |
 | `panorama_inicial` | lectura | perfil + tarjeta + puntaje + deuda + `situacion` | **siempre, al abrir la conversación**: reemplaza tres llamadas |
 | `diagnostico_salud_financiera` | lectura | puntaje 0-100, tendencia, los cuatro ratios, el hábito, `serie` para graficar y `ahorroLiquidoCentavos` (nómina + ahorro de hoy) | "¿cómo voy?", o antes de proponer un plan |
@@ -66,6 +67,8 @@ nada.
 | `cancelar_suscripcion` | **acción** | la suscripción cancelada y lo que se deja de pagar | solo cuando llega la acción A2UI del mismo nombre |
 | `crear_tope_gasto` | **acción** | el tope creado para una categoría | solo cuando llega la acción A2UI del mismo nombre |
 | `analizar_gasto` | lectura | `comparar_periodos` + `detectar_fugas` + topes excedidos, más `patronGasto` | "¿en qué se me va el dinero?" — en vez de las dos por separado |
+| `simular_gasto_externo` | lectura | el gasto del periodo `antes`/`despues` de sumar lo que paga fuera del banco (en la forma de `GastoPorCategoria`), capacidad de pago y de ahorro antes y si lo guardara, `aviso` | «también pago $3,500 de renta en efectivo»: ajusta la tarjeta de gasto en su lugar |
+| `registrar_gasto_externo` | **acción** | lo guardado, `antes`/`despues` (`guardado: true`), capacidades y mensaje | solo cuando llega la acción A2UI del mismo nombre («Guardar gasto»), normalmente vía `ejecutar_decision` |
 | `analizar_ahorro` | lectura | `proyectar_ahorro` + `consultar_inversiones`, más `estadoAhorro` | por su ahorro, su meta o su portafolio — en vez de las dos por separado |
 | `ejecutar_decision` | **acción** | la mutación que corresponda + la lectura posterior, en una sola respuesta | siempre que la acción A2UI sea una de mutación: reemplaza el patrón "mutar y luego leer" |
 
@@ -102,6 +105,22 @@ reestructurar) y la tool lo dice en `motivo`. Algoritmo y cifras en
 [`docs/algoritmos/abono-a-capital.md`](../algoritmos/abono-a-capital.md). La acción necesita la
 migración `db/migraciones/0005-accion-programar-abono-capital.sql` en la base: sin ella el `CHECK` de
 `acciones_aplicadas` rechaza el insert.
+
+`simular_gasto_externo` y `registrar_gasto_externo` son el segundo: un gasto que el banco no ve
+(renta en efectivo, apoyo a un familiar) se simula sobre la `GastoPorCategoria` que ya está en
+pantalla y «Guardar gasto» lo registra. Guardado, `comparar_periodos` (y `analizar_gasto`) lo lista
+como categoría `ext_…` con `fueraDelBanco: true`, y lo **mensual** se resta de
+`capacidadPagoMensual` (y con ella de `panorama_inicial`, `simular_reestructura` y el techo de
+los abonos) y de la capacidad de ahorro de `proyectar_ahorro`. Sin gastos guardados, todas esas
+lecturas salen idénticas. Algoritmo, cifras y el límite del efectivo del cajero en
+[`docs/algoritmos/gastos-fuera-del-banco.md`](../algoritmos/gastos-fuera-del-banco.md). Necesita
+la migración `db/migraciones/0006-accion-registrar-gasto-externo.sql`.
+
+El tercero es la meta de ahorro: con el `SimuladorMeta` en pantalla, «que sean $80,000» es
+`proyectar_ahorro` con `montoObjetivoCentavos`, y «lo quiero para diciembre» es `proyectar_ahorro` con
+`fechaObjetivo` (el último día del mes): la tool calcula la aportación que hace falta, proyecta con ella y
+avisa si rebasa lo libre o si la fecha ya pasó. Detalle en
+[`docs/algoritmos/proyeccion-de-ahorro.md`](../algoritmos/proyeccion-de-ahorro.md).
 
 **El total no se afirma en ningún lado que pueda quedar desfasado.** `pnpm humo` comprueba
 que estén, por nombre, las nueve del viaje del ADR 0004 —lo que la demo necesita— e imprime
@@ -231,6 +250,8 @@ la pantalla y los datos tienen que decir lo mismo.
 - `docs/algoritmos/oferta-de-reestructura.md` — qué tasa, qué plazo se recomienda.
 - `docs/algoritmos/abono-a-capital.md` — pagar más al mes un crédito a plazo: simulación, plazo
   objetivo, qué no es posible y el aviso de capacidad.
+- `docs/algoritmos/gastos-fuera-del-banco.md` — gastos que el banco no ve: reemplazo por nombre,
+  en qué periodos cuentan, qué restan de las capacidades y cuándo se avisa.
 - `docs/algoritmos/categoria-atipica.md` — qué cuenta como gasto y cuál se resalta.
 - `docs/algoritmos/proyeccion-de-ahorro.md` — capacidad de ahorro y fecha estimada.
 - `docs/algoritmos/puntaje-de-salud.md` — calificación, tendencia, y cuándo el hábito

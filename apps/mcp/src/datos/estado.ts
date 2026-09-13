@@ -1,4 +1,5 @@
 import { config } from "../config.js";
+import { DISPOSITIVO_COMUN, dispositivoActual } from "./dispositivo.js";
 import { obtenerPool } from "./postgres.js";
 
 /**
@@ -11,6 +12,12 @@ import { obtenerPool } from "./postgres.js";
  * La **idempotencia la garantiza la base**, no este codigo: `idempotency_key` tiene
  * indice unico, asi que dos llamadas con la misma llave insertan una sola fila
  * aunque lleguen a la vez. Un reintento del agente no puede aplicar el plan dos veces.
+ *
+ * **Cada dispositivo ve solo sus acciones** (`dispositivo.ts`, ADR 0012). Toda fila lleva
+ * `dispositivo_id`, `accionesDe` filtra por el de la llamada en curso y `aplicarAccion` lo
+ * escribe. Asi el plan que aplica un visitante no le aparece aplicado a otro que abrio a la
+ * misma persona. La llave de idempotencia se guarda prefijada con el dispositivo: el indice
+ * unico sigue siendo el mismo, y dos dispositivos con la misma llave no se estorban.
  */
 export type AccionAplicada = {
   id: string;
@@ -20,6 +27,8 @@ export type AccionAplicada = {
   idempotencyKey: string;
   aplicadaEn: string;
   datos: Record<string, unknown>;
+  /** De que dispositivo es. Si una tool no lo pone, `aplicarAccion` usa el de la llamada. */
+  dispositivoId?: string;
 };
 
 /** Que clase de objeto toca cada accion; lo exige el CHECK de la tabla. */
@@ -33,6 +42,8 @@ const OBJETO_DE: Record<string, string> = {
   confirmar_rebalanceo: "portafolio",
   // Migracion 0005: sin ella la base rechaza el insert por el CHECK de `accion`.
   programar_abono_capital: "credito",
+  // Migracion 0006. El objeto es la categoria `ext_<slug>` que el gasto crea.
+  registrar_gasto_externo: "categoria",
 };
 
 /**
@@ -77,14 +88,30 @@ type FilaAccion = {
   contexto: Record<string, unknown>;
   idempotency_key: string | null;
   aplicada_en: string;
+  /** Migracion 0007. `comun` en las filas de antes y en lo que no trae dispositivo. */
+  dispositivo_id: string | null;
 };
 
+/**
+ * La llave como se guarda. En `comun` va tal cual (las filas de antes siguen valiendo); en un
+ * dispositivo, prefijada: `idempotency_key` tiene indice UNICO en toda la tabla, y sin el
+ * prefijo el `inicio:<hora>` de un visitante podria chocar con el de otro.
+ */
+function llaveEnLaBase(dispositivoId: string, llave: string): string {
+  return dispositivoId === DISPOSITIVO_COMUN ? llave : `${dispositivoId}:${llave}`;
+}
+
 function desdeFila(f: FilaAccion): AccionAplicada {
+  const dispositivoId = f.dispositivo_id ?? DISPOSITIVO_COMUN;
+  const guardada = f.idempotency_key ?? "";
+  const prefijo = llaveEnLaBase(dispositivoId, "");
   return {
     id: f.objeto_id,
     tipo: f.accion === "rebalancear" ? "rebalancear_portafolio" : f.accion,
     usuarioId: f.usuario_id,
-    idempotencyKey: f.idempotency_key ?? "",
+    // Las tools comparan contra la llave que les llego, sin prefijo.
+    idempotencyKey: prefijo && guardada.startsWith(prefijo) ? guardada.slice(prefijo.length) : guardada,
+    dispositivoId,
     aplicadaEn: typeof f.aplicada_en === "string" ? f.aplicada_en : new Date(f.aplicada_en).toISOString(),
     datos: f.contexto ?? {},
   };
@@ -94,7 +121,7 @@ function desdeFila(f: FilaAccion): AccionAplicada {
 export async function refrescarAcciones(): Promise<void> {
   if (sinBase()) return;
   const { rows } = await obtenerPool().query<FilaAccion>(
-    "select id, usuario_id, accion, objeto_id, contexto, idempotency_key, aplicada_en " +
+    "select id, usuario_id, accion, objeto_id, contexto, idempotency_key, aplicada_en, dispositivo_id " +
       "from banorte.acciones_aplicadas order by aplicada_en",
   );
   cache = rows.map(desdeFila);
@@ -109,12 +136,13 @@ export async function aplicarAccion(
 ): Promise<{ aplicado: boolean; yaEstaba: boolean }> {
   const objetoTipo = OBJETO_DE[accion.tipo];
   if (!objetoTipo) throw new Error(`accion desconocida para la base: ${accion.tipo}`);
+  const dispositivoId = accion.dispositivoId ?? dispositivoActual();
 
   if (sinBase()) {
-    if (cache.some((a) => a.idempotencyKey === accion.idempotencyKey)) {
+    if (cache.some((a) => a.idempotencyKey === accion.idempotencyKey && (a.dispositivoId ?? DISPOSITIVO_COMUN) === dispositivoId)) {
       return { aplicado: false, yaEstaba: true };
     }
-    cache = [...cache, accion];
+    cache = [...cache, { ...accion, dispositivoId }];
     return { aplicado: true, yaEstaba: false };
   }
 
@@ -125,8 +153,8 @@ export async function aplicarAccion(
 
   const { rows } = await obtenerPool().query<{ id: string }>(
     `insert into banorte.acciones_aplicadas
-       (usuario_id, accion, objeto_tipo, objeto_id, contexto, resultado, idempotency_key, aplicada_en)
-     values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8)
+       (usuario_id, accion, objeto_tipo, objeto_id, contexto, resultado, idempotency_key, aplicada_en, dispositivo_id)
+     values ($1, $2, $3, $4, $5::jsonb, $6::jsonb, $7, $8, $9)
      on conflict (idempotency_key) do nothing
      returning id`,
     [
@@ -136,8 +164,9 @@ export async function aplicarAccion(
       accion.id,
       JSON.stringify(accion.datos),
       JSON.stringify({ aplicadaEn: accion.aplicadaEn }),
-      accion.idempotencyKey,
+      llaveEnLaBase(dispositivoId, accion.idempotencyKey),
       accion.aplicadaEn,
+      dispositivoId,
     ],
   );
 
@@ -145,10 +174,12 @@ export async function aplicarAccion(
   return rows.length > 0 ? { aplicado: true, yaEstaba: false } : { aplicado: false, yaEstaba: true };
 }
 
-/** Las acciones de un usuario, opcionalmente de un tipo. */
+/** Las acciones de un usuario EN EL DISPOSITIVO DE LA LLAMADA, opcionalmente de un tipo. */
 export function accionesDe(usuarioId: string, tipo?: string): AccionAplicada[] {
+  const dispositivoId = dispositivoActual();
   return cache.filter((a) => {
     if (a.usuarioId !== usuarioId) return false;
+    if ((a.dispositivoId ?? DISPOSITIVO_COMUN) !== dispositivoId) return false;
     if (!tipo) return true;
     if (tipo === "rebalancear_portafolio" || tipo === "rebalancear") {
       return a.tipo === "rebalancear_portafolio" || a.tipo === "rebalancear" || a.tipo === "confirmar_rebalanceo";
@@ -157,10 +188,19 @@ export function accionesDe(usuarioId: string, tipo?: string): AccionAplicada[] {
   });
 }
 
-/** Vuelve al punto de partida: `pnpm reiniciar-estado`, antes de cada ensayo. */
+/**
+ * Vuelve al punto de partida: `pnpm reiniciar-estado`, antes de cada ensayo. Es de TODOS los
+ * dispositivos, y por eso se lleva tambien sus portadas de Inicio (`pantallas_por_dispositivo`,
+ * de la web): la portada de un dispositivo se armo con acciones que ya no existen, y una
+ * pregunta vieja no deberia recibir al jurado. `to_regclass`: sin la migracion 0007 no falla.
+ */
 export async function reiniciarEstado(): Promise<void> {
   if (!sinBase()) {
     await obtenerPool().query("truncate table banorte.acciones_aplicadas restart identity");
+    await obtenerPool().query(
+      "do $$ begin if to_regclass('banorte.pantallas_por_dispositivo') is not null then " +
+        "delete from banorte.pantallas_por_dispositivo; end if; end $$",
+    );
   }
   cache = [];
 }

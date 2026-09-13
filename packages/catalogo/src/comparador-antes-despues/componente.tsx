@@ -55,7 +55,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
     <Tarjeta heroe={heroe}>
       <CardHeader>
         <span className={`text-xs ${suave}`}>{titulo}</span>
-        <span className="monto text-3xl font-semibold">{formatearMonto(ahorroNetoCentavos)}</span>
+        <span className="cifra monto text-3xl font-semibold">{formatearMonto(ahorroNetoCentavos)}</span>
         <span className={`text-sm ${suave}`}>
           de ahorro con la estrategia
           {typeof ahorroTiempoMeses === "number" && ahorroTiempoMeses > 0 ? (
@@ -67,7 +67,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
         </span>
       </CardHeader>
 
-      <CardContent className="flex flex-col gap-4">
+      <CardContent className="animar-filas flex flex-col gap-4">
         {caminos.map((c) => (
           <div key={c.etiqueta} className="flex flex-col gap-1.5">
             <div className="flex items-baseline justify-between gap-3">
@@ -76,7 +76,7 @@ export function ComparadorAntesDespues(props: Partial<PropsComparadorAntesDespue
             </div>
             <div className={`h-2.5 w-full overflow-hidden rounded-full ${heroe ? "bg-white/20" : "bg-muted"}`}>
               <div
-                className="h-full rounded-full"
+                className="animar-barra h-full rounded-full"
                 style={{ width: `${Math.max(2, Math.round((c.costoTotalCentavos / mayor) * 100))}%`, background: c.color }}
               />
             </div>
