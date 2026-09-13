@@ -12,7 +12,7 @@ vez sin conflictos de git.
 
 | Rol | Quién | En qué | Desde |
 |---|---|---|---|
-| web | — | — | — |
+| web | sergio | Inicio: el ciclo de preguntar ahora se ve (salida en cascada → esqueleto → entrada, `transicion-inicio.tsx`) y las tarjetas se acomodan en masonry sin huecos (`masonry.tsx`, rejilla de 6 columnas y franjas de 4 px medidas; `Lienzo` con prop `acomodo`). 17 pruebas, verificado en navegador a 1,439 y 390 px | dom 02:20 |
 | mcp | luis | Paquete Inversiones completado: `consultar_inversiones`, `consultar_catalogo_inversiones`, `consultar_historico_inversion`. 18 tools en total, 103 pruebas | sáb 07:15 |
 | mcp | aldair | Voz ElevenLabs (premio lateral, `web`/`demo`): botón de voz del chat de Maya conectado de punta a punta (client tool `consultar_maya` → `enviarTexto`) y **verificado en vivo** con la cuenta MLH real (conecta/escucha/cuelga en `/maya`, `FEATURE_VOZ=1`). Falta configurar la tool en la consola de ElevenLabs y probar un turno completo con voz real — ver `docs/como-funciona/premio-elevenlabs.md`. El botón de Inicio quedó sin resolver: esa barra cambió de diseño en paralelo y ya no tiene mic | sáb 17:45 |
 | contrato | luis | Bloque B completado: Prefetch determinista de `panorama_inicial` (O3), soporte de ciclo de acción con `ejecutar_decision` (O2), prompts para tools compuestas (O4), 32 pruebas en verde | sáb 09:20 |

@@ -149,9 +149,16 @@ export async function* correrTurno(
       peticion.superficie?.arbol?.length
         ? { arbol: peticion.superficie.arbol, dataModel: peticion.superficie.dataModel ?? {} }
         : undefined;
+    const datosBase: Record<string, unknown> = {
+      ...(peticion.superficie?.dataModel ?? {}),
+      ...(panorama ? { panorama_inicial: panorama } : {}),
+    };
     const cierre = crearCierre(
       pantallaActual,
-      config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {},
+      {
+        ...(config.agenteLigero ? { ayudaParaErrores: detalleDeLosQueFallaron } : {}),
+        datosBase,
+      },
     );
     const nombresDeCierre = Object.keys(cierre.herramientas);
     const toolsDelTurno: ToolSet = config.agenteLigero
@@ -225,6 +232,9 @@ export async function* correrTurno(
           } else if (parte.toolName === VER_COMPONENTES) {
             // Es del host, no del MCP: no va a la tira de transparencia como consulta de datos.
           } else {
+            if (parte.output && typeof parte.output === "object" && !("error" in (parte.output as Record<string, unknown>))) {
+              datosBase[parte.toolName] = parte.output;
+            }
             // Una tool del MCP que falla no lanza: devuelve `{ error }` (mcp-cliente.ts).
             // Por eso el `ok` de la linea sale del resultado y no de una excepcion.
             yield {

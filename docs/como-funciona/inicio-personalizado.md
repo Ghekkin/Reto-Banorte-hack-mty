@@ -50,7 +50,9 @@ hasta que tus datos cambien de verdad.
 | La ruta `GET`/`POST /api/inicio` | `apps/web/src/app/api/inicio/route.ts` |
 | La página | `apps/web/src/app/(app)/page.tsx` |
 | La portada pintada, y el aviso mientras se arma | `apps/web/src/components/inicio/inicio-de-maya.tsx`, `refresco-del-inicio.tsx` |
+| La rejilla masonry en que caen las tarjetas | `apps/web/src/components/inicio/masonry.tsx` (`docs/algoritmos/masonry-del-inicio.md`) |
 | La consulta desde Inicio (la barra de abajo) | `components/inicio/tarjetas-inicio.tsx` (`BarraFlotanteMaya`) → `app/(app)/acciones.ts` (`preguntarEnInicio`) |
+| El ciclo visible al preguntar (salida → esqueleto → entrada) | `components/inicio/transicion-inicio.tsx`, `esqueleto-inicio.tsx` (`docs/como-funciona/transicion-del-inicio.md`) |
 | El gancho "acabo de aplicar una acción" | `lib/agente/agente.ts` (`alMutar`), conectado en `app/api/agente/route.ts` |
 | La entrada a Maya con un botón ya tocado | `app/(app)/maya/page.tsx` (`?accion=`), `components/maya/consola-maya.tsx` |
 | El ensayo con el modelo real | `scripts/probar-inicio.mjs` (`pnpm probar-inicio`) |
@@ -203,6 +205,12 @@ Ahora llama a la server action `preguntarEnInicio(pregunta)`, que:
    único distinto es el encargo (`encargoDeConsulta` en vez de `encargoDePortada`);
 3. **reemplaza** la fila de `banorte.pantallas_inicio` con esa pantalla;
 4. `revalidatePath("/")`, y el servidor vuelve a renderizar Inicio con el dashboard nuevo.
+
+Y **se ve mientras pasa**: al dar Enter, las tarjetas que hay se van en cascada, un
+esqueleto ocupa su lugar los ~8 s que tarda el modelo, y la pantalla nueva entra con el
+mismo movimiento al revés. El estado ya no vive en la barra: lo publica
+`ProveedorDeInicio`, que envuelve la pantalla completa. Está en
+`docs/como-funciona/transicion-del-inicio.md`.
 
 Dos decisiones que vale la pena entender:
 

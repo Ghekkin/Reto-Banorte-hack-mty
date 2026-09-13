@@ -35,8 +35,14 @@ del plazo, y tu portafolio posición por posición. Desde la primera tarjeta se 
 preguntar a Maya, y la pregunta cambia según cómo esté: a quien la trae al límite se le
 ofrece bajar intereses; a quien no, ver en qué se le va el dinero.
 
-**Movimientos** y **Más** son consultas normales: tu historial con filtros y el resto de
-opciones. Están a propósito simples, porque el peso del proyecto está en Inicio y en Maya.
+**Movimientos** es el historial, y es la única pantalla programada donde la interfaz
+*ordena* en vez de solo listar. Arriba, cuánto salió y cuánto entró. Abajo, los movimientos
+partidos en bloques con el nombre que la gente usa —*Hoy*, *Ayer*, *Esta semana*, *Semana
+pasada*, *Mes pasado*, *Julio*— y el neto de cada bloque a la derecha, así que "cuánto se me
+fue esta semana" se contesta sin sumar nada. Se puede buscar por comercio y **marcar varias
+categorías a la vez**; al hacerlo, las dos cifras de arriba se recalculan, que es la forma de
+contestar "cuánto llevo en restaurantes y transporte". **Más** sí es una consulta simple: el
+resto de opciones. El peso del proyecto sigue estando en Inicio y en Maya.
 
 En el celular se navega con una barra abajo de cuatro pestañas, y **Maya al centro, en un
 botón redondo elevado**. Eso no es capricho: si Maya fuera una pestaña más se perdería
@@ -57,7 +63,7 @@ vez de repetir una plantilla.
 | `/` | Inicio | Server component + `InicioDeMaya` (cliente) | La portada que armó Maya (`banorte.pantallas_inicio`); de respaldo, la programada: cuentas, tarjetas, movimientos |
 | `/productos` | Productos | Server component | Base: cuentas, tarjetas, créditos, portafolio |
 | `/maya` | Maya | Client (streaming) | El agente vía `POST /api/agente` |
-| `/movimientos` | Movimientos | Server + filtro cliente | Base: movimientos, categorías |
+| `/movimientos` | Movimientos | Server + filtro cliente | Base: movimientos, categorías. El `hoy` del dominio lo calcula la página |
 | `/mas` | Más | Server component | Base: resumen; el resto es estático |
 
 `ORDEN_PESTANAS` en [navegacion.ts](../../apps/web/src/components/shell/navegacion.ts) fija
@@ -92,10 +98,13 @@ apps/web/src/
       consola-maya.tsx          hilo + lienzo + barra de conversacion
       lienzo.tsx                reparte las tarjetas lado a lado (lib/rejilla.ts) y el PLACEHOLDER
       barra-conversacion.tsx    input y chips
-    movimientos/lista-movimientos.tsx   buscador y filtro por categoria
+    movimientos/
+      lista-movimientos.tsx   buscador, multiselector de categorias, lista por periodo
+      icono-categoria.tsx     kebab-case -> icono de Lucide, en circulo con tinte
     marca/logo-banorte.tsx      LogoBanorte (completo) e IconoBanorte (isotipo)
   lib/
     marca.ts                    nombre, tagline, aviso legal: un solo lugar
+    periodos.ts                 agrupa movimientos por periodo relativo (Hoy, Ayer, Esta semana...)
     usuario-activo.ts           lee la cookie (server-only)
     usuarios.ts                 los tres perfiles demo
     datos/tablas.ts             lector de PostgreSQL + conversiones (server-only)
@@ -128,9 +137,11 @@ Reglas de la skill `diseno-banorte` que la pantalla cumple, y dónde:
 
 **Orden y rejilla.** Primero los plásticos (crédito antes que débito: es el que trae un
 saldo que decidir), luego `Cuentas`, un `CreditoEnCurso` por crédito y el portafolio (o
-`SinInversiones`, que lleva a Maya con la pregunta que le conviene a Beto). Es la rejilla
-bento de Inicio con `grid-flow-dense`: cuando hay dos plásticos anchos seguidos, las
-cuentas rellenan el hueco a la derecha del primero en vez de dejarlo vacío.
+`SinInversiones`, que lleva a Maya con la pregunta que le conviene a Beto). La rejilla es la
+bento de siempre con `grid-flow-dense`: cuando hay dos plásticos anchos seguidos, las
+cuentas rellenan el hueco a la derecha del primero en vez de dejarlo vacío. (Era la misma de
+Inicio; desde el 2026-09-13 Inicio usa masonry —`docs/algoritmos/masonry-del-inicio.md`— y
+Productos se quedó con la bento, que le sirve porque sus tarjetas sí miden parecido.)
 
 **La pregunta a Maya depende de la tarjeta.** Con la línea al 80 % o con días de atraso,
 el botón manda `Quiero pagar menos intereses de mi tarjeta`; si no, `¿En qué se me está
@@ -146,6 +157,58 @@ de `Cuentas`: esa deuda ya está en el plástico y en Créditos (mismo criterio 
 Verificado en el navegador (Chromium de Playwright, tres perfiles, 390 y 1280 px): sin
 scroll horizontal, sin errores de consola, y el esqueleto de `loading.tsx` mide lo que
 llega (475 px el héroe en móvil, 247 en escritorio).
+
+### Movimientos: el historial que se ordena solo
+
+Tres piezas, y ninguna es decorativa.
+
+**La tarjeta de totales, arriba.** `Gastado` y `Recibido`, cada uno en `text-3xl
+tabular-nums`, calculados con `totalizar()` **sobre lo filtrado**. La etiqueta cambia a
+`Gastado (filtrado)` en cuanto hay filtro, para que nadie confunda un subtotal con el total.
+Van dos cifras separadas y no un neto: un neto de +$16,753 esconde que salieron $121,603.
+Apiladas hasta `sm` porque a 360 px dos montos de 30 px en dos columnas no caben, y la
+salida no era encogerlos (el monto es lo más grande de su tarjeta) ni truncarlos (un monto
+cortado miente).
+
+**El multiselector de categorías.** Un `DropdownMenu` con `DropdownMenuCheckboxItem`, no una
+fila de chips. Antes era un `ToggleGroup` horizontal y tenía dos problemas: con 18
+categorías era scroll horizontal de dos pantallas, y aunque el `value` de Base UI es un
+arreglo, el filtro **solo usaba `categoria[0]`**, así que de multiselector no tenía nada. El
+menú ocupa una línea, permite varias, dice cuántas hay activas sin abrirse (`2 categorías` +
+badge) y trae una `X` de 44 px para limpiar. Los `CheckboxItem` de Base UI **no cierran el
+menú al hacer clic**, que es justo lo que se necesita para marcar tres seguidas.
+
+**La lista partida por periodo.** `agruparPorPeriodo()` (`lib/periodos.ts`) devuelve los
+grupos del más reciente al más antiguo, cada uno con su neto. Cada grupo es una tarjeta con
+su encabezado flotando **encima del lienzo, no dentro de la tarjeta**: así el `sticky` no
+pelea con el borde redondeado. Va pegado a `top-0` y no a `top-2` porque con cualquier hueco
+se ve pasar una franja de contenido por encima del encabezado, y **sin margen negativo**
+porque sangrar 4 px hacia el padding del lienzo abría una barra horizontal a 360 px (medido
+en un clon de 360 px: `scrollWidth` 364 contra 360). En los grupos `Hoy` y `Ayer` el renglón
+**no repite la fecha**: el encabezado ya la dijo.
+
+El algoritmo de los periodos, con sus casos de borde (que "Este mes" puede quedar vacío, que
+"Esta semana" puede contener días del mes anterior), está en
+[docs/algoritmos/agrupacion-por-periodo.md](../algoritmos/agrupacion-por-periodo.md).
+
+**El `hoy` se calcula en el servidor**, con `hoyEnZona()` en `America/Monterrey`, y viaja
+como prop. No es un detalle: es lo que decide a qué periodo pertenece cada movimiento, y el
+servidor de producción corre en UTC+2, donde a las 6 de la tarde de Monterrey ya es el día
+siguiente. Si cada lado leyera su propio reloj, el HTML del servidor y el del navegador no
+coincidirían y React marcaría un desajuste de hidratación.
+
+**Los iconos.** `icono-categoria.tsx` mapea el `icono` kebab-case del dato al componente de
+Lucide, en un círculo de 36 px con el tinte de la marca (verde para abonos). El mapa es
+explícito y no dinámico para que el `tree-shaking` se lleve solo esos 18. Son monocromos a
+propósito: las categorías traen un `color` propio en la base, y 18 colores en una lista es
+un arcoíris. El icono no es adorno —es lo que permite escanear 300 renglones sin leer cada
+etiqueta— y por eso va con `aria-hidden`: el renglón ya dice la categoría en texto.
+
+Verificado en el navegador con los datos de Beto: ocho grupos (`Hoy`, `Ayer`, `Esta semana`,
+`Semana pasada`, `Mes pasado`, `Julio`, `Junio`, `Mayo`) con sus netos, sin `Este mes`
+—que es el caso de borde del algoritmo, con hoy = sábado—; el filtro con dos categorías baja
+a `117 de 300 movimientos` y deja `Gastado (filtrado) $19,393.00`; sin desbordamiento
+horizontal (1077 = 1077) y sin errores de consola.
 
 ### El hilo guarda las pantallas, no solo el texto
 
@@ -255,8 +318,11 @@ Las tres se encontraron midiendo el DOM en el navegador, no leyendo el código:
    `data-[size=default]:h-8`. **La regla: para pisar un estilo de shadcn hay que usar el
    mismo variant** (`data-active:text-...`, `data-[size=default]:h-auto`).
 2. **`overflow-x-auto` dentro de un flex necesita `min-w-0`.** El filtro de categorías de
-   Movimientos tiene un `ToggleGroup` con `w-max`; sin `min-w-0`, ese ancho se vuelve el
-   min-content del flex y **estiraba el layout 256 px fuera de la pantalla**.
+   Movimientos era un `ToggleGroup` con `w-max`; sin `min-w-0`, ese ancho se volvía el
+   min-content del flex y **estiraba el layout 256 px fuera de la pantalla**. Ese
+   `ToggleGroup` ya no existe (lo reemplazó el menú multiselector), pero el `min-w-0` del
+   `SidebarInset` y el del contenedor **se quedan**: es la red que evita que el próximo hijo
+   ancho vuelva a empujar el layout.
 3. **`SidebarInset` ya es un `<main>`.** Meterle otro `<main>` dentro daba dos por
    documento. El contenido va en `div`.
 
@@ -293,6 +359,13 @@ diferencias que importan aquí:
   es un `<button>`.
 - **`Select` necesita `items`** en la raíz, y los `SelectItem` van dentro de `SelectGroup`.
 - **`ToggleGroup` no lleva `type`** y su `value` es siempre un arreglo.
+- **Un `DropdownMenuLabel` tiene que vivir dentro de un `DropdownMenuGroup`.** Fuera de él,
+  Base UI **revienta al abrir el menú** con `MenuGroupContext is missing` y el error
+  boundary de la ruta se come la pantalla completa. Peor todavía para depurar: el mensaje
+  del boundary dice "casi siempre es la conexión a la base de datos", que aquí es falso
+  —el fallo es de render—. Pasó con el multiselector de Movimientos.
+- **Los `DropdownMenuCheckboxItem` no cierran el menú al hacer clic**, a diferencia de los
+  `Item` normales. Es lo que hace usable un multiselector, y no hay que configurarlo.
 
 ### Cómo probarlo
 

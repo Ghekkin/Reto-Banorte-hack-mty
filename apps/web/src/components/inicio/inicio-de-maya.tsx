@@ -7,6 +7,7 @@ import { estadoVacio, nombresVisibles, procesarVarios, type Accion, type EstadoS
 import { Conclusion } from "@maya/catalogo";
 import { Info } from "lucide-react";
 import { Lienzo } from "@/components/maya/lienzo";
+import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
 import { Badge } from "@/components/ui/badge";
 import type { PantallaDeInicio } from "@/lib/inicio/almacen";
 import { MARCA } from "@/lib/marca";
@@ -38,6 +39,10 @@ import { MARCA } from "@/lib/marca";
  */
 export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio; nombre: string }) {
   const router = useRouter();
+  // La conclusion y la linea de evidencia no son tarjetas de la rejilla, pero se van con
+  // ellas: si se quedaran quietas mientras las tarjetas se deshacen, la pantalla se veria
+  // partida en dos. La cascada de las tarjetas la pone `Masonry` (via `Lienzo acomodo`).
+  const { saliendo } = useTransicionDeInicio();
 
   const superficie = useMemo<EstadoSuperficie | undefined>(() => {
     const { estado } = procesarVarios(estadoVacio(), pantalla.mensajes);
@@ -64,22 +69,24 @@ export function InicioDeMaya({ pantalla, nombre }: { pantalla: PantallaDeInicio;
   return (
     <div className="flex flex-col gap-3 md:gap-4">
       {!laPintaElModelo && (
-        <Conclusion
-          saludo={`Hola, ${nombre.split(" ")[0]}`}
-          titular={titular}
-          detalle={detalle}
-          sugerencias={pantalla.sugerencias}
-          razon={pantalla.razon}
-          // Una sugerencia de la portada lleva a Maya con esa pregunta, igual que antes: la
-          // consulta desde Inicio vive en la barra flotante, que reemplaza la portada.
-          alAccionar={(contexto) => {
-            const pregunta = typeof contexto?.pregunta === "string" ? contexto.pregunta : "";
-            if (pregunta) router.push(`/maya?intencion=${encodeURIComponent(pregunta)}`);
-          }}
-        />
+        <div className={saliendo ? "animar-salida" : undefined}>
+          <Conclusion
+            saludo={`Hola, ${nombre.split(" ")[0]}`}
+            titular={titular}
+            detalle={detalle}
+            sugerencias={pantalla.sugerencias}
+            razon={pantalla.razon}
+            // Una sugerencia de la portada lleva a Maya con esa pregunta, igual que antes: la
+            // consulta desde Inicio vive en la barra flotante, que reemplaza la portada.
+            alAccionar={(contexto) => {
+              const pregunta = typeof contexto?.pregunta === "string" ? contexto.pregunta : "";
+              if (pregunta) router.push(`/maya?intencion=${encodeURIComponent(pregunta)}`);
+            }}
+          />
+        </div>
       )}
-      <Lienzo superficie={superficie} conversacionId="inicio" alAccionar={irAMaya} />
-      <EvidenciaDeMaya pantalla={pantalla} />
+      <Lienzo superficie={superficie} conversacionId="inicio" acomodo="masonry" alAccionar={irAMaya} />
+      <EvidenciaDeMaya pantalla={pantalla} className={saliendo ? "animar-salida" : undefined} />
     </div>
   );
 }
@@ -111,13 +118,13 @@ export function partirEnTitular(texto: string): { titular: string; detalle?: str
  * El "¿Por que veo esto?" ya no vive aqui: ahora es el pie de la tarjeta `Conclusion`,
  * como en cualquier otra tarjeta del catalogo.
  */
-function EvidenciaDeMaya({ pantalla }: { pantalla: PantallaDeInicio }) {
+function EvidenciaDeMaya({ pantalla, className }: { pantalla: PantallaDeInicio; className?: string }) {
   const tools = pantalla.tools.map((t) => t.replace(/!$/, ""));
 
   return (
     <p
       aria-label={`Como armo ${MARCA.nombre} esta pantalla`}
-      className="flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-muted-foreground"
+      className={`flex flex-wrap items-center gap-x-2 gap-y-1 px-1 text-xs text-muted-foreground ${className ?? ""}`}
     >
       <Badge variant="outline" className="rounded-full border-borde-sutil font-normal">
         {pantalla.modelo}

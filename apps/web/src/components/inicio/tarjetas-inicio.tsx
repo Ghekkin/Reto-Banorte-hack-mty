@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import { ArrowRight, ArrowUp } from "lucide-react";
 import { IconoBanorte } from "@/components/marca/logo-banorte";
+import { useTransicionDeInicio } from "@/components/inicio/transicion-inicio";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardAction, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Spinner } from "@/components/ui/spinner";
-import { preguntarEnInicio } from "@/app/(app)/acciones";
 import { formatearFecha, formatearMonto, formatearPorcentaje } from "@/lib/dinero";
 import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
 
@@ -20,6 +20,10 @@ import type { Cuenta, Movimiento, Tarjeta } from "@/lib/datos/consultas";
  * Reglas que cumplen todas (skill `diseno-banorte`): etiqueta pequena arriba, el monto
  * como el elemento mas grande, `tabular-nums` en toda cifra, y un solo heroe por
  * pantalla.
+ *
+ * **Cuanto ocupa cada una no se decide aqui**, se declara con `data-hueco` en la pagina:
+ * una tarjeta no sabe si la van a poner sola, en una rejilla de tres o en el chat
+ * (`components/inicio/masonry.tsx`).
  */
 
 /**
@@ -38,7 +42,6 @@ export function TarjetaSaldo({
 }) {
   return (
     <Card
-      data-ancho="amplio"
       className="border-0 bg-[linear-gradient(135deg,var(--primary)_0%,var(--marca-oscuro)_100%)] text-primary-foreground shadow-sm"
     >
       <CardContent className="flex flex-col gap-5 p-5">
@@ -148,7 +151,7 @@ export function ListaTarjetas({ tarjetas }: { tarjetas: Tarjeta[] }) {
 
 export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[] }) {
   return (
-    <Card data-ancho="amplio">
+    <Card>
       {/* `CardAction` no es opcional cuando hay una accion en el encabezado: el
           `CardHeader` de shadcn activa su segunda columna con
           `has-data-[slot=card-action]`, y un boton sin envolver no trae ese slot. Sin
@@ -212,25 +215,23 @@ export function MovimientosRecientes({ movimientos }: { movimientos: Movimiento[
  * burbuja: el dashboard se borra y aparece otro, que es lo que la persona espera al
  * escribir en su pantalla de inicio.
  *
- * El envio va con `useTransition` y no con `useState` + `fetch` porque el trabajo lo hace
- * una server action que termina en `revalidatePath`: `isPending` cubre el turno completo
- * (los ~8 s del modelo) Y el re-render del servidor. Con un estado propio, la barra se
- * habilitaba en cuanto la accion resolvia y la pantalla vieja seguia ahi medio segundo.
+ * **El envio ya no vive aqui: vive en `ProveedorDeInicio`** (`transicion-inicio.tsx`).
+ * Tenia su propio `useTransition`, y con el estado encerrado en la barra la unica pieza de
+ * la pantalla que se enteraba de que habia una pregunta en curso era el spinner de este
+ * boton: las tarjetas se quedaban congeladas los ~8 s del turno y cambiaban de golpe.
+ * Ahora la barra publica la pregunta y lee la fase; la salida en cascada de las tarjetas y
+ * el esqueleto salen de ahi. El `useTransition` sigue siendo lo correcto (y no un `useState`
+ * + `fetch`) porque cubre el turno Y el re-render del servidor.
  */
 export function BarraFlotanteMaya() {
   const [texto, setTexto] = useState("");
-  const [fallo, setFallo] = useState<string>();
-  const [enviando, iniciar] = useTransition();
+  const { pensando, fallo, preguntar } = useTransicionDeInicio();
 
   function enviar() {
     const limpio = texto.trim();
-    if (!limpio || enviando) return;
-    setFallo(undefined);
-    iniciar(async () => {
-      const r = await preguntarEnInicio(limpio);
-      if (r.ok) setTexto("");
-      else setFallo(r.motivo);
-    });
+    if (!limpio || pensando) return;
+    preguntar(limpio);
+    setTexto("");
   }
 
   return (
@@ -260,9 +261,9 @@ export function BarraFlotanteMaya() {
           type="text"
           value={texto}
           onChange={(e) => setTexto(e.target.value)}
-          disabled={enviando}
+          disabled={pensando}
           placeholder={
-            enviando ? "Maya está armando tu pantalla…" : "Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
+            pensando ? "Maya está armando tu pantalla…" : "Pregúntale a Maya sobre tus gastos, créditos o inversiones..."
           }
           aria-label="Pregúntale a Maya"
           className="min-w-0 flex-1 bg-transparent px-2 text-sm text-foreground outline-none placeholder:text-muted-foreground disabled:opacity-70"
@@ -270,10 +271,10 @@ export function BarraFlotanteMaya() {
         <button
           type="submit"
           aria-label="Enviar"
-          disabled={enviando || texto.trim() === ""}
+          disabled={pensando || texto.trim() === ""}
           className="grid size-9 shrink-0 place-items-center rounded-full bg-primary text-primary-foreground shadow-xs transition-transform hover:bg-primary/90 active:scale-95 disabled:opacity-50"
         >
-          {enviando ? <Spinner /> : <ArrowUp className="size-4.5" />}
+          {pensando ? <Spinner /> : <ArrowUp className="size-4.5" />}
         </button>
       </form>
     </aside>

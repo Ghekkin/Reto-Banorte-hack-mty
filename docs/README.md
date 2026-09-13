@@ -90,6 +90,7 @@ quien.
 - [La portada de Maya](algoritmos/portada-de-maya.md) — la huella que decide cuándo rearmar y la escalera de urgencia con la que se eligen las tarjetas
 - [Validación A2UI](algoritmos/validacion-a2ui.md) — el catálogo intercambiable en los schemas oficiales, y cómo se saca un error útil de 81
 - [Intención y parcheo](algoritmos/intencion-y-parcheo.md) — cómo se clasifica una pregunta de seguimiento sin clasificador, el tope de tarjetas con su poda determinista, qué valida un parche y quién gana el slider cuando la persona y el agente no coinciden
+- [Agrupación por periodo](algoritmos/agrupacion-por-periodo.md) — cómo se decide si un movimiento es de "Ayer", de "Esta semana" o de "Mes pasado" cuando los periodos se traslapan, y por qué el "hoy" entra como parámetro
 
 ### Issues
 - [Registro de hallazgos](issues/index.md)

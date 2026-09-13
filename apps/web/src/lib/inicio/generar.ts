@@ -173,7 +173,7 @@ export async function generarPortada(usuarioId: string, opciones: OpcionesDeGene
     // Sin pantalla previa, `crearCierre` solo publica `pintar_pantalla`: en una portada no
     // hay nada que ajustar ni que aclarar, y `responder` con texto seria justo lo contrario
     // de lo que la portada es.
-    const cierre = crearCierre();
+    const cierre = crearCierre(undefined, { datosBase: datos });
     // Al modelo solo le llegan las tools de apoyo y la de pintar. Las de accion no se
     // filtran con `activeTools`: **no estan en el conjunto**, asi que ni un modelo que
     // se las invente puede ejecutarlas desde aqui.

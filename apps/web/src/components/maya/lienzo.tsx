@@ -4,8 +4,9 @@ import { Superficie } from "@maya/a2ui";
 import type { Accion, EstadoSuperficie, FalloDeRender, PiezaDeRaiz } from "@maya/a2ui";
 import { ProveedorCatalogo } from "@maya/catalogo";
 import { LayoutGrid } from "lucide-react";
+import { Masonry } from "@/components/inicio/masonry";
 import { registrarComponentes } from "@/lib/registrar-componentes";
-import { CLASES_REJILLA, clasesDePieza, tamanoDePieza } from "@/lib/rejilla";
+import { CLASES_REJILLA, clasesDePieza, tamanoDePieza, type TamanoDePieza } from "@/lib/rejilla";
 
 /**
  * El lienzo: donde el agente coloca lo que construye.
@@ -26,8 +27,17 @@ import { CLASES_REJILLA, clasesDePieza, tamanoDePieza } from "@/lib/rejilla";
  * `@container/lienzo` es lo que permite medir el lienzo desde CSS; `animar-lista` escalona
  * la entrada de las piezas 25 ms, para que se vea que las tarjetas se construyeron una tras
  * otra. Es el detalle que le dice al jurado "esto lo acaba de armar el agente".
+ *
+ * **Dos acomodos.** `filas` es el de siempre y el que usa la conversacion en `/maya`: filas
+ * que se llenan solas, cada tarjeta con su ancho natural. `masonry` lo usa Inicio, donde
+ * las tarjetas no comparten alto y las filas dejan huecos verticales grandes
+ * (`components/inicio/masonry.tsx`). El acomodo no cambia que pinta el renderer ni que
+ * tamano natural tiene cada componente: solo el hueco donde cae cada pieza.
  */
 registrarComponentes();
+
+/** `filas`: la rejilla de siempre (conversacion). `masonry`: sin huecos verticales (Inicio). */
+export type AcomodoDelLienzo = "filas" | "masonry";
 
 export function Lienzo({
   superficie,
@@ -35,6 +45,7 @@ export function Lienzo({
   alAccionar,
   alFallar,
   vacio,
+  acomodo = "filas",
   ocultarSugerenciasEnTarjeta = true,
 }: {
   superficie: EstadoSuperficie | undefined;
@@ -43,6 +54,8 @@ export function Lienzo({
   /** Un componente que el renderer no supo pintar: se le devuelve al agente. */
   alFallar?: (fallo: FalloDeRender) => void;
   vacio?: React.ReactNode;
+  /** Como se reparten las piezas de primer nivel. Ver `AcomodoDelLienzo`. */
+  acomodo?: AcomodoDelLienzo;
   /**
    * Si es true (por omisión en Lienzo/consola), no se pintan las sugerencias duplicadas
    * dentro de tarjetas como Conclusion porque la consola de conversación ya las renderiza
@@ -61,7 +74,9 @@ export function Lienzo({
             conversacionId={conversacionId}
             alAccionar={alAccionar}
             alFallar={alFallar}
-            disponer={(piezas) => <Rejilla piezas={piezas} />}
+            disponer={(piezas) =>
+              acomodo === "masonry" ? <MasonryDeLienzo piezas={piezas} /> : <Rejilla piezas={piezas} />
+            }
           />
         ) : (
           vacio
@@ -86,6 +101,37 @@ function Rejilla({ piezas }: { piezas: PiezaDeRaiz[] }) {
     </div>
   );
 }
+
+/**
+ * Las mismas piezas, en masonry. Se reusa `tamanoDePieza` —el tamano natural sigue
+ * saliendo del catalogo, no del acomodo— y se traduce a la marca que `Masonry` entiende:
+ * `compacta` una columna, `amplia` dos, `completa` la fila entera.
+ *
+ * El `div` de la marca envuelve la tarjeta en vez de ponerle el atributo encima porque las
+ * piezas ya vienen renderizadas por el motor A2UI: aqui no se puede clonar sus props.
+ * Y la marca es `data-hueco` y no `data-ancho` porque el motor ya usa `data-ancho` para el
+ * valor que mando el agente, que puede contradecir al natural del catalogo (ver `masonry.tsx`).
+ */
+function MasonryDeLienzo({ piezas }: { piezas: PiezaDeRaiz[] }) {
+  return (
+    <Masonry>
+      {piezas.map((pieza) => {
+        const tamano = tamanoDePieza(pieza.componente, pieza.ancho);
+        return (
+          <div key={pieza.clave} data-pieza={pieza.id} data-tamano={tamano} data-hueco={HUECO_DE_TAMANO[tamano]}>
+            {pieza.nodo}
+          </div>
+        );
+      })}
+    </Masonry>
+  );
+}
+
+const HUECO_DE_TAMANO: Record<TamanoDePieza, string> = {
+  compacta: "normal",
+  amplia: "amplio",
+  completa: "completa",
+};
 
 /**
  * El estado vacio del lienzo: lo que se ve antes del primer turno.

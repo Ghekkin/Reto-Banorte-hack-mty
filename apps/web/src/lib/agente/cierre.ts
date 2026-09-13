@@ -102,6 +102,8 @@ export type OpcionesDeCierre = {
    * y el reintento sale bien sin gastar otro paso en `ver_componentes`.
    */
   ayudaParaErrores?: (errores: string[]) => string | undefined;
+  /** Datos precalculados o de tools MCP por si el modelo omitió datosJson */
+  datosBase?: Record<string, unknown>;
 };
 
 export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesDeCierre = {}): Cierre {
@@ -120,14 +122,17 @@ export function crearCierre(pantallaActual?: PantallaActual, opciones: OpcionesD
       execute: (entrada: EntradaPintarPantalla): ResultadoPintar => {
         // En el ultimo intento se poda al tope en vez de rechazar: el modelo ya tuvo su
         // oportunidad de elegir, y una pantalla recortada es mejor que ninguna.
-        const armado = armarMensajes(entrada, { podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1 });
+        const armado = armarMensajes(entrada, {
+          podarTarjetas: fallidos >= MAX_INTENTOS_DE_PANTALLA - 1,
+          datosBase: opciones.datosBase,
+        });
         if (!armado.ok) {
           fallidos++;
           const ayuda = opciones.ayudaParaErrores?.(armado.errores);
           return { ok: false, errores: armado.errores, ...(ayuda ? { ayuda } : {}) };
         }
         mensajes = armado.mensajes;
-        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada) };
+        ultima = { razon: entrada.razon, texto: entrada.texto, sugerencias: resolverSugerenciasPantalla(entrada, opciones.datosBase) };
         con = "pintar";
         return { ok: true, componentes: armado.componentes };
       },
