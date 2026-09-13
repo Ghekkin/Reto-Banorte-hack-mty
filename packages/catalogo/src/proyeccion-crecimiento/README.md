@@ -4,11 +4,16 @@ Proyecta la acumulación patrimonial a lo largo de un horizonte de meses o años
 
 ## Cuándo lo elige el agente
 
-Cuando el usuario pregunta por planes de inversión a mediano o largo plazo ("¿Cuánto tendré en 3 años si ahorro $3,000 al mes?", "¿Cómo crecería mi dinero en un fondo de inversión?"). Dispara la acción `simular_inversion`.
+**Hoy, nunca.** Ninguna tool del MCP devuelve la proyección que esta tarjeta necesita
+(`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`), y
+esas cifras no se calculan a mano (issue #19). Su `cuandoUsarlo` lo dice así, y para "¿cuánto
+crecería mi dinero si invierto?" manda al modelo a `SugerenciasInversion`
+(`consultar_sugerencias_inversion`) o `RiesgoRendimiento` (`consultar_catalogo_inversiones`). La
+tarjeta queda en el catálogo, con su ejemplo, para cuando exista una tool que la alimente.
 
 ## Acciones que emite
 
-- `simular_inversion`: Envía al agente la aportación mensual configurada y el valor final estimado para proceder a la formalización o ajuste del contrato.
+- `elegir_plan_inversion`: envía al agente la aportación mensual elegida en el slider y el valor final simulado.
 
 ## Ejemplo de uso
 

@@ -82,8 +82,15 @@ Permite al usuario consultar el comportamiento y plusvalía acumulada de un inst
 ### Propósito
 Muestra cómo crece el patrimonio al sumar aportaciones periódicas más el rendimiento generado por el interés compuesto a lo largo de un horizonte de meses o años, incluyendo un slider interactivo para simular aportaciones en el cliente.
 
-- **Herramienta MCP asociada**: `proyectar_ahorro` / `consultar_catalogo_inversiones`
-- **Acción A2UI emitida**: `simular_inversion`
+- **Herramienta MCP asociada**: **ninguna, hoy.** Ninguna tool del MCP devuelve la proyección
+  (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`):
+  `proyectar_inversion` se revirtió y `proyectar_ahorro` calcula ahorro **sin** rendimiento. Por eso
+  su `cuandoUsarlo` le dice al modelo que no la pinte y que, para "¿cuánto crecería mi dinero?",
+  use `SugerenciasInversion` (`consultar_sugerencias_inversion`) o `RiesgoRendimiento`
+  (`consultar_catalogo_inversiones`). La tarjeta sigue en el catálogo y en `/catalogo` para cuando
+  exista la tool (issue #19). Una prueba (`tools-nombradas.spec.ts`) truena si el `cuandoUsarlo`
+  de cualquier componente nombra una tool que el MCP no tiene.
+- **Acción A2UI emitida**: `elegir_plan_inversion`
 
 ### Datos de Ejemplo (Data Model)
 ```json
@@ -169,7 +176,14 @@ Presenta simultáneamente tres escenarios de retorno de inversión (pesimista, e
 Resuelve el seguimiento patrimonial integral (la necesidad identificada en el viaje de Carmen): visualiza el desglose de activos en la cartera del cliente (deuda, acciones, fondos, efectivo), comparando la asignación real frente al modelo recomendado y alertando sobre desbalanceos.
 
 - **Herramienta MCP asociada**: `consultar_inversiones`
-- **Acción A2UI emitida**: `rebalancear_portafolio`
+- **Acción A2UI emitida**: `ver_orden_rebalanceo`
+- **Con muchas clases** (el portafolio de Carmen trae 8): la lista muestra cada una con su monto y
+  su peso, pero la dona solo usa **4 colores**, los que se distinguen. Con más de 4 clases, las 3
+  de mayor monto llevan su color y el resto va junto en un segmento «Otras (N clases)», con el
+  mismo color en la dona y en el cuadrito de sus filas. Antes la tarjeta héroe restaba 0.2 de
+  opacidad por clase y desde la sexta quedaban invisibles (issue #26). Detalle en
+  [`graficas-del-catalogo.md`](../algoritmos/graficas-del-catalogo.md); código en
+  `packages/catalogo/src/distribucion-portafolio/segmentos.ts` (`repartirSegmentos`).
 
 ### Datos de Ejemplo (Data Model)
 ```json

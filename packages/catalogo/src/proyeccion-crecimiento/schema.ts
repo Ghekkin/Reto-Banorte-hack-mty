@@ -30,7 +30,9 @@ export type PropsProyeccionCrecimiento = z.infer<typeof schemaProyeccionCrecimie
 export const entradaProyeccionCrecimiento = {
   nombre: "ProyeccionCrecimiento",
   cuandoUsarlo:
-    "La persona quiere proyectar cuánto crecerá su dinero si invierte mes con mes en pagarés, fondos o CETES a mediano/largo plazo: **ya llamaste proyectar_inversion** y pasas sus cifras tal como vinieron (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`). NUNCA calcules tú un valor futuro: la tarjeta simula la curva en el navegador y la calibra contra el cierre que mandes, así que un cierre inventado dobla la gráfica para taparlo. Si pide otro plazo, otra tasa u otro capital, vuelve a llamar la tool; la aportación mensual sí la resuelve el slider. Dispara elegir_plan_inversion.",
+    "HOY NO LA USES: ninguna tool del MCP devuelve una proyección de inversión (`totalAportadoCentavos`, `rendimientoEstimadoCentavos`, `valorFinalEstimadoCentavos`, `hitos`), y esas cifras no se calculan a mano ni se estiman: la tarjeta calibra su curva contra el cierre que le mandes, así que un cierre inventado dobla la gráfica para taparlo. " +
+    "Si la persona pregunta cuánto crecería su dinero invirtiendo mes con mes, pinta `SugerenciasInversion` con `consultar_sugerencias_inversion` (el rendimiento anual estimado de cada instrumento) o `RiesgoRendimiento` con `consultar_catalogo_inversiones`, y di en tu texto que la proyección a futuro todavía no está disponible. " +
+    "Para juntar un monto en un plazo (ahorro sin rendimiento), `SimuladorMeta` con `proyectar_ahorro`. Solo se pinta si una tool devolvió esas cifras tal cual. Dispara elegir_plan_inversion.",
   schema: schemaProyeccionCrecimiento,
   acciones: ["elegir_plan_inversion"],
 };
