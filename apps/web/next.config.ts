@@ -19,6 +19,12 @@ try {
 }
 
 const nextConfig: NextConfig = {
+  /**
+   * Solo aplica a `next dev`. Next 16 bloquea el websocket de HMR y los endpoints del
+   * overlay cuando el navegador entra por un host que no es `localhost`; asi se puede
+   * abrir el dev server del VPS por Tailscale (IP o nombre MagicDNS).
+   */
+  allowedDevOrigins: ["100.115.81.108", "**.ts.net"],
   /** Los paquetes del workspace se publican en TypeScript, sin build propio. */
   transpilePackages: ["@maya/a2ui", "@maya/catalogo", "@maya/schemas"],
 };
