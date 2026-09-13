@@ -197,13 +197,23 @@ export function usarAgente(usuarioId: string) {
    * el turno solo pintó pantalla (o truena) sin decir nada. La usa la voz (ElevenLabs,
    * `docs/como-funciona/premio-elevenlabs.md`) para que la conversación hablada nunca se
    * quede en silencio esperando una frase que no existe.
+   *
+   * `alResponder` (opcional) dispara UNA vez, en cuanto llega la primera linea `texto` del
+   * turno — que el servidor emite justo cuando la pantalla ya esta completa
+   * (`agente.ts`: el cierre se resuelve antes que `texto`). Es lo que deja a la voz
+   * arrancar en el momento exacto en que Maya tiene algo que decir, sin esperar a `fin`
+   * (transparencia, sugerencias) ni adelantarse mientras el turno sigue en vuelo.
    */
   const enviar = useCallback(
-    async (parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error" | "pantallaDeLaAccion">): Promise<string> => {
+    async (
+      parcial: Pick<PeticionAgente, "mensajes" | "accion" | "error" | "pantallaDeLaAccion">,
+      opciones?: { alResponder?: (texto: string) => void },
+    ): Promise<string> => {
       setOcupado(true);
       setTransparencia([]);
       let respuestaHablada = "";
       let huboError = false;
+      let yaAvisado = false;
       try {
         const superficie = estado.get(SUPERFICIE);
         // La viva ya esta congelada al final del hilo (no hay turno en vuelo): es la ultima.
@@ -260,6 +270,10 @@ export function usarAgente(usuarioId: string) {
             case "texto":
               respuestaHablada = respuestaHablada ? `${respuestaHablada} ${linea.valor}` : linea.valor;
               setHilo((h) => [...h, { tipo: "mensaje", rol: "agente", texto: linea.valor }]);
+              if (!yaAvisado) {
+                yaAvisado = true;
+                opciones?.alResponder?.(linea.valor);
+              }
               break;
             case "razon":
               setRazon(linea.valor);
@@ -309,10 +323,10 @@ export function usarAgente(usuarioId: string) {
   );
 
   const enviarTexto = useCallback(
-    async (texto: string): Promise<string> => {
+    async (texto: string, opciones?: { alResponder?: (texto: string) => void }): Promise<string> => {
       const mensajes: MensajeHistorial[] = [...historial, { rol: "usuario", texto }];
       setHilo((h) => [...h, { tipo: "mensaje", rol: "usuario", texto }]);
-      return enviar({ mensajes });
+      return enviar({ mensajes }, opciones);
     },
     [enviar, historial],
   );

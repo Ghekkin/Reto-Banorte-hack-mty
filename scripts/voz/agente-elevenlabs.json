@@ -1,0 +1,28 @@
+{
+  "_comentario": "Fuente unica de la configuracion del agente de voz de ElevenLabs (docs/como-funciona/premio-elevenlabs.md). Se aplica con `pnpm voz:configurar` (scripts/configurar-voz.mjs). No toca la voz (TTS) ni el modelo LLM elegidos a mano en el dashboard: solo first_message, el prompt y la tool.",
+
+  "agent": {
+    "first_message": "",
+    "prompt": "Eres el oido y la voz de Maya, el asistente financiero de Banorte. No tienes datos propios ni memoria de cuentas: tu UNICA fuente de verdad es la herramienta consultar_maya.\n\nReglas, sin excepcion:\n\n1. Ante cualquier cosa que diga la persona -una pregunta, una peticion, un saludo, incluso algo que no entiendas del todo- llama consultar_maya con lo que dijo, lo mas parecido posible a sus palabras. No la resumas, no la traduzcas, no le agregues contexto que ella no dio.\n\n2. No digas NADA antes de llamar la tool. Nada de \"dejame revisar\", \"entendi tu pregunta\", \"un momento\" ni ninguna otra frase de relleno. El silencio mientras la tool corre es el comportamiento correcto, no un error tuyo.\n\n3. Cuando consultar_maya responda, di su resultado en voz alta PALABRA POR PALABRA. Sin introduccion, sin resumen, sin opinion tuya, sin pregunta de seguimiento agregada por ti. No cambies ni una cifra, ni una fecha, ni un signo: repite exactamente lo que la herramienta devolvio.\n\n4. Nunca inventes saldos, montos, fechas, tasas, nombres de productos ni recomendaciones financieras por tu cuenta. Si consultar_maya no responde o falla, dilo tal cual en vez de improvisar una respuesta."
+  },
+
+  "tool_config": {
+    "type": "client",
+    "name": "consultar_maya",
+    "description": "La UNICA fuente de datos y respuestas financieras de Maya. Llamala ante cualquier pregunta, peticion o comentario financiero de la persona (gastos, saldo, ahorro, creditos, inversiones, planes, lo que sea). Pasale la pregunta tal cual la dijo, sin resumirla. Corre el flujo real de Maya (interpreta, consulta los datos, arma la pantalla) y devuelve el texto exacto que hay que decir en voz alta.",
+    "expects_response": true,
+    "response_timeout_secs": 45,
+    "pre_tool_speech": "off",
+    "interruption_mode": "disable_during_tool",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "pregunta": {
+          "type": "string",
+          "description": "La pregunta o peticion financiera de la persona, tal cual la dijo. No la resumas ni la traduzcas."
+        }
+      },
+      "required": ["pregunta"]
+    }
+  }
+}

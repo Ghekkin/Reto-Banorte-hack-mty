@@ -87,9 +87,28 @@ export function ConsolaMaya({
 
   const herramientasVoz = useMemo<HerramientasVoz>(
     () => ({
-      consultar_maya: async ({ pregunta }: { pregunta?: string }) => {
+      /**
+       * Resuelve en cuanto llega el `texto` del turno (via `alResponder`), no cuando
+       * `enviarTexto` termina de verdad (transparencia, sugerencias, congelar el hilo).
+       * Es lo que hace que ElevenLabs empiece a hablar justo cuando la pantalla ya esta
+       * lista, no unos milisegundos despues por trabajo que a la voz no le importa.
+       * `enviarTexto` sigue corriendo en segundo plano; su resultado final solo se usa
+       * de respaldo si el turno termina sin emitir ningun `texto` (silencio total).
+       */
+      consultar_maya: ({ pregunta }: { pregunta?: string }) => {
         if (!pregunta || !pregunta.trim()) return "No entendí bien la pregunta, ¿la repites?";
-        return enviarTextoRef.current(pregunta);
+        return new Promise<string>((resolve) => {
+          let resuelto = false;
+          const resolverUnaVez = (texto: string) => {
+            if (resuelto) return;
+            resuelto = true;
+            resolve(texto);
+          };
+          enviarTextoRef
+            .current(pregunta, { alResponder: resolverUnaVez })
+            .then(resolverUnaVez)
+            .catch(() => resolverUnaVez("Algo falló de mi lado. Intenta de nuevo."));
+        });
       },
     }),
     [],

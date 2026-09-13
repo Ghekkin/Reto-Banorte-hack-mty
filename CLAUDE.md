@@ -123,7 +123,7 @@ el campo nuevo es opcional.
 | `docs/equipo/roadmap.md` | El plan hora por hora y rol por rol; manda sobre las horas del ADR 0004 | existe |
 | `docs/bitacora/` | Bitácora de equipo y una por persona | existe |
 | `db/` | `schema.sql`, `reiniciar.sql` y `migraciones/`. **Los datos viven en PostgreSQL, no en el repo** (ADR 0010). La 0004 agrega las tablas de historia: corridas del modelo, chat y registros (`docs/como-funciona/corridas-en-db.md`); la 0005, las procedencias de los widgets vivos | existe |
-| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `corridas.mjs` (lee corridas, chat y registros), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
+| `scripts/` | `dev.sh` (levanta web+mcp), `humo.sh`, `deploy.sh`, `migrar.mjs`, `volcar-fixture.mjs`, `restaurar.mjs`, `corridas.mjs` (lee corridas, chat y registros), `configurar-voz.mjs` (aplica `voz/agente-elevenlabs.json` al agente de ElevenLabs), `sesion-inicio.sh`, `sync.sh`, `marcar-estable.sh` | existe |
 | `.env.example` | Todas las variables de entorno con comentario. El scaffold arranca sin llenar ninguna | existe |
 | `.github/workflows/` | `ci-y-deploy.yml`: verifica todo push y despliega `main` en Coolify | existe |
 | `apps/*/Dockerfile` | Imágenes de web, mcp y docs; se construyen desde la raíz del repo | existe |
@@ -159,6 +159,7 @@ pnpm datos:migrar              # aplica db/migraciones/*.sql (idempotente)
 pnpm corridas                  # las ultimas corridas del modelo; `pnpm corridas cor_xxx` una completa, --chat, --registros
 pnpm datos:fixture             # regenera el volcado que usan las pruebas, desde la base
 pnpm datos:restaurar           # repuebla la base desde el volcado (--recrear la vacia antes)
+pnpm voz:configurar [--dry]    # aplica scripts/voz/agente-elevenlabs.json al agente de ElevenLabs (prompt, first_message, tool consultar_maya)
 
 scripts/deploy.sh              # dispara el deploy en Coolify y espera los /health
 scripts/sync.sh "mensaje"      # commit con nombre + pull --rebase + push (lo automático usa --auto)

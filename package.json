@@ -21,6 +21,7 @@
     "probar-guion": "node scripts/probar-guion.mjs",
     "probar-inicio": "node scripts/probar-inicio.mjs",
     "probar-widgets": "node scripts/probar-widgets.mjs",
+    "voz:configurar": "node scripts/configurar-voz.mjs",
     "docs:dev": "pnpm --filter @maya/docs dev",
     "docs:build": "pnpm --filter @maya/docs build",
     "docs:preview": "pnpm --filter @maya/docs preview"

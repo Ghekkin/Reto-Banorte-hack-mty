@@ -1,5 +1,5 @@
 ---
-verificado: 2026-09-12 17:45
+verificado: 2026-09-13 04:15
 estado: en-progreso
 ---
 
@@ -30,12 +30,19 @@ camino para usar Maya. Si algo de la voz falla —sin micrófono, sin conexión,
 sin crédito— la persona sigue escribiendo en el chat de texto exactamente como
 hoy; el botón de voz simplemente no aparece o avisa y no hace nada más.
 
-**Estado real (2026-09-12 17:45):** el puente completo está construido y
-**verificado en vivo** contra la cuenta de ElevenLabs de los créditos MLH —
-conectar, escuchar y colgar funcionan de punta a punta en el chat de Maya
-(`/maya`). Lo que falta es configurar, del lado de ElevenLabs (no de este
-repo), la herramienta `consultar_maya` en el agente — ver "Configuración
-pendiente en ElevenLabs" abajo — y decidir un botón de voz para la pantalla de
+**Maya no habla mientras piensa.** La primera prueba real mostró dos cosas
+"desconectadas": el agente de voz decía "entendí tu pregunta" antes de que el
+MCP contestara, y luego decía "tardó mucho, intenta más tarde" justo cuando la
+pantalla ya estaba lista. Las dos son configuración del agente de ElevenLabs
+(no del código): `pre_tool_speech` apagado (silencio total mientras
+`consultar_maya` corre) y un `response_timeout_secs` que alcanza para un turno
+real. Ver "Configuración del agente en ElevenLabs" abajo.
+
+**Estado real (2026-09-13 04:15):** el puente completo está construido,
+**verificado en vivo** contra la cuenta de ElevenLabs de los créditos MLH, y
+la configuración del agente (prompt, `first_message`, la tool) **ya está
+aplicada** con `pnpm voz:configurar`. Lo que falta es probar un turno completo
+hablado con micrófono real, y decidir un botón de voz para la pantalla de
 Inicio, que cambió de diseño mientras esto se construía (ver "Pendiente").
 
 ## Técnico
@@ -63,10 +70,16 @@ Inicio, que cambió de diseño mientras esto se construía (ver "Pendiente").
   dijo el agente en el turno (antes no devolvían nada): es lo que la voz
   necesita para poder repetirlo. Si el turno solo pintó pantalla sin decir
   nada, hay una frase de respaldo para que la voz nunca se quede en silencio.
+  `enviarTexto` también acepta un segundo parámetro opcional
+  `{ alResponder }`, que dispara **una vez**, apenas llega la primera línea
+  `texto` del stream — antes de que el turno termine de cerrar
+  (transparencia, sugerencias, congelar el hilo). Es lo que deja a la voz
+  empezar a hablar en el momento exacto en que Maya ya tiene algo que decir.
 - SDK: `@elevenlabs/client` (`apps/web/package.json`). El agente conversacional
-  (voz, prompt, primer mensaje, **y la tool `consultar_maya`**) se crea y
-  edita en la consola de ElevenLabs (`elevenlabs.io/app/agents`), no en este
-  repo.
+  (voz, LLM, temperatura…) se crea y edita a mano en la consola de ElevenLabs
+  (`elevenlabs.io/app/agents`); el `first_message`, el system prompt y la tool
+  `consultar_maya` se aplican desde este repo — ver "Configuración del agente
+  en ElevenLabs" abajo.
 
 ### Flujo paso a paso
 
@@ -83,16 +96,22 @@ Inicio, que cambió de diseño mientras esto se construía (ver "Pendiente").
    - abre la sesión con `Conversation.startSession({ signedUrl, textOnly:
      false, clientTools: herramientasVoz, ... })` de `@elevenlabs/client`.
 3. La persona habla. ElevenLabs transcribe y **su propio LLM decide llamar la
-   tool `consultar_maya`** (así debe estar configurada en su consola — ver
-   abajo) con el texto de la pregunta.
-4. `consultar_maya` (definida en `ConsolaMaya`) llama `enviarTexto(pregunta)`:
-   el MISMO turno que si la persona hubiera escrito. Eso agrega el mensaje al
-   hilo, corre el agente real (Gemini/Claude + MCP), pinta la pantalla A2UI en
-   el chat, y **devuelve el texto que Maya dijo**.
-5. Ese texto vuelve a ElevenLabs como resultado de la tool. El agente de voz
-   lo lee en voz alta (su prompt le dice que lo repita, no que lo reinvente).
-   La pantalla ya está en el chat desde el paso 4 — texto hablado y pantalla
-   visual llegan del mismo turno, no hay carrera entre los dos.
+   tool `consultar_maya`** con el texto de la pregunta — el prompt del agente
+   le prohíbe decir nada antes de eso, y `pre_tool_speech: "off"` lo hace
+   cumplir del lado de ElevenLabs (ver "Configuración del agente" abajo):
+   silencio total mientras esto corre.
+4. `consultar_maya` (definida en `ConsolaMaya`) llama
+   `enviarTexto(pregunta, { alResponder })`: el MISMO turno que si la persona
+   hubiera escrito. Eso agrega el mensaje al hilo, corre el agente real
+   (Gemini/Claude + MCP), y pinta la pantalla A2UI en el chat.
+5. En cuanto el servidor emite la línea `texto` del turno —que llega despues
+   de que la pantalla ya esta completa (`agente.ts`, el cierre se resuelve
+   antes que `texto`)— `alResponder` resuelve la promesa de la tool de una
+   vez, **sin esperar** a que `enviarTexto` termine de verdad (transparencia,
+   sugerencias). Ese texto vuelve a ElevenLabs como resultado de la tool, y el
+   agente de voz lo lee en voz alta PALABRA POR PALABRA (se lo prohíbe
+   parafrasear). La pantalla ya está en el chat — texto hablado y pantalla
+   visual llegan del mismo turno, prácticamente al mismo tiempo.
 6. `detenerVoz()` cierra la sesión. También se cierra sola al salir de
    `/maya` (cleanup de `useEffect`) y al terminar el turno de voz.
 
@@ -127,21 +146,42 @@ mapa de client tools (`HerramientasVoz`). `estado` es
 (antes `Promise<void>`): el texto hablable del turno, con un mensaje de
 respaldo si el turno no dijo nada.
 
-### Configuración pendiente en ElevenLabs (consola, no repo)
+### Configuración del agente en ElevenLabs
 
-En `elevenlabs.io/app/agents/<id>` → pestaña **Tools** → **Add Tool**:
+La fuente de verdad es `scripts/voz/agente-elevenlabs.json` (versionado en el
+repo), no la consola. Se aplica con:
 
-| Campo | Valor |
-|---|---|
-| Tool Type | **Client** |
-| Name | `consultar_maya` (debe coincidir EXACTO con la clave en `herramientasVoz` de `consola-maya.tsx`) |
-| Description | "Úsala para cualquier pregunta financiera de la persona (gastos, saldo, ahorro, créditos, inversiones). Pásale la pregunta tal cual la dijo. Cuando responda, di su resultado en voz alta PALABRA POR PALABRA, sin agregar ni quitar nada — es la respuesta real de Maya, no la inventes tú." |
-| Parámetro | `pregunta` — String — Required — "La pregunta financiera de la persona, tal cual la dijo" |
-| Wait for response | **Sí** (el agente necesita el texto de vuelta para leerlo) |
+```bash
+pnpm voz:configurar        # aplica de verdad
+pnpm voz:configurar --dry  # imprime el payload exacto, sin tocar nada
+```
 
-Y en la pestaña **Agent**, el system prompt debe reforzar lo mismo: nunca
-inventar cifras, siempre llamar `consultar_maya` ante cualquier pregunta
-financiera, y leer su resultado tal cual.
+El script (`scripts/configurar-voz.mjs`) es idempotente: busca la tool
+`consultar_maya` por nombre (la crea si no existe, la actualiza si ya
+existía), y hace `PATCH` al agente con el objeto `agent` **completo** (todo lo
+que ya tenía, más los cambios) para no perder nada de lo que se configuró a
+mano — la voz (TTS) y el modelo LLM elegidos en el dashboard nunca se tocan,
+porque viven fuera de lo que el script escribe.
+
+Lo que aplica, y por qué:
+
+| Campo | Valor | Por qué |
+|---|---|---|
+| `first_message` | `""` (vacío) | El agente espera a que la persona hable primero; no saluda solo |
+| `prompt.prompt` | Ver `agente-elevenlabs.json` | 4 reglas: solo `consultar_maya` como fuente, nada antes de llamarla, repetir su resultado palabra por palabra, nunca inventar cifras |
+| Tool `consultar_maya` → `pre_tool_speech` | `"off"` | Sin esto, ElevenLabs decide hablar ANTES de la tool ("entendí tu pregunta") cuando detecta que suele tardar — que es justo nuestro caso |
+| Tool `consultar_maya` → `response_timeout_secs` | `45` | El turno real puede tardar hasta `TIMEOUT_TURNO_MS` (30 s, `apps/web/src/lib/agente/tipos.ts`) + red. El default de ElevenLabs es 20 s: se agotaba antes de que la pantalla terminara de armarse y el agente decía "tardó mucho, intenta más tarde" a media respuesta |
+| Tool `consultar_maya` → `interruption_mode` | `"disable_during_tool"` | El silencio de la tool no se corta por ruido de fondo mientras corre |
+| Tool `consultar_maya` → parámetro `pregunta` | tipo String, **Value Type = LLM Prompt**, required | El LLM de ElevenLabs decide su valor en el momento, a partir de lo que la persona dijo — no es un valor fijo ni una variable que la app ya conozca de antemano |
+
+`apps/web/src/lib/voz/__tests__/agente-elevenlabs.spec.ts` prueba estas
+reglas sobre el JSON (nombre de la tool, `pre_tool_speech`, `first_message`, y
+que `response_timeout_secs` sea mayor que `TIMEOUT_TURNO_MS / 1000`): si
+alguien sube el timeout del turno sin subir el de la tool, la prueba truena
+antes que la demo.
+
+**Aplicado por última vez:** 2026-09-13 04:15, contra el agente real de la
+cuenta MLH (`ELEVENLABS_AGENT_ID` en `.env`).
 
 ### Casos límite conocidos (fallback primero)
 
@@ -152,32 +192,41 @@ financiera, y leer su resultado tal cual.
 | `/api/voz/signed-url` no contesta en 3 s | `AbortSignal.timeout`; mismo aviso |
 | Faltan `ELEVENLABS_API_KEY` / `ELEVENLABS_AGENT_ID` | la ruta responde 503 antes de llamar a ElevenLabs |
 | El websocket se cae a media conversación | `onError` del SDK → mismo aviso, el hilo de texto ya escrito no se pierde |
-| La tool `consultar_maya` no está configurada en la consola | ElevenLabs conversa con su propio LLM sin tocar nuestro flujo: no pinta pantalla ni sabe datos reales. Por eso la configuración de arriba no es opcional |
+| La tool `consultar_maya` no está configurada en el agente | ElevenLabs conversa con su propio LLM sin tocar nuestro flujo: no pinta pantalla ni sabe datos reales. `pnpm voz:configurar` la deja configurada |
 
 ### Cómo probarlo
 
-- `pnpm --filter @maya/web test` corre `src/lib/voz/__tests__/flag.spec.ts`
-  (el flag es estricto: solo `"1"` enciende) — 123 pruebas en verde en todo
-  `@maya/web`, incluida esta.
+- `pnpm --filter @maya/web test` — incluye `src/lib/voz/__tests__/flag.spec.ts`
+  (el flag es estricto: solo `"1"` enciende) y
+  `src/lib/voz/__tests__/agente-elevenlabs.spec.ts` (las reglas de
+  `agente-elevenlabs.json`) — 319 pruebas en verde en todo `@maya/web`.
 - `pnpm --filter @maya/web typecheck` en verde.
 - Con el flag apagado: `curl http://localhost:3000/api/voz/signed-url`
   responde 404 sin salir a la red, y el botón de voz no aparece en `/maya`.
+- `pnpm voz:configurar --dry` para ver el payload exacto antes de aplicarlo.
 - **Verificado en vivo 2026-09-12 17:45** (créditos MLH reales, vía Chrome
   automatizado): con el flag encendido y las credenciales reales,
   `/api/voz/signed-url` devuelve una `wss://` real; el botón conecta
   (`"Conectando con Maya..."` → `"Escuchando... puedes hablar ahora"`) y
   cuelga limpio (vuelve a `"¿Qué necesitas resolver hoy?"`), sin errores en
-  consola. **No verificado todavía**: el turno de voz completo (hablar →
-  `consultar_maya` → pantalla + respuesta hablada), porque eso necesita (1) la
-  tool configurada en la consola de ElevenLabs (ver arriba) y (2) un
-  micrófono real diciendo algo — el entorno de prueba automatizada no tiene
-  ninguno de los dos.
+  consola.
+- **Aplicado en vivo 2026-09-13 04:15**: `pnpm voz:configurar` corrió contra
+  el agente real (tool `consultar_maya` actualizada, `first_message` y
+  `prompt` del agente aplicados). **No verificado todavía**: un turno de voz
+  completo con micrófono real (hablar → silencio → pantalla + voz juntas) —
+  el entorno de prueba automatizada no tiene micrófono.
+
+### Riesgo conocido: las cifras que dice la voz
+
+En `/maya` las props con cifras las sigue escribiendo el modelo en algunos
+casos (`docs/issues/2026-09-13-cifras-escritas-por-el-modelo-en-maya.md`): el
+texto que `consultar_maya` devuelve es el mismo `texto` que ya se ve en el
+chat, así que la voz hereda ese riesgo tal cual — no es un problema nuevo de
+la integración de voz, es el mismo del chat de texto, solo que ahora también
+se escucha.
 
 ### Pendiente
 
-- **Configurar la tool `consultar_maya` en la consola de ElevenLabs** (tabla
-  arriba). Sin esto el botón conecta pero el agente de voz no llega a tocar
-  el flujo real.
 - Probar un turno de voz completo de principio a fin con un micrófono real.
 - **Botón de voz en Inicio**: cuando se diseñó esta integración, `Inicio`
   (`BarraFlotanteMaya`) tenía un botón de micrófono placeholder. Mientras

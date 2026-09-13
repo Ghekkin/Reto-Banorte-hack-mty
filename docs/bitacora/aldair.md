@@ -2,6 +2,42 @@
 
 ## 2026-09-13
 
+- **10:12 · hecho** — Cerrado el pendiente que dejé anoche (23:41): el usuario probó la voz
+  de verdad y reportó dos cosas "desconectadas" — Maya decía "entendí tu pregunta" antes de
+  que el MCP contestara, y luego "tardó mucho, intenta más tarde" justo cuando la pantalla
+  ya estaba armada. Las dos eran configuración del agente de ElevenLabs, no del código:
+  `pre_tool_speech: "auto"` (default) lo hacía hablar antes de la tool cuando detectaba
+  latencia, y `response_timeout_secs: 20` (default) se agotaba contra un turno que puede
+  tardar hasta `TIMEOUT_TURNO_MS` (30 s). Con el usuario en modo plan decidimos: (1) el
+  agente queda callado mientras el MCP piensa, (2) habla apenas la pantalla está lista, no
+  antes ni un momento después. Hecho:
+  - `usar-agente.ts`: `enviar`/`enviarTexto` ganan un segundo parámetro opcional
+    `{ alResponder }` que dispara UNA vez con la primera línea `texto` del stream — antes
+    de que el turno termine de cerrar (transparencia, sugerencias). Es lo que deja a la voz
+    arrancar en el momento exacto, no unos segundos después por trabajo que no le importa.
+  - `consola-maya.tsx`: `consultar_maya` ahora resuelve su promesa en cuanto `alResponder`
+    dispara (una carrera contra el `enviarTexto` completo, que sigue de respaldo si el turno
+    termina sin decir nada).
+  - `barra-conversacion.tsx`: el botón de mic ya no se deshabilita por `ocupado` mientras hay
+    sesión de voz activa (antes no se podía colgar mientras Maya procesaba).
+  - **Config del agente versionada en el repo**: `scripts/voz/agente-elevenlabs.json`
+    (prompt de 4 reglas, `first_message: ""`, la tool `consultar_maya` con
+    `pre_tool_speech: "off"`, `response_timeout_secs: 45`, `interruption_mode:
+    "disable_during_tool"`) + `scripts/configurar-voz.mjs` (`pnpm voz:configurar [--dry]`):
+    idempotente, busca la tool por nombre (crea o actualiza), y hace `PATCH` al agente con
+    el objeto `agent` COMPLETO para no perder la voz/LLM elegidos a mano en el dashboard.
+    **Aplicado de verdad** contra el agente real de la cuenta MLH — confirmado con `--dry`
+    antes (el payload no tocaba `tts` ni `llm`) y con el `PATCH` real después.
+  - Prueba nueva `agente-elevenlabs.spec.ts` que amarra `response_timeout_secs >
+    TIMEOUT_TURNO_MS / 1000`: si alguien sube el timeout del turno sin subir el de la tool,
+    la prueba truena antes que la demo.
+  - typecheck y `pnpm test` (319 pruebas) en verde. Doc actualizado:
+    `docs/como-funciona/premio-elevenlabs.md` (nueva sección "Configuración del agente en
+    ElevenLabs" con la tabla de cada campo y su porqué).
+  - **No verificado**: un turno de voz completo con micrófono real (el entorno de esta
+    sesión no tiene uno). **Sigue pendiente** (sin cambios desde anoche): el botón de voz en
+    Inicio, porque `BarraFlotanteMaya` es ahora un flujo distinto (`preguntarEnInicio`, sin
+    `usarAgente`).
 - **03:20 · toque-ajeno** — El sync trajo 10 commits (sergio: masonry y transición de Inicio;
   parlack: corridas en PostgreSQL, docs en Astro) y chocó en 10 archivos. Resuelto conservando
   todo: `Lienzo` combina `acomodo="masonry"` con `decorar` (`PiezaDecorada` sirve a los dos),

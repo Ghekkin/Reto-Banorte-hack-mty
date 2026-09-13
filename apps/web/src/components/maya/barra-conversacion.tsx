@@ -81,7 +81,7 @@ export function BarraConversacion({
                   ? "bg-tinte text-primary animate-pulse"
                   : "text-muted-foreground hover:text-primary hover:bg-muted"
               }`}
-              disabled={ocupado || estadoVoz === "cerrando"}
+              disabled={estadoVoz === "cerrando" || (ocupado && !enSesionDeVoz)}
             >
               <Mic className="size-4 sm:size-4.5" />
             </Button>
@@ -147,7 +147,7 @@ export function BarraConversacion({
                 ? "bg-tinte text-primary animate-pulse"
                 : "text-muted-foreground hover:text-primary hover:bg-muted"
             }`}
-            disabled={ocupado || estadoVoz === "cerrando"}
+            disabled={estadoVoz === "cerrando" || (ocupado && !enSesionDeVoz)}
           >
             <Mic className="size-4 sm:size-4.5" />
           </Button>
