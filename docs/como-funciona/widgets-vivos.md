@@ -25,6 +25,10 @@ la nota lo dice: «Cifras verificadas con el banco». Si Maya escribe un número
 ese número también se revisa contra lo que el banco contestó; uno inventado no llega a tu
 pantalla.
 
+Cada pregunta queda anotada en la base, como las conversaciones con Maya: qué preguntaste, qué
+consultó, cuánto le costó al modelo y cómo terminó. Así el equipo puede medir cuánto cuestan las
+preguntas en Inicio y encontrar las que fallan.
+
 Mientras Maya contesta (de 2 a 8 segundos, a veces más) no te quedas viendo una pantalla quieta:
 sobre la barra aparece **qué está haciendo** («Entendiendo tu pregunta» → «Consultando tus datos» →
 «Verificando las cifras con el banco» → «Actualizando la tarjeta»), **tu pregunta** y cuántos
@@ -132,6 +136,21 @@ no se pisa). La huella no cambia: recargar conserva lo que la persona pidió.
 dispositivo (`estadoDelInicio(persona, { dispositivoId })`) y abre el MCP con su cabecera. Si
 estaba viendo la común, `almacen.ajustar` no la toca: copia la común con la tarjeta cambiada a
 `pantallas_por_dispositivo`, con la misma `generada_en`, y ese dispositivo sigue desde ahí.
+
+**Cada pregunta queda grabada** (issue #35, migración 0008) como corrida `tipo = 'widget'` en
+`banorte.corridas`, igual que un turno del chat o una portada: cuánto costó, en cuántos pasos y
+con qué tools. La ruta crea la grabadora (`crearGrabadora`, motivo `foco:<id>` o `general`,
+`peticion` con la pregunta, el historial y qué portada estaba viendo) y se la pasa a
+`turnoDeWidget`, que graba modelo, system prompt y tools por hash, cada paso con sus tokens, cada
+tool que pidió el modelo (`origen` `mcp` o `cierre`) y cada consulta que hizo el servidor para
+rearmar la tarjeta (`paso = -1`); el total de tokens suma `totalUsage` de los dos intentos, o los
+pasos que llegaron si un intento se cortó. La ruta graba cada línea que emite (el `fin` con la
+auditoría), pone `estado = 'error'` si la auditoría encuentra diferencias y cierra la corrida en
+segundo plano. El `fin` lleva `corridaId` (`pnpm corridas <id>`) y el log sale en consola y en
+`banorte.registros` como `inicio / widget-<cierre>` (o `widget-fallo`, `widget-auditoria-fallida`),
+con `entrada`/`salida`/`cache`. La grabación nunca frena la respuesta: si la base la rechaza, se
+avisa una vez en consola y la persona recibe su tarjeta igual.
+
 ### El cliente
 
 `InicioVivo` guarda la superficie en estado y aplica cada `a2ui` con `procesar` (el reducer puro
@@ -222,6 +241,9 @@ pnpm probar-widgets http://localhost:3000   # con FEATURE_WIDGETS_VIVOS=1 en el 
   valor visto y valor del MCP; datos que cambiaron no se confunden con una mentira.
 - `cifras.spec.ts`, `consultor.spec.ts`, y en `lib/inicio`: el generador en modo widgets y la
   regla de `vencida`.
+- `lib/corridas/__tests__/corrida-de-widget.spec.ts` — la corrida de una pregunta: tipo `widget`,
+  tokens sumados de todos los pasos, tools con su paso y origen, un turno fallido grabado con su
+  estado y error, y una base que rechaza la corrida sin tumbar la respuesta.
 
 **Con el modelo real (2026-09-13, local, `pnpm probar-widgets http://localhost:3001`):**
 6 de 6 en dos corridas seguidas; la última entre 0.9 y 2.3 s por pregunta. Una corrida intermedia

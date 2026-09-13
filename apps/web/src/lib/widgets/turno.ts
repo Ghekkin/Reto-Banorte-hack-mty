@@ -1,8 +1,10 @@
 import type { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { stepCountIs, streamText, tool, type LanguageModel, type Tool, type ToolSet } from "ai";
+import { stepCountIs, streamText, tool, type LanguageModel, type LanguageModelUsage, type ModelMessage, type Tool, type ToolSet } from "ai";
 import { z } from "zod";
 import { VERSION_A2UI, validarMensaje, type Componente, type MensajeA2UI } from "@maya/a2ui";
 import { SUPERFICIE } from "@/lib/agente/config";
+import { escritorEnPostgres } from "@/lib/corridas/escritor";
+import { crearGrabadora, type Escritor, type Grabadora, type ResumenDeCorrida } from "@/lib/corridas/grabadora";
 import { conectarMcp, herramientasDelMcp, llamarTool, type LlamadaRegistrada } from "@/lib/agente/mcp-cliente";
 import { configInicio } from "@/lib/inicio/config";
 import { modeloPorId, opcionesDeWidgets } from "@/lib/inicio/modelo";
@@ -79,8 +81,12 @@ export type TurnoDeWidget =
       ms: number;
       modelo: string;
       cifrasQuitadas: string[];
+      /** Tokens de TODOS los pasos del turno (y de los dos intentos, si hubo). */
+      uso?: LanguageModelUsage;
+      /** La corrida grabada (tipo `widget`); sin escritor activo no viene. */
+      corridaId?: string;
     }
-  | { ok: false; motivo: string; tools: string[]; pasos: number; ms: number; modelo: string };
+  | { ok: false; motivo: string; tools: string[]; pasos: number; ms: number; modelo: string; uso?: LanguageModelUsage; corridaId?: string };
 
 export type OpcionesDeTurno = {
   modelo?: LanguageModel;
@@ -100,6 +106,16 @@ export type OpcionesDeTurno = {
   hoy?: string;
   /** Para pruebas: cuanto esperar al primer intento del modelo antes de repetirlo. */
   plazoPorIntentoMs?: number;
+  /**
+   * La grabadora de la corrida (`lib/corridas/grabadora.ts`). La ruta pasa la suya porque
+   * graba tambien lo que pasa despues del turno (auditoria, `fin`) y la cierra ella. Sin
+   * grabadora, el turno crea una con `escritor` y la cierra al terminar.
+   */
+  grabadora?: Grabadora;
+  /** Donde se guarda la corrida si el turno crea su grabadora. Default: PostgreSQL. */
+  escritor?: Escritor;
+  /** De que visitante es la pregunta (ADR 0012), para la corrida y la conexion al MCP. */
+  dispositivoId?: string;
 };
 
 /** Pasos: uno para consultar lo que haga falta, uno para cerrar, uno de gracia y uno de red. */
@@ -396,14 +412,75 @@ export function crearCierreDeWidgets(ctx: Contexto) {
 
 // --- El turno --------------------------------------------------------------------------
 
+/** Suma dos usos de tokens; un campo que ninguno trae se queda sin valor. */
+function sumarUso(a: LanguageModelUsage | undefined, b: LanguageModelUsage | undefined): LanguageModelUsage | undefined {
+  if (!a) return b;
+  if (!b) return a;
+  const suma = (x: number | undefined, y: number | undefined) => (x === undefined && y === undefined ? undefined : (x ?? 0) + (y ?? 0));
+  return {
+    inputTokens: suma(a.inputTokens, b.inputTokens),
+    outputTokens: suma(a.outputTokens, b.outputTokens),
+    totalTokens: suma(a.totalTokens, b.totalTokens),
+    reasoningTokens: suma(a.reasoningTokens, b.reasoningTokens),
+    cachedInputTokens: suma(a.cachedInputTokens, b.cachedInputTokens),
+  };
+}
+
+/** Como queda la corrida segun como termino el turno. */
+function resumenDelTurno(turno: TurnoDeWidget): ResumenDeCorrida {
+  if (turno.ok) return { estado: "ok", cierre: turno.cierre, pasos: turno.pasos, uso: turno.uso, texto: turno.texto };
+  const estado = /se corto/.test(turno.motivo)
+    ? "timeout"
+    : /no pude cambiar la tarjeta|no cerro el turno/.test(turno.motivo)
+      ? "sin_pantalla"
+      : "error";
+  return { estado, pasos: turno.pasos, uso: turno.uso, error: turno.motivo };
+}
+
+/**
+ * Una pregunta a una tarjeta, grabada como corrida `widget` (issue #35): modelo, prompt y tools
+ * por hash, cada paso con sus tokens, cada tool con argumentos y resultado, y el total de
+ * tokens de todos los pasos. La grabacion es de mejor esfuerzo y nunca frena el turno.
+ */
 export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: OpcionesDeTurno = {}): Promise<TurnoDeWidget> {
+  const propia = !opciones.grabadora;
+  const grabadora =
+    opciones.grabadora ??
+    crearGrabadora(
+      {
+        tipo: "widget",
+        usuarioId: peticion.usuarioId,
+        motivo: peticion.foco ? `foco:${peticion.foco}` : "general",
+        peticion: { pregunta: peticion.pregunta, foco: peticion.foco, historial: peticion.historial },
+        dispositivoId: opciones.dispositivoId,
+      },
+      opciones.escritor ?? escritorEnPostgres,
+    );
+  const turno = await correrTurnoDeWidget(peticion, opciones, grabadora, propia);
+  grabadora.resumir(resumenDelTurno(turno));
+  if (propia) void grabadora.terminar();
+  return grabadora.activa ? { ...turno, corridaId: grabadora.id } : turno;
+}
+
+async function correrTurnoDeWidget(
+  peticion: PeticionDeWidget,
+  opciones: OpcionesDeTurno,
+  grabadora: Grabadora,
+  grabarLineas: boolean,
+): Promise<TurnoDeWidget> {
   const inicio = Date.now();
   const nombreModelo = opciones.nombreDelModelo ?? configInicio.modeloWidgets;
   const usadas: LlamadaRegistrada[] = [];
   const timeoutMs = opciones.timeoutMs ?? TIMEOUT_MS;
   let cliente: Client | undefined;
   let pasos = 0;
-  const avisar = opciones.alEvento ?? (() => undefined);
+  let uso: LanguageModelUsage | undefined;
+  const alEvento = opciones.alEvento;
+  // Con la grabadora de la ruta, la ruta graba las lineas al emitirlas; con la propia, aqui.
+  const avisar = (evento: EventoDeTurno) => {
+    if (grabarLineas) grabadora.linea(evento);
+    alEvento?.(evento);
+  };
 
   const fallo = (motivo: string): TurnoDeWidget => ({
     ok: false,
@@ -412,6 +489,7 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
     pasos,
     ms: Date.now() - inicio,
     modelo: nombreModelo,
+    ...(uso ? { uso } : {}),
   });
 
   const componentes = componentesDe(peticion.pantalla.mensajes);
@@ -430,13 +508,20 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
     let apoyo = opciones.herramientas;
     if (!llamar || !apoyo) {
       // Solo se cierra la conexion que abrio este turno.
-      if (!opciones.cliente) cliente = await conectarMcp();
+      if (!opciones.cliente) cliente = await conectarMcp({ dispositivoId: opciones.dispositivoId });
       const abierto = opciones.cliente ?? cliente!;
-      llamar ??= (tool, argumentos) => llamarTool(abierto, tool, argumentos);
-      apoyo ??= await herramientasDelMcp(abierto, { usuarioId: peticion.usuarioId, alTerminar: registrar });
+      llamar ??= (tool, argumentos) => llamarTool(abierto, tool, argumentos, { corridaId: grabadora.id });
+      apoyo ??= await herramientasDelMcp(abierto, { usuarioId: peticion.usuarioId, corridaId: grabadora.id, alTerminar: registrar });
     }
+    // Lo que el servidor consulta para rearmar una tarjeta (su fuente) tambien queda en la corrida.
+    const llamarSinGrabar = llamar;
+    const llamarGrabando: Llamar = async (tool, argumentos) => {
+      const r = await llamarSinGrabar(tool, argumentos);
+      grabadora.toolDelHost({ nombre: tool, argumentos, resultado: r.resultado, ok: r.ok, ms: r.ms });
+      return r;
+    };
 
-    const consultor = crearConsultor({ usuarioId: peticion.usuarioId, llamar, alTerminar: registrar });
+    const consultor = crearConsultor({ usuarioId: peticion.usuarioId, llamar: llamarGrabando, alTerminar: registrar });
     const ctx: Contexto = {
       usuarioId: peticion.usuarioId,
       pregunta: peticion.pregunta,
@@ -466,6 +551,29 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
       } as Tool;
     }
 
+    const modeloDelTurno = opciones.modelo ?? modeloPorId(nombreModelo);
+    const promptSistema = promptDeWidgets();
+    const mensajes: ModelMessage[] = [
+      { role: "system", content: promptSistema, providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } },
+      { role: "user", content: contextoDeWidget(peticion, componentes, opciones.hoy) },
+    ];
+    const opcionesProveedor = opciones.modelo ? {} : opcionesDeWidgets(nombreModelo);
+    grabadora.configurar({
+      modelo: modeloDelTurno,
+      opcionesProveedor,
+      config: {
+        maxPasos: MAX_PASOS,
+        timeoutMs,
+        intentosDelModelo: INTENTOS_DEL_MODELO,
+        plazoPorIntentoMs: opciones.plazoPorIntentoMs ?? PLAZO_POR_INTENTO_MS,
+        foco: peticion.foco ?? null,
+      },
+      promptSistema,
+      mensajes,
+      tools,
+      origenDe: (nombre) => (nombresDeCierre.includes(nombre) ? "cierre" : "mcp"),
+    });
+
     let errores: string[] = [];
     let corte = false;
     // Un intento que no cerro en su plazo se repite una vez: medido el 2026-09-13, el mismo
@@ -479,19 +587,24 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
       corte = false;
       if (intento > 1) avisar({ tipo: "estado", valor: "pensando" });
 
+      // `prepareStep` cuenta desde 0 en cada intento; la corrida numera los pasos del turno entero.
+      const pasosAntes = pasos;
+      // Lo que llevan los pasos de este intento, por si se corta antes de que haya `totalUsage`.
+      let usoDelIntento: LanguageModelUsage | undefined;
       const resultado = streamText({
-        model: opciones.modelo ?? modeloPorId(nombreModelo),
-        messages: [
-          { role: "system", content: promptDeWidgets(), providerOptions: { anthropic: { cacheControl: { type: "ephemeral" } } } },
-          { role: "user", content: contextoDeWidget(peticion, componentes, opciones.hoy) },
-        ],
+        model: modeloDelTurno,
+        messages: mensajes,
         allowSystemInMessages: true,
         tools,
         stopWhen: [stepCountIs(MAX_PASOS), () => cierre.cerrado(), () => cierre.intentosFallidos() >= MAX_INTENTOS],
         // Paso 0: consultar lo que falte o cerrar de una vez. Del 1 en adelante, solo cerrar.
-        prepareStep: ({ stepNumber }) =>
-          stepNumber === 0 ? { toolChoice: "required" } : { toolChoice: "required", activeTools: nombresDeCierre },
-        providerOptions: opciones.modelo ? {} : opcionesDeWidgets(nombreModelo),
+        prepareStep: ({ stepNumber }) => {
+          const soloCierre = stepNumber > 0;
+          grabadora.pasoPreparado(pasosAntes + stepNumber, soloCierre ? nombresDeCierre : Object.keys(tools), "required");
+          return soloCierre ? { toolChoice: "required", activeTools: nombresDeCierre } : { toolChoice: "required" };
+        },
+        onStepFinish: (paso) => grabadora.paso(paso),
+        providerOptions: opcionesProveedor,
         abortSignal: AbortSignal.timeout(plazo),
       });
 
@@ -499,20 +612,31 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
         for await (const parte of resultado.fullStream) {
           switch (parte.type) {
             case "tool-call":
+              grabadora.toolPedida(parte.toolCallId, parte.toolName, parte.input);
               if (nombresDeCierre.includes(parte.toolName)) avisar({ tipo: "estado", valor: "armando" });
               break;
-            case "tool-result":
-              if (nombresDeCierre.includes(parte.toolName)) {
-                const salida = parte.output as Salida;
-                if (!salida.ok) errores = salida.errores;
-              }
+            case "tool-result": {
+              const salida = parte.output as Partial<Salida> | undefined;
+              grabadora.toolTermino(parte.toolCallId, { resultado: parte.output, ok: salida?.ok !== false });
+              if (nombresDeCierre.includes(parte.toolName) && salida?.ok === false) errores = salida.errores ?? [];
+              break;
+            }
+            case "tool-error":
+              grabadora.toolTermino(parte.toolCallId, {
+                ok: false,
+                error: parte.error instanceof Error ? parte.error.message : String(parte.error),
+              });
               break;
             case "finish-step":
               pasos++;
+              usoDelIntento = sumarUso(usoDelIntento, parte.usage);
               break;
             case "error":
               if (esCorte(parte.error)) corte = true;
-              else return fallo(`el modelo fallo: ${parte.error instanceof Error ? parte.error.message : String(parte.error)}`);
+              else {
+                uso = sumarUso(uso, usoDelIntento);
+                return fallo(`el modelo fallo: ${parte.error instanceof Error ? parte.error.message : String(parte.error)}`);
+              }
               break;
             case "abort":
               corte = true;
@@ -525,6 +649,10 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
         if (!esCorte(error)) throw error;
         corte = true;
       }
+      // `totalUsage` (la suma de los pasos del intento) solo se espera si el stream termino
+      // normal: tras un corte puede no resolverse nunca, y ahi valen los pasos que llegaron.
+      const totalDelIntento = corte ? undefined : await resultado.totalUsage.catch(() => undefined);
+      uso = sumarUso(uso, totalDelIntento ?? usoDelIntento);
       if (!corte) break;
     }
 
@@ -539,6 +667,7 @@ export async function turnoDeWidget(peticion: PeticionDeWidget, opciones: Opcion
       pasos,
       ms: Date.now() - inicio,
       modelo: nombreModelo,
+      ...(uso ? { uso } : {}),
     };
   } catch (error) {
     const abortado = error instanceof Error && (error.name === "AbortError" || error.name === "TimeoutError");

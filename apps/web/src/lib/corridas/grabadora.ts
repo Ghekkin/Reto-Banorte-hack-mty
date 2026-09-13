@@ -2,11 +2,13 @@ import { createHash, randomUUID } from "node:crypto";
 import { asSchema, type LanguageModel, type LanguageModelUsage, type ModelMessage, type StepResult, type ToolSet } from "ai";
 import type { LineaStream, PeticionAgente } from "@/lib/agente/tipos";
 import { dispositivoParaRegistro } from "@/lib/dispositivo";
+import type { LineaDeWidget } from "@/lib/widgets/linea";
 
 /**
  * La grabadora de una corrida: TODO lo que pasa cuando un modelo trabaja, para poder
- * reconstruirlo despues sin adivinar. Una corrida es un turno del chat (`/api/agente`) o una
- * portada del Inicio. Ver `docs/como-funciona/corridas-en-db.md`.
+ * reconstruirlo despues sin adivinar. Una corrida es un turno del chat (`/api/agente`), una
+ * portada del Inicio o una pregunta a una tarjeta de Inicio (`/api/inicio/widget`, tipo
+ * `widget`, migracion 0008). Ver `docs/como-funciona/corridas-en-db.md`.
  *
  * Aqui no hay base: la grabadora junta en memoria y le entrega filas a un `Escritor`
  * (`escritor.ts` escribe en PostgreSQL; las pruebas pasan uno que solo guarda). Asi el
@@ -17,9 +19,15 @@ export type OrigenTool = "mcp" | "host" | "cierre" | "prefetch";
 
 export type FilaPrompt = { hash: string; tipo: "sistema" | "tools"; contenido: string };
 
+/** `turno`: `/api/agente`. `portada`: una generacion del Inicio. `widget`: una pregunta a una tarjeta. */
+export type TipoDeCorrida = "turno" | "portada" | "widget";
+
+/** Una linea que salio hacia el navegador: la del chat o la de una pregunta a una tarjeta. */
+export type LineaGrabada = LineaStream | LineaDeWidget;
+
 export type FilaCorrida = {
   id: string;
-  tipo: "turno" | "portada";
+  tipo: TipoDeCorrida;
   usuarioId: string | null;
   conversacionId: string | null;
   /** De que visitante fue (migracion 0007, ADR 0012). `null` es el estado comun. */
@@ -36,7 +44,7 @@ export type FilaCorrida = {
   toolsOfrecidas: { nombre: string; origen: OrigenTool }[];
   peticion: unknown;
   mensajesModelo: unknown[];
-  lineas: LineaStream[];
+  lineas: LineaGrabada[];
   cierre: string | null;
   pasos: number | null;
   tokensEntrada: number | null;
@@ -134,7 +142,7 @@ export type Grabadora = {
   toolTermino: (toolCallId: string, salida: { resultado?: unknown; error?: string; ok: boolean }) => void;
   /** Una tool que el host llamo por su cuenta (prefetch), fuera del bucle del modelo. */
   toolDelHost: (fila: { nombre: string; argumentos: unknown; resultado: unknown; ok: boolean; ms: number }) => void;
-  linea: (linea: LineaStream) => void;
+  linea: (linea: LineaGrabada) => void;
   resumir: (resumen: ResumenDeCorrida) => void;
   terminar: () => Promise<void>;
 };
@@ -210,7 +218,7 @@ function salidaDelTurno(lineas: LineaStream[], corridaCierre: string | null): Fi
 
 export function crearGrabadora(
   inicio: {
-    tipo: "turno" | "portada";
+    tipo: TipoDeCorrida;
     usuarioId: string;
     conversacionId?: string;
     motivo?: string;
@@ -380,7 +388,7 @@ export function crearGrabadora(
 
     linea(linea) {
       if (!activa) return;
-      corrida.lineas.push(acotar(linea) as LineaStream);
+      corrida.lineas.push(acotar(linea) as LineaGrabada);
     },
 
     resumir(resumen) {
@@ -424,7 +432,8 @@ export function crearGrabadora(
                 conversacionId: inicio.conversacionId,
                 usuarioId: inicio.usuarioId,
                 dispositivoId: dispositivoParaRegistro(inicio.dispositivoId),
-                mensajes: [...(entrada ? [entrada] : []), salidaDelTurno(corrida.lineas, corrida.cierre)],
+                // Solo un turno llega aqui: sus lineas son las del chat.
+                mensajes: [...(entrada ? [entrada] : []), salidaDelTurno(corrida.lineas as LineaStream[], corrida.cierre)],
               },
             }
           : {}),

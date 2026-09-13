@@ -24,6 +24,8 @@ export type LineaDeWidget =
       guardada: boolean;
       /** La tool y los parametros con que se lleno la tarjeta, para la linea de procedencia. */
       procedencia?: { tool: string; fuente: string; parametros: Record<string, unknown>; en: string };
+      /** La corrida grabada en `banorte.corridas` (tipo `widget`): `pnpm corridas <id>`. */
+      corridaId?: string;
     }
   | { tipo: "error"; mensaje: string };
 

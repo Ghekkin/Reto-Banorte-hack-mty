@@ -5,15 +5,17 @@ estado: construido
 
 # Todo lo que pasa queda en la base: corridas, chat y registros
 
-Piezas: `db/migraciones/0004-corridas-chat-y-registros.sql`,
+Piezas: `db/migraciones/0004-corridas-chat-y-registros.sql`, `db/migraciones/0008-corridas-de-widgets.sql`,
 `apps/web/src/lib/corridas/grabadora.ts`, `apps/web/src/lib/corridas/escritor.ts`,
 `apps/web/src/lib/agente/agente.ts`, `apps/web/src/lib/inicio/generar.ts`,
+`apps/web/src/lib/widgets/turno.ts`, `apps/web/src/app/api/inicio/widget/route.ts`,
 `apps/mcp/src/datos/registros.ts`, `apps/mcp/src/tools/registro.ts` y `scripts/corridas.mjs`.
 
 ## Para cualquiera
 
-Cada vez que un modelo trabaja se guarda una **corrida**. Hay dos casos: alguien le escribe
-a Maya, o se arma una portada del Inicio. Una corrida responde, sin adivinar:
+Cada vez que un modelo trabaja se guarda una **corrida**. Hay tres casos: alguien le escribe
+a Maya, se arma una portada del Inicio, o alguien le pregunta algo a una tarjeta del Inicio
+(widgets vivos). Una corrida responde, sin adivinar:
 
 - **quién** preguntó, **qué** preguntó y en qué conversación;
 - **con qué modelo** corrió (proveedor, versión exacta, nivel de pensamiento) y con qué
@@ -52,7 +54,7 @@ si la base falla el turno sigue igual (el aviso sale en consola). Con
 
 | Tabla | Una fila por | Lo importante |
 |---|---|---|
-| `corridas` | turno o portada | `tipo`, `estado`, `proveedor`/`modelo`, `opciones_proveedor`, `config`, `tools_ofrecidas`, `peticion`, `mensajes_modelo` (sin system), `lineas`, tokens totales, `ms`, `error` |
+| `corridas` | turno, portada o pregunta a una tarjeta | `tipo` (`turno`, `portada`, `widget`), `estado`, `proveedor`/`modelo`, `opciones_proveedor`, `config`, `tools_ofrecidas`, `peticion`, `mensajes_modelo` (sin system), `lineas`, tokens totales, `ms`, `error` |
 | `corrida_pasos` | petición al modelo | `tools_activas` y `tool_choice` (lo que decidió `prepareStep`), `finish_reason`, `modelo_respuesta`, tokens del paso, `llamadas`, `advertencias`, `metadata_proveedor` |
 | `corrida_tools` | llamada a tool | `paso` (-1 = prefetch del host), `origen` (`mcp`, `host`, `cierre`, `prefetch`), `argumentos`, `resultado`, `ok`, `error`, `ms` |
 | `prompts` | texto distinto | el system prompt (`sistema`) y las definiciones de tools (`tools`), por hash: 70 KB que no se repiten en cada corrida |
@@ -67,6 +69,17 @@ historia. **El MCP no las carga a memoria** (`TABLAS_DE_HISTORIA` en
 
 Desde la migración 0007, `corridas` y `conversaciones` llevan también `dispositivo_id`: de qué
 visitante fue (`null` = estado común, un script o el reloj). Ver `estado-por-dispositivo.md`.
+
+Desde la migración 0008 (issue #35), `corridas.tipo` admite también `widget`: una pregunta a una
+tarjeta de Inicio (`POST /api/inicio/widget`). Antes esa llamada al modelo no dejaba nada en la
+base y era el único consumo que no se podía medir. No lleva chat (`mensajes_chat`): la pregunta va
+en `peticion` y la respuesta en `lineas` (el `fin`, con la auditoría) y en `texto`.
+
+```sql
+-- cuanto cuestan las preguntas a tarjetas, por como cerraron
+select cierre, estado, count(*), avg(tokens_entrada)::int as entrada, avg(tokens_salida)::int as salida, avg(ms)::int as ms
+  from banorte.corridas where tipo = 'widget' group by 1, 2 order by 3 desc;
+```
 
 ```sql
 select dispositivo_id, count(*) as turnos, max(iniciada_en) as ultimo
@@ -92,6 +105,16 @@ guarda) y lo que garantiza que el turno no espere a PostgreSQL.
 4. Al final, `resumir()` pone estado, cierre, pasos, `totalUsage` y error. `terminar()` (en el
    `finally` del generador, así corre aunque la persona cierre la pestaña) encola la escritura
    final: prompts por hash, la corrida con `upsert`, pasos, tools y el chat.
+
+**Una pregunta a una tarjeta** (`widget`) sigue los mismos pasos repartidos en dos lugares. La
+ruta `POST /api/inicio/widget` crea la grabadora, graba cada línea que emite, pone `estado =
+'error'` si la auditoría encuentra diferencias y llama `terminar()` en su `finally`. `turnoDeWidget`
+recibe esa grabadora (`opciones.grabadora`) y hace `configurar`, `pasoPreparado`, `paso`,
+`toolPedida`/`toolTermino` y `resumir`; las consultas que el servidor hace para rearmar la tarjeta
+entran por `toolDelHost()` (`paso = -1`). El turno puede intentar dos veces si el proveedor no
+contesta a tiempo: los pasos se numeran seguidos y el total suma `totalUsage` de cada intento (o
+los pasos que llegaron, si el intento se cortó). Llamado sin grabadora (las pruebas), el turno crea
+la suya con `opciones.escritor` y la cierra él.
 
 Las escrituras van en una sola cola por corrida, y un fallo se avisa **una vez** en consola.
 Un JSON de más de 200 KB se guarda recortado y marcado (`acotar()`).
@@ -144,3 +167,10 @@ fila; la fila temprana dice `corriendo` y la final `ok` con tokens sumados de to
 pasos; modelo, tools ofrecidas y prompt por hash; cada paso y cada tool con argumentos y
 resultado; líneas y chat; sin escritor no hay `corridaId`; la portada con tipo, motivo y
 pantalla; el escritor real apagado en vitest; y el recorte de JSON grandes.
+
+`apps/web/src/lib/corridas/__tests__/corrida-de-widget.spec.ts` (7): la pregunta a una tarjeta
+queda con tipo `widget`, persona, dispositivo, motivo `foco:<id>`, `peticion` y cierre; los tokens
+son la suma de los pasos y cada paso guarda los suyos; tools ofrecidas y cada llamada con su paso y
+origen (incluida la consulta del servidor en `paso = -1`); las líneas; un turno que no cierra queda
+con estado y error; una base que rechaza la corrida (la 0008 sin aplicar) no tumba la respuesta y
+avisa una sola vez; y sin escritor no hay `corridaId`.

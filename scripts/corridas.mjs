@@ -2,7 +2,7 @@
 // Lee lo que quedo grabado en la base: corridas del modelo, chat y registros.
 // docs/como-funciona/corridas-en-db.md
 //
-//   pnpm corridas                      las ultimas 20 corridas (turnos y portadas)
+//   pnpm corridas                      las ultimas 20 corridas (turnos, portadas y preguntas a tarjetas)
 //   pnpm corridas --errores            solo las que no terminaron en ok
 //   pnpm corridas --usuario usr_ana    las de una persona
 //   pnpm corridas cor_xxx              una corrida completa: modelo, tools, pasos, llamadas, lineas, chat, logs del MCP
@@ -152,8 +152,13 @@ try {
         if (l.tipo === 'a2ui') {
           const comps = l.mensaje?.updateComponents?.components?.map((x) => x.component);
           console.log(`  a2ui ${gris(comps ? comps.join(' + ') : Object.keys(l.mensaje ?? {}).filter((k) => k !== 'version').join(','))}`);
-        } else if (l.tipo === 'error') console.log(`  ${rojo(`error ${l.codigo}: ${corto(l.mensaje, 300)}`)}`);
+        } else if (l.tipo === 'error') console.log(`  ${rojo(`error${l.codigo ? ` ${l.codigo}` : ''}: ${corto(l.mensaje, 300)}`)}`);
         else if (l.tipo === 'estado') continue;
+        // El `fin` de una pregunta a una tarjeta (tipo widget): como cerro y que dijo el auditor.
+        else if (l.tipo === 'fin' && c.tipo === 'widget') {
+          const a = l.auditoria;
+          console.log(`  fin ${l.cierre ?? '?'} ${l.widgetId ?? ''} · guardada ${l.guardada ? 'si' : 'no'}` + (a ? ` · auditoria ${a.revisados ?? 0} revisada(s), ${a.diferencias?.length ?? 0} diferencia(s)` : ''));
+        }
         else console.log(`  ${l.tipo} ${gris(corto(l.valor ?? l.valores ?? l.nombre ?? l, 240))}`);
       }
 
