@@ -11,6 +11,12 @@ export type UsuarioDemo = {
   id: string;
   nombre: string;
   iniciales: string;
+  /**
+   * Foto del avatar, servida desde `apps/web/public/personas/`. Son retratos de
+   * randomuser.me descargados al repo (no se enlazan en caliente: la demo no depende de
+   * internet). Si no carga, el avatar cae a las iniciales.
+   */
+  foto: string;
   contexto: string;
 };
 
@@ -19,18 +25,21 @@ export const USUARIOS: UsuarioDemo[] = [
     id: "usr_beto",
     nombre: "Alberto Ramírez",
     iniciales: "AR",
+    foto: "/personas/alberto.jpg",
     contexto: "Tarjeta al límite, un pago atrasado",
   },
   {
     id: "usr_ana",
     nombre: "Ana Sofía Treviño",
     iniciales: "AT",
+    foto: "/personas/ana.jpg",
     contexto: "Sin deuda, sin fondo de emergencia",
   },
   {
     id: "usr_carmen",
     nombre: "Carmen Elizondo",
     iniciales: "CE",
+    foto: "/personas/carmen.jpg",
     contexto: "Patrimonial, con portafolio",
   },
 ];

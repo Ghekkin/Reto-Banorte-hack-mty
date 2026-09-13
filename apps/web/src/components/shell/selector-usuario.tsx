@@ -2,7 +2,7 @@
 
 import { useOptimistic, useTransition } from "react";
 import { ChevronsUpDown } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Select,
   SelectContent,
@@ -35,11 +35,11 @@ type Variante = "tarjeta" | "sidebar" | "avatar";
  * Selector de persona demo. Cambiar de persona es lo que demuestra la adaptabilidad
  * (20% de la rubrica): misma pantalla, otro contexto, otra interfaz.
  *
- * La persona se lee en el color del avatar: **oscuro es quien usa la app**, el mismo
- * `bg-oscuro` de sus burbujas en el chat, y el rojo queda para Maya. En el menu, la persona
- * activa lleva el avatar oscuro, el renglon en `bg-sidebar-accent` (el mismo tinte del item
- * activo del sidebar) y la palomita en rojo; las otras, avatar blanco con aro gris. Tres
- * senales juntas se leen en un proyector; una palomita sola no.
+ * Cada persona lleva su foto en el avatar (`usuario.foto`). En el menu, la persona activa
+ * lleva el renglon en `bg-sidebar-accent` (el mismo tinte del item activo del sidebar) y la
+ * palomita en rojo: dos senales juntas se leen en un proyector; una palomita sola no. Si la
+ * foto no carga, el avatar cae a las iniciales: oscuro para la activa (el mismo `bg-oscuro`
+ * de sus burbujas en el chat; el rojo queda para Maya) y blanco con aro gris para las otras.
  *
  * El contexto de cada persona ("Tarjeta al limite, un pago atrasado") nunca se corta con
  * puntos: es lo que explica por que la pantalla cambia. En el trigger baja a dos renglones;
@@ -100,7 +100,7 @@ export function SelectorUsuario({
       >
         <SelectValue>
           <span className="flex min-w-0 flex-1 items-center gap-2.5">
-            <AvatarPersona iniciales={visible.iniciales} activa pendiente={soloAvatar && pendiente} />
+            <AvatarPersona usuario={visible} activa pendiente={soloAvatar && pendiente} />
             {!soloAvatar && (
               <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                 <span className="truncate text-sm font-semibold leading-tight">{visible.nombre}</span>
@@ -152,7 +152,7 @@ export function SelectorUsuario({
                 )}
               >
                 <span className="flex min-w-0 flex-1 items-center gap-3">
-                  <AvatarPersona iniciales={u.iniciales} activa={activa} />
+                  <AvatarPersona usuario={u} activa={activa} />
                   <span className="flex min-w-0 flex-1 flex-col gap-0.5">
                     <span className="truncate text-sm font-semibold leading-tight">{u.nombre}</span>
                     {/* El `!` no es pereza: el item base pinta a TODOS sus descendientes con
@@ -187,18 +187,22 @@ function posicionDelMenu(variante: Variante, esMovil: boolean) {
  * <div> por omision y aqui vive dentro del <span> de `SelectValue` o del `ItemText`; un
  * <div> dentro de un <span> es HTML invalido y React lo reporta como desajuste de
  * hidratacion.
+ *
+ * Mientras cambia de persona, la variante `avatar` no tiene otro lugar para el spinner:
+ * se quita la foto y el spinner ocupa el fallback.
  */
 function AvatarPersona({
-  iniciales,
+  usuario,
   activa,
   pendiente = false,
 }: {
-  iniciales: string;
+  usuario: UsuarioDemo;
   activa: boolean;
   pendiente?: boolean;
 }) {
   return (
     <Avatar render={<span />} className="size-10 shrink-0">
+      {!pendiente && <AvatarImage src={usuario.foto} alt="" />}
       <AvatarFallback
         render={<span />}
         className={cn(
@@ -210,7 +214,7 @@ function AvatarPersona({
           activa ? "bg-oscuro text-white!" : "bg-background text-muted-foreground!",
         )}
       >
-        {pendiente ? <Spinner className="size-4" aria-hidden /> : iniciales}
+        {pendiente ? <Spinner className="size-4" aria-hidden /> : usuario.iniciales}
       </AvatarFallback>
     </Avatar>
   );

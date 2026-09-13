@@ -55,7 +55,7 @@ cambiar, todo cambia: los saldos, las tarjetas, y sobre todo **lo que Maya respo
 misma pregunta**. Es la forma más rápida de mostrar que el agente se adapta al contexto en
 vez de repetir una plantilla.
 
-La persona activa se ve al pie del menú lateral: su avatar en negro, su nombre y, completa,
+La persona activa se ve al pie del menú lateral: su foto, su nombre y, completa,
 su situación ("Tarjeta al límite, un pago atrasado"). Al tocarla se abre a un lado la lista
 de las tres, cada una con su situación, y la elegida marcada. En el celular es el avatar de
 arriba a la derecha.
@@ -297,11 +297,15 @@ navegador y termina en una consulta a la base.
 | `avatar` | Barra superior en móvil (`barra-superior.tsx`) | Solo el avatar, objetivo táctil de 48 px | Abajo, alineado a la derecha |
 | `tarjeta` (default) | Sin uso desde el 2026-09-13: Más cambia de persona con `CambiarPersona` (`components/mas/`) | La misma tarjeta, a lo ancho | Abajo, del ancho del trigger |
 
-**El color del avatar dice quién es quién**: oscuro (`bg-oscuro text-white`) es la persona,
-el mismo tono de sus burbujas en el chat (`consola-maya.tsx`); el rojo queda para Maya. En
-el menú, la persona elegida lleva el renglón en `bg-sidebar-accent` (el tinte del ítem
-activo del sidebar), el avatar oscuro y la palomita del propio `SelectItem` en
-`text-primary`; las otras, avatar blanco con aro gris. Al pasar el cursor el renglón se pone
+**Cada persona lleva su foto en el avatar** (`AvatarImage` con `usuario.foto`, campo de
+`lib/usuarios.ts`). Las fotos son retratos de randomuser.me **descargados** a
+`apps/web/public/personas/` (`alberto.jpg`, `ana.jpg`, `carmen.jpg`, 128 px): no se enlazan
+en caliente para que la demo no dependa de internet. En el menú, la persona elegida lleva el
+renglón en `bg-sidebar-accent` (el tinte del ítem activo del sidebar) y la palomita del
+propio `SelectItem` en `text-primary`. Si una foto no carga, el avatar cae a las iniciales:
+oscuro (`bg-oscuro text-white`, el tono de sus burbujas en el chat; el rojo queda para Maya)
+para la elegida y blanco con aro gris para las otras. En la variante `avatar`, mientras
+cambia de persona, se quita la foto y el spinner ocupa el fallback. Al pasar el cursor el renglón se pone
 gris y el nombre rojo, como cualquier item de menú del proyecto. Arriba de la lista, un
 `SelectLabel`: "Cambiar de persona / Maya adapta lo que te muestra a cada una".
 
