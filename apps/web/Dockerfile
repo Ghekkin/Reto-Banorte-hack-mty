@@ -28,6 +28,10 @@ RUN pnpm install --frozen-lockfile
 # justo escribiendo `.next/cache/turbopack`. En una capa aparte no serviria: la capa del
 # build ya lo habria guardado.
 COPY . .
+# Las `NEXT_PUBLIC_*` se incrustan en el bundle AL CONSTRUIR; ponerlas solo en runtime no
+# alcanza (el boton de voz no aparecia). Coolify las pasa como build arg si la variable
+# esta marcada "build time". Un ARG queda como variable de entorno del RUN de abajo.
+ARG NEXT_PUBLIC_FEATURE_VOZ=0
 RUN pnpm --filter @maya/catalogo generar \
  && pnpm --filter @maya/web build \
  && rm -rf apps/web/.next/cache
